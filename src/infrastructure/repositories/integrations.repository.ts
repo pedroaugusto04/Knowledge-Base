@@ -3,12 +3,12 @@ import crypto from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 
 import { CredentialRecordStatus } from '../../contracts/enums.js';
-import { CredentialRepository, ExternalIdentityRepository } from '../../application/ports/integrations.repository.js';
-import { credentialFromRow, identityFromRow } from './row.mappers.js';
+import { CredentialRepository, ExternalIdentityRepository, IntegrationConnectionSessionRepository } from '../../application/ports/integrations.repository.js';
+import { connectionSessionFromRow, credentialFromRow, identityFromRow } from './row.mappers.js';
 import { PostgresDatabase } from './database.js';
 
 @Injectable()
-export class PostgresIntegrationRepository extends CredentialRepository implements ExternalIdentityRepository {
+export class PostgresIntegrationRepository extends CredentialRepository implements ExternalIdentityRepository, IntegrationConnectionSessionRepository {
   constructor(private readonly database: PostgresDatabase) {
     super();
   }
@@ -111,5 +111,73 @@ export class PostgresIntegrationRepository extends CredentialRepository implemen
       ],
     );
     return identityFromRow(result.rows[0]);
+  }
+
+  async createConnectionSession(input: {
+    userId: string;
+    workspaceSlug: string;
+    provider: string;
+    stateHash: string;
+    verificationCodeHash: string;
+    status: string;
+    metadata: Record<string, unknown>;
+    expiresAt: string;
+  }) {
+    const result = await this.database.getPool().query(
+      `insert into kb_integration_connection_sessions
+       (id, user_id, workspace_slug, provider, state_hash, verification_code_hash, status, metadata, expires_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::timestamptz)
+       returning *`,
+      [
+        crypto.randomUUID(),
+        input.userId,
+        input.workspaceSlug,
+        input.provider,
+        input.stateHash,
+        input.verificationCodeHash,
+        input.status,
+        JSON.stringify(input.metadata || {}),
+        input.expiresAt,
+      ],
+    );
+    return connectionSessionFromRow(result.rows[0]);
+  }
+
+  async findConnectionSession(id: string) {
+    const result = await this.database.getPool().query('select * from kb_integration_connection_sessions where id = $1 limit 1', [id]);
+    return result.rows[0] ? connectionSessionFromRow(result.rows[0]) : null;
+  }
+
+  async findActiveConnectionSessionByState(provider: string, stateHash: string, nowIso: string) {
+    const result = await this.database.getPool().query(
+      `select * from kb_integration_connection_sessions
+       where provider = $1 and state_hash = $2 and status = 'pending' and consumed_at is null and expires_at > $3::timestamptz
+       order by created_at desc
+       limit 1`,
+      [provider, stateHash, nowIso],
+    );
+    return result.rows[0] ? connectionSessionFromRow(result.rows[0]) : null;
+  }
+
+  async findActiveConnectionSessionByCode(provider: string, verificationCodeHash: string, nowIso: string) {
+    const result = await this.database.getPool().query(
+      `select * from kb_integration_connection_sessions
+       where provider = $1 and verification_code_hash = $2 and status = 'pending' and consumed_at is null and expires_at > $3::timestamptz
+       order by created_at desc
+       limit 1`,
+      [provider, verificationCodeHash, nowIso],
+    );
+    return result.rows[0] ? connectionSessionFromRow(result.rows[0]) : null;
+  }
+
+  async consumeConnectionSession(id: string, status: string, metadata: Record<string, unknown>) {
+    const result = await this.database.getPool().query(
+      `update kb_integration_connection_sessions
+       set status = $2, metadata = metadata || $3::jsonb, consumed_at = coalesce(consumed_at, now()), updated_at = now()
+       where id = $1 and consumed_at is null
+       returning *`,
+      [id, status, JSON.stringify(metadata || {})],
+    );
+    return result.rows[0] ? connectionSessionFromRow(result.rows[0]) : null;
   }
 }

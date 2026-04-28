@@ -1,6 +1,6 @@
 import { generateReviewAnalysis } from '../adapters/ai.js';
 import type { RuntimeEnvironment } from '../adapters/environment.js';
-import { fetchComparePayload, verifyGithubSignature } from '../adapters/github.js';
+import { fetchComparePayload, fetchGithubInstallationToken, verifyGithubSignature } from '../adapters/github.js';
 import { CanonicalType, EventType, KnowledgeKind, KnowledgeStatus, SourceChannel } from '../contracts/enums.js';
 import { ingestPayloadSchema } from '../contracts/ingest.js';
 import { defaultImportance } from '../domain/classification.js';
@@ -32,6 +32,9 @@ type GithubPushPayload = {
     modified?: string[];
     removed?: string[];
   }>;
+  installation?: {
+    id?: string | number;
+  };
 };
 
 function normalizeProjectSlug(payload: GithubPushPayload): string {
@@ -52,7 +55,15 @@ export async function buildGithubReviewEvent(
   }
 
   const repoFullName = String(body.repository?.full_name || '').trim();
-  const compare = await fetchComparePayload(repoFullName, String(body.before || ''), String(body.after || ''), environment.githubApiToken);
+  const installationId = String(body.installation?.id || '').trim();
+  const githubToken = installationId
+    ? await fetchGithubInstallationToken({
+      appId: environment.githubAppId,
+      privateKey: environment.githubAppPrivateKey,
+      installationId,
+    })
+    : '';
+  const compare = await fetchComparePayload(repoFullName, String(body.before || ''), String(body.after || ''), githubToken);
   const changedFiles = Array.from(
     new Set(
       (body.commits || []).flatMap((commit) => [

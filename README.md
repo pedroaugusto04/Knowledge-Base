@@ -84,23 +84,23 @@ No WhatsApp, a consulta pode ser feita sem abrir o fluxo de captura usando coman
 - `/consultar o que decidimos sobre reminders?`
 - `/perguntar quais foram os riscos do ultimo push?`
 
-## Como o produto conecta WhatsApp e Git push
+## Como o produto conecta integrações guiadas
 
 ### WhatsApp do usuário
 
 Recomendação para vender o produto:
 
-1. Cada cliente recebe uma instância dedicada do provedor de WhatsApp.
+1. Cada cliente recebe uma instância dedicada do provedor de WhatsApp gerenciada pelo servidor.
 2. A opção mais simples hoje é manter uma instância `Evolution API` por tenant ou por ambiente controlado.
-3. O usuário conecta o WhatsApp escaneando um QR code da própria instância.
-4. O grupo ou número autorizado vira a origem oficial de captura manual.
-5. O webhook do provedor chama o adapter `kb-whatsapp-entry`.
+3. O usuário inicia a conexão em `/settings/integrations` e recebe o comando `/kb conectar <codigo>`.
+4. O grupo que enviar esse comando vira a origem oficial de captura manual.
+5. O webhook do provedor chama `POST /api/webhooks/whatsapp`.
 
 Fluxo operacional:
 
 - mensagem chega via WhatsApp
 - adapter baixa mídia se existir
-- API interna de conversa interpreta o texto com OpenRouter
+- API interna de conversa interpreta o texto com IA gerenciada quando `ai-conversation` está ativo no workspace
 - o core pergunta só o que falta
 - ao confirmar, o core gera o payload canonico e persiste em Postgres
 
@@ -111,7 +111,7 @@ Recomendação para vender o produto:
 1. Criar um **GitHub App** do produto.
 2. Cada cliente instala o app nos repositórios desejados.
 3. O GitHub envia `push` para o endpoint `kb-github-push`.
-4. O core coleta diff/commits, gera o review por IA, salva a nota em Postgres e retorna uma mensagem pronta para Telegram.
+4. O callback valida `state`, troca `code` por token OAuth, confirma que a instalação aparece nas instalações do usuário GitHub autenticado e só então vincula `installation_id`.
 5. O adapter envia o review resumido no Telegram.
 
 Isso é melhor do que pedir token manual por repositório porque:
@@ -120,6 +120,14 @@ Isso é melhor do que pedir token manual por repositório porque:
 - reduz fricção de setup
 - facilita controle de permissões
 - evita automação por repo isolado
+
+Depois da conexão, `/settings/integrations` lista os repositórios acessíveis pela instalação e salva a seleção em `workspace.githubRepos`, criando ou atualizando projetos com `repoFullName`.
+
+### Telegram e IA
+
+Telegram é um bot gerenciado pelo servidor. O usuário inicia a conexão em `/settings/integrations`, envia `/kb conectar <codigo>` no chat, e o webhook `POST /api/webhooks/telegram` vincula `chat_id` ao workspace sem expor token ou chat ID na UI.
+
+`ai-review` e `ai-conversation` são recursos ativados por workspace. O usuário só ativa, testa ou desativa; provider, modelo, base URL e API key ficam em env/admin. Reviews de push usam `ai-review` somente quando o recurso está ativo no workspace, e a conversa usa `ai-conversation` somente quando também está ativo.
 
 ## Modelo recomendado para vender
 
@@ -150,7 +158,7 @@ Todos os segredos relevantes ficam em `.env` na VPS e nunca no GitHub:
 
 - OpenRouter
 - GitHub webhook secret
-- GitHub token de leitura
+- GitHub App client secret, app private key e webhook secret
 - Telegram bot token/chat
 - Evolution API key
 - URL publica, secrets de assinatura, banco Postgres e credenciais criptografadas de providers
@@ -168,13 +176,11 @@ O backend usa login local com `kb_users`, senha via `crypto.scrypt` e JWT statel
 
 O admin inicial é criado por `KB_ADMIN_EMAIL` e `KB_ADMIN_PASSWORD`. Configure também `KB_DATABASE_URL`, `KB_JWT_ACCESS_SECRET`, `KB_JWT_REFRESH_SECRET`, `KB_CREDENTIALS_ENCRYPTION_KEY` (base64 de 32 bytes), `KB_INTERNAL_SERVICE_TOKEN`, `KB_ALLOWED_ORIGINS`, `KB_BODY_LIMIT` e `KB_TRUST_PROXY` quando estiver atrás de proxy.
 
-Postgres é a fonte de dados da API HTTP multiusuário. Usuários novos começam sem workspaces, projetos ou notas; esses registros são criados quando o usuário configura integrações ou quando uma ingestão autenticada/webhook resolvido grava dados. As tabelas principais são `kb_users`, `kb_workspaces`, `kb_projects`, `kb_notes`, `kb_note_links`, `kb_attachments`, `kb_conversation_states`, `kb_reminder_dispatch_state`, `kb_external_identities`, `kb_integration_credentials` e `kb_webhook_events`.
+Postgres é a fonte de dados da API HTTP multiusuário. Usuários novos começam sem workspaces, projetos ou notas; esses registros são criados quando o usuário configura integrações ou quando uma ingestão autenticada/webhook resolvido grava dados. As tabelas principais são `kb_users`, `kb_workspaces`, `kb_projects`, `kb_notes`, `kb_note_links`, `kb_attachments`, `kb_conversation_states`, `kb_reminder_dispatch_state`, `kb_external_identities`, `kb_integration_credentials`, `kb_integration_connection_sessions` e `kb_webhook_events`.
 
-O frontend expõe `/settings/integrations` para salvar, mascarar e revogar credenciais por `user + workspace + provider`. Segredos são gravados em `kb_integration_credentials.encrypted_config` com AES-256-GCM e nunca são retornados nas respostas do navegador. Ao revogar uma credencial, o backend substitui o payload criptografado por um marcador sem segredo e mantém apenas o status/histórico de revogação.
+O frontend expõe `/settings/integrations` com fluxos guiados para `github-app`, `whatsapp`, `telegram`, `ai-review` e `ai-conversation`. A tela não pede JSON, tokens, `jid`, API key, modelo de IA ou nome de instância: o backend usa `KB_GITHUB_APP_*`, `EVOLUTION_*`, `KB_TELEGRAM_*`, `KB_REVIEW_AI_*` e `KB_CONVERSATION_AI_*`, cria uma sessão curta em `kb_integration_connection_sessions` quando há pareamento por código, e grava a credencial final criptografada em `kb_integration_credentials.encrypted_config`. Ao revogar uma credencial, o backend substitui o payload criptografado por um marcador sem segredo e mantém apenas o status/histórico de revogação.
 
-O payload de credenciais é validado com Zod por provider. `config` aceita apenas as chaves esperadas para cada integração, com campos obrigatórios específicos como `botToken` no Telegram, `apiUrl/apiKey/instanceName` no Evolution, `provider/apiKey/model` nas integrações de IA, `token` no GitHub e `installationId` no GitHub App. `publicMetadata` aceita somente campos públicos conhecidos como `label`, e identidades externas só podem ser vinculadas aos providers permitidos (`telegram`, `whatsapp`, `github` ou `github-app`) sem reassociar uma identidade que já pertença a outro usuário.
-
-Webhooks externos nunca usam `userId` vindo do payload. O fluxo aceito é: validar assinatura/token do provider, extrair identidade externa confiavel, buscar `kb_external_identities`, resolver `user_id` e gravar somente para esse usuario. Eventos brutos sao registrados em `kb_webhook_events` como `rejected`, `resolved`, `processed` ou `failed`. Para GitHub, o modelo principal é GitHub App com `X-Hub-Signature-256` e `installation.id` vinculado como `provider=github-app`, `identityType=installation_id`.
+Webhooks externos nunca usam `userId` vindo do payload. O fluxo aceito é: validar assinatura/token do provider, reconhecer `/kb conectar <codigo>` antes da resolução normal do WhatsApp ou Telegram, extrair identidade externa confiavel, buscar `kb_external_identities`, resolver `user_id` e gravar somente para esse usuario. Eventos brutos sao registrados em `kb_webhook_events` como `rejected`, `resolved`, `processed` ou `failed`, com `authorization`, `cookie`, `x-hub-signature-256`, `x-telegram-bot-api-secret-token`, `x-kb-webhook-token`, `apikey`, `token`, `secret`, `apiKey` e equivalentes recursivos redigidos antes da persistência. Para GitHub, o modelo é GitHub App com `X-Hub-Signature-256` e `installation.id` vinculado como `provider=github-app`, `identityType=installation_id`; o provider legado `github` não é aceito.
 
 Auth e webhooks têm rate limit em memoria por IP. O parser HTTP usa limite explicito de body e preserva `rawBody` para validar assinatura de provider.
 
@@ -186,7 +192,12 @@ Endpoints principais:
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
 - `GET /api/integrations?workspaceSlug=...`
-- `PUT /api/integrations/:provider`
+- `POST /api/integrations/:provider/connect`
+- `GET /api/integrations/github-app/callback`
+- `GET /api/integrations/:provider/sessions/:sessionId`
+- `POST /api/integrations/:provider/test`
+- `GET /api/integrations/github-app/repositories`
+- `POST /api/integrations/github-app/repositories`
 - `DELETE /api/integrations/:provider`
 - `POST /api/internal/integrations/:provider/resolve`
 - `POST /api/internal/n8n/ingest`
@@ -267,6 +278,12 @@ Endpoints HTTP principais:
 - `GET /api/health`
 - `GET /api/dashboard`
 - `GET /api/integrations`
+- `POST /api/integrations/:provider/connect`
+- `GET /api/integrations/github-app/callback`
+- `GET /api/integrations/:provider/sessions/:sessionId`
+- `POST /api/integrations/:provider/test`
+- `GET /api/integrations/github-app/repositories`
+- `POST /api/integrations/github-app/repositories`
 - `GET /api/auth/me`
 - `GET /api/notes/:id`
 - `GET|POST /api/query`
@@ -275,6 +292,7 @@ Endpoints HTTP principais:
 - `POST /api/conversation`
 - `POST /api/webhooks/github/push`
 - `POST /api/webhooks/whatsapp`
+- `POST /api/webhooks/telegram`
 - `POST /api/internal/n8n/ingest`
 - `POST /api/internal/n8n/query`
 - `POST /api/internal/n8n/conversation`

@@ -1,5 +1,5 @@
 import type { Dashboard, DashboardPayload } from './models/dashboard';
-import type { IntegrationsResponse } from './models/integration';
+import type { GithubRepositoriesResponse, IntegrationConnectionResponse, IntegrationConnectionSession, IntegrationsResponse, IntegrationTestResponse } from './models/integration';
 import type { NoteDetail } from './models/note';
 import type { QueryResponse } from './models/query';
 import { normalizeDashboard } from './normalizers/dashboard';
@@ -51,28 +51,41 @@ export function fetchIntegrations(): Promise<IntegrationsResponse> {
   return request<IntegrationsResponse>('/api/integrations');
 }
 
-export function saveIntegration(params: {
-  provider: string;
-  workspaceSlug: string;
-  config: Record<string, string>;
-  publicMetadata?: Record<string, unknown>;
-  externalIdentities?: Array<{ provider: string; externalId: string }>;
-}) {
-  return request(`/api/integrations/${encodeURIComponent(params.provider)}`, {
-    method: 'PUT',
+export function connectIntegration(params: { provider: string; workspaceSlug: string }): Promise<IntegrationConnectionResponse> {
+  return request<IntegrationConnectionResponse>(`/api/integrations/${encodeURIComponent(params.provider)}/connect`, {
+    method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      workspaceSlug: params.workspaceSlug,
-      config: params.config,
-      publicMetadata: params.publicMetadata || {},
-      externalIdentities: params.externalIdentities || [],
-    }),
+    body: JSON.stringify({ workspaceSlug: params.workspaceSlug }),
   });
+}
+
+export function fetchIntegrationSession(params: { provider: string; sessionId: string }): Promise<{ ok: true; session: IntegrationConnectionSession }> {
+  return request<{ ok: true; session: IntegrationConnectionSession }>(
+    `/api/integrations/${encodeURIComponent(params.provider)}/sessions/${encodeURIComponent(params.sessionId)}`,
+  );
 }
 
 export function revokeIntegration(provider: string, workspaceSlug: string) {
   const search = new URLSearchParams({ workspaceSlug });
   return request(`/api/integrations/${encodeURIComponent(provider)}?${search.toString()}`, { method: 'DELETE' });
+}
+
+export function testIntegration(provider: string, workspaceSlug: string): Promise<IntegrationTestResponse> {
+  const search = new URLSearchParams({ workspaceSlug });
+  return request<IntegrationTestResponse>(`/api/integrations/${encodeURIComponent(provider)}/test?${search.toString()}`, { method: 'POST' });
+}
+
+export function fetchGithubRepositories(workspaceSlug: string): Promise<GithubRepositoriesResponse> {
+  const search = new URLSearchParams({ workspaceSlug });
+  return request<GithubRepositoriesResponse>(`/api/integrations/github-app/repositories?${search.toString()}`);
+}
+
+export function saveGithubRepositories(workspaceSlug: string, repositories: string[]) {
+  return request('/api/integrations/github-app/repositories', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ workspaceSlug, repositories }),
+  });
 }
 
 export async function fetchNote(id: string): Promise<NoteDetail> {

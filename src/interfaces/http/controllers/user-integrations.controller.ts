@@ -1,17 +1,25 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { AuthService, type AuthenticatedUser } from '../../../application/auth.js';
+import { IntegrationConnectionService } from '../../../application/integration-connections.js';
 import { IntegrationCredentialService } from '../../../application/credentials.js';
 import { CurrentUser } from '../auth.decorators.js';
 import { AccessTokenAuthGuard, TrustedOriginGuard } from '../auth.guards.js';
 import {
-  parseSaveIntegrationCredentialBody,
-  providerParamSchema,
-  saveIntegrationCredentialBodySchema,
+  connectIntegrationBodySchema,
+  githubAppCallbackQuerySchema,
+  githubRepositoriesBodySchema,
+  guidedProviderParamSchema,
+  aiProviderParamSchema,
+  sessionParamSchema,
   workspaceQuerySchema,
-  type ProviderParam,
-  type SaveIntegrationCredentialBodyInput,
+  type AiProviderParam,
+  type ConnectIntegrationBody,
+  type GithubAppCallbackQuery,
+  type GithubRepositoriesBody,
+  type GuidedProviderParam,
+  type SessionParam,
   type WorkspaceQuery,
 } from '../dto/integration-credentials.dto.js';
 import { accessTokenFromRequest, assertTrustedBrowserOrigin } from '../http-security.js';
@@ -23,6 +31,7 @@ export class UserIntegrationsController {
   constructor(
     private readonly auth: AuthService,
     private readonly credentials: IntegrationCredentialService,
+    private readonly connections: IntegrationConnectionService,
   ) {}
 
   @Get()
@@ -35,36 +44,83 @@ export class UserIntegrationsController {
     return this.credentials.list(user.id, query.workspaceSlug);
   }
 
-  @Put(':provider')
+  @Post(':provider/connect')
   @UseGuards(TrustedOriginGuard)
-  async save(
-    @Param(new ZodValidationPipe(providerParamSchema, 'provider_not_supported')) params: ProviderParam,
-    @Body(new ZodValidationPipe(saveIntegrationCredentialBodySchema, 'invalid_integration_credential_payload')) body: SaveIntegrationCredentialBodyInput,
+  async connect(
+    @Param(new ZodValidationPipe(guidedProviderParamSchema, 'provider_not_supported')) params: GuidedProviderParam,
+    @Body(new ZodValidationPipe(connectIntegrationBodySchema, 'invalid_integration_connection_payload')) body: ConnectIntegrationBody,
     @CurrentUser() currentUser: AuthenticatedUser,
     @Req() request: Request,
   ) {
     assertTrustedBrowserOrigin(request);
     const user = currentUser || await this.auth.authenticateAccessToken(accessTokenFromRequest(request));
-    let parsedBody;
-    try {
-      parsedBody = parseSaveIntegrationCredentialBody(params.provider, body);
-    } catch {
-      throw new BadRequestException('invalid_integration_config');
-    }
-    return this.credentials.save({
+    return this.connections.connect({ userId: user.id, workspaceSlug: body.workspaceSlug, provider: params.provider });
+  }
+
+  @Get('github-app/callback')
+  async githubAppCallback(
+    @Query(new ZodValidationPipe(githubAppCallbackQuerySchema, 'invalid_github_app_callback')) query: GithubAppCallbackQuery,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    const user = currentUser || await this.auth.authenticateAccessToken(accessTokenFromRequest(request));
+    return this.connections.completeGithub({
       userId: user.id,
-      workspaceSlug: parsedBody.workspaceSlug,
-      provider: params.provider,
-      config: parsedBody.config,
-      publicMetadata: parsedBody.publicMetadata,
-      externalIdentities: parsedBody.externalIdentities,
+      state: query.state,
+      code: query.code,
+      installationId: query.installation_id,
     });
+  }
+
+  @Post(':provider/test')
+  @UseGuards(TrustedOriginGuard)
+  async test(
+    @Param(new ZodValidationPipe(aiProviderParamSchema, 'provider_not_supported')) params: AiProviderParam,
+    @Query(new ZodValidationPipe(workspaceQuerySchema, 'invalid_workspace_query')) query: WorkspaceQuery,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    assertTrustedBrowserOrigin(request);
+    const user = currentUser || await this.auth.authenticateAccessToken(accessTokenFromRequest(request));
+    return this.credentials.test(user.id, query.workspaceSlug, params.provider);
+  }
+
+  @Get('github-app/repositories')
+  async listGithubRepositories(
+    @Query(new ZodValidationPipe(workspaceQuerySchema, 'invalid_workspace_query')) query: WorkspaceQuery,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    const user = currentUser || await this.auth.authenticateAccessToken(accessTokenFromRequest(request));
+    return this.connections.listGithubRepositories({ userId: user.id, workspaceSlug: query.workspaceSlug });
+  }
+
+  @Post('github-app/repositories')
+  @UseGuards(TrustedOriginGuard)
+  async saveGithubRepositories(
+    @Body(new ZodValidationPipe(githubRepositoriesBodySchema, 'invalid_github_repositories_payload')) body: GithubRepositoriesBody,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    assertTrustedBrowserOrigin(request);
+    const user = currentUser || await this.auth.authenticateAccessToken(accessTokenFromRequest(request));
+    return this.connections.saveGithubRepositories({ userId: user.id, workspaceSlug: body.workspaceSlug, repositories: body.repositories });
+  }
+
+  @Get(':provider/sessions/:sessionId')
+  async session(
+    @Param(new ZodValidationPipe(sessionParamSchema, 'connection_session_not_found')) params: SessionParam,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    const user = currentUser || await this.auth.authenticateAccessToken(accessTokenFromRequest(request));
+    return this.connections.session({ userId: user.id, provider: params.provider, sessionId: params.sessionId });
   }
 
   @Delete(':provider')
   @UseGuards(TrustedOriginGuard)
   async revoke(
-    @Param(new ZodValidationPipe(providerParamSchema, 'provider_not_supported')) params: ProviderParam,
+    @Param(new ZodValidationPipe(guidedProviderParamSchema, 'provider_not_supported')) params: GuidedProviderParam,
     @Query(new ZodValidationPipe(workspaceQuerySchema, 'invalid_workspace_query')) query: WorkspaceQuery,
     @CurrentUser() currentUser: AuthenticatedUser,
     @Req() request: Request,

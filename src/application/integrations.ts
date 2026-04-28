@@ -43,7 +43,8 @@ export function buildIntegrationStatuses(input: {
   const githubEnv = {
     KB_GITHUB_APP_INSTALL_URL: Boolean(environment.githubAppInstallUrl),
     KB_GITHUB_APP_WEBHOOK_SECRET: secretConfigured(environment.githubWebhookSecret),
-    KB_GITHUB_API_TOKEN: secretConfigured(environment.githubApiToken),
+    KB_GITHUB_APP_ID: Boolean(environment.githubAppId),
+    KB_GITHUB_APP_PRIVATE_KEY: secretConfigured(environment.githubAppPrivateKey),
   };
   const githubFlags = [...Object.values(githubEnv), repos.length > 0];
 
@@ -82,17 +83,18 @@ export function buildIntegrationStatuses(input: {
 
   const reviewAiActive = environment.reviewAiProvider !== AiProvider.None;
   const conversationAiActive = environment.conversationAiProvider !== AiProvider.None;
-  const aiEnv = {
+  const reviewAiEnv = {
     KB_REVIEW_AI_PROVIDER: reviewAiActive,
     KB_REVIEW_AI_BASE_URL: reviewAiActive ? Boolean(environment.reviewAiBaseUrl) : true,
     KB_REVIEW_AI_MODEL: reviewAiActive ? Boolean(environment.reviewAiModel) : true,
     KB_REVIEW_AI_API_KEY: reviewAiActive ? secretConfigured(environment.reviewAiApiKey) : true,
+  };
+  const conversationAiEnv = {
     KB_CONVERSATION_AI_PROVIDER: conversationAiActive,
     KB_CONVERSATION_AI_BASE_URL: conversationAiActive ? Boolean(environment.conversationAiBaseUrl) : true,
     KB_CONVERSATION_AI_MODEL: conversationAiActive ? Boolean(environment.conversationAiModel) : true,
     KB_CONVERSATION_AI_API_KEY: conversationAiActive ? secretConfigured(environment.conversationAiApiKey) : true,
   };
-  const aiFlags = [reviewAiActive || conversationAiActive, ...Object.values(aiEnv)];
 
   return {
     ok: true,
@@ -101,7 +103,7 @@ export function buildIntegrationStatuses(input: {
       {
         id: IntegrationProvider.GithubApp,
         name: 'GitHub App',
-        description: 'Instalacao do app, webhook assinado e token de leitura para reviews de push.',
+        description: 'Instalacao do app, webhook assinado e token de instalacao para reviews de push.',
         status: statusFromFlags(githubFlags),
         requiredEnv: Object.keys(githubEnv),
         configuredEnv: configuredEnv(githubEnv),
@@ -114,7 +116,7 @@ export function buildIntegrationStatuses(input: {
         ],
         warnings: [
           !environment.githubWebhookSecret ? 'Webhook do GitHub sem secret configurado.' : '',
-          !environment.githubApiToken ? 'Token de API do GitHub ausente para coletar diffs e commits.' : '',
+          !environment.githubAppId || !environment.githubAppPrivateKey ? 'GitHub App sem credenciais para gerar token de instalacao.' : '',
           repos.length === 0 ? 'Workspace sem repositorio vinculado.' : '',
         ].filter(Boolean),
       },
@@ -176,22 +178,40 @@ export function buildIntegrationStatuses(input: {
         ].filter(Boolean),
       },
       {
-        id: 'ai',
-        name: 'AI',
-        description: 'Providers e modelos para reviews de codigo e conversa no WhatsApp.',
-        status: statusFromFlags(aiFlags),
-        requiredEnv: Object.keys(aiEnv),
-        configuredEnv: configuredEnv(aiEnv),
-        missingEnv: missingEnv(aiEnv),
+        id: IntegrationProvider.AiReview,
+        name: 'IA de Review',
+        description: 'Provider e modelo gerenciados pelo servidor para reviews de codigo.',
+        status: statusFromFlags([reviewAiActive, ...Object.values(reviewAiEnv)]),
+        requiredEnv: Object.keys(reviewAiEnv),
+        configuredEnv: configuredEnv(reviewAiEnv),
+        missingEnv: missingEnv(reviewAiEnv),
         links: [],
         checklist: [
-          'Escolher provider diferente de none quando IA estiver habilitada.',
-          'Definir modelo e base URL para cada fluxo ativo.',
-          'Configurar a API key correspondente ao provider.',
+          'Escolher provider diferente de none quando review por IA estiver habilitado.',
+          'Definir modelo e base URL do review.',
+          'Configurar a API key correspondente.',
         ],
         warnings: [
-          !reviewAiActive && !conversationAiActive ? 'Providers de IA estao como none.' : '',
+          !reviewAiActive ? 'Provider de review esta como none.' : '',
           reviewAiActive && !environment.reviewAiApiKey ? 'Review AI ativo sem API key.' : '',
+        ].filter(Boolean),
+      },
+      {
+        id: IntegrationProvider.AiConversation,
+        name: 'IA de Conversa',
+        description: 'Provider e modelo gerenciados pelo servidor para extracao em conversas.',
+        status: statusFromFlags([conversationAiActive, ...Object.values(conversationAiEnv)]),
+        requiredEnv: Object.keys(conversationAiEnv),
+        configuredEnv: configuredEnv(conversationAiEnv),
+        missingEnv: missingEnv(conversationAiEnv),
+        links: [],
+        checklist: [
+          'Escolher provider diferente de none quando conversa por IA estiver habilitada.',
+          'Definir modelo e base URL da conversa.',
+          'Configurar a API key correspondente.',
+        ],
+        warnings: [
+          !conversationAiActive ? 'Provider de conversa esta como none.' : '',
           conversationAiActive && !environment.conversationAiApiKey ? 'Conversation AI ativo sem API key.' : '',
         ].filter(Boolean),
       },

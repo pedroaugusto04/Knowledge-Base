@@ -8,3 +8,4 @@ export { BuildReminderDispatchUseCase } from './reminders/build-reminder-dispatc
 export { MarkReminderAsSentUseCase } from './reminders/mark-reminder-as-sent.use-case.js';
 export { HandleGithubPushUseCase } from './webhooks/github/handle-github-push.use-case.js';
 export { HandleWhatsappWebhookUseCase } from './webhooks/whatsapp/handle-whatsapp-webhook.use-case.js';
+export { HandleTelegramWebhookUseCase } from './webhooks/telegram/handle-telegram-webhook.use-case.js';

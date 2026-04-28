@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { extractConversationFields } from '../../../adapters/ai.js';
 import { readEnvironment } from '../../../adapters/environment.js';
 import { type ConversationInput, conversationStateSchema, type ConversationState } from '../../../contracts/conversation.js';
-import { ConversationConfidence, ConversationPhase, KnowledgeKind, QueryMode } from '../../../contracts/enums.js';
+import { CredentialRecordStatus, ConversationConfidence, ConversationPhase, IntegrationProvider, KnowledgeKind, QueryMode } from '../../../contracts/enums.js';
 import { slugify } from '../../../domain/strings.js';
 import { normalizeDate, normalizeTime, nowIso } from '../../../domain/time.js';
 import {
@@ -23,6 +23,7 @@ import {
   parseKnowledgeCommand,
 } from '../../utils/conversation-flow.utils.js';
 import { ContentQueryRepository, ContentRepository } from '../../ports/content.repository.js';
+import { CredentialRepository } from '../../ports/integrations.repository.js';
 import { ConversationStateRepository } from '../../ports/workflow-state.repository.js';
 import { IngestEntryUseCase } from '../ingest/ingest-entry.use-case.js';
 import { QueryKnowledgeUseCase } from '../query/query-knowledge.use-case.js';
@@ -34,6 +35,7 @@ export class ProcessConversationUseCase {
     private readonly contentQueryRepository: ContentQueryRepository,
     private readonly conversationStates: ConversationStateRepository,
     private readonly ingestEntryUseCase: IngestEntryUseCase,
+    private readonly credentials?: CredentialRepository,
   ) {}
 
   async execute(input: ConversationInput, userId: string, workspaceSlug = 'default') {
@@ -45,6 +47,7 @@ export class ProcessConversationUseCase {
       contentQueryRepository: this.contentQueryRepository,
       conversationStates: this.conversationStates,
       ingestEntryUseCase: this.ingestEntryUseCase,
+      credentials: this.credentials,
     });
   }
 }
@@ -57,6 +60,7 @@ async function processConversationInPostgres(args: {
   contentQueryRepository: ContentQueryRepository;
   conversationStates: ConversationStateRepository;
   ingestEntryUseCase: IngestEntryUseCase;
+  credentials?: CredentialRepository;
 }) {
   const environment = readEnvironment();
   if (environment.allowedGroupId && args.input.groupId !== environment.allowedGroupId) {
@@ -94,9 +98,13 @@ async function processConversationInPostgres(args: {
   }
 
   if (current.phase === ConversationPhase.Idle) {
+    const aiCredential = args.credentials
+      ? await args.credentials.findCredential(args.userId, args.workspaceSlug, IntegrationProvider.AiConversation)
+      : null;
+    const aiEnabled = Boolean(aiCredential && aiCredential.status === CredentialRecordStatus.Connected && !aiCredential.revokedAt);
     const aiExtracted =
       args.input.agentResult?.extracted ||
-      (await extractConversationFields(
+      (aiEnabled ? await extractConversationFields(
         {
           provider: environment.conversationAiProvider,
           baseUrl: environment.conversationAiBaseUrl,
@@ -107,7 +115,7 @@ async function processConversationInPostgres(args: {
           messageText: message,
           projectSlugs: projects.map((project) => project.projectSlug),
         },
-      )) ||
+      ) : null) ||
       {};
     const nextState: ConversationState = {
       ...emptyConversationState,

@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 import { readEnvironment } from '../adapters/environment.js';
 import {
@@ -8,13 +8,19 @@ import {
   ExternalIdentityProvider,
   IntegrationProvider,
   StoredIntegrationStatus,
-  integrationProviderValues,
 } from '../contracts/enums.js';
 import type { IntegrationCredentialRecord } from './models/repository-records.models.js';
 import { CredentialRepository, ExternalIdentityRepository } from './ports/integrations.repository.js';
 
 export { IntegrationProvider };
-export const integrationProviders = integrationProviderValues;
+export const guidedProviders = [
+  IntegrationProvider.GithubApp,
+  IntegrationProvider.Whatsapp,
+  IntegrationProvider.Telegram,
+  IntegrationProvider.AiReview,
+  IntegrationProvider.AiConversation,
+] as const;
+type GuidedIntegrationProvider = typeof guidedProviders[number];
 
 export type EncryptedConfig = {
   iv: string;
@@ -30,23 +36,24 @@ export type StoredIntegration = {
   status: StoredIntegrationStatus;
   workspaceSlug: string;
   publicMetadata: Record<string, unknown>;
-  maskedConfig: Record<string, string>;
+  primaryAction: { type: 'connect' | 'revoke' | 'none'; label: string } | null;
+  steps: string[];
+  lastError: string | null;
+  connectedAccount: string | null;
   updatedAt: string | null;
   revokedAt: string | null;
 };
 
-const providerLabels: Record<IntegrationProvider, { name: string; description: string }> = {
-  [IntegrationProvider.Telegram]: { name: 'Telegram', description: 'Credenciais do usuario para vincular bot, chat ou identidade externa do Telegram.' },
-  [IntegrationProvider.Whatsapp]: { name: 'WhatsApp', description: 'Credenciais do usuario para vincular numero, grupo ou identidade externa do WhatsApp.' },
-  [IntegrationProvider.Evolution]: { name: 'Evolution API', description: 'Credenciais do usuario para operar uma instancia Evolution vinculada ao seu workspace.' },
-  [IntegrationProvider.AiReview]: { name: 'AI Review', description: 'Chave, provider e modelo usados pelo usuario para reviews assistidos por IA.' },
-  [IntegrationProvider.AiConversation]: { name: 'AI Conversation', description: 'Chave, provider e modelo usados pelo usuario para fluxos de conversa assistidos por IA.' },
-  [IntegrationProvider.Github]: { name: 'GitHub Token', description: 'Token do usuario para acesso a repositorios e operacoes do GitHub.' },
-  [IntegrationProvider.GithubApp]: { name: 'GitHub App', description: 'Dados de instalacao do GitHub App vinculados ao usuario no workspace atual.' },
+const providerLabels: Record<GuidedIntegrationProvider, { name: string; description: string }> = {
+  [IntegrationProvider.GithubApp]: { name: 'GitHub App', description: 'Instalacao vinculada ao usuario para reviews de push e selecao de repositorios.' },
+  [IntegrationProvider.Whatsapp]: { name: 'WhatsApp', description: 'Grupo autorizado para captura e conversa pelo transporte gerenciado.' },
+  [IntegrationProvider.Telegram]: { name: 'Telegram', description: 'Chat vinculado ao bot gerenciado para notificacoes e comandos.' },
+  [IntegrationProvider.AiReview]: { name: 'IA de Review', description: 'Analise de pushes com provider e modelo configurados pelo servidor.' },
+  [IntegrationProvider.AiConversation]: { name: 'IA de Conversa', description: 'Extracao assistida das mensagens de conversa com configuracao gerenciada.' },
 };
 
-function isProvider(value: string): value is IntegrationProvider {
-  return integrationProviders.includes(value as IntegrationProvider);
+function isGuidedProvider(value: string): value is GuidedIntegrationProvider {
+  return guidedProviders.includes(value as GuidedIntegrationProvider);
 }
 
 function encryptionKey(): Buffer {
@@ -76,12 +83,9 @@ export function decryptConfig(encrypted: unknown): Record<string, unknown> {
   return JSON.parse(cleartext) as Record<string, unknown>;
 }
 
-function configKeysFromMetadata(metadata: Record<string, unknown>): string[] {
-  return Array.isArray(metadata.configKeys) ? metadata.configKeys.filter((key): key is string => typeof key === 'string') : [];
-}
-
-function publicCredential(record: IntegrationCredentialRecord | null, provider: IntegrationProvider, workspaceSlug: string): StoredIntegration {
+function publicCredential(record: IntegrationCredentialRecord | null, provider: GuidedIntegrationProvider, workspaceSlug: string): StoredIntegration {
   const label = providerLabels[provider];
+  const connectAction = { type: 'connect' as const, label: provider === IntegrationProvider.GithubApp ? 'Conectar GitHub' : provider.startsWith('ai-') ? 'Ativar' : `Conectar ${label.name}` };
   if (!record) {
     return {
       provider,
@@ -90,56 +94,80 @@ function publicCredential(record: IntegrationCredentialRecord | null, provider: 
       status: StoredIntegrationStatus.Missing,
       workspaceSlug,
       publicMetadata: {},
-      maskedConfig: {},
+      primaryAction: connectAction,
+      steps: defaultSteps(provider),
+      lastError: null,
+      connectedAccount: null,
       updatedAt: null,
       revokedAt: null,
     };
   }
+  const connected = record.status === CredentialRecordStatus.Connected && !record.revokedAt;
 
   return {
     provider,
     name: label.name,
     description: label.description,
-    status: record.status === CredentialRecordStatus.Connected && !record.revokedAt ? StoredIntegrationStatus.Connected : StoredIntegrationStatus.Revoked,
+    status: connected ? StoredIntegrationStatus.Connected : StoredIntegrationStatus.Revoked,
     workspaceSlug,
     publicMetadata: record.publicMetadata,
-    maskedConfig: Object.fromEntries(configKeysFromMetadata(record.publicMetadata).map((key) => [key, '********'])),
+    primaryAction: connected ? { type: 'revoke', label: provider.startsWith('ai-') ? 'Desativar' : 'Revogar' } : connectAction,
+    steps: connected ? connectedSteps(provider) : ['Credencial revogada.', provider.startsWith('ai-') ? 'Ative novamente para reabilitar.' : 'Conecte novamente para reativar.'],
+    lastError: typeof record.publicMetadata.lastError === 'string' ? record.publicMetadata.lastError : null,
+    connectedAccount: typeof record.publicMetadata.connectedAccount === 'string' ? record.publicMetadata.connectedAccount : null,
     updatedAt: record.updatedAt,
     revokedAt: record.revokedAt,
   };
-}
-
-function normalizeConfig(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new BadRequestException('config_must_be_object');
-  return value as Record<string, unknown>;
-}
-
-function sanitizePublicMetadata(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  const metadata = value as Record<string, unknown>;
-  return Object.fromEntries(
-    Object.entries(metadata).filter(([key, entry]) => key === 'label' && typeof entry === 'string' && entry.trim().length > 0),
-  );
-}
-
-const allowedExternalIdentities: Partial<Record<IntegrationProvider, ExternalIdentityProvider[]>> = {
-  [IntegrationProvider.Telegram]: [ExternalIdentityProvider.Telegram],
-  [IntegrationProvider.Whatsapp]: [ExternalIdentityProvider.Whatsapp],
-  [IntegrationProvider.Evolution]: [ExternalIdentityProvider.Whatsapp],
-  [IntegrationProvider.Github]: [ExternalIdentityProvider.Github],
-  [IntegrationProvider.GithubApp]: [ExternalIdentityProvider.GithubApp],
-};
-
-function canAttachExternalIdentity(provider: IntegrationProvider, identityProvider: string): boolean {
-  return Boolean(allowedExternalIdentities[provider]?.includes(identityProvider as ExternalIdentityProvider));
 }
 
 function defaultIdentityType(provider: string): string {
   if (provider === ExternalIdentityProvider.Telegram) return 'chat_id';
   if (provider === ExternalIdentityProvider.Whatsapp) return 'jid';
   if (provider === ExternalIdentityProvider.GithubApp) return 'installation_id';
-  if (provider === ExternalIdentityProvider.Github) return 'account_id';
   return 'external_id';
+}
+
+function defaultSteps(provider: GuidedIntegrationProvider): string[] {
+  if (provider === IntegrationProvider.Whatsapp) return ['Inicie a conexao.', 'Envie o codigo no grupo do WhatsApp.'];
+  if (provider === IntegrationProvider.Telegram) return ['Inicie a conexao.', 'Envie o codigo no chat do Telegram.'];
+  if (provider === IntegrationProvider.GithubApp) return ['Instale ou autorize o GitHub App.', 'Selecione os repositorios depois da conexao.'];
+  return ['Ative o recurso.', 'Use testar para validar a configuracao gerenciada.'];
+}
+
+function connectedSteps(provider: GuidedIntegrationProvider): string[] {
+  if (provider === IntegrationProvider.GithubApp) return ['GitHub App conectado.', 'Selecione os repositorios do workspace.'];
+  if (provider === IntegrationProvider.Telegram) return ['Chat do Telegram conectado.'];
+  if (provider.startsWith('ai-')) return ['Recurso ativo para este workspace.'];
+  return ['Integracao conectada.'];
+}
+
+function aiEnvStatus(provider: string) {
+  const environment = readEnvironment();
+  const review = provider === IntegrationProvider.AiReview;
+  const flags = review
+    ? {
+        provider: environment.reviewAiProvider,
+        baseUrl: environment.reviewAiBaseUrl,
+        model: environment.reviewAiModel,
+        apiKey: environment.reviewAiApiKey,
+      }
+    : {
+        provider: environment.conversationAiProvider,
+        baseUrl: environment.conversationAiBaseUrl,
+        model: environment.conversationAiModel,
+        apiKey: environment.conversationAiApiKey,
+      };
+  const missing = [
+    flags.provider === 'none' ? 'provider' : '',
+    !flags.baseUrl ? 'baseUrl' : '',
+    !flags.model ? 'model' : '',
+    !flags.apiKey ? 'apiKey' : '',
+  ].filter(Boolean);
+  return {
+    configured: missing.length === 0,
+    missing,
+    provider: flags.provider,
+  };
 }
 
 @Injectable()
@@ -154,64 +182,33 @@ export class IntegrationCredentialService {
     return {
       ok: true as const,
       workspaceSlug,
-      integrations: integrationProviders.map((provider) => publicCredential(records.find((record) => record.provider === provider) || null, provider, workspaceSlug)),
+      integrations: guidedProviders.map((provider) => publicCredential(records.find((record) => record.provider === provider) || null, provider, workspaceSlug)),
     };
-  }
-
-  async save(input: {
-    userId: string;
-    workspaceSlug?: string;
-    provider: string;
-    config: unknown;
-    publicMetadata?: unknown;
-    externalIdentities?: unknown;
-  }) {
-    if (!isProvider(input.provider)) throw new NotFoundException('provider_not_found');
-    const workspaceSlug = input.workspaceSlug || 'default';
-    const config = normalizeConfig(input.config);
-    const publicMetadata = {
-      ...sanitizePublicMetadata(input.publicMetadata),
-      configKeys: Object.keys(config),
-    };
-    const record = await this.credentials.upsertCredential({
-      userId: input.userId,
-      workspaceSlug,
-      provider: input.provider,
-      status: CredentialRecordStatus.Connected,
-      encryptedConfig: encryptConfig(config),
-      publicMetadata,
-    });
-
-    if (Array.isArray(input.externalIdentities)) {
-      for (const identity of input.externalIdentities) {
-        if (!identity || typeof identity !== 'object') continue;
-        const provider = String((identity as Record<string, unknown>).provider || '').trim();
-        const identityType = String((identity as Record<string, unknown>).identityType || defaultIdentityType(provider)).trim();
-        const externalId = String((identity as Record<string, unknown>).externalId || '').trim();
-        if (!provider || !identityType || !externalId) continue;
-        if (!canAttachExternalIdentity(input.provider, provider)) throw new BadRequestException('external_identity_not_allowed_for_provider');
-        const existing = await this.externalIdentities.findExternalIdentity(provider, identityType, externalId);
-        if (existing && existing.userId !== input.userId) throw new ConflictException('external_identity_already_bound');
-        await this.externalIdentities.upsertExternalIdentity({
-          userId: input.userId,
-          workspaceSlug,
-          provider,
-          identityType,
-          externalId,
-          credentialId: record.id,
-          metadata: {},
-          publicMetadata: {},
-        });
-      }
-    }
-
-    return { ok: true as const, integration: publicCredential(record, input.provider, workspaceSlug) };
   }
 
   async revoke(userId: string, workspaceSlug: string, provider: string) {
-    if (!isProvider(provider)) throw new NotFoundException('provider_not_found');
+    if (!isGuidedProvider(provider)) throw new NotFoundException('provider_not_found');
     const record = await this.credentials.revokeCredential(userId, workspaceSlug || 'default', provider, encryptConfig({ revoked: true }));
     return { ok: true as const, integration: publicCredential(record, provider, workspaceSlug || 'default') };
+  }
+
+  async test(userId: string, workspaceSlug: string, provider: string) {
+    if (provider !== IntegrationProvider.AiReview && provider !== IntegrationProvider.AiConversation) throw new NotFoundException('provider_not_found');
+    const status = aiEnvStatus(provider);
+    const record = await this.credentials.findCredential(userId, workspaceSlug || 'default', provider);
+    const active = Boolean(record && record.status === CredentialRecordStatus.Connected && !record.revokedAt);
+    return {
+      ok: true as const,
+      provider,
+      active,
+      configured: status.configured,
+      missing: status.missing,
+      message: !active
+        ? 'Recurso desativado neste workspace.'
+        : status.configured
+          ? 'Configuracao gerenciada pronta.'
+          : 'Configuracao gerenciada incompleta.',
+    };
   }
 
   async resolve(input: {
@@ -225,7 +222,7 @@ export class IntegrationCredentialService {
     if (!readEnvironment().internalServiceToken || token !== readEnvironment().internalServiceToken) {
       throw new UnauthorizedException('invalid_internal_token');
     }
-    if (!isProvider(input.provider)) throw new NotFoundException('provider_not_found');
+    if (!isGuidedProvider(input.provider)) throw new NotFoundException('provider_not_found');
     let userId = input.userId || '';
     if (!userId && input.externalIdentity) {
       const identityType = input.externalIdentity.identityType || defaultIdentityType(input.externalIdentity.provider);

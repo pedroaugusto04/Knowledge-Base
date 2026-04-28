@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 
 import { WebhookEventRepository } from '../../application/ports/webhook-events.repository.js';
+import { sanitizeWebhookHeaders, sanitizeWebhookValue } from '../../application/utils/webhook.utils.js';
 import { webhookEventFromRow } from './row.mappers.js';
 import { PostgresDatabase } from './database.js';
 
@@ -33,8 +34,8 @@ export class PostgresWebhookEventRepository extends WebhookEventRepository {
         input.status,
         input.resolvedUserId || null,
         JSON.stringify(input.externalIdentity || {}),
-        JSON.stringify(input.rawHeaders || {}),
-        JSON.stringify(input.rawPayload || {}),
+        JSON.stringify(sanitizeWebhookHeaders(input.rawHeaders || {})),
+        JSON.stringify(sanitizeWebhookValue(input.rawPayload || {})),
         input.error || '',
       ],
     );

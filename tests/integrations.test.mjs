@@ -34,7 +34,8 @@ function env(overrides = {}) {
     KB_PUBLIC_BASE_URL: 'https://kb.example.com',
     KB_GITHUB_APP_INSTALL_URL: 'https://github.com/apps/kb/installations/new',
     KB_GITHUB_APP_WEBHOOK_SECRET: 'github-secret-value',
-    KB_GITHUB_API_TOKEN: 'github-token-value',
+    KB_GITHUB_APP_ID: '12345',
+    KB_GITHUB_APP_PRIVATE_KEY: 'github-private-key-value',
     KB_WPP_PAIRING_URL: 'https://kb.example.com/connect-whatsapp',
     WPP_KB_GROUP_JID: '120363@g.us',
     KB_TELEGRAM_BOT_TOKEN: 'telegram-token-value',
@@ -62,7 +63,7 @@ test('integration status reports connected services without leaking secrets', ()
 
   const json = JSON.stringify(result);
   assert.equal(json.includes('github-secret-value'), false);
-  assert.equal(json.includes('github-token-value'), false);
+  assert.equal(json.includes('github-private-key-value'), false);
   assert.equal(json.includes('telegram-token-value'), false);
   assert.equal(json.includes('review-key-value'), false);
 });
@@ -72,7 +73,7 @@ test('integration status distinguishes partial and missing configuration', () =>
     environment: env({
       KB_PUBLIC_BASE_URL: '',
       KB_GITHUB_APP_WEBHOOK_SECRET: '',
-      KB_GITHUB_API_TOKEN: '',
+      KB_GITHUB_APP_ID: '',
       KB_TELEGRAM_BOT_TOKEN: '',
       KB_REVIEW_AI_API_KEY: '',
       KB_CONVERSATION_AI_API_KEY: '',
@@ -84,7 +85,8 @@ test('integration status distinguishes partial and missing configuration', () =>
   assert.equal(byId(partial, 'github-app').status, 'partial');
   assert.equal(byId(partial, 'webhooks').status, 'partial');
   assert.equal(byId(partial, 'telegram').status, 'partial');
-  assert.equal(byId(partial, 'ai').status, 'partial');
+  assert.equal(byId(partial, 'ai-review').status, 'partial');
+  assert.equal(byId(partial, 'ai-conversation').status, 'partial');
   assert.deepEqual(byId(partial, 'webhooks').missingEnv, ['KB_PUBLIC_BASE_URL']);
   assert.equal(byId(partial, 'webhooks').links[0].url, '/n8n/webhook/kb-github-push');
 
@@ -92,7 +94,8 @@ test('integration status distinguishes partial and missing configuration', () =>
     environment: env({
       KB_GITHUB_APP_INSTALL_URL: '',
       KB_GITHUB_APP_WEBHOOK_SECRET: '',
-      KB_GITHUB_API_TOKEN: '',
+      KB_GITHUB_APP_ID: '',
+      KB_GITHUB_APP_PRIVATE_KEY: '',
       KB_WPP_PAIRING_URL: '',
       EVOLUTION_API_URL: '',
       EVOLUTION_API_KEY: '',

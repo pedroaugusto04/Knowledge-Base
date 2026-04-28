@@ -3,6 +3,7 @@ import type {
   AttachmentRecord,
   ConversationStateRecord,
   ExternalIdentityRecord,
+  IntegrationConnectionSessionRecord,
   IntegrationCredentialRecord,
   KbUser,
   NoteRecord,
@@ -60,6 +61,23 @@ export function identityFromRow(row: Row): ExternalIdentityRecord {
     verifiedAt: row.verified_at ? nowIso(row.verified_at) : null,
     metadata: (row.metadata || {}) as Record<string, unknown>,
     publicMetadata: (row.public_metadata || {}) as Record<string, unknown>,
+    createdAt: nowIso(row.created_at),
+    updatedAt: nowIso(row.updated_at),
+  };
+}
+
+export function connectionSessionFromRow(row: Row): IntegrationConnectionSessionRecord {
+  return {
+    id: String(row.id),
+    userId: String(row.user_id),
+    workspaceSlug: String(row.workspace_slug || 'default'),
+    provider: String(row.provider),
+    stateHash: String(row.state_hash || ''),
+    verificationCodeHash: String(row.verification_code_hash || ''),
+    status: String(row.status || 'pending'),
+    metadata: (row.metadata || {}) as Record<string, unknown>,
+    expiresAt: nowIso(row.expires_at),
+    consumedAt: row.consumed_at ? nowIso(row.consumed_at) : null,
     createdAt: nowIso(row.created_at),
     updatedAt: nowIso(row.updated_at),
   };

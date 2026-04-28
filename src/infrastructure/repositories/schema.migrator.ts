@@ -62,6 +62,27 @@ export class PostgresSchemaMigrator extends SchemaMigrator {
       create unique index if not exists kb_external_identities_provider_type_external_idx
         on kb_external_identities (provider, identity_type, external_id);
 
+      create table if not exists kb_integration_connection_sessions (
+        id uuid primary key,
+        user_id uuid not null references kb_users(id) on delete cascade,
+        workspace_slug text not null default 'default',
+        provider text not null,
+        state_hash text not null,
+        verification_code_hash text not null,
+        status text not null default 'pending',
+        metadata jsonb not null default '{}'::jsonb,
+        expires_at timestamptz not null,
+        consumed_at timestamptz,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      );
+      create index if not exists kb_integration_connection_sessions_state_idx
+        on kb_integration_connection_sessions (provider, state_hash, status, expires_at);
+      create index if not exists kb_integration_connection_sessions_code_idx
+        on kb_integration_connection_sessions (provider, verification_code_hash, status, expires_at);
+      create index if not exists kb_integration_connection_sessions_user_idx
+        on kb_integration_connection_sessions (user_id, workspace_slug, provider, created_at desc);
+
       create table if not exists kb_workspaces (
         id uuid primary key,
         user_id uuid not null references kb_users(id) on delete cascade,

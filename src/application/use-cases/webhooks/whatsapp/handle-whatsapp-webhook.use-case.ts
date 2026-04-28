@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 
 import { readEnvironment } from '../../../../adapters/environment.js';
 import { ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
+import { extractWhatsappConnectionCode, IntegrationConnectionService } from '../../../integration-connections.js';
 import { ExternalIdentityRepository } from '../../../ports/integrations.repository.js';
 import { WebhookEventRepository } from '../../../ports/webhook-events.repository.js';
 import { extractWhatsappExternalId, normalizeHeaders } from '../../../utils/webhook.utils.js';
@@ -19,6 +20,7 @@ export class HandleWhatsappWebhookUseCase {
     private readonly ingestEntryUseCase: IngestEntryUseCase,
     private readonly externalIdentities: ExternalIdentityRepository,
     private readonly webhookEvents: WebhookEventRepository,
+    private readonly connections?: IntegrationConnectionService,
   ) {}
 
   async execute(input: WhatsappWebhookRequest) {
@@ -53,6 +55,20 @@ export class HandleWhatsappWebhookUseCase {
         error: 'missing_external_identity',
       });
       throw new UnauthorizedException('missing_external_identity');
+    }
+    const connectionCode = extractWhatsappConnectionCode(body);
+    if (connectionCode && this.connections) {
+      const result = await this.connections.completeWhatsappFromWebhook({ code: connectionCode, groupJid: externalId });
+      await this.webhookEvents.recordWebhookEvent({
+        provider: IntegrationProvider.Whatsapp,
+        eventType: 'connection',
+        status: WebhookEventStatus.Processed,
+        resolvedUserId: result.resolvedUserId,
+        externalIdentity,
+        rawHeaders: headers,
+        rawPayload: body,
+      });
+      return { ok: true, connected: true, resolvedUserId: result.resolvedUserId, workspaceSlug: result.workspaceSlug };
     }
     const identity = await this.externalIdentities.findExternalIdentity(ExternalIdentityProvider.Whatsapp, 'jid', externalId);
     if (!identity) {

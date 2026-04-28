@@ -101,22 +101,86 @@ function mockFetch() {
             status: 'connected',
             workspaceSlug: 'default',
             publicMetadata: { label: 'GitHub principal' },
-            maskedConfig: { token: '********' },
+            primaryAction: { type: 'revoke', label: 'Revogar' },
+            steps: ['Integracao conectada.'],
+            lastError: null,
+            connectedAccount: 'acme',
             updatedAt: '2026-04-27T10:00:00.000Z',
+            revokedAt: null,
+          },
+          {
+            provider: 'whatsapp',
+            name: 'WhatsApp',
+            description: 'Grupo autorizado para captura e conversa.',
+            status: 'missing',
+            workspaceSlug: 'default',
+            publicMetadata: {},
+            primaryAction: { type: 'connect', label: 'Conectar WhatsApp' },
+            steps: ['Inicie a conexao.', 'Envie o codigo no grupo do WhatsApp.'],
+            lastError: null,
+            connectedAccount: null,
+            updatedAt: null,
             revokedAt: null,
           },
           {
             provider: 'telegram',
             name: 'Telegram',
-            description: 'Credenciais do usuario para vincular bot, chat ou identidade externa do Telegram.',
+            description: 'Chat vinculado ao bot gerenciado.',
             status: 'missing',
             workspaceSlug: 'default',
             publicMetadata: {},
-            maskedConfig: {},
+            primaryAction: { type: 'connect', label: 'Conectar Telegram' },
+            steps: ['Inicie a conexao.', 'Envie o codigo no chat do Telegram.'],
+            lastError: null,
+            connectedAccount: null,
+            updatedAt: null,
+            revokedAt: null,
+          },
+          {
+            provider: 'ai-review',
+            name: 'IA de Review',
+            description: 'Analise gerenciada de pushes.',
+            status: 'missing',
+            workspaceSlug: 'default',
+            publicMetadata: {},
+            primaryAction: { type: 'connect', label: 'Ativar' },
+            steps: ['Ative o recurso.', 'Use testar para validar.'],
+            lastError: null,
+            connectedAccount: null,
+            updatedAt: null,
+            revokedAt: null,
+          },
+          {
+            provider: 'ai-conversation',
+            name: 'IA de Conversa',
+            description: 'Extracao gerenciada de conversa.',
+            status: 'missing',
+            workspaceSlug: 'default',
+            publicMetadata: {},
+            primaryAction: { type: 'connect', label: 'Ativar' },
+            steps: ['Ative o recurso.', 'Use testar para validar.'],
+            lastError: null,
+            connectedAccount: null,
             updatedAt: null,
             revokedAt: null,
           },
         ],
+      });
+    }
+    if (url === '/api/integrations/whatsapp/connect') {
+      return Response.json({
+        ok: true,
+        provider: 'whatsapp',
+        session: { id: '11111111-1111-4111-8111-111111111111', provider: 'whatsapp', status: 'pending', workspaceSlug: 'default', expiresAt: '2026-04-27T10:10:00.000Z', consumedAt: null },
+        verificationCode: 'ABC123',
+        instruction: '/kb conectar ABC123',
+        steps: ['Envie a mensagem no grupo.'],
+      });
+    }
+    if (url === '/api/integrations/whatsapp/sessions/11111111-1111-4111-8111-111111111111') {
+      return Response.json({
+        ok: true,
+        session: { id: '11111111-1111-4111-8111-111111111111', provider: 'whatsapp', status: 'connected', workspaceSlug: 'default', expiresAt: '2026-04-27T10:10:00.000Z', consumedAt: '2026-04-27T10:01:00.000Z', connectedAccount: '120363@g.us' },
       });
     }
     if (url === '/api/notes/note-1') {
@@ -163,21 +227,6 @@ describe('AppShell', () => {
     expect(await screen.findByText('20 Inbox/note.md')).toBeInTheDocument();
   });
 
-  it('renders the home when the dashboard API does not include home aggregates yet', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input) === '/api/dashboard') {
-        const { home: _home, ...legacyDashboard } = dashboard;
-        return Response.json(legacyDashboard);
-      }
-      return new Response(null, { status: 404 });
-    }));
-
-    renderWithAppProviders(<AppShell />);
-
-    expect(await screen.findByRole('heading', { name: 'Home operacional' })).toBeInTheDocument();
-    expect(await screen.findByText('Mudancas recentes')).toBeInTheDocument();
-  });
-
   it('opens a note directly from a route parameter', async () => {
     vi.stubGlobal('fetch', mockFetch());
 
@@ -195,14 +244,16 @@ describe('AppShell', () => {
     expect(await screen.findByRole('heading', { name: 'Integracoes' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'GitHub App' })).toBeInTheDocument();
     expect(screen.getByAltText('GitHub logo')).toBeInTheDocument();
+    expect(screen.getByAltText('WhatsApp logo')).toBeInTheDocument();
     expect(screen.getByAltText('Telegram logo')).toBeInTheDocument();
-    expect(screen.getByText(/usuario logado no workspace default/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'IA de Review' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'IA de Conversa' })).toBeInTheDocument();
+    expect(screen.getByText(/workspace default/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver detalhes de Telegram' }));
-
+    fireEvent.click(screen.getByRole('button', { name: 'Conectar WhatsApp' }));
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(await screen.findByText('Nenhuma credencial salva.')).toBeInTheDocument();
-    expect(await screen.findByText('Config JSON')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Codigo de conexao')).toHaveTextContent('ABC123');
+    expect(await screen.findByText('/kb conectar ABC123')).toBeInTheDocument();
   });
 
   it('shows login for anonymous users and loads the dashboard after auth', async () => {

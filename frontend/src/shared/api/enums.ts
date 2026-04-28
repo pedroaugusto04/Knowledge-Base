@@ -8,6 +8,9 @@ export enum StoredIntegrationStatus {
   Connected = 'connected',
   Missing = 'missing',
   Revoked = 'revoked',
+  Pending = 'pending',
+  Error = 'error',
+  Disabled = 'disabled',
 }
 
 export enum HomeTargetKind {

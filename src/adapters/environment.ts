@@ -12,7 +12,10 @@ export type RuntimeEnvironment = {
   conversationAiBaseUrl: string;
   conversationAiModel: string;
   conversationAiApiKey: string;
-  githubApiToken: string;
+  githubAppClientId: string;
+  githubAppClientSecret: string;
+  githubAppId: string;
+  githubAppPrivateKey: string;
   allowedGroupId: string;
   publicBaseUrl: string;
   allowedOrigins: string[];
@@ -25,6 +28,7 @@ export type RuntimeEnvironment = {
   githubAppInstallUrl: string;
   whatsappPairingUrl: string;
   telegramBotToken: string;
+  telegramWebhookToken: string;
   telegramChatId: string;
   evolutionApiKey: string;
   evolutionApiUrl: string;
@@ -54,7 +58,10 @@ export function readEnvironment(env = process.env): RuntimeEnvironment {
     conversationAiBaseUrl: String(env.KB_CONVERSATION_AI_BASE_URL || env.KB_REVIEW_AI_BASE_URL || 'https://openrouter.ai/api/v1').trim(),
     conversationAiModel: String(env.KB_CONVERSATION_AI_MODEL || env.KB_REVIEW_AI_MODEL || 'openrouter/auto').trim(),
     conversationAiApiKey: String(env.KB_CONVERSATION_AI_API_KEY || env.KB_REVIEW_AI_API_KEY || '').trim(),
-    githubApiToken: String(env.KB_GITHUB_API_TOKEN || '').trim(),
+    githubAppClientId: String(env.KB_GITHUB_APP_CLIENT_ID || '').trim(),
+    githubAppClientSecret: String(env.KB_GITHUB_APP_CLIENT_SECRET || '').trim(),
+    githubAppId: String(env.KB_GITHUB_APP_ID || '').trim(),
+    githubAppPrivateKey: String(env.KB_GITHUB_APP_PRIVATE_KEY || '').trim(),
     allowedGroupId: String(env.WPP_KB_GROUP_JID || '').trim(),
     publicBaseUrl: String(env.KB_PUBLIC_BASE_URL || env.WEBHOOK_URL || '').trim().replace(/\/$/, ''),
     allowedOrigins: String(env.KB_ALLOWED_ORIGINS || '')
@@ -70,6 +77,7 @@ export function readEnvironment(env = process.env): RuntimeEnvironment {
     githubAppInstallUrl: String(env.KB_GITHUB_APP_INSTALL_URL || '').trim(),
     whatsappPairingUrl: String(env.KB_WPP_PAIRING_URL || '').trim(),
     telegramBotToken: String(env.KB_TELEGRAM_BOT_TOKEN || '').trim(),
+    telegramWebhookToken: String(env.KB_TELEGRAM_WEBHOOK_TOKEN || env.KB_WEBHOOK_SECRET || '').trim(),
     telegramChatId: String(env.KB_TELEGRAM_CHAT_ID || '').trim(),
     evolutionApiKey: String(env.EVOLUTION_API_KEY || '').trim(),
     evolutionApiUrl: String(env.EVOLUTION_API_URL || '').trim(),

@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
 import { AuthService } from './application/auth.js';
+import { IntegrationConnectionService } from './application/integration-connections.js';
 import { IntegrationCredentialService } from './application/credentials.js';
 import { SchemaMigrator, UserRepository } from './application/ports/auth.repository.js';
 import { ContentQueryRepository, ContentRepository } from './application/ports/content.repository.js';
 import {
   CredentialRepository,
   ExternalIdentityRepository,
+  IntegrationConnectionSessionRepository,
 } from './application/ports/integrations.repository.js';
 import { WebhookEventRepository } from './application/ports/webhook-events.repository.js';
 import { ConversationStateRepository, ReminderDispatchRepository } from './application/ports/workflow-state.repository.js';
@@ -24,6 +26,7 @@ import {
   BuildReminderDispatchUseCase,
   GetNoteDetailUseCase,
   HandleGithubPushUseCase,
+  HandleTelegramWebhookUseCase,
   HandleWhatsappWebhookUseCase,
   IngestEntryUseCase,
   MarkReminderAsSentUseCase,
@@ -45,6 +48,7 @@ import { AccessTokenAuthGuard, AuthRateLimitGuard, GlobalRateLimitGuard, Interna
     InternalServiceTokenGuard,
     WebhookRateLimitGuard,
     BuildDashboardUseCase,
+    IntegrationConnectionService,
     IntegrationCredentialService,
     GetNoteDetailUseCase,
     QueryKnowledgeUseCase,
@@ -55,6 +59,7 @@ import { AccessTokenAuthGuard, AuthRateLimitGuard, GlobalRateLimitGuard, Interna
     MarkReminderAsSentUseCase,
     HandleGithubPushUseCase,
     HandleWhatsappWebhookUseCase,
+    HandleTelegramWebhookUseCase,
     PostgresDatabase,
     PostgresSchemaMigrator,
     PostgresUserRepository,
@@ -67,6 +72,7 @@ import { AccessTokenAuthGuard, AuthRateLimitGuard, GlobalRateLimitGuard, Interna
     { provide: UserRepository, useExisting: PostgresUserRepository },
     { provide: CredentialRepository, useExisting: PostgresIntegrationRepository },
     { provide: ExternalIdentityRepository, useExisting: PostgresIntegrationRepository },
+    { provide: IntegrationConnectionSessionRepository, useExisting: PostgresIntegrationRepository },
     { provide: ContentRepository, useExisting: PostgresContentRepository },
     { provide: ContentQueryRepository, useExisting: PostgresContentQueryRepository },
     { provide: ConversationStateRepository, useExisting: PostgresWorkflowStateRepository },

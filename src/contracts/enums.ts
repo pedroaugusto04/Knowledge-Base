@@ -85,17 +85,14 @@ export enum OnboardingOperation {
 export enum IntegrationProvider {
   Telegram = 'telegram',
   Whatsapp = 'whatsapp',
-  Evolution = 'evolution',
   AiReview = 'ai-review',
   AiConversation = 'ai-conversation',
-  Github = 'github',
   GithubApp = 'github-app',
 }
 
 export enum ExternalIdentityProvider {
   Telegram = 'telegram',
   Whatsapp = 'whatsapp',
-  Github = 'github',
   GithubApp = 'github-app',
 }
 
@@ -103,12 +100,18 @@ export enum IntegrationSetupStatus {
   Connected = 'connected',
   Partial = 'partial',
   Missing = 'missing',
+  Pending = 'pending',
+  Error = 'error',
+  Disabled = 'disabled',
 }
 
 export enum StoredIntegrationStatus {
   Connected = 'connected',
   Missing = 'missing',
   Revoked = 'revoked',
+  Pending = 'pending',
+  Error = 'error',
+  Disabled = 'disabled',
 }
 
 export enum CredentialRecordStatus {

@@ -143,6 +143,7 @@ p { color: var(--muted); line-height: 1.6; }
 .integration-card-head h2 { margin-bottom: 6px; }
 .integration-card-head p { margin-bottom: 0; }
 .integration-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; align-self: end; }
+.integration-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .integration-logo, .integration-logo-fallback { width: 44px; height: 44px; border: 1px solid var(--line-soft); border-radius: 8px; background: rgba(148, 163, 184, 0.06); }
 .integration-logo { padding: 9px; object-fit: contain; }
 .integration-logo-fallback { display: grid; place-items: center; color: var(--cyan); font-family: var(--mono); font-size: 13px; }
@@ -151,6 +152,9 @@ p { color: var(--muted); line-height: 1.6; }
 .integration-info-button:hover, .modal-close:hover { color: #e9fbff; border-color: rgba(83, 199, 222, 0.34); background: rgba(83, 199, 222, 0.11); }
 .integration-section { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(148, 163, 184, 0.11); }
 .integration-section h3 { margin-bottom: 0; color: #ecf6fa; }
+.integration-steps { margin: 0; padding-left: 20px; color: var(--muted); }
+.integration-steps li + li { margin-top: 4px; }
+.connection-code { display: inline-grid; place-items: center; min-height: 52px; width: fit-content; min-width: 148px; padding: 8px 16px; border: 1px solid rgba(83, 199, 222, 0.34); border-radius: 8px; background: rgba(83, 199, 222, 0.09); color: #e9fbff; font-family: var(--mono); font-size: 24px; font-weight: 700; letter-spacing: 0; }
 .checklist, .warning-list { display: grid; gap: 7px; margin: 0; padding-left: 19px; color: var(--muted); line-height: 1.5; }
 .warning-list { color: #ffe3ac; }
 .integration-links { display: grid; gap: 8px; }
@@ -158,6 +162,11 @@ p { color: var(--muted); line-height: 1.6; }
 .integration-link:hover { border-color: rgba(83, 199, 222, 0.34); background: rgba(83, 199, 222, 0.08); }
 .integration-link span { color: #e9fbff; font-size: 13px; }
 .integration-link code { color: var(--muted); font-family: var(--mono); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.repository-picker { display: grid; gap: 8px; }
+.repository-option { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; min-height: 46px; padding: 9px 10px; border: 1px solid var(--line-soft); border-radius: 7px; background: rgba(148, 163, 184, 0.04); }
+.repository-option span { display: grid; gap: 2px; min-width: 0; }
+.repository-option strong, .repository-option small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repository-option small { color: var(--muted); }
 .modal-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px; background: rgba(3, 7, 10, 0.72); backdrop-filter: blur(10px); }
 .modal-panel { width: min(720px, 100%); max-height: min(760px, calc(100vh - 48px)); overflow: auto; border: 1px solid var(--line-soft); border-radius: 8px; background: #0f171d; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42); }
 .integration-modal { display: grid; gap: 14px; padding: 18px; }

@@ -1,9 +1,9 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 
-import { HandleGithubPushUseCase, HandleWhatsappWebhookUseCase } from '../../../application/use-cases/index.js';
+import { HandleGithubPushUseCase, HandleTelegramWebhookUseCase, HandleWhatsappWebhookUseCase } from '../../../application/use-cases/index.js';
 import { WebhookRateLimitGuard } from '../auth.guards.js';
-import { githubPushWebhookBodySchema, whatsappWebhookBodySchema, type GithubPushWebhookBody, type WhatsappWebhookBody } from '../dto/webhook.dto.js';
+import { githubPushWebhookBodySchema, telegramWebhookBodySchema, whatsappWebhookBodySchema, type GithubPushWebhookBody, type TelegramWebhookBody, type WhatsappWebhookBody } from '../dto/webhook.dto.js';
 import { ZodValidationPipe } from '../zod-validation.pipe.js';
 
 @Controller('api/webhooks')
@@ -12,6 +12,7 @@ export class WebhookController {
   constructor(
     private readonly githubPush: HandleGithubPushUseCase,
     private readonly whatsappWebhook: HandleWhatsappWebhookUseCase,
+    private readonly telegramWebhook: HandleTelegramWebhookUseCase,
   ) {}
 
   @Post('github/push')
@@ -26,5 +27,10 @@ export class WebhookController {
   @Post('whatsapp')
   whatsapp(@Body(new ZodValidationPipe(whatsappWebhookBodySchema, 'invalid_whatsapp_webhook_payload')) body: WhatsappWebhookBody, @Req() request: Request) {
     return this.whatsappWebhook.execute({ headers: request.headers, body });
+  }
+
+  @Post('telegram')
+  telegram(@Body(new ZodValidationPipe(telegramWebhookBodySchema, 'invalid_telegram_webhook_payload')) body: TelegramWebhookBody, @Req() request: Request) {
+    return this.telegramWebhook.execute({ headers: request.headers, body });
   }
 }

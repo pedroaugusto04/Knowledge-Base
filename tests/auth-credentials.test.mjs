@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
 import { AuthService } from '../dist/application/auth.js';
+import { IntegrationConnectionService } from '../dist/application/integration-connections.js';
 import { IntegrationCredentialService } from '../dist/application/credentials.js';
 import { createMemoryRepositories } from '../dist/infrastructure/repositories/memory-repositories.js';
 import { AuthController, InternalIntegrationsController, UserIntegrationsController } from '../dist/interfaces/http/controllers/index.js';
@@ -42,6 +43,12 @@ async function fixture() {
     repositories,
     auth,
     credentials: new IntegrationCredentialService(repositories.credentialRepository, repositories.externalIdentityRepository),
+    connections: new IntegrationConnectionService(
+      repositories.credentialRepository,
+      repositories.externalIdentityRepository,
+      repositories.connectionSessionRepository,
+      repositories.contentRepository,
+    ),
   };
 }
 
@@ -118,10 +125,10 @@ test('mutable browser endpoints reject invalid Origin', async () => {
   );
 });
 
-test('credentials are encrypted, masked in user responses, and resolved internally by userId or external identity', async () => {
-  const { auth, repositories, credentials } = await fixture();
+test('guided credentials are encrypted, never returned, and resolved internally by userId or external identity', async () => {
+  const { auth, repositories, credentials, connections } = await fixture();
   const authController = new AuthController(auth);
-  const userController = new UserIntegrationsController(auth, credentials);
+  const userController = new UserIntegrationsController(auth, credentials, connections);
   const internalController = new InternalIntegrationsController(credentials);
 
   const loginResponse = responseMock();
@@ -133,53 +140,47 @@ test('credentials are encrypted, masked in user responses, and resolved internal
   const accessToken = loginResponse.cookies.find((cookie) => cookie.name === 'kb_access_token').value;
   const request = { headers: { origin: 'https://kb.example.com', host: 'kb.example.com', cookie: `kb_access_token=${accessToken}` }, protocol: 'https' };
 
-  const saved = await userController.save(
-    { provider: 'telegram' },
-    {
-      workspaceSlug: 'default',
-      config: { botToken: 'telegram-secret-value', chatId: '123' },
-      publicMetadata: { label: 'ops bot' },
-      externalIdentities: [{ provider: 'telegram', externalId: '123' }],
-    },
+  const setup = await userController.connect(
+    { provider: 'whatsapp' },
+    { workspaceSlug: 'default' },
     login.user,
     request,
   );
+  const saved = await connections.completeWhatsappFromWebhook({ code: setup.verificationCode, groupJid: '120363@g.us' });
 
-  assert.equal(saved.integration.status, 'connected');
-  assert.deepEqual(saved.integration.maskedConfig, { botToken: '********', chatId: '********' });
-  assert.equal(JSON.stringify(saved).includes('telegram-secret-value'), false);
+  assert.equal(saved.session.status, 'connected');
 
-  const stored = await repositories.credentialRepository.findCredential(login.user.id, 'default', 'telegram');
+  const stored = await repositories.credentialRepository.findCredential(login.user.id, 'default', 'whatsapp');
   assert.ok(stored);
-  assert.equal(JSON.stringify(stored.encryptedConfig).includes('telegram-secret-value'), false);
+  assert.equal(JSON.stringify(stored.encryptedConfig).includes('120363@g.us'), false);
 
   const resolvedByUser = await internalController.resolve(
-    { provider: 'telegram' },
+    { provider: 'whatsapp' },
     { workspaceSlug: 'default', userId: login.user.id },
     { headers: { authorization: 'Bearer internal-token' } },
   );
-  assert.deepEqual(resolvedByUser.config, { botToken: 'telegram-secret-value', chatId: '123' });
+  assert.deepEqual(resolvedByUser.config, { groupJid: '120363@g.us' });
 
   const resolvedByIdentity = await internalController.resolve(
-    { provider: 'telegram' },
-    { workspaceSlug: 'default', externalIdentity: { provider: 'telegram', identityType: 'chat_id', externalId: '123' } },
+    { provider: 'whatsapp' },
+    { workspaceSlug: 'default', externalIdentity: { provider: 'whatsapp', identityType: 'jid', externalId: '120363@g.us' } },
     { headers: { authorization: 'Bearer internal-token' } },
   );
   assert.equal(resolvedByIdentity.userId, login.user.id);
 
   const listed = await userController.list(login.user, request, { workspaceSlug: 'default' });
-  assert.equal(JSON.stringify(listed).includes('telegram-secret-value'), false);
+  assert.equal(JSON.stringify(listed).includes('encryptedConfig'), false);
 
-  const revoked = await userController.revoke({ provider: 'telegram' }, { workspaceSlug: 'default' }, login.user, request);
+  const revoked = await userController.revoke({ provider: 'whatsapp' }, { workspaceSlug: 'default' }, login.user, request);
   assert.equal(revoked.integration.status, 'revoked');
-  const revokedStored = await repositories.credentialRepository.findCredential(login.user.id, 'default', 'telegram');
-  assert.equal(JSON.stringify(revokedStored.encryptedConfig).includes('telegram-secret-value'), false);
+  const revokedStored = await repositories.credentialRepository.findCredential(login.user.id, 'default', 'whatsapp');
+  assert.equal(JSON.stringify(revokedStored.encryptedConfig).includes('120363@g.us'), false);
 });
 
-test('credential identity binding rejects hijacking and invalid provider linkage', async () => {
+test('guided connection rejects identity hijacking', async () => {
   const first = await fixture();
   const firstAuthController = new AuthController(first.auth);
-  const firstUserController = new UserIntegrationsController(first.auth, first.credentials);
+  const firstUserController = new UserIntegrationsController(first.auth, first.credentials, first.connections);
   const firstLoginResponse = responseMock();
   const firstLogin = await firstAuthController.login(
     { email: 'admin@example.com', password: 'admin-password' },
@@ -189,52 +190,36 @@ test('credential identity binding rejects hijacking and invalid provider linkage
   const firstAccessToken = firstLoginResponse.cookies.find((cookie) => cookie.name === 'kb_access_token').value;
   const firstRequest = { headers: { origin: 'https://kb.example.com', host: 'kb.example.com', cookie: `kb_access_token=${firstAccessToken}` }, protocol: 'https' };
 
-  await firstUserController.save(
-    { provider: 'telegram' },
-    {
-      workspaceSlug: 'default',
-      config: { botToken: 'secret', chatId: '123' },
-      publicMetadata: { label: 'ops bot' },
-      externalIdentities: [{ provider: 'telegram', externalId: '123' }],
-    },
+  const firstSetup = await firstUserController.connect(
+    { provider: 'whatsapp' },
+    { workspaceSlug: 'default' },
     firstLogin.user,
     firstRequest,
   );
-
-  await assert.rejects(
-    () => firstUserController.save(
-      { provider: 'ai-review' },
-      {
-        workspaceSlug: 'default',
-        config: { provider: 'openrouter', apiKey: 'secret', model: 'review-model' },
-        publicMetadata: { label: 'review' },
-        externalIdentities: [{ provider: 'telegram', externalId: '456' }],
-      },
-      firstLogin.user,
-      firstRequest,
-    ),
-    /external_identity_not_allowed_for_provider/,
-  );
+  await first.connections.completeWhatsappFromWebhook({ code: firstSetup.verificationCode, groupJid: '120363@g.us' });
 
   const secondRepositories = first.repositories;
   const secondAuth = new AuthService(secondRepositories.userRepository, secondRepositories.schemaMigrator);
   const secondCredentials = new IntegrationCredentialService(secondRepositories.credentialRepository, secondRepositories.externalIdentityRepository);
+  const secondConnections = new IntegrationConnectionService(
+    secondRepositories.credentialRepository,
+    secondRepositories.externalIdentityRepository,
+    secondRepositories.connectionSessionRepository,
+    secondRepositories.contentRepository,
+  );
   const secondUser = await secondRepositories.userRepository.createUser({ email: 'user@example.com', passwordHash: firstLogin.user.id, role: 'user' });
-  const secondController = new UserIntegrationsController(secondAuth, secondCredentials);
+  const secondController = new UserIntegrationsController(secondAuth, secondCredentials, secondConnections);
   const secondToken = secondAuth.issueTokens(secondUser).accessToken;
+  const secondCurrentUser = { id: secondUser.id, email: secondUser.email, displayName: secondUser.displayName, role: secondUser.role };
+  const secondSetup = await secondController.connect(
+    { provider: 'whatsapp' },
+    { workspaceSlug: 'default' },
+    secondCurrentUser,
+    { headers: { origin: 'https://kb.example.com', host: 'kb.example.com', cookie: `kb_access_token=${secondToken}` }, protocol: 'https' },
+  );
 
   await assert.rejects(
-    () => secondController.save(
-      { provider: 'telegram' },
-      {
-        workspaceSlug: 'default',
-        config: { botToken: 'other-secret', chatId: '123' },
-        publicMetadata: { label: 'other bot' },
-        externalIdentities: [{ provider: 'telegram', externalId: '123' }],
-      },
-      { id: secondUser.id, email: secondUser.email, displayName: secondUser.displayName, role: secondUser.role },
-      { headers: { origin: 'https://kb.example.com', host: 'kb.example.com', cookie: `kb_access_token=${secondToken}` }, protocol: 'https' },
-    ),
+    () => secondConnections.completeWhatsappFromWebhook({ code: secondSetup.verificationCode, groupJid: '120363@g.us' }),
     /external_identity_already_bound/,
   );
 });

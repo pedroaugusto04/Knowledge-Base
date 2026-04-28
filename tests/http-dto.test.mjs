@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { conversationBodySchema } from '../dist/interfaces/http/dto/operations.dto.js';
-import { integrationProviderSchema, parseSaveIntegrationCredentialBody, resolveIntegrationCredentialBodySchema, saveIntegrationCredentialBodySchema } from '../dist/interfaces/http/dto/integration-credentials.dto.js';
+import { connectIntegrationBodySchema, githubAppCallbackQuerySchema, githubRepositoriesBodySchema, guidedIntegrationProviderSchema, integrationProviderSchema, resolveIntegrationCredentialBodySchema, sessionParamSchema } from '../dist/interfaces/http/dto/integration-credentials.dto.js';
 import { internalN8nIngestBodySchema } from '../dist/interfaces/http/dto/internal-n8n.dto.js';
 import { onboardingBodySchema } from '../dist/interfaces/http/dto/operations.dto.js';
 import { markRemindersBodySchema, queryRequestSchema } from '../dist/interfaces/http/dto/query.dto.js';
@@ -69,47 +69,17 @@ test('internal n8n ingest dto accepts direct and wrapped payloads', () => {
 
 test('integration dto rejects invalid provider and invalid resolve payload', () => {
   assert.throws(() => integrationProviderSchema.parse('invalid'));
+  assert.throws(() => integrationProviderSchema.parse('github'));
+  assert.throws(() => integrationProviderSchema.parse('evolution'));
   assert.throws(() => resolveIntegrationCredentialBodySchema.parse({ workspaceSlug: 'default' }));
 });
 
-test('integration dto accepts valid save payload with provider-specific config', () => {
-  const parsed = saveIntegrationCredentialBodySchema.parse({
-    workspaceSlug: 'default',
-    config: { botToken: 'secret', chatId: 123 },
-    publicMetadata: { label: 'ops bot' },
-    externalIdentities: [{ provider: 'telegram', externalId: '123' }],
-  });
-
-  assert.equal(parsed.workspaceSlug, 'default');
-  assert.equal(parsed.publicMetadata.label, 'ops bot');
-  assert.deepEqual(parseSaveIntegrationCredentialBody('telegram', parsed).config, { botToken: 'secret', chatId: '123' });
-});
-
-test('integration dto rejects unexpected public metadata keys and invalid provider config', () => {
-  assert.throws(() => saveIntegrationCredentialBodySchema.parse({
-    workspaceSlug: 'default',
-    config: { botToken: 'secret' },
-    publicMetadata: { label: 'ops bot', apiKey: 'must-not-be-public' },
-  }));
-
-  const missingTelegramFields = saveIntegrationCredentialBodySchema.parse({
-    workspaceSlug: 'default',
-    config: {},
-    publicMetadata: { label: 'ops bot' },
-  });
-  assert.throws(() => parseSaveIntegrationCredentialBody('telegram', missingTelegramFields), /invalid_integration_config/);
-
-  const invalidAiConfig = saveIntegrationCredentialBodySchema.parse({
-    workspaceSlug: 'default',
-    config: { apiKey: 'secret', model: 'review-model' },
-    publicMetadata: { label: 'review bot' },
-  });
-  assert.throws(() => parseSaveIntegrationCredentialBody('ai-review', invalidAiConfig), /invalid_integration_config/);
-
-  const githubConfig = saveIntegrationCredentialBodySchema.parse({
-    workspaceSlug: 'default',
-    config: { token: 'secret', unexpected: 'nope' },
-    publicMetadata: { label: 'github token' },
-  });
-  assert.throws(() => parseSaveIntegrationCredentialBody('github', githubConfig), /invalid_integration_config/);
+test('integration dto accepts guided connection payloads', () => {
+  assert.deepEqual(connectIntegrationBodySchema.parse({}), { workspaceSlug: 'default' });
+  assert.deepEqual(connectIntegrationBodySchema.parse({ workspaceSlug: 'team_1' }), { workspaceSlug: 'team_1' });
+  assert.equal(guidedIntegrationProviderSchema.parse('telegram'), 'telegram');
+  assert.equal(guidedIntegrationProviderSchema.parse('ai-review'), 'ai-review');
+  assert.equal(githubAppCallbackQuerySchema.parse({ state: 'state', code: 'code', installation_id: 123 }).installation_id, '123');
+  assert.equal(sessionParamSchema.parse({ provider: 'whatsapp', sessionId: '00000000-0000-4000-8000-000000000000' }).provider, 'whatsapp');
+  assert.deepEqual(githubRepositoriesBodySchema.parse({ repositories: ['acme/api', 'acme/api'] }), { workspaceSlug: 'default', repositories: ['acme/api'] });
 });

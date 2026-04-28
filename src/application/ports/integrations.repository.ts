@@ -1,4 +1,4 @@
-import type { ExternalIdentityRecord, IntegrationCredentialRecord } from '../models/repository-records.models.js';
+import type { ExternalIdentityRecord, IntegrationConnectionSessionRecord, IntegrationCredentialRecord } from '../models/repository-records.models.js';
 
 export abstract class CredentialRepository {
   abstract listCredentials(userId: string, workspaceSlug: string): Promise<IntegrationCredentialRecord[]>;
@@ -22,4 +22,17 @@ export abstract class ExternalIdentityRepository {
     metadata?: Record<string, unknown>;
     publicMetadata: Record<string, unknown>;
   }): Promise<ExternalIdentityRecord>;
+}
+
+export abstract class IntegrationConnectionSessionRepository {
+  abstract createConnectionSession(
+    input: Pick<
+      IntegrationConnectionSessionRecord,
+      'userId' | 'workspaceSlug' | 'provider' | 'stateHash' | 'verificationCodeHash' | 'status' | 'metadata' | 'expiresAt'
+    >,
+  ): Promise<IntegrationConnectionSessionRecord>;
+  abstract findConnectionSession(id: string): Promise<IntegrationConnectionSessionRecord | null>;
+  abstract findActiveConnectionSessionByState(provider: string, stateHash: string, nowIso: string): Promise<IntegrationConnectionSessionRecord | null>;
+  abstract findActiveConnectionSessionByCode(provider: string, verificationCodeHash: string, nowIso: string): Promise<IntegrationConnectionSessionRecord | null>;
+  abstract consumeConnectionSession(id: string, status: string, metadata: Record<string, unknown>): Promise<IntegrationConnectionSessionRecord | null>;
 }

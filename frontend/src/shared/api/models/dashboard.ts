@@ -14,6 +14,4 @@ export type Dashboard = {
   home: DashboardHomeSummary;
 };
 
-export type DashboardPayload = Omit<Dashboard, 'home'> & {
-  home?: DashboardHomeSummary;
-};
+export type DashboardPayload = Dashboard;

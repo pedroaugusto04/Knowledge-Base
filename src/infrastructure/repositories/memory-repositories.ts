@@ -5,6 +5,7 @@ import type {
   AttachmentRecord,
   ConversationStateRecord,
   ExternalIdentityRecord,
+  IntegrationConnectionSessionRecord,
   IntegrationCredentialRecord,
   KbUser,
   NoteRecord,
@@ -19,8 +20,9 @@ import type {
 } from '../../application/models/repository-records.models.js';
 import { SchemaMigrator, UserRepository } from '../../application/ports/auth.repository.js';
 import { ContentQueryRepository, ContentRepository } from '../../application/ports/content.repository.js';
-import { CredentialRepository, ExternalIdentityRepository } from '../../application/ports/integrations.repository.js';
+import { CredentialRepository, ExternalIdentityRepository, IntegrationConnectionSessionRepository } from '../../application/ports/integrations.repository.js';
 import { WebhookEventRepository } from '../../application/ports/webhook-events.repository.js';
+import { sanitizeWebhookHeaders, sanitizeWebhookValue } from '../../application/utils/webhook.utils.js';
 import { ConversationStateRepository, ReminderDispatchRepository } from '../../application/ports/workflow-state.repository.js';
 import { noteDetail, noteSummary, reminderFromNote, reviewFromNote } from './content-query.mappers.js';
 
@@ -28,6 +30,7 @@ export type MemoryRepositoryState = {
   users: Map<string, KbUser>;
   credentials: Map<string, IntegrationCredentialRecord>;
   identities: Map<string, ExternalIdentityRecord>;
+  connectionSessions: Map<string, IntegrationConnectionSessionRecord>;
   workspaces: Map<string, WorkspaceRecord>;
   projects: Map<string, ProjectRecord>;
   notes: Map<string, NoteRecord>;
@@ -42,6 +45,7 @@ function createMemoryRepositoryState(): MemoryRepositoryState {
     users: new Map(),
     credentials: new Map(),
     identities: new Map(),
+    connectionSessions: new Map(),
     workspaces: new Map(),
     projects: new Map(),
     notes: new Map(),
@@ -102,7 +106,7 @@ export class MemoryUserRepository extends UserRepository {
   }
 }
 
-export class MemoryIntegrationRepository extends CredentialRepository implements ExternalIdentityRepository {
+export class MemoryIntegrationRepository extends CredentialRepository implements ExternalIdentityRepository, IntegrationConnectionSessionRepository {
   constructor(private readonly state: MemoryRepositoryState) {
     super();
   }
@@ -179,6 +183,66 @@ export class MemoryIntegrationRepository extends CredentialRepository implements
     };
     this.state.identities.set(key, identity);
     return identity;
+  }
+
+  async createConnectionSession(input: {
+    userId: string;
+    workspaceSlug: string;
+    provider: string;
+    stateHash: string;
+    verificationCodeHash: string;
+    status: string;
+    metadata: Record<string, unknown>;
+    expiresAt: string;
+  }) {
+    const now = new Date().toISOString();
+    const session: IntegrationConnectionSessionRecord = {
+      id: crypto.randomUUID(),
+      userId: input.userId,
+      workspaceSlug: input.workspaceSlug,
+      provider: input.provider,
+      stateHash: input.stateHash,
+      verificationCodeHash: input.verificationCodeHash,
+      status: input.status,
+      metadata: input.metadata || {},
+      expiresAt: input.expiresAt,
+      consumedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.state.connectionSessions.set(session.id, session);
+    return session;
+  }
+
+  async findConnectionSession(id: string) {
+    return this.state.connectionSessions.get(id) || null;
+  }
+
+  async findActiveConnectionSessionByState(provider: string, stateHash: string, nowIso: string) {
+    return Array.from(this.state.connectionSessions.values())
+      .filter((session) => session.provider === provider && session.stateHash === stateHash && session.status === 'pending' && !session.consumedAt && session.expiresAt > nowIso)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0] || null;
+  }
+
+  async findActiveConnectionSessionByCode(provider: string, verificationCodeHash: string, nowIso: string) {
+    return Array.from(this.state.connectionSessions.values())
+      .filter((session) => session.provider === provider && session.verificationCodeHash === verificationCodeHash && session.status === 'pending' && !session.consumedAt && session.expiresAt > nowIso)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0] || null;
+  }
+
+  async consumeConnectionSession(id: string, status: string, metadata: Record<string, unknown>) {
+    const existing = this.state.connectionSessions.get(id);
+    if (!existing || existing.consumedAt) return null;
+    const now = new Date().toISOString();
+    const consumed = {
+      ...existing,
+      status,
+      metadata: { ...existing.metadata, ...(metadata || {}) },
+      consumedAt: now,
+      updatedAt: now,
+    };
+    this.state.connectionSessions.set(id, consumed);
+    return consumed;
   }
 }
 
@@ -349,8 +413,8 @@ export class MemoryWebhookEventRepository extends WebhookEventRepository {
       status: input.status,
       resolvedUserId: input.resolvedUserId || null,
       externalIdentity: input.externalIdentity || {},
-      rawHeaders: input.rawHeaders || {},
-      rawPayload: input.rawPayload || {},
+      rawHeaders: sanitizeWebhookHeaders(input.rawHeaders || {}),
+      rawPayload: sanitizeWebhookValue(input.rawPayload || {}),
       error: input.error || '',
       createdAt: now,
       updatedAt: now,
@@ -375,6 +439,7 @@ export function createMemoryRepositories(state = createMemoryRepositoryState()) 
     userRepository,
     credentialRepository: integrationRepository,
     externalIdentityRepository: integrationRepository,
+    connectionSessionRepository: integrationRepository,
     contentRepository,
     contentQueryRepository,
     conversationStateRepository: workflowStateRepository,

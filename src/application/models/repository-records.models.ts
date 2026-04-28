@@ -40,6 +40,21 @@ export type ExternalIdentityRecord = {
   updatedAt: string;
 };
 
+export type IntegrationConnectionSessionRecord = {
+  id: string;
+  userId: string;
+  workspaceSlug: string;
+  provider: string;
+  stateHash: string;
+  verificationCodeHash: string;
+  status: string;
+  metadata: Record<string, unknown>;
+  expiresAt: string;
+  consumedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type WorkspaceRecord = {
   workspaceSlug: string;
   displayName: string;

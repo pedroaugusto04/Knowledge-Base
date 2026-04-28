@@ -50,7 +50,6 @@ test('github push is converted to canonical code review event', async () => {
       conversationAiBaseUrl: '',
       conversationAiModel: '',
       conversationAiApiKey: '',
-      githubApiToken: '',
       enableGitPush: false,
       gitBatchMode: true,
       vaultRemoteUrl: '',

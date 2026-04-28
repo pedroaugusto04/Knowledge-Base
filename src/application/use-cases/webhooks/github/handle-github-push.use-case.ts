@@ -2,10 +2,10 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 
 import { readEnvironment } from '../../../../adapters/environment.js';
 import { verifyGithubSignature } from '../../../../adapters/github.js';
-import { ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
+import { AiProvider, CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
 import { buildTelegramCodeReviewMessage } from '../../../../domain/notifications.js';
 import { buildGithubReviewEvent } from '../../../github-review.js';
-import { ExternalIdentityRepository } from '../../../ports/integrations.repository.js';
+import { CredentialRepository, ExternalIdentityRepository } from '../../../ports/integrations.repository.js';
 import { WebhookEventRepository } from '../../../ports/webhook-events.repository.js';
 import { normalizeHeaders } from '../../../utils/webhook.utils.js';
 import { IngestEntryUseCase } from '../../ingest/ingest-entry.use-case.js';
@@ -22,6 +22,7 @@ export class HandleGithubPushUseCase {
     private readonly ingestEntryUseCase: IngestEntryUseCase,
     private readonly externalIdentities: ExternalIdentityRepository,
     private readonly webhookEvents: WebhookEventRepository,
+    private readonly credentials?: CredentialRepository,
   ) {}
 
   async execute(input: GithubPushWebhookRequest) {
@@ -91,7 +92,11 @@ export class HandleGithubPushUseCase {
       rawPayload: body,
     });
     try {
-      const payload = await buildGithubReviewEvent(input, environment);
+      const aiCredential = this.credentials
+        ? await this.credentials.findCredential(identity.userId, identity.workspaceSlug, IntegrationProvider.AiReview)
+        : null;
+      const aiEnabled = Boolean(aiCredential && aiCredential.status === CredentialRecordStatus.Connected && !aiCredential.revokedAt);
+      const payload = await buildGithubReviewEvent(input, aiEnabled ? environment : { ...environment, reviewAiProvider: AiProvider.None, reviewAiApiKey: '' });
       const ingestResult = await this.ingestEntryUseCase.execute(payload, identity.userId, identity.workspaceSlug);
       await this.webhookEvents.recordWebhookEvent({
         provider: IntegrationProvider.GithubApp,
