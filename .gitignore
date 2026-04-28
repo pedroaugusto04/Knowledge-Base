@@ -1,2 +1,54 @@
-dist/
+# Dependencies
 node_modules/
+frontend/node_modules/
+
+# Build output
+dist/
+frontend/dist/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Runtime files
+pids/
+*.pid
+*.pid.lock
+*.seed
+
+# Cache / temp
+.cache/
+.tmp/
+tmp/
+temp/
+.eslintcache
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
