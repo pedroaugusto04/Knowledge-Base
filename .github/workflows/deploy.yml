@@ -4,16 +4,68 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'frontend/**'
+      - 'scripts/deploy/**'
+      - 'Dockerfile'
+      - 'docker-compose.prod.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.dockerignore'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FRONTEND_DEPLOY_PATH: ${{ vars.FRONTEND_DEPLOY_PATH || '/var/www/knowledge-base' }}
+  RELOAD_NGINX: ${{ vars.RELOAD_NGINX || 'true' }}
+
 jobs:
-  ci:
-    name: Test and Build
+  changes:
+    name: Detect changed paths
     runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.backend == 'true' }}
+      frontend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Detect changed paths
+        if: github.event_name != 'workflow_dispatch'
+        id: filter
+        uses: dorny/paths-filter@v4.0.1
+        with:
+          filters: |
+            backend:
+              - 'src/**'
+              - 'tests/**'
+              - 'scripts/deploy/**'
+              - 'Dockerfile'
+              - 'docker-compose.prod.yml'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig.json'
+              - '.dockerignore'
+              - '.github/workflows/deploy.yml'
+            frontend:
+              - 'frontend/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/deploy.yml'
+
+  deploy-backend:
+    name: Build & Deploy Backend to VPS
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ github.ref == 'refs/heads/main' && needs.changes.outputs.backend == 'true' }}
+    environment: production
     permissions:
       contents: read
     steps:
@@ -23,7 +75,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version: '24'
           cache: npm
 
       - name: Install dependencies
@@ -32,74 +84,20 @@ jobs:
       - name: Run API tests
         run: npm run test:api
 
-      - name: Run frontend tests
-        run: npm run test:frontend
-
-      - name: Build
-        run: npm run build
-
-  deploy:
-    name: Deploy to VPS
-    runs-on: ubuntu-latest
-    needs: ci
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    permissions:
-      contents: read
-    steps:
-      - name: Validate production environment config
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT }}
-          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          VPS_GITHUB_REPO_TOKEN: ${{ secrets.VPS_GITHUB_REPO_TOKEN }}
-          VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
-          KB_PUBLIC_BASE_URL: ${{ vars.KB_PUBLIC_BASE_URL }}
-          KB_ALLOWED_ORIGINS: ${{ vars.KB_ALLOWED_ORIGINS }}
-          KB_DATABASE_URL: ${{ secrets.KB_DATABASE_URL }}
-          KB_DATABASE_URL_DOCKER: ${{ secrets.KB_DATABASE_URL_DOCKER }}
-          KB_ADMIN_EMAIL: ${{ secrets.KB_ADMIN_EMAIL }}
-          KB_ADMIN_PASSWORD: ${{ secrets.KB_ADMIN_PASSWORD }}
-          KB_JWT_ACCESS_SECRET: ${{ secrets.KB_JWT_ACCESS_SECRET }}
-          KB_JWT_REFRESH_SECRET: ${{ secrets.KB_JWT_REFRESH_SECRET }}
-          KB_INTERNAL_SERVICE_TOKEN: ${{ secrets.KB_INTERNAL_SERVICE_TOKEN }}
-          KB_CREDENTIALS_ENCRYPTION_KEY: ${{ secrets.KB_CREDENTIALS_ENCRYPTION_KEY }}
-        run: |
-          set -euo pipefail
-          test -n "${VPS_HOST}" || { echo "Missing secret: VPS_HOST"; exit 1; }
-          test -n "${VPS_USER}" || { echo "Missing secret: VPS_USER"; exit 1; }
-          test -n "${VPS_SSH_PORT}" || { echo "Missing secret: VPS_SSH_PORT"; exit 1; }
-          test -n "${VPS_SSH_PRIVATE_KEY}" || { echo "Missing secret: VPS_SSH_PRIVATE_KEY"; exit 1; }
-          test -n "${VPS_GITHUB_REPO_TOKEN}" || { echo "Missing secret: VPS_GITHUB_REPO_TOKEN"; exit 1; }
-          printf '%s\n' "${VPS_SSH_PRIVATE_KEY}" | grep -Eq '^-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----$' || {
-            echo "Invalid secret: VPS_SSH_PRIVATE_KEY must be a PEM private key with real line breaks, for example BEGIN PRIVATE KEY or BEGIN RSA PRIVATE KEY."
-            exit 1
-          }
-          test -n "${VPS_APP_DIR}" || { echo "Missing variable: VPS_APP_DIR"; exit 1; }
-          test -n "${KB_PUBLIC_BASE_URL}" || { echo "Missing variable: KB_PUBLIC_BASE_URL"; exit 1; }
-          test -n "${KB_ALLOWED_ORIGINS}" || { echo "Missing variable: KB_ALLOWED_ORIGINS"; exit 1; }
-          test -n "${KB_DATABASE_URL}" || { echo "Missing secret: KB_DATABASE_URL"; exit 1; }
-          test -n "${KB_DATABASE_URL_DOCKER}" || { echo "Missing secret: KB_DATABASE_URL_DOCKER"; exit 1; }
-          test -n "${KB_ADMIN_EMAIL}" || { echo "Missing secret: KB_ADMIN_EMAIL"; exit 1; }
-          test -n "${KB_ADMIN_PASSWORD}" || { echo "Missing secret: KB_ADMIN_PASSWORD"; exit 1; }
-          test -n "${KB_JWT_ACCESS_SECRET}" || { echo "Missing secret: KB_JWT_ACCESS_SECRET"; exit 1; }
-          test -n "${KB_JWT_REFRESH_SECRET}" || { echo "Missing secret: KB_JWT_REFRESH_SECRET"; exit 1; }
-          test -n "${KB_INTERNAL_SERVICE_TOKEN}" || { echo "Missing secret: KB_INTERNAL_SERVICE_TOKEN"; exit 1; }
-          test -n "${KB_CREDENTIALS_ENCRYPTION_KEY}" || { echo "Missing secret: KB_CREDENTIALS_ENCRYPTION_KEY"; exit 1; }
-
-      - name: Generate .env for production
+      - name: Generate backend env file
         env:
           KB_API_HOST: ${{ vars.KB_API_HOST || '0.0.0.0' }}
           KB_API_PORT: ${{ vars.KB_API_PORT || '4310' }}
-          KB_FRONTEND_HOST: ${{ vars.KB_FRONTEND_HOST || '0.0.0.0' }}
-          KB_FRONTEND_PORT: ${{ vars.KB_FRONTEND_PORT || '4311' }}
           KB_TRUST_PROXY: ${{ vars.KB_TRUST_PROXY || 'true' }}
           KB_BODY_LIMIT: ${{ vars.KB_BODY_LIMIT || '1mb' }}
           KB_PUBLIC_BASE_URL: ${{ vars.KB_PUBLIC_BASE_URL }}
           KB_ALLOWED_ORIGINS: ${{ vars.KB_ALLOWED_ORIGINS }}
           KB_ACCESS_TOKEN_TTL_SECONDS: ${{ vars.KB_ACCESS_TOKEN_TTL_SECONDS || '900' }}
           KB_REFRESH_TOKEN_TTL_SECONDS: ${{ vars.KB_REFRESH_TOKEN_TTL_SECONDS || '2592000' }}
+          KB_POSTGRES_PORT: ${{ vars.KB_POSTGRES_PORT || '5438' }}
+          KB_POSTGRES_DB: ${{ vars.KB_POSTGRES_DB || 'knowledge_base' }}
+          KB_POSTGRES_USER: ${{ secrets.KB_POSTGRES_USER || 'postgres' }}
+          KB_POSTGRES_PASSWORD: ${{ secrets.KB_POSTGRES_PASSWORD || 'postgres' }}
           KB_DATABASE_URL: ${{ secrets.KB_DATABASE_URL }}
           KB_DATABASE_URL_DOCKER: ${{ secrets.KB_DATABASE_URL_DOCKER }}
           KB_ADMIN_EMAIL: ${{ secrets.KB_ADMIN_EMAIL }}
@@ -130,91 +128,181 @@ jobs:
           KB_CONVERSATION_AI_BASE_URL: ${{ vars.KB_CONVERSATION_AI_BASE_URL || 'https://openrouter.ai/api/v1' }}
           KB_CONVERSATION_AI_MODEL: ${{ vars.KB_CONVERSATION_AI_MODEL || 'openrouter/auto' }}
           KB_CONVERSATION_AI_API_KEY: ${{ secrets.KB_CONVERSATION_AI_API_KEY || '' }}
+        run: bash scripts/deploy/generate-backend-env.sh .deploy/backend.env
+
+      - name: Validate production environment config
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_GITHUB_REPO_TOKEN: ${{ secrets.VPS_GITHUB_REPO_TOKEN }}
+          VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
+          KB_PUBLIC_BASE_URL: ${{ vars.KB_PUBLIC_BASE_URL }}
+          KB_ALLOWED_ORIGINS: ${{ vars.KB_ALLOWED_ORIGINS }}
+          KB_DATABASE_URL: ${{ secrets.KB_DATABASE_URL }}
+          KB_DATABASE_URL_DOCKER: ${{ secrets.KB_DATABASE_URL_DOCKER }}
+          KB_ADMIN_EMAIL: ${{ secrets.KB_ADMIN_EMAIL }}
+          KB_ADMIN_PASSWORD: ${{ secrets.KB_ADMIN_PASSWORD }}
+          KB_JWT_ACCESS_SECRET: ${{ secrets.KB_JWT_ACCESS_SECRET }}
+          KB_JWT_REFRESH_SECRET: ${{ secrets.KB_JWT_REFRESH_SECRET }}
+          KB_INTERNAL_SERVICE_TOKEN: ${{ secrets.KB_INTERNAL_SERVICE_TOKEN }}
+          KB_CREDENTIALS_ENCRYPTION_KEY: ${{ secrets.KB_CREDENTIALS_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
-          : > .env.production
+          test -n "$VPS_HOST" || { echo "Missing secret: VPS_HOST"; exit 1; }
+          test -n "$VPS_USER" || { echo "Missing secret: VPS_USER"; exit 1; }
+          test -n "$VPS_SSH_PORT" || { echo "Missing secret/variable: VPS_SSH_PORT"; exit 1; }
+          test -n "$VPS_SSH_PRIVATE_KEY" || { echo "Missing secret: VPS_SSH_PRIVATE_KEY"; exit 1; }
+          test -n "$VPS_GITHUB_REPO_TOKEN" || { echo "Missing secret: VPS_GITHUB_REPO_TOKEN"; exit 1; }
+          test -n "$VPS_APP_DIR" || { echo "Missing variable: VPS_APP_DIR"; exit 1; }
+          test -n "$KB_PUBLIC_BASE_URL" || { echo "Missing variable: KB_PUBLIC_BASE_URL"; exit 1; }
+          test -n "$KB_ALLOWED_ORIGINS" || { echo "Missing variable: KB_ALLOWED_ORIGINS"; exit 1; }
+          test -n "$KB_DATABASE_URL" || { echo "Missing secret: KB_DATABASE_URL"; exit 1; }
+          test -n "$KB_DATABASE_URL_DOCKER" || { echo "Missing secret: KB_DATABASE_URL_DOCKER"; exit 1; }
+          test -n "$KB_ADMIN_EMAIL" || { echo "Missing secret: KB_ADMIN_EMAIL"; exit 1; }
+          test -n "$KB_ADMIN_PASSWORD" || { echo "Missing secret: KB_ADMIN_PASSWORD"; exit 1; }
+          test -n "$KB_JWT_ACCESS_SECRET" || { echo "Missing secret: KB_JWT_ACCESS_SECRET"; exit 1; }
+          test -n "$KB_JWT_REFRESH_SECRET" || { echo "Missing secret: KB_JWT_REFRESH_SECRET"; exit 1; }
+          test -n "$KB_INTERNAL_SERVICE_TOKEN" || { echo "Missing secret: KB_INTERNAL_SERVICE_TOKEN"; exit 1; }
+          test -n "$KB_CREDENTIALS_ENCRYPTION_KEY" || { echo "Missing secret: KB_CREDENTIALS_ENCRYPTION_KEY"; exit 1; }
 
-          append_env() {
-            local key="$1"
-            local value="${2-}"
-            value="${value//$'\r'/}"
-            value="${value//$'\n'/\\n}"
-            printf '%s=%s\n' "$key" "$value" >> .env.production
-          }
+      - name: Ensure rsync is available on GitHub runner
+        run: |
+          if ! command -v rsync >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y rsync
+          fi
 
-          append_env NODE_ENV production
-          append_env KB_API_HOST "$KB_API_HOST"
-          append_env KB_API_PORT "$KB_API_PORT"
-          append_env KB_FRONTEND_HOST "$KB_FRONTEND_HOST"
-          append_env KB_FRONTEND_PORT "$KB_FRONTEND_PORT"
-          append_env KB_TRUST_PROXY "$KB_TRUST_PROXY"
-          append_env KB_BODY_LIMIT "$KB_BODY_LIMIT"
-          append_env KB_PUBLIC_BASE_URL "$KB_PUBLIC_BASE_URL"
-          append_env KB_ALLOWED_ORIGINS "$KB_ALLOWED_ORIGINS"
-          append_env KB_ACCESS_TOKEN_TTL_SECONDS "$KB_ACCESS_TOKEN_TTL_SECONDS"
-          append_env KB_REFRESH_TOKEN_TTL_SECONDS "$KB_REFRESH_TOKEN_TTL_SECONDS"
-          append_env KB_DATABASE_URL "$KB_DATABASE_URL"
-          append_env KB_DATABASE_URL_DOCKER "$KB_DATABASE_URL_DOCKER"
-          append_env KB_ADMIN_EMAIL "$KB_ADMIN_EMAIL"
-          append_env KB_ADMIN_PASSWORD "$KB_ADMIN_PASSWORD"
-          append_env KB_JWT_ACCESS_SECRET "$KB_JWT_ACCESS_SECRET"
-          append_env KB_JWT_REFRESH_SECRET "$KB_JWT_REFRESH_SECRET"
-          append_env KB_INTERNAL_SERVICE_TOKEN "$KB_INTERNAL_SERVICE_TOKEN"
-          append_env KB_CREDENTIALS_ENCRYPTION_KEY "$KB_CREDENTIALS_ENCRYPTION_KEY"
-          append_env KB_GITHUB_APP_INSTALL_URL "$KB_GITHUB_APP_INSTALL_URL"
-          append_env KB_GITHUB_APP_CLIENT_ID "$KB_GITHUB_APP_CLIENT_ID"
-          append_env KB_GITHUB_APP_CLIENT_SECRET "$KB_GITHUB_APP_CLIENT_SECRET"
-          append_env KB_GITHUB_APP_ID "$KB_GITHUB_APP_ID"
-          append_env KB_GITHUB_APP_PRIVATE_KEY "$KB_GITHUB_APP_PRIVATE_KEY"
-          append_env KB_GITHUB_APP_WEBHOOK_SECRET "$KB_GITHUB_APP_WEBHOOK_SECRET"
-          append_env EVOLUTION_API_URL "$EVOLUTION_API_URL"
-          append_env EVOLUTION_API_KEY "$EVOLUTION_API_KEY"
-          append_env EVOLUTION_INSTANCE_NAME "$EVOLUTION_INSTANCE_NAME"
-          append_env EVOLUTION_API_PUBLIC_URL "$EVOLUTION_API_PUBLIC_URL"
-          append_env KB_WPP_PAIRING_URL "$KB_WPP_PAIRING_URL"
-          append_env KB_TELEGRAM_BOT_TOKEN "$KB_TELEGRAM_BOT_TOKEN"
-          append_env KB_TELEGRAM_WEBHOOK_TOKEN "$KB_TELEGRAM_WEBHOOK_TOKEN"
-          append_env KB_TELEGRAM_CHAT_ID "$KB_TELEGRAM_CHAT_ID"
-          append_env KB_REVIEW_AI_PROVIDER "$KB_REVIEW_AI_PROVIDER"
-          append_env KB_REVIEW_AI_BASE_URL "$KB_REVIEW_AI_BASE_URL"
-          append_env KB_REVIEW_AI_MODEL "$KB_REVIEW_AI_MODEL"
-          append_env KB_REVIEW_AI_API_KEY "$KB_REVIEW_AI_API_KEY"
-          append_env KB_CONVERSATION_AI_PROVIDER "$KB_CONVERSATION_AI_PROVIDER"
-          append_env KB_CONVERSATION_AI_BASE_URL "$KB_CONVERSATION_AI_BASE_URL"
-          append_env KB_CONVERSATION_AI_MODEL "$KB_CONVERSATION_AI_MODEL"
-          append_env KB_CONVERSATION_AI_API_KEY "$KB_CONVERSATION_AI_API_KEY"
+      - name: Prepare SSH for VPS sync
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SERVER_HOST: ${{ secrets.VPS_HOST }}
+          SERVER_USER: ${{ secrets.VPS_USER }}
+          SERVER_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+          VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%b\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SERVER_PORT" -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -p "$SERVER_PORT" -o StrictHostKeyChecking=yes "$SERVER_USER@$SERVER_HOST" \
+            "command -v rsync >/dev/null 2>&1 || { echo 'rsync nao encontrado no servidor remoto'; exit 1; }; mkdir -p \"$VPS_APP_DIR\""
 
-      - name: Upload .env to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          source: ".env.production"
-          target: "${{ vars.VPS_APP_DIR }}"
-          overwrite: true
+      - name: Sync backend deploy assets to VPS
+        env:
+          SERVER_HOST: ${{ secrets.VPS_HOST }}
+          SERVER_USER: ${{ secrets.VPS_USER }}
+          SERVER_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+          VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p $SERVER_PORT -o StrictHostKeyChecking=yes" \
+            .deploy/backend.env "$SERVER_USER@$SERVER_HOST:$VPS_APP_DIR/backend.env"
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p $SERVER_PORT -o StrictHostKeyChecking=yes" \
+            docker-compose.prod.yml "$SERVER_USER@$SERVER_HOST:$VPS_APP_DIR/docker-compose.prod.yml"
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.2
+      - name: Deploy backend on VPS
+        uses: appleboy/ssh-action@v1.2.4
         env:
           VPS_GITHUB_REPO_TOKEN: ${{ secrets.VPS_GITHUB_REPO_TOKEN }}
+          VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          port: ${{ secrets.VPS_SSH_PORT }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          envs: VPS_GITHUB_REPO_TOKEN
+          envs: VPS_GITHUB_REPO_TOKEN,VPS_APP_DIR
           script: |
             set -euo pipefail
-            APP_DIR="${{ vars.VPS_APP_DIR }}"
-            cd "$APP_DIR"
-            mv .env.production .env
-            chmod 600 .env
+            cd "$VPS_APP_DIR"
+            chmod 600 backend.env
+            cp backend.env .env.prod
             GITHUB_AUTH_HEADER="$(printf 'x-access-token:%s' "$VPS_GITHUB_REPO_TOKEN" | base64 | tr -d '\n')"
             git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $GITHUB_AUTH_HEADER" fetch --all --prune
             git checkout main
             git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $GITHUB_AUTH_HEADER" pull --ff-only origin main
-            docker compose pull
-            docker compose up -d --build
-            docker image prune -f
+            cp backend.env .env.prod
+            sudo docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build postgres
+            sudo docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build --no-deps --remove-orphans api
+            sudo docker image prune -f
+
+  deploy-frontend:
+    name: Build & Deploy Frontend to VPS
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ github.ref == 'refs/heads/main' && needs.changes.outputs.frontend == 'true' }}
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npm run test:frontend
+
+      - name: Build frontend
+        run: npm run build:frontend
+
+      - name: Ensure rsync is available on GitHub runner
+        run: |
+          if ! command -v rsync >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y rsync
+          fi
+
+      - name: Prepare SSH for frontend sync
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SERVER_HOST: ${{ secrets.VPS_HOST }}
+          SERVER_USER: ${{ secrets.VPS_USER }}
+          SERVER_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+          FRONTEND_DEPLOY_PATH: ${{ env.FRONTEND_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          test -n "$FRONTEND_DEPLOY_PATH" || { echo "Missing variable: FRONTEND_DEPLOY_PATH"; exit 1; }
+          mkdir -p ~/.ssh
+          printf '%b\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SERVER_PORT" -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -p "$SERVER_PORT" -o StrictHostKeyChecking=yes "$SERVER_USER@$SERVER_HOST" \
+            "command -v rsync >/dev/null 2>&1 || { echo 'rsync nao encontrado no servidor remoto'; exit 1; }; sudo mkdir -p \"$FRONTEND_DEPLOY_PATH\"; sudo chown \"$SERVER_USER\":\"$SERVER_USER\" \"$FRONTEND_DEPLOY_PATH\""
+
+      - name: Sync frontend dist to VPS
+        env:
+          SERVER_HOST: ${{ secrets.VPS_HOST }}
+          SERVER_USER: ${{ secrets.VPS_USER }}
+          SERVER_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+          FRONTEND_DEPLOY_PATH: ${{ env.FRONTEND_DEPLOY_PATH }}
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p $SERVER_PORT -o StrictHostKeyChecking=yes" \
+            dist/frontend/ "$SERVER_USER@$SERVER_HOST:$FRONTEND_DEPLOY_PATH/"
+
+      - name: Reload Nginx
+        if: ${{ env.RELOAD_NGINX != 'false' }}
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            if command -v nginx >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^nginx.service'; then
+              sudo nginx -t
+              sudo systemctl reload nginx
+            else
+              echo "Nginx nao instalado; pulando reload."
+            fi

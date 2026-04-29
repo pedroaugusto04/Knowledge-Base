@@ -1,5 +1,8 @@
 .env.kb-agent
 .env.kb-agent-server
 node_modules
+frontend/node_modules
+dist
+coverage
 .git
 .DS_Store

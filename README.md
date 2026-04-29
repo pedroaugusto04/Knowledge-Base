@@ -277,6 +277,52 @@ Portas publicadas por padrão:
 - API: `http://127.0.0.1:4310`
 - Frontend: `http://127.0.0.1:4311`
 
+## Deploy em produção
+
+O workflow `.github/workflows/deploy.yml` separa o deploy por paths alterados:
+
+- mudanças em `src/**`, `tests/**`, `Dockerfile`, `docker-compose.prod.yml`, `scripts/deploy/**`, `package*.json`, `tsconfig.json` ou no workflow atualizam o backend
+- mudanças em `frontend/**`, `package*.json` ou no workflow atualizam o frontend
+- `workflow_dispatch` força os dois caminhos
+
+Backend:
+
+- o runner executa `npm run test:api`
+- `scripts/deploy/generate-backend-env.sh` gera `.deploy/backend.env` com as variáveis e secrets do GitHub Environment
+- a VPS recebe `backend.env` e `docker-compose.prod.yml`
+- a VPS faz `git fetch/pull` usando `VPS_GITHUB_REPO_TOKEN` e sobe `postgres` + `api` com `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build`
+
+Frontend:
+
+- o runner executa `npm run test:frontend` e `npm run build:frontend`
+- `dist/frontend/` é sincronizado por `rsync` para `FRONTEND_DEPLOY_PATH`, com padrão `/var/www/knowledge-base`
+- quando `RELOAD_NGINX` não é `false`, o workflow roda `nginx -t` e recarrega o Nginx
+
+Variáveis do GitHub Environment usadas no deploy:
+
+- `VPS_APP_DIR`: diretório remoto do repositório, por exemplo `/home/ubuntu/knowledge-base`
+- `FRONTEND_DEPLOY_PATH`: diretório remoto do frontend estático, por exemplo `/var/www/knowledge-base`
+- `RELOAD_NGINX`: controle opcional do reload do Nginx, `true` por padrão
+- `KB_PUBLIC_BASE_URL`, `KB_ALLOWED_ORIGINS`, `KB_API_*`, `KB_POSTGRES_*` e variáveis não secretas de integrações/IA
+
+Secrets do GitHub Environment usados no deploy:
+
+- acesso VPS: `VPS_HOST`, `VPS_USER`, `VPS_SSH_PORT`, `VPS_SSH_PRIVATE_KEY`
+- acesso Git privado na VPS: `VPS_GITHUB_REPO_TOKEN`
+- banco/auth/crypto: `KB_DATABASE_URL`, `KB_DATABASE_URL_DOCKER`, `KB_ADMIN_EMAIL`, `KB_ADMIN_PASSWORD`, `KB_JWT_ACCESS_SECRET`, `KB_JWT_REFRESH_SECRET`, `KB_INTERNAL_SERVICE_TOKEN`, `KB_CREDENTIALS_ENCRYPTION_KEY`
+- credenciais opcionais: `KB_POSTGRES_USER`, `KB_POSTGRES_PASSWORD`, `KB_GITHUB_APP_*`, `EVOLUTION_API_KEY`, `KB_TELEGRAM_*`, `KB_REVIEW_AI_API_KEY`, `KB_CONVERSATION_AI_API_KEY`
+
+Na VPS, prepare uma vez:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose-plugin rsync nginx
+sudo mkdir -p /var/www/knowledge-base
+sudo chown ubuntu:ubuntu /var/www/knowledge-base
+```
+
+O diretório `VPS_APP_DIR` deve conter o clone do repositório na branch `main`. O Nginx deve apontar o frontend para `/var/www/knowledge-base` e encaminhar `/api` para `http://127.0.0.1:4310`.
+
 Endpoints HTTP principais:
 
 - `GET /api/health`
