@@ -101,7 +101,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
     <main className="setup-layout">
       <section className="setup-hero">
         <div className="brand auth-brand">
-          <div className="brand-mark">KV</div>
+          <div className="brand-mark">KV</div> 
           <div>
             <strong>Knowledge Vault</strong>
             <span>workspace setup wizard</span>
