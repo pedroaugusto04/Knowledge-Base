@@ -34,10 +34,6 @@ test('github push is converted to canonical code review event', async () => {
       rawBody: '{}',
     },
     {
-      vaultPath: '',
-      archivePath: '',
-      manifestPath: '',
-      workspacesManifestPath: '',
       webhookSecret: '',
       githubWebhookSecret: '',
       attachmentMaxVaultBytes: 0,
