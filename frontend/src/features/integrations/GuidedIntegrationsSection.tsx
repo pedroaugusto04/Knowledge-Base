@@ -49,6 +49,10 @@ function isAiProvider(provider: string) {
   return provider === 'ai-review' || provider === 'ai-conversation';
 }
 
+function openExternalIntegration(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function IntegrationLogo({ integration }: { integration: UserIntegration }) {
   const logo = integrationLogos[integrationId(integration)];
   if (!logo) return <div className="integration-logo-fallback">{integration.name.slice(0, 2).toUpperCase()}</div>;
@@ -183,7 +187,7 @@ function IntegrationCard({
     mutationFn: () => connectIntegration({ provider: integration.provider, workspaceSlug, returnToPath }),
     onSuccess: (result) => {
       if (result.primaryAction?.url) {
-        window.location.assign(result.primaryAction.url);
+        openExternalIntegration(result.primaryAction.url);
         return;
       }
       if (result.session) onCodeConnection(result);

@@ -244,19 +244,19 @@ KB_API_PORT=4320 KB_FRONTEND_PORT=4321 npm --prefix knowledge-base run dev:front
 KB_API_PORT=4320 npm --prefix knowledge-base run dev:api
 ```
 
-### Docker Compose de desenvolvimento
+### Docker Compose local
 
-O repositório inclui `docker-compose.dev.yml` para subir Postgres, API NestJS com reload e frontend Vite com hot reload usando o `.env` local:
+O repositório usa um único `docker-compose.yml` para o ambiente local, subindo Postgres, API NestJS com reload e frontend Vite com hot reload usando o `.env` local:
 
 ```bash
-docker compose -f knowledge-base/docker-compose.dev.yml up --build
+docker compose up --build
 ```
 
 Fluxo esperado:
 
 - o compose carrega segredos e credenciais a partir de `knowledge-base/.env`
 - `postgres` recebe credenciais do `.env`, e a API usa `KB_DATABASE_URL_DOCKER` dentro do container para não apontar para `127.0.0.1`
-- `api` executa `npm run dev:api` com `node --watch`
+- `api` executa `npm run dev:api`, que faz `tsc --watch` do backend e reinicia o Node sobre `backend/dist`
 - `frontend` executa `npm run dev:frontend` com polling habilitado para funcionar bem em bind mounts Docker
 
 Para rodar em container, ajuste no `.env`:
@@ -265,11 +265,11 @@ Para rodar em container, ajuste no `.env`:
 KB_API_HOST=0.0.0.0
 KB_FRONTEND_HOST=0.0.0.0
 KB_API_PROXY_TARGET=http://api:4310
-KB_POSTGRES_PORT=5432
+KB_POSTGRES_PORT=5438
 KB_POSTGRES_DB=knowledge_base
 KB_POSTGRES_USER=postgres
 KB_POSTGRES_PASSWORD=postgres
-KB_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/knowledge_base
+KB_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5438/knowledge_base
 KB_DATABASE_URL_DOCKER=postgres://postgres:postgres@postgres:5432/knowledge_base
 KB_ALLOWED_ORIGINS=http://127.0.0.1:4311,http://localhost:4311,http://127.0.0.1:4310,http://localhost:4310
 LOG_PRETTY_CONSOLE=true

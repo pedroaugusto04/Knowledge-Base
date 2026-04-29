@@ -166,6 +166,18 @@ test('github app callback validates state, installation ownership, conflicts and
   globalThis.fetch = originalFetch;
 });
 
+test('github connection normalizes app settings URLs to the installation flow', async () => {
+  const { user, connections } = await fixture();
+  process.env.KB_GITHUB_APP_INSTALL_URL = 'https://github.com/settings/apps/kb';
+
+  const connection = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'github-app' });
+  const url = new URL(connection.primaryAction.url);
+
+  assert.equal(url.origin, 'https://github.com');
+  assert.equal(url.pathname, '/apps/kb/installations/new');
+  assert.ok(url.searchParams.get('state'));
+});
+
 test('whatsapp connection command binds the group without trusting userId payload and normal unknown messages stay rejected', async () => {
   const { repositories, user, connections, whatsapp } = await fixture();
   const setup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'whatsapp' });

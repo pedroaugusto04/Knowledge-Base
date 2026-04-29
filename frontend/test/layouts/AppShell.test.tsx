@@ -287,6 +287,64 @@ describe('AppShell', () => {
     expect(screen.getByRole('heading', { name: 'Conectar WhatsApp ou Telegram' })).toBeInTheDocument();
   });
 
+  it('opens the GitHub installation flow in a new tab', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/dashboard') {
+        return Response.json(dashboard);
+      }
+      if (url === '/api/integrations?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          integrations: [
+            {
+              provider: 'github-app',
+              name: 'GitHub App',
+              description: 'Dados de instalacao do GitHub App vinculados ao usuario no workspace atual.',
+              status: 'missing',
+              workspaceSlug: 'default',
+              publicMetadata: {},
+              primaryAction: { type: 'connect', label: 'Conectar GitHub' },
+              steps: ['Instale o app.'],
+              lastError: null,
+              connectedAccount: null,
+              updatedAt: null,
+              revokedAt: null,
+            },
+          ],
+        });
+      }
+      if (url === '/api/integrations/github-app/connect') {
+        return Response.json({
+          ok: true,
+          provider: 'github-app',
+          primaryAction: {
+            type: 'external_redirect',
+            label: 'Conectar GitHub',
+            url: 'https://github.com/apps/kb/installations/new?state=test-state',
+          },
+        });
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(window);
+
+    renderWithAppProviders(<AppShell />, { route: '/settings/integrations' });
+
+    expect(await screen.findByRole('heading', { name: 'Integracoes' })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Conectar GitHub' }));
+
+    await waitFor(() => {
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://github.com/apps/kb/installations/new?state=test-state',
+        '_blank',
+        'noopener,noreferrer',
+      );
+    });
+  });
+
   it('shows login for anonymous users and loads the dashboard after auth', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

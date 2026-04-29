@@ -20,10 +20,7 @@ export class PostgresDatabase {
     if (!connectionString) throw new Error('KB_DATABASE_URL_not_configured');
 
     this.pool = new Pool({
-      connectionString,
-      ssl: {
-        rejectUnauthorized: false, 
-      },
+      connectionString
     });
 
     return this.pool;
