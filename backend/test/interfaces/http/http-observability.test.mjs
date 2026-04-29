@@ -252,3 +252,15 @@ test('request ids are propagated by the lifecycle middleware and reused by the e
   });
   assert.ok(generatedResponse.getHeader('x-request-id'));
 });
+
+test('request lifecycle middleware skips noisy health-check request logs', () => {
+  const logger = loggerMock();
+  const middleware = requestLifecycleMiddleware(logger);
+  const response = eventedResponseMock();
+
+  middleware(requestMock({ originalUrl: '/api/health', path: '/api/health' }), response, () => {
+    response.emit('finish');
+  });
+
+  assert.deepEqual(logger.calls, []);
+});

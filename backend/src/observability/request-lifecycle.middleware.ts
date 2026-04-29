@@ -6,6 +6,11 @@ import { AppLogger } from './logger.js';
 import { getRequestMetadata, getSafeRequestLogDetails } from './request-metadata.js';
 import { runWithRequestContext, updateRequestContext } from './request-context.js';
 
+function shouldSkipRequestLogs(request: Request): boolean {
+  const requestPath = String(request.path || request.originalUrl || '').split('?')[0];
+  return requestPath === '/api/health';
+}
+
 function resolveRequestId(request: Request): string {
   const header = String(request.headers['x-request-id'] || '').trim();
   return header || randomUUID();
@@ -21,7 +26,10 @@ export function requestLifecycleMiddleware(logger: AppLogger) {
       startTime: startedAt,
       ...getRequestMetadata(request),
     }, () => {
-      logger.info('http.request.start', getSafeRequestLogDetails(request));
+      const skipRequestLogs = shouldSkipRequestLogs(request);
+      if (!skipRequestLogs) {
+        logger.info('http.request.start', getSafeRequestLogDetails(request));
+      }
       let completed = false;
       const finish = () => {
         if (completed) return;
@@ -30,10 +38,12 @@ export function requestLifecycleMiddleware(logger: AppLogger) {
           ...getRequestMetadata(request),
           statusCode: response.statusCode,
         });
-        logger.info('http.request.finish', {
-          statusCode: response.statusCode,
-          durationMs: Date.now() - startedAt,
-        });
+        if (!skipRequestLogs) {
+          logger.info('http.request.finish', {
+            statusCode: response.statusCode,
+            durationMs: Date.now() - startedAt,
+          });
+        }
       };
       response.on('finish', finish);
       response.on('close', finish);

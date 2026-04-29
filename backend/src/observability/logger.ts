@@ -24,6 +24,10 @@ const ANSI_RED = '\u001B[31m';
 const ANSI_GREEN = '\u001B[32m';
 const ANSI_YELLOW = '\u001B[33m';
 const ANSI_BLUE = '\u001B[34m';
+const ANSI_BRIGHT_GREEN = '\u001B[92m';
+const ANSI_BRIGHT_YELLOW = '\u001B[93m';
+const ANSI_BRIGHT_RED = '\u001B[91m';
+const ANSI_BRIGHT_CYAN = '\u001B[96m';
 const ANSI_CYAN = '\u001B[36m';
 const ANSI_WHITE = '\u001B[37m';
 const LOG_LEVEL_LABELS: Readonly<Record<LogLevel, string>> = {
@@ -73,8 +77,19 @@ function formatKeyValue(key: string, value: unknown, prettyConsoleLogsEnabled: b
   if (!prettyConsoleLogsEnabled) {
     return `${key}=${renderedValue}`;
   }
-  const keyColor = key === 'statusCode' ? ANSI_BLUE : ANSI_WHITE;
-  return `${keyColor}${key}${ANSI_RESET}=${renderedValue}`;
+  if (key === 'statusCode') {
+    const numericValue = Number(value);
+    const statusColor =
+      numericValue >= 500
+        ? ANSI_BRIGHT_RED
+        : numericValue >= 400
+          ? ANSI_RED
+          : numericValue >= 300
+            ? ANSI_BRIGHT_YELLOW
+            : ANSI_BRIGHT_GREEN;
+    return `${ANSI_BRIGHT_CYAN}${key}${ANSI_RESET}=${statusColor}${renderedValue}${ANSI_RESET}`;
+  }
+  return `${ANSI_WHITE}${key}${ANSI_RESET}=${renderedValue}`;
 }
 
 @Injectable()
