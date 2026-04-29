@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildGithubReviewEvent } from '../dist/application/github-review.js';
+import { buildGithubReviewEvent } from '../../dist/application/github-review.js';
 
 test('github push is converted to canonical code review event', async () => {
   const event = await buildGithubReviewEvent(

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
-import { createMemoryRepositories } from '../dist/infrastructure/repositories/memory-repositories.js';
-import { BuildDashboardUseCase, HandleGithubPushUseCase, IngestEntryUseCase } from '../dist/application/use-cases/index.js';
+import { createMemoryRepositories } from '../../dist/infrastructure/repositories/memory-repositories.js';
+import { BuildDashboardUseCase, HandleGithubPushUseCase, IngestEntryUseCase } from '../../dist/application/use-cases/index.js';
 
 function configureEnv() {
   process.env.KB_GITHUB_APP_WEBHOOK_SECRET = 'github-webhook-secret';

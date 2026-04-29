@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildDashboardHome } from '../dist/application/use-cases/index.js';
+import { buildDashboardHome } from '../../dist/application/use-cases/index.js';
 
 const projects = [
   { projectSlug: 'alpha', displayName: 'Alpha', repoFullName: 'acme/alpha', workspaceSlug: 'default', aliases: [], defaultTags: [], enabled: true },

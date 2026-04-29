@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { renderWithAppProviders } from '../app/test-utils';
-import { AppShell } from './AppShell';
+import { renderWithAppProviders } from '../../src/app/test-utils';
+import { AppShell } from '../../src/layouts/AppShell';
 
 const dashboard = {
   workspaces: [{ workspaceSlug: 'default', displayName: 'Default', githubRepos: ['acme/repo'], projectSlugs: ['n8n-automations'] }],

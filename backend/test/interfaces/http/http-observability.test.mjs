@@ -6,12 +6,12 @@ import assert from 'node:assert/strict';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { EventEmitter } from 'node:events';
 
-import { queryRequestSchema } from '../dist/interfaces/http/dto/query.dto.js';
-import { ZodValidationPipe } from '../dist/interfaces/http/zod-validation.pipe.js';
-import { GlobalExceptionFilter } from '../dist/observability/global-exception.filter.js';
-import { redactSensitiveValue } from '../dist/observability/redact.js';
-import { runWithRequestContext } from '../dist/observability/request-context.js';
-import { requestLifecycleMiddleware } from '../dist/observability/request-lifecycle.middleware.js';
+import { queryRequestSchema } from '../../../dist/interfaces/http/dto/query.dto.js';
+import { ZodValidationPipe } from '../../../dist/interfaces/http/zod-validation.pipe.js';
+import { GlobalExceptionFilter } from '../../../dist/observability/global-exception.filter.js';
+import { redactSensitiveValue } from '../../../dist/observability/redact.js';
+import { runWithRequestContext } from '../../../dist/observability/request-context.js';
+import { requestLifecycleMiddleware } from '../../../dist/observability/request-lifecycle.middleware.js';
 
 function loggerMock() {
   const calls = [];

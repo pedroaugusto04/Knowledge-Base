@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 
 import { BadRequestException } from '@nestjs/common';
 
-import { queryRequestSchema } from '../dist/interfaces/http/dto/query.dto.js';
-import { ZodValidationPipe } from '../dist/interfaces/http/zod-validation.pipe.js';
+import { queryRequestSchema } from '../../../dist/interfaces/http/dto/query.dto.js';
+import { ZodValidationPipe } from '../../../dist/interfaces/http/zod-validation.pipe.js';
 
 test('zod validation pipe parses successful payloads', () => {
   const pipe = new ZodValidationPipe(queryRequestSchema, 'invalid_query_payload');

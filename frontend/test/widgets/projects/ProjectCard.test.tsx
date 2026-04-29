@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ProjectCard } from './ProjectCard';
+import { ProjectCard } from '../../../src/widgets/projects/ProjectCard';
 
 describe('ProjectCard', () => {
   it('renders project metadata and emits the selected slug', () => {

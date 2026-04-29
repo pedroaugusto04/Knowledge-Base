@@ -5,13 +5,13 @@ import assert from 'node:assert/strict';
 
 import { NestFactory } from '@nestjs/core';
 
-import { AppModule } from '../dist/app.module.js';
-import { SchemaMigrator, UserRepository } from '../dist/application/ports/auth.repository.js';
-import { ContentQueryRepository, ContentRepository } from '../dist/application/ports/content.repository.js';
-import { CredentialRepository, ExternalIdentityRepository } from '../dist/application/ports/integrations.repository.js';
-import { WebhookEventRepository } from '../dist/application/ports/webhook-events.repository.js';
-import { ConversationStateRepository, ReminderDispatchRepository } from '../dist/application/ports/workflow-state.repository.js';
-import { createMemoryRepositories } from '../dist/infrastructure/repositories/memory-repositories.js';
+import { AppModule } from '../../dist/app.module.js';
+import { SchemaMigrator, UserRepository } from '../../dist/application/ports/auth.repository.js';
+import { ContentQueryRepository, ContentRepository } from '../../dist/application/ports/content.repository.js';
+import { CredentialRepository, ExternalIdentityRepository } from '../../dist/application/ports/integrations.repository.js';
+import { WebhookEventRepository } from '../../dist/application/ports/webhook-events.repository.js';
+import { ConversationStateRepository, ReminderDispatchRepository } from '../../dist/application/ports/workflow-state.repository.js';
+import { createMemoryRepositories } from '../../dist/infrastructure/repositories/memory-repositories.js';
 
 test('memory repositories share state across content query and workflow ports', async () => {
   const repositories = createMemoryRepositories();

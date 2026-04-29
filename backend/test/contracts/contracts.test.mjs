@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ingestPayloadSchema, withDerivedReminderAt } from '../dist/contracts/ingest.js';
+import { ingestPayloadSchema, withDerivedReminderAt } from '../../dist/contracts/ingest.js';
 
 test('normalizes canonical ingest payload and derives reminderAt', () => {
   const parsed = withDerivedReminderAt(

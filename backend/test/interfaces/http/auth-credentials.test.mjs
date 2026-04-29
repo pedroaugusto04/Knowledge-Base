@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
-import { AuthService } from '../dist/application/auth.js';
-import { IntegrationConnectionService } from '../dist/application/integration-connections.js';
-import { IntegrationCredentialService } from '../dist/application/credentials.js';
-import { createMemoryRepositories } from '../dist/infrastructure/repositories/memory-repositories.js';
-import { AuthController, InternalIntegrationsController, UserIntegrationsController } from '../dist/interfaces/http/controllers/index.js';
+import { AuthService } from '../../../dist/application/auth.js';
+import { IntegrationConnectionService } from '../../../dist/application/integration-connections.js';
+import { IntegrationCredentialService } from '../../../dist/application/credentials.js';
+import { createMemoryRepositories } from '../../../dist/infrastructure/repositories/memory-repositories.js';
+import { AuthController, InternalIntegrationsController, UserIntegrationsController } from '../../../dist/interfaces/http/controllers/index.js';
 
 function configureEnv() {
   process.env.KB_ADMIN_EMAIL = 'admin@example.com';

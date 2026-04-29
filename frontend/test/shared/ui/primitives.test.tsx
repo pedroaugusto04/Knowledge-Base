@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { Badge, PageHead } from './primitives';
+import { Badge, PageHead } from '../../../src/shared/ui/primitives';
 
 describe('ui primitives', () => {
   it('renders page headings and badges', () => {

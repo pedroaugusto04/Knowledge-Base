@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { CreateWorkspaceUseCase } from '../dist/application/use-cases/index.js';
-import { createMemoryRepositories } from '../dist/infrastructure/repositories/memory-repositories.js';
+import { CreateWorkspaceUseCase } from '../../dist/application/use-cases/index.js';
+import { createMemoryRepositories } from '../../dist/infrastructure/repositories/memory-repositories.js';
 
 test('create workspace persists the workspace and the initial Inbox project', async () => {
   const repositories = createMemoryRepositories();

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DashboardController, HealthController, OperationsController, WorkspacesController } from '../dist/interfaces/http/controllers/index.js';
+import { DashboardController, HealthController, OperationsController, WorkspacesController } from '../../../dist/interfaces/http/controllers/index.js';
 
 test('health controller exposes service status', () => {
   const controller = new HealthController();

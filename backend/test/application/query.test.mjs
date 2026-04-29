@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createMemoryRepositories } from '../dist/infrastructure/repositories/memory-repositories.js';
-import { QueryKnowledgeUseCase } from '../dist/application/use-cases/index.js';
+import { createMemoryRepositories } from '../../dist/infrastructure/repositories/memory-repositories.js';
+import { QueryKnowledgeUseCase } from '../../dist/application/use-cases/index.js';
 
 test('query returns ranked matches from the authenticated user repository scope', async () => {
   const repositories = createMemoryRepositories();

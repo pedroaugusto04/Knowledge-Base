@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { conversationBodySchema } from '../dist/interfaces/http/dto/operations.dto.js';
-import { connectIntegrationBodySchema, githubAppCallbackQuerySchema, githubRepositoriesBodySchema, guidedIntegrationProviderSchema, integrationProviderSchema, resolveIntegrationCredentialBodySchema, sessionParamSchema } from '../dist/interfaces/http/dto/integration-credentials.dto.js';
-import { internalN8nIngestBodySchema } from '../dist/interfaces/http/dto/internal-n8n.dto.js';
-import { markRemindersBodySchema, queryRequestSchema } from '../dist/interfaces/http/dto/query.dto.js';
-import { createWorkspaceBodySchema } from '../dist/interfaces/http/dto/workspace.dto.js';
+import { conversationBodySchema } from '../../../dist/interfaces/http/dto/operations.dto.js';
+import { connectIntegrationBodySchema, githubAppCallbackQuerySchema, githubRepositoriesBodySchema, guidedIntegrationProviderSchema, integrationProviderSchema, resolveIntegrationCredentialBodySchema, sessionParamSchema } from '../../../dist/interfaces/http/dto/integration-credentials.dto.js';
+import { internalN8nIngestBodySchema } from '../../../dist/interfaces/http/dto/internal-n8n.dto.js';
+import { markRemindersBodySchema, queryRequestSchema } from '../../../dist/interfaces/http/dto/query.dto.js';
+import { createWorkspaceBodySchema } from '../../../dist/interfaces/http/dto/workspace.dto.js';
 
 test('query dto normalizes limit and slugs', () => {
   const parsed = queryRequestSchema.parse({

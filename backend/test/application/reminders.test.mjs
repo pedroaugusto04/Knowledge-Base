@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createMemoryRepositories } from '../dist/infrastructure/repositories/memory-repositories.js';
-import { BuildReminderDispatchUseCase, MarkReminderAsSentUseCase } from '../dist/application/use-cases/index.js';
+import { createMemoryRepositories } from '../../dist/infrastructure/repositories/memory-repositories.js';
+import { BuildReminderDispatchUseCase, MarkReminderAsSentUseCase } from '../../dist/application/use-cases/index.js';
 
 async function createStoreWithReminder() {
   const repositories = createMemoryRepositories();

@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
-import type { Dashboard } from '../../shared/api/models/dashboard';
-import { HomePage } from './HomePage';
+import type { Dashboard } from '../../../src/shared/api/models/dashboard';
+import { HomePage } from '../../../src/pages/home/HomePage';
 import { render } from '@testing-library/react';
 
 vi.mock('recharts', () => {
