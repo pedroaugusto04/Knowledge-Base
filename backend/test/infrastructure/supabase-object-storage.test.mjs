@@ -30,62 +30,110 @@ function snapshotEnv() {
   };
 }
 
-test('supabase storage writes encoded object paths with service-role headers and cache control', async (t) => {
-  const previousEnv = snapshotEnv();
-  const previousFetch = globalThis.fetch;
-  t.after(() => {
-    restoreEnv(previousEnv);
-    globalThis.fetch = previousFetch;
-  });
-  configureEnv();
+function createStorageDouble() {
   const calls = [];
-  globalThis.fetch = async (url, init) => {
-    calls.push({ url: String(url), init });
-    return new Response('ok', { status: 200 });
+  const handlers = {
+    upload: async () => ({ error: null }),
+    download: async () => ({ data: new Blob(['default']), error: null }),
+    remove: async () => ({ error: null }),
   };
+  const storage = {
+    upload: async (...args) => {
+      calls.push({ method: 'upload', args });
+      return handlers.upload(...args);
+    },
+    download: async (...args) => {
+      calls.push({ method: 'download', args });
+      return handlers.download(...args);
+    },
+    remove: async (...args) => {
+      calls.push({ method: 'remove', args });
+      return handlers.remove(...args);
+    },
+  };
+  const factoryCalls = [];
+  const factory = (config) => {
+    factoryCalls.push(config);
+    return storage;
+  };
+  return { calls, factory, factoryCalls, handlers };
+}
 
-  await new SupabaseObjectStorage().put({
+test('supabase storage uploads with bucket config, cache control and upsert', async (t) => {
+  const previousEnv = snapshotEnv();
+  t.after(() => restoreEnv(previousEnv));
+  configureEnv();
+  const double = createStorageDouble();
+
+  await new SupabaseObjectStorage(double.factory).put({
     key: 'users/user 1/workspaces/default/notes/20 Inbox/a#b.md',
     body: 'markdown',
     contentType: 'text/markdown; charset=utf-8',
   });
 
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, 'https://project.supabase.co/storage/v1/object/kb-private/users/user%201/workspaces/default/notes/20%20Inbox/a%23b.md');
-  assert.equal(calls[0].init.method, 'POST');
-  assert.equal(calls[0].init.headers.Authorization, 'Bearer service-role-key');
-  assert.equal(calls[0].init.headers.apikey, 'service-role-key');
-  assert.equal(calls[0].init.headers['x-upsert'], 'true');
-  assert.equal(calls[0].init.headers['cache-control'], '60');
-  assert.equal(calls[0].init.headers['content-type'], 'text/markdown; charset=utf-8');
+  assert.deepEqual(double.factoryCalls, [{
+    url: 'https://project.supabase.co',
+    serviceRoleKey: 'service-role-key',
+    bucket: 'kb-private',
+    cacheControl: '60',
+  }]);
+  assert.equal(double.calls.length, 1);
+  assert.equal(double.calls[0].method, 'upload');
+  assert.equal(double.calls[0].args[0], 'users/user 1/workspaces/default/notes/20 Inbox/a#b.md');
+  assert.equal(double.calls[0].args[1], 'markdown');
+  assert.deepEqual(double.calls[0].args[2], {
+    cacheControl: '60',
+    contentType: 'text/markdown; charset=utf-8',
+    upsert: true,
+  });
+});
+
+test('supabase storage uploads buffers as Uint8Array', async (t) => {
+  const previousEnv = snapshotEnv();
+  t.after(() => restoreEnv(previousEnv));
+  configureEnv();
+  const double = createStorageDouble();
+  const body = Buffer.from('hello world', 'utf8');
+
+  await new SupabaseObjectStorage(double.factory).put({
+    key: 'users/u/workspaces/w/notes/n.md',
+    body,
+  });
+
+  assert.equal(double.calls[0].method, 'upload');
+  assert.ok(double.calls[0].args[1] instanceof Uint8Array);
+  assert.equal(Buffer.from(double.calls[0].args[1]).toString('utf8'), 'hello world');
+  assert.deepEqual(double.calls[0].args[2], {
+    cacheControl: '60',
+    contentType: 'application/octet-stream',
+    upsert: true,
+  });
 });
 
 test('supabase storage reads object bytes', async (t) => {
   const previousEnv = snapshotEnv();
-  const previousFetch = globalThis.fetch;
-  t.after(() => {
-    restoreEnv(previousEnv);
-    globalThis.fetch = previousFetch;
-  });
+  t.after(() => restoreEnv(previousEnv));
   configureEnv();
-  globalThis.fetch = async () => new Response('hello world', { status: 200 });
+  const double = createStorageDouble();
+  double.handlers.download = async () => ({ data: new Blob(['hello world']), error: null });
 
-  const bytes = await new SupabaseObjectStorage().get('users/u/workspaces/w/notes/n.md');
+  const bytes = await new SupabaseObjectStorage(double.factory).get('users/u/workspaces/w/notes/n.md');
 
   assert.equal(bytes.toString('utf8'), 'hello world');
+  assert.equal(double.calls[0].method, 'download');
+  assert.equal(double.calls[0].args[0], 'users/u/workspaces/w/notes/n.md');
 });
 
 test('supabase storage ignores delete 404', async (t) => {
   const previousEnv = snapshotEnv();
-  const previousFetch = globalThis.fetch;
-  t.after(() => {
-    restoreEnv(previousEnv);
-    globalThis.fetch = previousFetch;
-  });
+  t.after(() => restoreEnv(previousEnv));
   configureEnv();
-  globalThis.fetch = async () => new Response('not found', { status: 404 });
+  const double = createStorageDouble();
+  double.handlers.remove = async () => ({ error: { message: 'not found', statusCode: '404' } });
 
-  await assert.doesNotReject(() => new SupabaseObjectStorage().delete('users/u/missing.md'));
+  await assert.doesNotReject(() => new SupabaseObjectStorage(double.factory).delete('users/u/missing.md'));
+  assert.equal(double.calls[0].method, 'remove');
+  assert.deepEqual(double.calls[0].args[0], ['users/u/missing.md']);
 });
 
 test('supabase storage throws clear config errors when required env is missing', async (t) => {
@@ -115,16 +163,40 @@ test('supabase storage throws clear config errors when required env is missing',
 
 test('supabase storage maps read 404 to missing content', async (t) => {
   const previousEnv = snapshotEnv();
-  const previousFetch = globalThis.fetch;
-  t.after(() => {
-    restoreEnv(previousEnv);
-    globalThis.fetch = previousFetch;
-  });
+  t.after(() => restoreEnv(previousEnv));
   configureEnv();
-  globalThis.fetch = async () => new Response('not found', { status: 404 });
+  const double = createStorageDouble();
+  double.handlers.download = async () => ({ data: null, error: { message: 'not found', statusCode: 404 } });
 
   await assert.rejects(
-    () => new SupabaseObjectStorage().get('users/u/missing.md'),
+    () => new SupabaseObjectStorage(double.factory).get('users/u/missing.md'),
     ObjectStorageMissingContentError,
+  );
+});
+
+test('supabase storage surfaces sdk errors with action prefixes', async (t) => {
+  const previousEnv = snapshotEnv();
+  t.after(() => restoreEnv(previousEnv));
+  configureEnv();
+
+  const putDouble = createStorageDouble();
+  putDouble.handlers.upload = async () => ({ error: { message: 'upload failed', statusCode: 503 } });
+  await assert.rejects(
+    () => new SupabaseObjectStorage(putDouble.factory).put({ key: 'note.md', body: 'x' }),
+    /supabase_storage_put_failed:503:upload failed/,
+  );
+
+  const getDouble = createStorageDouble();
+  getDouble.handlers.download = async () => ({ data: null, error: { message: 'download failed', statusCode: '500' } });
+  await assert.rejects(
+    () => new SupabaseObjectStorage(getDouble.factory).get('note.md'),
+    /supabase_storage_get_failed:500:download failed/,
+  );
+
+  const deleteDouble = createStorageDouble();
+  deleteDouble.handlers.remove = async () => ({ error: { message: 'delete failed', statusCode: 400 } });
+  await assert.rejects(
+    () => new SupabaseObjectStorage(deleteDouble.factory).delete('note.md'),
+    /supabase_storage_delete_failed:400:delete failed/,
   );
 });
