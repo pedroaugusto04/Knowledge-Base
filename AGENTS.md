@@ -74,6 +74,20 @@ Keep dependency injection aligned with the current framework. This project uses 
 - Keep persistence behind repository interfaces/ports.
 - Schema or storage contract changes must update repositories, mappers, seed/setup logic when applicable, docs, and impacted tests.
 - Never edit old applied migration files if migrations exist.
+- Database changes must be delivered as a new migration under `backend/src/infrastructure/persistence/migrations/**`, not as ad-hoc SQL hidden in repositories, bootstrap code, or tests.
+- Do not rely on `down` migrations as the primary production rollback plan. Treat `down` as local/dev support unless the user explicitly asks for a rollback workflow.
+- When changing schema, also review and update:
+  - repository queries and persistence mappers
+  - DTOs/contracts when the external shape changes
+  - local test setup and integration tests
+  - `README.md` when the operational process or required env/setup changes
+- Before concluding DB-related work, run the narrowest relevant verification and include it in the handoff. The default minimum expectation is:
+
+```bash
+npm --prefix knowledge-base run build:api
+npm --prefix knowledge-base run migrate
+npm --prefix knowledge-base run test:api
+```
 
 ## Frontend Architecture
 

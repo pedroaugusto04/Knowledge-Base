@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 
 import { ObjectStorage, ObjectStorageMissingContentError, type ObjectStoragePutInput } from '../../application/ports/object-storage.js';
@@ -81,7 +81,7 @@ function buildStorageError(prefix: string, error: unknown): Error {
 
 @Injectable()
 export class SupabaseObjectStorage extends ObjectStorage {
-  constructor(private readonly createStorageClient: SupabaseStorageClientFactory = createSupabaseStorageClient) {
+  constructor(@Optional() private readonly createStorageClient: SupabaseStorageClientFactory = createSupabaseStorageClient) {
     super();
   }
 

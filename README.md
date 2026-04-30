@@ -223,6 +223,48 @@ Toda resposta HTTP inclui `x-request-id`; a API reaproveita o valor recebido do 
 
 A persistência suportada é Postgres para metadados e Supabase Storage privado para payloads. O backend não importa dados antigos de markdown e não grava vault em disco. Markdown renderizado de notas é salvo no bucket em `users/{userId}/workspaces/{workspaceSlug}/notes/{normalized-note-path}` e `kb_notes` mantém `markdown_storage_key` com título, resumo, tags, links e metadados para listagem/busca. Anexos são salvos no bucket em `users/{userId}/workspaces/{workspaceSlug}/attachments/{noteId}/{safe-file-name}` e `kb_attachments` mantém `storage_key`, metadados, tamanho e checksum; estado de conversa fica em `kb_conversation_states`; controle de disparo de lembretes fica em `kb_reminder_dispatch_state`.
 
+As migrations do Postgres usam `node-pg-migrate` com arquivos versionados em `backend/src/infrastructure/persistence/migrations/**`. Para aplicar migrations pendentes manualmente:
+
+```bash
+npm run migrate
+```
+
+O bootstrap da API também aplica automaticamente as migrations pendentes quando `KB_DATABASE_URL` está configurada.
+
+### Processo para alterar o banco
+
+Fluxo recomendado para qualquer mudança de schema:
+
+1. Defina primeiro a mudança de domínio e de aplicação.
+2. Crie uma nova migration em `backend/src/infrastructure/persistence/migrations/` com nome sequencial e descritivo.
+3. Atualize o código que depende do schema novo: repositórios, mappers, serviços, contratos e docs afetadas.
+4. Rode as migrations localmente com `npm run migrate`.
+5. Valide com build e testes impactados antes de abrir PR.
+
+Boas práticas obrigatórias:
+
+- Nunca edite migrations antigas já aplicadas. Para corrigir ou evoluir schema, crie uma migration nova.
+- Prefira migrations aditivas e seguras para deploy: adicionar tabela, coluna, índice, backfill compatível e só depois remover legados em uma etapa posterior.
+- Evite mudanças destrutivas em uma única etapa quando a aplicação ainda puder ler/escrever o formato antigo.
+- Trate `down` como ferramenta de desenvolvimento/local. Não assuma rollback automático em produção como estratégia principal.
+- Toda mudança de schema deve vir junto com atualização de repositórios, mappers, setup de teste e documentação relevante.
+- Se a mudança afetar dados existentes, documente o impacto e a estratégia de compatibilidade no PR/handoff.
+
+Checklist mínimo antes de concluir uma mudança de banco:
+
+```bash
+npm run build:api
+npm run migrate
+npm run test:api
+```
+
+Notas do fluxo atual:
+
+- `npm run migrate` compila o backend e executa `backend/dist/infrastructure/persistence/run-migrations.js`.
+- A API aplica migrations `up` automaticamente no bootstrap quando `KB_DATABASE_URL` está configurada.
+- O runner de migrations usa a tabela `kb_schema_migrations`.
+- Os testes de API criam schemas isolados `kb_test_*` e aplicam migrations neles para cada teste.
+
 ## Build e testes
 
 ```bash

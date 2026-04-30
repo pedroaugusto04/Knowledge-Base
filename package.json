@@ -10,6 +10,7 @@
     "build": "npm run clean && npm run build:api && npm run build:frontend",
     "dev:api": "node scripts/dev-api.mjs",
     "dev:frontend": "vite --config frontend/vite.config.ts",
+    "migrate": "npm run build:api && node backend/dist/infrastructure/persistence/run-migrations.js",
     "test:api": "node scripts/run-api-tests.mjs",
     "test:frontend": "vitest run --config frontend/vite.config.ts",
     "test": "npm run test:api && npm run test:frontend"
@@ -21,6 +22,7 @@
     "@nestjs/platform-express": "^11.1.19",
     "@supabase/supabase-js": "^2.105.1",
     "@tanstack/react-query": "^5.62.8",
+    "node-pg-migrate": "^8.0.4",
     "pg": "^8.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
