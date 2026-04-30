@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "clean": "rm -rf dist backend/dist",
-    "build:api": "tsc -p backend/tsconfig.json",
+    "build:api": "rm -rf backend/dist && tsc -p backend/tsconfig.json",
     "build:frontend": "vite build --config frontend/vite.config.ts",
     "build": "npm run clean && npm run build:api && npm run build:frontend",
     "dev:api": "node scripts/dev-api.mjs",

@@ -1,10 +1,13 @@
 import { spawn } from 'node:child_process';
+import { rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tscEntrypoint = path.join(rootDir, 'node_modules', 'typescript', 'bin', 'tsc');
 const distEntrypoint = path.join(rootDir, 'backend', 'dist', 'main.js');
+
+rmSync(path.join(rootDir, 'backend', 'dist'), { recursive: true, force: true });
 
 function run(command, args, options = {}) {
   return spawn(command, args, {
