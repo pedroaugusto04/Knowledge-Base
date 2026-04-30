@@ -44,6 +44,9 @@ import {
   QueryKnowledgeUseCase,
   UpdateManualNoteUseCase,
   UpdateProjectUseCase,
+  ListProjectsUseCase,
+  ListWorkspacesUseCase,
+  ListNotesUseCase,
 } from './application/use-cases/index.js';
 import { AuthController, DashboardController, HealthController, InternalIntegrationsController, InternalN8NController, NotesController, OperationsController, ProjectsController, UserIntegrationsController, WebhookController, WorkspacesController } from './interfaces/http/controllers/index.js';
 import { AccessTokenAuthGuard, AuthRateLimitGuard, GlobalRateLimitGuard, InternalServiceTokenGuard, TrustedOriginGuard, WebhookRateLimitGuard } from './interfaces/http/auth.guards.js';
@@ -63,6 +66,9 @@ import { AppLogger } from './observability/logger.js';
     AppLogger,
     GlobalExceptionFilter,
     BuildDashboardUseCase,
+    ListProjectsUseCase,
+    ListWorkspacesUseCase,
+    ListNotesUseCase,
     CreateWorkspaceUseCase,
     CreateProjectUseCase,
     UpdateProjectUseCase,

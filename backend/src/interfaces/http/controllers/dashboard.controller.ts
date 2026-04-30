@@ -1,7 +1,14 @@
 import { Body, Controller, Get, NotFoundException, Param, Post, Query, UseGuards } from '@nestjs/common';
 
 import type { AuthenticatedUser } from '../../../application/auth.js';
-import { BuildDashboardUseCase, GetNoteDetailUseCase, QueryKnowledgeUseCase } from '../../../application/use-cases/index.js';
+import {
+  BuildDashboardUseCase,
+  GetNoteDetailUseCase,
+  ListNotesUseCase,
+  ListProjectsUseCase,
+  ListWorkspacesUseCase,
+  QueryKnowledgeUseCase,
+} from '../../../application/use-cases/index.js';
 import { CurrentUser } from '../auth.decorators.js';
 import { AccessTokenAuthGuard, TrustedOriginGuard } from '../auth.guards.js';
 import { noteIdParamSchema, type NoteIdParam } from '../dto/dashboard.dto.js';
@@ -13,6 +20,9 @@ import { ZodValidationPipe } from '../zod-validation.pipe.js';
 export class DashboardController {
   constructor(
     private readonly buildDashboard: BuildDashboardUseCase,
+    private readonly listProjectsUseCase: ListProjectsUseCase,
+    private readonly listWorkspacesUseCase: ListWorkspacesUseCase,
+    private readonly listNotesUseCase: ListNotesUseCase,
     private readonly getNoteDetail: GetNoteDetailUseCase,
     private readonly queryKnowledge: QueryKnowledgeUseCase,
   ) {}
@@ -24,17 +34,17 @@ export class DashboardController {
 
   @Get('projects')
   async projects(@CurrentUser() user: AuthenticatedUser) {
-    return { ok: true, projects: (await this.buildDashboard.execute(user.id)).projects };
+    return { ok: true, projects: await this.listProjectsUseCase.execute(user.id) };
   }
 
   @Get('workspaces')
   async workspaces(@CurrentUser() user: AuthenticatedUser) {
-    return { ok: true, workspaces: (await this.buildDashboard.execute(user.id)).workspaces };
+    return { ok: true, workspaces: await this.listWorkspacesUseCase.execute(user.id) };
   }
 
   @Get('notes')
   async notes(@CurrentUser() user: AuthenticatedUser) {
-    return { ok: true, notes: (await this.buildDashboard.execute(user.id)).notes };
+    return { ok: true, notes: await this.listNotesUseCase.execute(user.id) };
   }
 
   @Get('notes/:id')

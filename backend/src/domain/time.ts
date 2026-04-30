@@ -56,6 +56,14 @@ function timeZoneOffsetMs(date: Date, timeZone: string): number {
   return asUtc - date.getTime();
 }
 
+function isValidDate(year: string | number, month: string | number, day: string | number) {
+  const y = Number(year);
+  const m = Number(month);
+  const d = Number(day);
+  const parsed = new Date(Date.UTC(y, m - 1, d));
+  return parsed.getUTCFullYear() === y && parsed.getUTCMonth() === m - 1 && parsed.getUTCDate() === d;
+}
+
 export function normalizeDate(value: string, timeZone = 'UTC'): string {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -63,12 +71,7 @@ export function normalizeDate(value: string, timeZone = 'UTC'): string {
   let match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (match) {
     const [, year, month, day] = match;
-    const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-    if (
-      parsed.getUTCFullYear() === Number(year) &&
-      parsed.getUTCMonth() === Number(month) - 1 &&
-      parsed.getUTCDate() === Number(day)
-    ) {
+    if (isValidDate(year, month, day)) {
       return `${year}-${month}-${day}`;
     }
     return '';
@@ -77,12 +80,7 @@ export function normalizeDate(value: string, timeZone = 'UTC'): string {
   match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (match) {
     const [, day, month, year] = match;
-    const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-    if (
-      parsed.getUTCFullYear() === Number(year) &&
-      parsed.getUTCMonth() === Number(month) - 1 &&
-      parsed.getUTCDate() === Number(day)
-    ) {
+    if (isValidDate(year, month, day)) {
       return `${year}-${month}-${day}`;
     }
   }
