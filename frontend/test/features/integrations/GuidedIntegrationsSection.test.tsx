@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithAppProviders } from '../../../src/app/test-utils';
@@ -23,6 +23,155 @@ afterEach(() => {
 });
 
 describe('GuidedIntegrationsSection', () => {
+  it('closes the repositories modal immediately when nothing changed', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          integrations: [
+            {
+              provider: 'github-app',
+              name: 'GitHub App',
+              description: 'Dados de instalacao do GitHub App.',
+              status: 'connected',
+              workspaceSlug: 'default',
+              publicMetadata: {},
+              primaryAction: { type: 'revoke', label: 'Revogar' },
+              steps: ['Integracao conectada.'],
+              lastError: null,
+              connectedAccount: 'acme',
+              updatedAt: '2026-04-27T10:00:00.000Z',
+              revokedAt: null,
+            },
+          ],
+        });
+      }
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          repositories: [
+            { fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: true },
+          ],
+        });
+      }
+      return new Response(null, { status: 404 });
+    }));
+
+    renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
+    const modal = await screen.findByRole('dialog', { name: 'Selecionar repositorios' });
+    fireEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Selecionar repositorios' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('dialog', { name: 'Descartar alterações?' })).not.toBeInTheDocument();
+  });
+
+  it('asks for confirmation before discarding repository selection changes and closes after confirmation', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          integrations: [
+            {
+              provider: 'github-app',
+              name: 'GitHub App',
+              description: 'Dados de instalacao do GitHub App.',
+              status: 'connected',
+              workspaceSlug: 'default',
+              publicMetadata: {},
+              primaryAction: { type: 'revoke', label: 'Revogar' },
+              steps: ['Integracao conectada.'],
+              lastError: null,
+              connectedAccount: 'acme',
+              updatedAt: '2026-04-27T10:00:00.000Z',
+              revokedAt: null,
+            },
+          ],
+        });
+      }
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          repositories: [
+            { fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
+          ],
+        });
+      }
+      return new Response(null, { status: 404 });
+    }));
+
+    renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
+    const modal = await screen.findByRole('dialog', { name: 'Selecionar repositorios' });
+    fireEvent.click(await within(modal).findByRole('checkbox'));
+    fireEvent.click(within(modal).getByRole('button', { name: 'Fechar detalhes' }));
+
+    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar sem salvar' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Selecionar repositorios' })).not.toBeInTheDocument());
+  });
+
+  it('keeps repository selection changes when discard is canceled', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          integrations: [
+            {
+              provider: 'github-app',
+              name: 'GitHub App',
+              description: 'Dados de instalacao do GitHub App.',
+              status: 'connected',
+              workspaceSlug: 'default',
+              publicMetadata: {},
+              primaryAction: { type: 'revoke', label: 'Revogar' },
+              steps: ['Integracao conectada.'],
+              lastError: null,
+              connectedAccount: 'acme',
+              updatedAt: '2026-04-27T10:00:00.000Z',
+              revokedAt: null,
+            },
+          ],
+        });
+      }
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          repositories: [
+            { fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
+          ],
+        });
+      }
+      return new Response(null, { status: 404 });
+    }));
+
+    renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
+    const modal = await screen.findByRole('dialog', { name: 'Selecionar repositorios' });
+    const checkbox = await within(modal).findByRole('checkbox');
+    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByRole('presentation'));
+
+    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
+
+    expect(screen.getByRole('dialog', { name: 'Selecionar repositorios' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toBeChecked();
+  });
+
   it('shows the backend message inline when an integration activation fails', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -168,6 +317,8 @@ describe('GuidedIntegrationsSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
 
     await waitFor(() => expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Repositorios salvos com sucesso.'));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Selecionar repositorios' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('dialog', { name: 'Descartar alterações?' })).not.toBeInTheDocument();
   });
 
   it('shows backend field errors inline when saving GitHub repositories fails', async () => {

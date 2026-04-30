@@ -17,6 +17,8 @@ import type { GithubIntegrationRepository, IntegrationConnectionResponse, UserIn
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../shared/forms/errors';
 import { FormActions } from '../../shared/forms/fields';
 import { notifySuccess } from '../../shared/ui/notifications';
+import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
+import { discardChangesConfirmationCopy, useModalCloseGuard } from '../../shared/ui/use-modal-close-guard';
 import { Badge, EmptyState, InlineMessage, Panel } from '../../shared/ui/primitives';
 
 const statusLabel: Record<DisplayStatus | string, string> = {
@@ -143,8 +145,9 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
   const formRef = useRef<HTMLFormElement>(null);
   const repositoriesQuery = useQuery({ queryKey: ['github-repositories', workspaceSlug], queryFn: () => fetchGithubRepositories(workspaceSlug) });
   const {
-    formState: { errors },
+    formState: { errors, isDirty },
     handleSubmit,
+    reset,
     setError,
     setValue,
     watch,
@@ -155,10 +158,15 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
   });
   const selected = watch('repositories');
   const repositories = repositoriesQuery.data?.repositories || [];
+  const closeGuard = useModalCloseGuard({ isDirty, onClose });
 
   useEffect(() => {
-    if (repositoriesQuery.data) setValue('repositories', repositoriesQuery.data.repositories.filter((repo) => repo.selected).map((repo) => repo.fullName));
-  }, [repositoriesQuery.data, setValue]);
+    if (repositoriesQuery.data) {
+      reset({
+        repositories: repositoriesQuery.data.repositories.filter((repo) => repo.selected).map((repo) => repo.fullName),
+      });
+    }
+  }, [repositoriesQuery.data, reset]);
 
   const saveMutation = useMutation({
     mutationFn: (values: GithubRepositoriesFormValues) => saveGithubRepositories(workspaceSlug, values.repositories),
@@ -166,6 +174,7 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
       queryClient.invalidateQueries({ queryKey: ['integrations', workspaceSlug] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       notifySuccess('Repositorios salvos com sucesso.');
+      closeGuard.resetCloseGuard();
       onSaved?.();
       onClose();
     },
@@ -182,18 +191,19 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
   const toggle = (repository: GithubIntegrationRepository) => {
     setValue('repositories', selected.includes(repository.fullName)
       ? selected.filter((item) => item !== repository.fullName)
-      : [...selected, repository.fullName], { shouldValidate: true });
+      : [...selected, repository.fullName], { shouldDirty: true, shouldValidate: true });
   };
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <>
+      <div className="modal-backdrop" role="presentation" onClick={closeGuard.requestClose}>
       <section aria-labelledby="github-repositories-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
         <div className="modal-head">
           <div>
             <div className="card-kicker">github-app</div>
             <h2 id="github-repositories-title">Selecionar repositorios</h2>
           </div>
-          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={onClose}>x</button>
+          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
         </div>
 
         {repositoriesQuery.isLoading ? <p className="meta">Carregando repositorios...</p> : null}
@@ -221,11 +231,23 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
           {errors.repositories?.message ? <p className="form-error" role="alert">{errors.repositories.message}</p> : null}
           <div className="integration-card-foot">
             <span className="meta">{selected.length} selecionados</span>
-            <FormActions disabled={saveMutation.isPending} onCancel={onClose} submitLabel="Salvar" />
+            <FormActions disabled={saveMutation.isPending} onCancel={closeGuard.requestClose} submitLabel="Salvar" />
           </div>
         </form>
       </section>
-    </div>
+      </div>
+      {closeGuard.isDiscardConfirmationOpen ? (
+        <ConfirmationModal
+          cancelLabel={discardChangesConfirmationCopy.cancelLabel}
+          confirmLabel={discardChangesConfirmationCopy.confirmLabel}
+          description={discardChangesConfirmationCopy.description}
+          onCancel={closeGuard.cancelClose}
+          onConfirm={closeGuard.confirmClose}
+          title={discardChangesConfirmationCopy.title}
+          tone="default"
+        />
+      ) : null}
+    </>
   );
 }
 

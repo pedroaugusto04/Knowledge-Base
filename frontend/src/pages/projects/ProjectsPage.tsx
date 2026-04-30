@@ -12,6 +12,8 @@ import type { Project } from '../../shared/api/models/project';
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../shared/forms/errors';
 import { FormActions, FormField } from '../../shared/forms/fields';
 import { notifySuccess } from '../../shared/ui/notifications';
+import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
+import { discardChangesConfirmationCopy, useModalCloseGuard } from '../../shared/ui/use-modal-close-guard';
 import { PageHead, Panel, Tags } from '../../shared/ui/primitives';
 import { NoteRow } from '../../widgets/notes/NoteRow';
 import { ProjectCard } from '../../widgets/projects/ProjectCard';
@@ -150,12 +152,14 @@ export function ProjectsPage({ dashboard, selectedProject, setSelectedProject, o
         />
       ) : null}
       {confirmState ? (
-        <ConfirmModal
+        <ConfirmationModal
           busy={deleteProjectMutation.isPending || deleteNoteMutation.isPending}
+          cancelLabel="Cancelar"
+          confirmLabel="Confirmar exclusão"
           description={confirmState.kind === 'project'
             ? `A exclusao do projeto ${confirmState.project.displayName} e definitiva.`
             : `A exclusao da nota ${confirmState.note.title} tambem remove o lembrete vinculado, quando existir.`}
-          onClose={() => setConfirmState(null)}
+          onCancel={() => setConfirmState(null)}
           onConfirm={() => {
             if (confirmState.kind === 'project') {
               deleteProjectMutation.mutate(confirmState.project.projectSlug);
@@ -197,7 +201,7 @@ function ProjectModal({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const {
-    formState: { errors },
+    formState: { errors, isDirty },
     handleSubmit,
     register,
     setError,
@@ -224,7 +228,10 @@ function ProjectModal({
         ? createProject({ ...payload, projectSlug: values.projectSlug || undefined })
         : updateProject(project?.projectSlug || '', payload);
     },
-    onSuccess: async (result) => onSaved(result.project.projectSlug, mode),
+    onSuccess: async (result) => {
+      closeGuard.resetCloseGuard();
+      await onSaved(result.project.projectSlug, mode);
+    },
     onError: (error) => {
       const fieldNames = applyBackendFieldErrors<ProjectFormValues>(error, setError);
       if (fieldNames.length > 0) {
@@ -234,16 +241,18 @@ function ProjectModal({
       notifyGeneralFormError(error, mode === 'create' ? 'Nao foi possivel criar o projeto.' : 'Nao foi possivel atualizar o projeto.');
     },
   });
+  const closeGuard = useModalCloseGuard({ isDirty, onClose });
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <>
+      <div className="modal-backdrop" role="presentation" onClick={closeGuard.requestClose}>
       <section aria-labelledby="project-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
         <div className="modal-head">
           <div>
             <h2 id="project-modal-title">{mode === 'create' ? 'Novo projeto' : 'Editar projeto'}</h2>
             <p>Cadastre o vinculo explicito com um repositorio GitHub.</p>
           </div>
-          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={onClose}>x</button>
+          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
         </div>
         <form
           className="auth-form"
@@ -284,10 +293,22 @@ function ProjectModal({
               {(fieldProps) => <input {...fieldProps} {...register('defaultTags')} />}
             </FormField>
           </div>
-          <FormActions disabled={mutation.isPending} onCancel={onClose} submitLabel={mode === 'create' ? 'Criar projeto' : 'Salvar projeto'} />
+          <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar projeto' : 'Salvar projeto'} />
         </form>
       </section>
-    </div>
+      </div>
+      {closeGuard.isDiscardConfirmationOpen ? (
+        <ConfirmationModal
+          cancelLabel={discardChangesConfirmationCopy.cancelLabel}
+          confirmLabel={discardChangesConfirmationCopy.confirmLabel}
+          description={discardChangesConfirmationCopy.description}
+          onCancel={closeGuard.cancelClose}
+          onConfirm={closeGuard.confirmClose}
+          title={discardChangesConfirmationCopy.title}
+          tone="default"
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -306,7 +327,7 @@ function NoteModal({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const {
-    formState: { errors },
+    formState: { errors, isDirty },
     handleSubmit,
     register,
     setError,
@@ -335,7 +356,10 @@ function NoteModal({
         ? createNote({ ...payload, projectSlug })
         : updateNote(note?.id || '', payload);
     },
-    onSuccess: async (result) => onSaved(result.noteId, mode),
+    onSuccess: async (result) => {
+      closeGuard.resetCloseGuard();
+      await onSaved(result.noteId, mode);
+    },
     onError: (error) => {
       const fieldNames = applyBackendFieldErrors<NoteFormValues>(error, setError);
       if (fieldNames.length > 0) {
@@ -345,16 +369,18 @@ function NoteModal({
       notifyGeneralFormError(error, mode === 'create' ? 'Nao foi possivel criar a nota.' : 'Nao foi possivel atualizar a nota.');
     },
   });
+  const closeGuard = useModalCloseGuard({ isDirty, onClose });
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <>
+      <div className="modal-backdrop" role="presentation" onClick={closeGuard.requestClose}>
       <section aria-labelledby="note-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
         <div className="modal-head">
           <div>
             <h2 id="note-modal-title">{mode === 'create' ? 'Nova nota' : 'Editar nota'}</h2>
             <p>{projectSlug}</p>
           </div>
-          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={onClose}>x</button>
+          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
         </div>
         <form
           className="auth-form"
@@ -382,41 +408,21 @@ function NoteModal({
               {(fieldProps) => <input type="time" {...fieldProps} {...register('reminderTime')} />}
             </FormField>
           </div>
-          <FormActions disabled={mutation.isPending} onCancel={onClose} submitLabel={mode === 'create' ? 'Criar nota' : 'Salvar nota'} />
+          <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar nota' : 'Salvar nota'} />
         </form>
       </section>
-    </div>
-  );
-}
-
-function ConfirmModal({
-  busy,
-  description,
-  onClose,
-  onConfirm,
-  title,
-}: {
-  busy: boolean;
-  description: string;
-  onClose: () => void;
-  onConfirm: () => void;
-  title: string;
-}) {
-  return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <section aria-labelledby="confirm-modal-title" aria-modal="true" className="modal-panel integration-modal confirm-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
-        <div className="modal-head">
-          <div>
-            <h2 id="confirm-modal-title">{title}</h2>
-            <p>{description}</p>
-          </div>
-          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={onClose}>x</button>
-        </div>
-        <div className="form-actions">
-          <button className="filter-chip" type="button" onClick={onClose}>Cancelar</button>
-          <button className="icon-button danger-button" disabled={busy} type="button" onClick={onConfirm}>Confirmar exclusão</button>
-        </div>
-      </section>
-    </div>
+      </div>
+      {closeGuard.isDiscardConfirmationOpen ? (
+        <ConfirmationModal
+          cancelLabel={discardChangesConfirmationCopy.cancelLabel}
+          confirmLabel={discardChangesConfirmationCopy.confirmLabel}
+          description={discardChangesConfirmationCopy.description}
+          onCancel={closeGuard.cancelClose}
+          onConfirm={closeGuard.confirmClose}
+          title={discardChangesConfirmationCopy.title}
+          tone="default"
+        />
+      ) : null}
+    </>
   );
 }

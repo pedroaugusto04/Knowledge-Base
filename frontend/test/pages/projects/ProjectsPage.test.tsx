@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithAppProviders } from '../../../src/app/test-utils';
@@ -101,6 +101,93 @@ function renderProjects() {
 }
 
 describe('ProjectsPage', () => {
+  it('closes the new project modal immediately when nothing changed', () => {
+    renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
+    const modal = screen.getByRole('dialog', { name: 'Novo projeto' });
+
+    fireEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Novo projeto' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Descartar alterações?' })).not.toBeInTheDocument();
+  });
+
+  it('asks for confirmation before discarding project changes and closes after confirmation', () => {
+    renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
+    const modal = screen.getByRole('dialog', { name: 'Novo projeto' });
+    fireEvent.change(within(modal).getByLabelText('Nome'), { target: { value: 'Billing API' } });
+
+    fireEvent.click(within(modal).getByRole('button', { name: 'Fechar detalhes' }));
+
+    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar sem salvar' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Novo projeto' })).not.toBeInTheDocument();
+  });
+
+  it('keeps project modal values when discard is canceled', () => {
+    renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
+    const modal = screen.getByRole('dialog', { name: 'Novo projeto' });
+    const nameInput = within(modal).getByLabelText('Nome');
+    fireEvent.change(nameInput, { target: { value: 'Billing API' } });
+
+    fireEvent.click(screen.getByRole('presentation'));
+
+    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
+
+    expect(screen.getByRole('dialog', { name: 'Novo projeto' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Billing API')).toBeInTheDocument();
+  });
+
+  it('closes the new note modal immediately when nothing changed', () => {
+    renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
+    const modal = screen.getByRole('dialog', { name: 'Nova nota' });
+
+    fireEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Nova nota' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Descartar alterações?' })).not.toBeInTheDocument();
+  });
+
+  it('asks for confirmation before discarding note changes and closes after confirmation', () => {
+    renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
+    const modal = screen.getByRole('dialog', { name: 'Nova nota' });
+    fireEvent.change(within(modal).getByLabelText('Texto'), { target: { value: 'confirmar deploy' } });
+
+    fireEvent.click(within(modal).getByRole('button', { name: 'Fechar detalhes' }));
+
+    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar sem salvar' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Nova nota' })).not.toBeInTheDocument();
+  });
+
+  it('keeps note modal values when discard is canceled', () => {
+    renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
+    const modal = screen.getByRole('dialog', { name: 'Nova nota' });
+    fireEvent.change(within(modal).getByLabelText('Texto'), { target: { value: 'confirmar deploy' } });
+
+    fireEvent.click(screen.getByRole('presentation'));
+
+    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
+
+    expect(screen.getByRole('dialog', { name: 'Nova nota' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('confirmar deploy')).toBeInTheDocument();
+  });
+
   it('shows frontend validation inline and focuses the first invalid project field', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
