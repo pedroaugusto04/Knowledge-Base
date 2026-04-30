@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { AuthService } from '../../../dist/application/auth.js';
 import { IntegrationConnectionService } from '../../../dist/application/integration-connections.js';
 import { IntegrationCredentialService } from '../../../dist/application/credentials.js';
+import { TrustedOriginGuard } from '../../../dist/interfaces/http/auth.guards.js';
 import { AuthController, InternalIntegrationsController, UserIntegrationsController } from '../../../dist/interfaces/http/controllers/index.js';
 import { createPostgresTestRepositories } from '../../helpers/postgres-test-repositories.mjs';
 
@@ -146,12 +147,15 @@ test('refresh issues a new access cookie and logout clears browser cookies', asy
   assert.deepEqual(logoutResponse.cleared.map((cookie) => cookie.name), ['kb_access_token', 'kb_refresh_token']);
 });
 
-test('mutable browser endpoints reject invalid Origin', async (t) => {
-  const { auth } = await fixture(t);
-  const controller = new AuthController(auth);
+test('trusted origin guard rejects invalid Origin for mutable browser endpoints', async () => {
+  const guard = new TrustedOriginGuard();
 
-  await assert.rejects(
-    () => controller.login({ email: 'admin@example.com', password: 'admin-password' }, { headers: { origin: 'https://evil.example.com', host: 'kb.example.com' }, protocol: 'https' }, responseMock()),
+  assert.throws(
+    () => guard.canActivate({
+      switchToHttp: () => ({
+        getRequest: () => ({ headers: { origin: 'https://evil.example.com', host: 'kb.example.com' }, protocol: 'https' }),
+      }),
+    }),
     /invalid_origin/,
   );
 });
@@ -159,7 +163,7 @@ test('mutable browser endpoints reject invalid Origin', async (t) => {
 test('guided credentials are encrypted, never returned, and resolved internally by userId or external identity', async (t) => {
   const { auth, repositories, credentials, connections } = await fixture(t);
   const authController = new AuthController(auth);
-  const userController = new UserIntegrationsController(auth, credentials, connections);
+  const userController = new UserIntegrationsController(credentials, connections);
   const internalController = new InternalIntegrationsController(credentials);
 
   const loginResponse = responseMock();
@@ -188,21 +192,19 @@ test('guided credentials are encrypted, never returned, and resolved internally 
   const resolvedByUser = await internalController.resolve(
     { provider: 'whatsapp' },
     { workspaceSlug: 'default', userId: login.user.id },
-    { headers: { authorization: 'Bearer internal-token' } },
   );
   assert.deepEqual(resolvedByUser.config, { groupJid: '120363@g.us' });
 
   const resolvedByIdentity = await internalController.resolve(
     { provider: 'whatsapp' },
     { workspaceSlug: 'default', externalIdentity: { provider: 'whatsapp', identityType: 'jid', externalId: '120363@g.us' } },
-    { headers: { authorization: 'Bearer internal-token' } },
   );
   assert.equal(resolvedByIdentity.userId, login.user.id);
 
-  const listed = await userController.list(login.user, request, { workspaceSlug: 'default' });
+  const listed = await userController.list(login.user, { workspaceSlug: 'default' });
   assert.equal(JSON.stringify(listed).includes('encryptedConfig'), false);
 
-  const revoked = await userController.revoke({ provider: 'whatsapp' }, { workspaceSlug: 'default' }, login.user, request);
+  const revoked = await userController.revoke({ provider: 'whatsapp' }, { workspaceSlug: 'default' }, login.user);
   assert.equal(revoked.integration.status, 'revoked');
   const revokedStored = await repositories.credentialRepository.findCredential(login.user.id, 'default', 'whatsapp');
   assert.equal(JSON.stringify(revokedStored.encryptedConfig).includes('120363@g.us'), false);
@@ -211,7 +213,7 @@ test('guided credentials are encrypted, never returned, and resolved internally 
 test('guided connection rejects identity hijacking', async (t) => {
   const first = await fixture(t);
   const firstAuthController = new AuthController(first.auth);
-  const firstUserController = new UserIntegrationsController(first.auth, first.credentials, first.connections);
+  const firstUserController = new UserIntegrationsController(first.credentials, first.connections);
   const firstLoginResponse = responseMock();
   const firstLogin = await firstAuthController.login(
     { email: 'admin@example.com', password: 'admin-password' },
@@ -249,7 +251,7 @@ test('guided connection rejects identity hijacking', async (t) => {
     createdAt: '2026-04-27T00:00:00.000Z',
     updatedAt: '2026-04-27T00:00:00.000Z',
   });
-  const secondController = new UserIntegrationsController(secondAuth, secondCredentials, secondConnections);
+  const secondController = new UserIntegrationsController(secondCredentials, secondConnections);
   const secondToken = secondAuth.issueTokens(secondUser).accessToken;
   const secondCurrentUser = { id: secondUser.id, email: secondUser.email, displayName: secondUser.displayName, role: secondUser.role };
   const secondSetup = await secondController.connect(
@@ -262,5 +264,27 @@ test('guided connection rejects identity hijacking', async (t) => {
   await assert.rejects(
     () => secondConnections.completeWhatsappFromWebhook({ code: secondSetup.verificationCode, groupJid: '120363@g.us' }),
     /external_identity_already_bound/,
+  );
+});
+
+test('guarded user integrations controller depends on current user instead of reauthenticating request cookies', async (t) => {
+  const { auth, credentials, connections } = await fixture(t);
+  const authController = new AuthController(auth);
+  const userController = new UserIntegrationsController(credentials, connections);
+  const loginResponse = responseMock();
+  await authController.login(
+    { email: 'admin@example.com', password: 'admin-password' },
+    { headers: { origin: 'https://kb.example.com', host: 'kb.example.com' }, protocol: 'https' },
+    loginResponse,
+  );
+  const accessToken = loginResponse.cookies.find((cookie) => cookie.name === 'kb_access_token').value;
+
+  await assert.rejects(
+    () => userController.connect(
+      { provider: 'whatsapp' },
+      { workspaceSlug: 'default' },
+      undefined,
+      { headers: { origin: 'https://kb.example.com', host: 'kb.example.com', cookie: `kb_access_token=${accessToken}` }, protocol: 'https' },
+    ),
   );
 });

@@ -7,6 +7,7 @@ import { internalN8nIngestBodySchema } from '../../../dist/interfaces/http/dto/i
 import { markRemindersBodySchema, queryRequestSchema } from '../../../dist/interfaces/http/dto/query.dto.js';
 import { createNoteBodySchema, noteIdParamSchema, updateNoteBodySchema } from '../../../dist/interfaces/http/dto/note.dto.js';
 import { createProjectBodySchema, projectSlugParamSchema, updateProjectBodySchema } from '../../../dist/interfaces/http/dto/project.dto.js';
+import { whatsappWebhookBodySchema } from '../../../dist/interfaces/http/dto/webhook.dto.js';
 import { createWorkspaceBodySchema } from '../../../dist/interfaces/http/dto/workspace.dto.js';
 
 test('query dto normalizes limit and slugs', () => {
@@ -104,7 +105,6 @@ test('conversation dto accepts valid payloads', () => {
 
 test('internal n8n ingest dto accepts direct and wrapped payloads', () => {
   const payload = {
-    schemaVersion: 1,
     source: { channel: 'external', system: 'test', actor: '', conversationId: '', correlationId: 'corr-1' },
     event: { type: 'manual_note', occurredAt: '2026-04-27T10:00:00.000Z', projectSlug: 'N8N Automations' },
     content: { rawText: 'texto', title: '', attachments: [], sections: {} },
@@ -115,6 +115,18 @@ test('internal n8n ingest dto accepts direct and wrapped payloads', () => {
 
   assert.equal(internalN8nIngestBodySchema.parse(payload).payload.event.projectSlug, 'n8n-automations');
   assert.equal(internalN8nIngestBodySchema.parse({ payload, externalId: '123' }).payload.event.projectSlug, 'n8n-automations');
+});
+
+test('whatsapp webhook dto rejects canonical ingest payloads', () => {
+  assert.throws(() => whatsappWebhookBodySchema.parse({
+    source: { channel: 'whatsapp', system: 'test', actor: '', conversationId: '120363@g.us', correlationId: 'corr-1' },
+    event: { type: 'manual_note', occurredAt: '2026-04-27T10:00:00.000Z', projectSlug: 'n8n' },
+    content: { rawText: 'texto', title: '', attachments: [], sections: {} },
+    classification: { kind: 'note', canonicalType: 'event', importance: 'low', tags: [], decisionFlag: false },
+    actions: {},
+    metadata: {},
+  }));
+  assert.equal(whatsappWebhookBodySchema.parse({ event: 'MESSAGES_UPSERT', data: { key: { remoteJid: '120363@g.us' }, message: { conversation: 'oi' } } }).event, 'MESSAGES_UPSERT');
 });
 
 test('integration dto rejects invalid provider and invalid resolve payload', () => {

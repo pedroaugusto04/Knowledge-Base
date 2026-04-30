@@ -39,6 +39,17 @@ type GithubInstallation = {
   account?: { login?: string };
 };
 
+type CodeBasedProvider = IntegrationProvider.Whatsapp | IntegrationProvider.Telegram;
+
+type CodeBasedConnectionSpec = {
+  provider: CodeBasedProvider;
+  externalProvider: ExternalIdentityProvider.Whatsapp | ExternalIdentityProvider.Telegram;
+  identityType: 'jid' | 'chat_id';
+  label: string;
+  externalIdKey: 'groupJid' | 'chatId';
+  workspaceBinding: 'whatsappGroupJid' | 'telegramChatId';
+};
+
 function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -91,7 +102,14 @@ function normalizeGithubAppInstallUrl(url: string): string {
 }
 
 function extractGithubInstallationId(value: unknown): string {
-  return String(value || '').trim();
+  const installationId = String(value ?? '').trim();
+  if (!installationId) throw new BadRequestException('github_callback_missing_code_or_installation');
+  return installationId;
+}
+
+function normalizeTrimmedValue(value: string): string {
+  const normalized = value.trim();
+  return normalized;
 }
 
 function normalizeWorkspaceSlug(value: string): string {
@@ -196,42 +214,39 @@ export class IntegrationConnectionService {
   async completeGithub(input: { userId: string; state: string; code: string; installationId: string }) {
     const session = await this.sessions.findActiveConnectionSessionByState(IntegrationProvider.GithubApp, sha256(input.state), new Date().toISOString());
     if (!session || session.userId !== input.userId) throw new UnauthorizedException('invalid_connection_state');
+    if (!input.code) throw new BadRequestException('github_callback_missing_code_or_installation');
     const installationId = extractGithubInstallationId(input.installationId);
-    if (!input.code || !installationId) throw new BadRequestException('github_callback_missing_code_or_installation');
 
     try {
       const installation = await this.verifyGithubInstallation(input.code, installationId);
-      const accountLogin = String(installation.account?.login || '').trim();
-      const existing = await this.externalIdentities.findExternalIdentity(ExternalIdentityProvider.GithubApp, 'installation_id', installationId);
-      if (existing && existing.userId !== input.userId) throw new ConflictException('external_identity_already_bound');
-      const credential = await this.credentials.upsertCredential({
+      const accountLogin = this.normalizeGithubAccountLogin(installation);
+      await this.assertExternalIdentityAvailable(ExternalIdentityProvider.GithubApp, 'installation_id', installationId, input.userId);
+      const credential = await this.upsertConnectedCredential({
         userId: input.userId,
         workspaceSlug: session.workspaceSlug,
         provider: IntegrationProvider.GithubApp,
-        status: CredentialRecordStatus.Connected,
-        encryptedConfig: encryptConfig({ installationId, accountLogin }),
+        encryptedConfig: { installationId, accountLogin },
         publicMetadata: {
           label: accountLogin ? `GitHub ${accountLogin}` : 'GitHub App',
-          connectedAccount: accountLogin || installationId,
+          connectedAccount: this.connectedAccount(accountLogin, installationId),
         },
       });
-      await this.externalIdentities.upsertExternalIdentity({
+      await this.upsertExternalIdentity({
         userId: input.userId,
         workspaceSlug: session.workspaceSlug,
         provider: ExternalIdentityProvider.GithubApp,
         identityType: 'installation_id',
         externalId: installationId,
         credentialId: credential.id,
-        metadata: {},
         publicMetadata: { accountLogin },
       });
-      const consumed = await this.sessions.consumeConnectionSession(session.id, CONNECTED_STATUS, { installationId, connectedAccount: accountLogin || installationId });
+      const consumed = await this.consumeSessionAsConnected(session.id, { installationId, connectedAccount: this.connectedAccount(accountLogin, installationId) });
       const finalSession = consumed || session;
       return {
         ok: true as const,
         provider: IntegrationProvider.GithubApp,
         session: publicSession(finalSession),
-        connectedAccount: accountLogin || installationId,
+        connectedAccount: this.connectedAccount(accountLogin, installationId),
         redirectUrl: this.buildGithubCallbackRedirect(finalSession, 'connected'),
       };
     } catch (error) {
@@ -252,69 +267,33 @@ export class IntegrationConnectionService {
   }
 
   async completeWhatsappFromWebhook(input: { code: string; groupJid: string }) {
-    const groupJid = input.groupJid.trim();
-    if (!groupJid) throw new UnauthorizedException('missing_external_identity');
-    const session = await this.sessions.findActiveConnectionSessionByCode(IntegrationProvider.Whatsapp, sha256(input.code.trim().toUpperCase()), new Date().toISOString());
-    if (!session) throw new NotFoundException('connection_session_not_found');
-    const existing = await this.externalIdentities.findExternalIdentity(ExternalIdentityProvider.Whatsapp, 'jid', groupJid);
-    if (existing && existing.userId !== session.userId) throw new ConflictException('external_identity_already_bound');
-    const credential = await this.credentials.upsertCredential({
-      userId: session.userId,
-      workspaceSlug: session.workspaceSlug,
-      provider: IntegrationProvider.Whatsapp,
-      status: CredentialRecordStatus.Connected,
-      encryptedConfig: encryptConfig({ groupJid }),
-      publicMetadata: {
+    return this.completeCodeBasedConnection({
+      code: input.code,
+      externalId: input.groupJid,
+      spec: {
+        provider: IntegrationProvider.Whatsapp,
+        externalProvider: ExternalIdentityProvider.Whatsapp,
+        identityType: 'jid',
         label: 'Grupo WhatsApp',
-        connectedAccount: groupJid,
+        externalIdKey: 'groupJid',
+        workspaceBinding: 'whatsappGroupJid',
       },
     });
-    await this.externalIdentities.upsertExternalIdentity({
-      userId: session.userId,
-      workspaceSlug: session.workspaceSlug,
-      provider: ExternalIdentityProvider.Whatsapp,
-      identityType: 'jid',
-      externalId: groupJid,
-      credentialId: credential.id,
-      metadata: {},
-      publicMetadata: { groupJid },
-    });
-    await this.upsertWorkspaceWhatsappGroup(session.userId, session.workspaceSlug, groupJid);
-    const consumed = await this.sessions.consumeConnectionSession(session.id, CONNECTED_STATUS, { connectedAccount: groupJid });
-    return { ok: true as const, provider: IntegrationProvider.Whatsapp, resolvedUserId: session.userId, workspaceSlug: session.workspaceSlug, session: publicSession(consumed || session) };
   }
 
   async completeTelegramFromWebhook(input: { code: string; chatId: string }) {
-    const chatId = input.chatId.trim();
-    if (!chatId) throw new UnauthorizedException('missing_external_identity');
-    const session = await this.sessions.findActiveConnectionSessionByCode(IntegrationProvider.Telegram, sha256(input.code.trim().toUpperCase()), new Date().toISOString());
-    if (!session) throw new NotFoundException('connection_session_not_found');
-    const existing = await this.externalIdentities.findExternalIdentity(ExternalIdentityProvider.Telegram, 'chat_id', chatId);
-    if (existing && existing.userId !== session.userId) throw new ConflictException('external_identity_already_bound');
-    const credential = await this.credentials.upsertCredential({
-      userId: session.userId,
-      workspaceSlug: session.workspaceSlug,
-      provider: IntegrationProvider.Telegram,
-      status: CredentialRecordStatus.Connected,
-      encryptedConfig: encryptConfig({ chatId }),
-      publicMetadata: {
+    return this.completeCodeBasedConnection({
+      code: input.code,
+      externalId: input.chatId,
+      spec: {
+        provider: IntegrationProvider.Telegram,
+        externalProvider: ExternalIdentityProvider.Telegram,
+        identityType: 'chat_id',
         label: 'Chat Telegram',
-        connectedAccount: chatId,
+        externalIdKey: 'chatId',
+        workspaceBinding: 'telegramChatId',
       },
     });
-    await this.externalIdentities.upsertExternalIdentity({
-      userId: session.userId,
-      workspaceSlug: session.workspaceSlug,
-      provider: ExternalIdentityProvider.Telegram,
-      identityType: 'chat_id',
-      externalId: chatId,
-      credentialId: credential.id,
-      metadata: {},
-      publicMetadata: { chatId },
-    });
-    await this.upsertWorkspaceTelegramChat(session.userId, session.workspaceSlug, chatId);
-    const consumed = await this.sessions.consumeConnectionSession(session.id, CONNECTED_STATUS, { connectedAccount: chatId });
-    return { ok: true as const, provider: IntegrationProvider.Telegram, resolvedUserId: session.userId, workspaceSlug: session.workspaceSlug, session: publicSession(consumed || session) };
   }
 
   async listGithubRepositories(input: { userId: string; workspaceSlug: string }) {
@@ -343,21 +322,21 @@ export class IntegrationConnectionService {
   }
 
   async saveGithubRepositories(input: { userId: string; workspaceSlug: string; repositories: string[] }) {
-    const existing = await this.requireWorkspace(input.userId, input.workspaceSlug);
-    const workspaceSlug = existing.workspaceSlug;
+    const workspace = await this.requireWorkspace(input.userId, input.workspaceSlug);
+    const workspaceSlug = workspace.workspaceSlug;
     const credential = await this.credentials.findCredential(input.userId, workspaceSlug, IntegrationProvider.GithubApp);
     if (!credential || credential.status !== CredentialRecordStatus.Connected || credential.revokedAt) throw new NotFoundException('credential_not_found');
     const selectedRepos = Array.from(new Set(input.repositories.map((repo) => String(repo || '').trim()).filter(Boolean)));
     const now = new Date().toISOString();
-    const projectSlugs = Array.from(new Set([...(existing?.projectSlugs || []), ...selectedRepos.map((repo) => slugify(repo.split('/').pop() || repo) || 'inbox')]));
+    const projectSlugs = Array.from(new Set([...workspace.projectSlugs, ...selectedRepos.map((repo) => slugify(repo.split('/').pop() || repo) || 'inbox')]));
     await this.content.upsertWorkspace(input.userId, {
       workspaceSlug,
-      displayName: existing?.displayName || workspaceSlug,
-      whatsappGroupJid: existing?.whatsappGroupJid || '',
-      telegramChatId: existing?.telegramChatId || '',
+      displayName: workspace.displayName,
+      whatsappGroupJid: workspace.whatsappGroupJid,
+      telegramChatId: workspace.telegramChatId,
       githubRepos: selectedRepos,
       projectSlugs,
-      createdAt: existing?.createdAt || now,
+      createdAt: workspace.createdAt,
       updatedAt: now,
     });
     const projects = await Promise.all(selectedRepos.map((repoFullName) => {
@@ -379,7 +358,7 @@ export class IntegrationConnectionService {
     const environment = readEnvironment();
     if (!environment.githubAppInstallUrl) throw new BadRequestException('github_app_install_url_not_configured');
     const state = randomState();
-    const session = await this.sessions.createConnectionSession({
+    const session = await this.createConnectionSession({
       userId,
       workspaceSlug,
       provider: IntegrationProvider.GithubApp,
@@ -390,7 +369,6 @@ export class IntegrationConnectionService {
         browserOrigin: normalizeBrowserOrigin(browserOrigin),
         returnToPath: normalizeReturnToPath(returnToPath, '/settings/integrations'),
       },
-      expiresAt: expiresAt(),
     });
     return {
       ok: true as const,
@@ -406,57 +384,25 @@ export class IntegrationConnectionService {
   }
 
   private async startWhatsappConnection(userId: string, workspaceSlug: string) {
-    const verificationCode = randomVerificationCode();
-    const session = await this.sessions.createConnectionSession({
+    return this.startCodeBasedConnection({
       userId,
       workspaceSlug,
       provider: IntegrationProvider.Whatsapp,
-      stateHash: '',
-      verificationCodeHash: sha256(verificationCode),
-      status: PENDING_STATUS,
-      metadata: {},
-      expiresAt: expiresAt(),
-    });
-    return {
-      ok: true as const,
-      provider: IntegrationProvider.Whatsapp,
-      session: publicSession(session),
-      primaryAction: {
-        type: 'open_modal',
-        label: 'Conectar WhatsApp',
-      },
-      verificationCode,
-      instruction: `/kb conectar ${verificationCode}`,
+      label: 'Conectar WhatsApp',
       steps: ['Envie a mensagem no grupo do WhatsApp.', 'Mantenha esta janela aberta ate o grupo aparecer como conectado.'],
-    };
+    });
   }
 
   private async startTelegramConnection(userId: string, workspaceSlug: string) {
     const environment = readEnvironment();
     if (!environment.telegramBotToken) throw new BadRequestException('telegram_bot_token_not_configured');
-    const verificationCode = randomVerificationCode();
-    const session = await this.sessions.createConnectionSession({
+    return this.startCodeBasedConnection({
       userId,
       workspaceSlug,
       provider: IntegrationProvider.Telegram,
-      stateHash: '',
-      verificationCodeHash: sha256(verificationCode),
-      status: PENDING_STATUS,
-      metadata: {},
-      expiresAt: expiresAt(),
-    });
-    return {
-      ok: true as const,
-      provider: IntegrationProvider.Telegram,
-      session: publicSession(session),
-      primaryAction: {
-        type: 'open_modal',
-        label: 'Conectar Telegram',
-      },
-      verificationCode,
-      instruction: `/kb conectar ${verificationCode}`,
+      label: 'Conectar Telegram',
       steps: ['Envie a mensagem no chat do Telegram.', 'Mantenha esta janela aberta ate o chat aparecer como conectado.'],
-    };
+    });
   }
 
   private async activateAi(userId: string, workspaceSlug: string, provider: IntegrationProvider.AiReview | IntegrationProvider.AiConversation) {
@@ -520,17 +466,150 @@ export class IntegrationConnectionService {
     return installation;
   }
 
-  private async upsertWorkspaceWhatsappGroup(userId: string, workspaceSlug: string, groupJid: string) {
-    const now = new Date().toISOString();
-    const existing = await this.requireWorkspace(userId, workspaceSlug);
-    const workspace: WorkspaceRecord = existing;
-    await this.content.upsertWorkspace(userId, { ...workspace, whatsappGroupJid: groupJid, updatedAt: now });
+  private async createConnectionSession(
+    input: Pick<
+      IntegrationConnectionSessionRecord,
+      'userId' | 'workspaceSlug' | 'provider' | 'stateHash' | 'verificationCodeHash' | 'status' | 'metadata'
+    >,
+  ) {
+    return this.sessions.createConnectionSession({
+      ...input,
+      expiresAt: expiresAt(),
+    });
   }
 
-  private async upsertWorkspaceTelegramChat(userId: string, workspaceSlug: string, chatId: string) {
+  private async startCodeBasedConnection(input: { userId: string; workspaceSlug: string; provider: CodeBasedProvider; label: string; steps: string[] }) {
+    const verificationCode = randomVerificationCode();
+    const session = await this.createConnectionSession({
+      userId: input.userId,
+      workspaceSlug: input.workspaceSlug,
+      provider: input.provider,
+      stateHash: '',
+      verificationCodeHash: sha256(verificationCode),
+      status: PENDING_STATUS,
+      metadata: {},
+    });
+    return {
+      ok: true as const,
+      provider: input.provider,
+      session: publicSession(session),
+      primaryAction: {
+        type: 'open_modal',
+        label: input.label,
+      },
+      verificationCode,
+      instruction: `/kb conectar ${verificationCode}`,
+      steps: input.steps,
+    };
+  }
+
+  private async completeCodeBasedConnection(input: { code: string; externalId: string; spec: CodeBasedConnectionSpec }) {
+    const externalId = normalizeTrimmedValue(input.externalId);
+    if (!externalId) throw new UnauthorizedException('missing_external_identity');
+    const session = await this.requireCodeSession(input.spec.provider, input.code);
+    await this.assertExternalIdentityAvailable(input.spec.externalProvider, input.spec.identityType, externalId, session.userId);
+    const credential = await this.upsertConnectedCredential({
+      userId: session.userId,
+      workspaceSlug: session.workspaceSlug,
+      provider: input.spec.provider,
+      encryptedConfig: { [input.spec.externalIdKey]: externalId },
+      publicMetadata: {
+        label: input.spec.label,
+        connectedAccount: externalId,
+      },
+    });
+    await this.upsertExternalIdentity({
+      userId: session.userId,
+      workspaceSlug: session.workspaceSlug,
+      provider: input.spec.externalProvider,
+      identityType: input.spec.identityType,
+      externalId,
+      credentialId: credential.id,
+      publicMetadata: { [input.spec.externalIdKey]: externalId },
+    });
+    await this.upsertWorkspaceBinding(session.userId, session.workspaceSlug, input.spec.workspaceBinding, externalId);
+    const consumed = await this.consumeSessionAsConnected(session.id, { connectedAccount: externalId });
+    return {
+      ok: true as const,
+      provider: input.spec.provider,
+      resolvedUserId: session.userId,
+      workspaceSlug: session.workspaceSlug,
+      session: publicSession(consumed || session),
+    };
+  }
+
+  private async requireCodeSession(provider: CodeBasedProvider, code: string) {
+    const normalizedCode = normalizeTrimmedValue(code).toUpperCase();
+    if (!normalizedCode) throw new NotFoundException('connection_session_not_found');
+    const session = await this.sessions.findActiveConnectionSessionByCode(provider, sha256(normalizedCode), new Date().toISOString());
+    if (!session) throw new NotFoundException('connection_session_not_found');
+    return session;
+  }
+
+  private async assertExternalIdentityAvailable(provider: string, identityType: string, externalId: string, userId: string) {
+    const existing = await this.externalIdentities.findExternalIdentity(provider, identityType, externalId);
+    if (existing && existing.userId !== userId) throw new ConflictException('external_identity_already_bound');
+  }
+
+  private async upsertConnectedCredential(input: {
+    userId: string;
+    workspaceSlug: string;
+    provider: string;
+    encryptedConfig: Record<string, unknown>;
+    publicMetadata: Record<string, unknown>;
+  }) {
+    return this.credentials.upsertCredential({
+      userId: input.userId,
+      workspaceSlug: input.workspaceSlug,
+      provider: input.provider,
+      status: CredentialRecordStatus.Connected,
+      encryptedConfig: encryptConfig(input.encryptedConfig),
+      publicMetadata: input.publicMetadata,
+    });
+  }
+
+  private async upsertExternalIdentity(input: {
+    userId: string;
+    workspaceSlug: string;
+    provider: string;
+    identityType: string;
+    externalId: string;
+    credentialId: string;
+    publicMetadata: Record<string, unknown>;
+  }) {
+    await this.externalIdentities.upsertExternalIdentity({
+      userId: input.userId,
+      workspaceSlug: input.workspaceSlug,
+      provider: input.provider,
+      identityType: input.identityType,
+      externalId: input.externalId,
+      credentialId: input.credentialId,
+      metadata: {},
+      publicMetadata: input.publicMetadata,
+    });
+  }
+
+  private async consumeSessionAsConnected(sessionId: string, metadata: Record<string, unknown>) {
+    return this.sessions.consumeConnectionSession(sessionId, CONNECTED_STATUS, metadata);
+  }
+
+  private normalizeGithubAccountLogin(installation: GithubInstallation) {
+    return String(installation.account?.login ?? '').trim();
+  }
+
+  private connectedAccount(preferred: string, fallback: string) {
+    return preferred || fallback;
+  }
+
+  private async upsertWorkspaceBinding(
+    userId: string,
+    workspaceSlug: string,
+    field: 'whatsappGroupJid' | 'telegramChatId',
+    value: string,
+  ) {
     const now = new Date().toISOString();
     const workspace: WorkspaceRecord = await this.requireWorkspace(userId, workspaceSlug);
-    await this.content.upsertWorkspace(userId, { ...workspace, telegramChatId: chatId, updatedAt: now });
+    await this.content.upsertWorkspace(userId, { ...workspace, [field]: value, updatedAt: now });
   }
 
   private async requireWorkspace(userId: string, workspaceSlug: string) {

@@ -1,11 +1,11 @@
-import { BadRequestException, Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 import { AuthService, type AuthenticatedUser } from '../../../application/auth.js';
 import { CurrentUser } from '../auth.decorators.js';
 import { AccessTokenAuthGuard, AuthRateLimitGuard, TrustedOriginGuard } from '../auth.guards.js';
 import { loginBodySchema, signupBodySchema, type LoginBody, type SignupBody } from '../dto/auth.dto.js';
-import { accessTokenFromRequest, assertTrustedBrowserOrigin, clearAuthCookies, refreshTokenFromRequest, setAuthCookies } from '../http-security.js';
+import { clearAuthCookies, refreshTokenFromRequest, setAuthCookies } from '../http-security.js';
 import { ZodValidationPipe } from '../zod-validation.pipe.js';
 
 @Controller('api/auth')
@@ -16,10 +16,9 @@ export class AuthController {
   @UseGuards(AuthRateLimitGuard, TrustedOriginGuard)
   async login(
     @Body(new ZodValidationPipe(loginBodySchema, 'invalid_login_payload')) body: LoginBody,
-    @Req() request: Request,
+    @Req() _request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    assertTrustedBrowserOrigin(request);
     const { user, tokens } = await this.auth.login(body.email, body.password);
     setAuthCookies(response, tokens);
     return { ok: true, user };
@@ -29,10 +28,9 @@ export class AuthController {
   @UseGuards(AuthRateLimitGuard, TrustedOriginGuard)
   async signup(
     @Body(new ZodValidationPipe(signupBodySchema, 'invalid_signup_payload')) body: SignupBody,
-    @Req() request: Request,
+    @Req() _request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    assertTrustedBrowserOrigin(request);
     const { user, tokens } = await this.auth.signup({
       email: body.email,
       password: body.password,
@@ -45,7 +43,6 @@ export class AuthController {
   @Post('refresh')
   @UseGuards(AuthRateLimitGuard, TrustedOriginGuard)
   async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    assertTrustedBrowserOrigin(request);
     const { user, tokens } = await this.auth.refresh(refreshTokenFromRequest(request) || '');
     setAuthCookies(response, tokens);
     return { ok: true, user };
@@ -53,15 +50,14 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(TrustedOriginGuard)
-  logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    assertTrustedBrowserOrigin(request);
+  logout(@Req() _request: Request, @Res({ passthrough: true }) response: Response) {
     clearAuthCookies(response);
     return { ok: true };
   }
 
   @Get('me')
   @UseGuards(AccessTokenAuthGuard)
-  async me(@CurrentUser() user: AuthenticatedUser, @Req() request?: Request) {
-    return { ok: true, user: user || await this.auth.authenticateAccessToken(accessTokenFromRequest(request as Request)) };
+  me(@CurrentUser() user: AuthenticatedUser) {
+    return { ok: true, user };
   }
 }

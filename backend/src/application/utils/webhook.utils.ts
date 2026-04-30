@@ -1,11 +1,7 @@
-import { isSensitiveLogKey, redactSensitiveValue } from '../../observability/redact.js';
+import { redactSensitiveValue } from '../../observability/redact.js';
 
 export function normalizeHeaders(headers: Record<string, string | string[] | undefined>): Record<string, string> {
   return Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), Array.isArray(value) ? value.join(',') : String(value || '')]));
-}
-
-function isSensitiveKey(key: string): boolean {
-  return isSensitiveLogKey(key);
 }
 
 export function sanitizeWebhookValue(value: unknown): unknown {
@@ -21,13 +17,11 @@ export function extractWhatsappExternalId(body: Record<string, unknown>): string
   const payload = whatsappPayload(body);
   const data = body.data as Record<string, unknown> | undefined;
   const key = payload.key as Record<string, unknown> | undefined;
-  const source = body.source as Record<string, unknown> | undefined;
   return String(
     body.jid ||
       body.remoteJid ||
       body.chatId ||
       body.from ||
-      source?.conversationId ||
       key?.remoteJid ||
       data?.remoteJid ||
       data?.chatId ||

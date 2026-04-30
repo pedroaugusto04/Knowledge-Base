@@ -30,7 +30,6 @@ export class CreateManualNoteUseCase {
 
     const occurredAt = new Date().toISOString();
     const payload: IngestPayload = {
-      schemaVersion: 1,
       source: {
         channel: SourceChannel.External,
         system: 'manual-api',
@@ -109,7 +108,6 @@ function buildManualNotePayload(note: NoteRecord, project: Project, input: {
   reminderAt?: string;
 }): IngestPayload {
   return {
-    schemaVersion: 1,
     source: {
       channel: (note.sourceChannel || SourceChannel.External) as SourceChannel,
       system: note.source || 'manual-api',
@@ -157,12 +155,26 @@ function buildManualNotePayload(note: NoteRecord, project: Project, input: {
   };
 }
 
+function requireEditableManualNoteRawText(note: NoteRecord) {
+  const rawText = String(note.metadata.rawText || '').trim();
+  if (!rawText) throw new BadRequestException('note_raw_text_missing');
+  return rawText;
+}
+
 @Injectable()
 export class UpdateManualNoteUseCase {
   constructor(private readonly contentRepository: ContentRepository) {}
 
   async execute(input: UpdateManualNoteInput, userId: string) {
-    const note = await this.contentRepository.getNoteById(userId, input.id);
+    const { note, project, existingReminder } = await this.loadEditableManualNote(userId, input.id);
+    const { payload, paths, title } = this.buildUpdatePayload(note, project, input);
+    const updatedEvent = await this.persistManualEvent(userId, note, project, existingReminder, payload, paths, title, input.rawText);
+    const reminderNoteId = await this.syncReminderSibling(userId, note, project, updatedEvent, existingReminder, payload, paths, title);
+    return { ok: true as const, noteId: updatedEvent.id, reminderNoteId };
+  }
+
+  private async loadEditableManualNote(userId: string, noteId: string) {
+    const note = await this.contentRepository.getNoteById(userId, noteId);
     if (!note) throw new NotFoundException('note_not_found');
     if (!isManualEventNote(note)) throw new BadRequestException('note_not_editable');
 
@@ -170,16 +182,34 @@ export class UpdateManualNoteUseCase {
     if (!project || !project.enabled) throw new NotFoundException('project_not_found');
 
     const existingReminder = await this.contentRepository.findReminderBySourceNotePath(userId, note.path);
-    buildManualEditorState(note, existingReminder);
+    requireEditableManualNoteRawText(note);
+    return { note, project, existingReminder };
+  }
 
+  private buildUpdatePayload(note: NoteRecord, project: Project, input: UpdateManualNoteInput) {
     const payload = withDerivedReminderAt(buildManualNotePayload(note, project, input));
-    const paths = buildNotePaths(project, payload);
-    const title = trimText(input.title, input.rawText);
-    const updatedEvent = await this.contentRepository.upsertNote(userId, {
+    return {
+      payload,
+      paths: buildNotePaths(project, payload),
+      title: trimText(input.title, input.rawText),
+    };
+  }
+
+  private async persistManualEvent(
+    userId: string,
+    note: NoteRecord,
+    project: Project,
+    existingReminder: NoteRecord | null,
+    payload: IngestPayload,
+    paths: ReturnType<typeof buildNotePaths>,
+    title: string,
+    rawText: string,
+  ) {
+    return this.contentRepository.upsertNote(userId, {
       ...note,
       title,
       tags: payload.classification.tags,
-      summary: payload.content.sections.summary || input.rawText,
+      summary: payload.content.sections.summary || rawText,
       markdown: renderEventNote(project, payload, paths),
       frontmatter: {
         ...note.frontmatter,
@@ -195,7 +225,7 @@ export class UpdateManualNoteUseCase {
       metadata: {
         ...note.metadata,
         manual: true,
-        rawText: input.rawText,
+        rawText,
         eventType: payload.event.type,
         impact: '',
         reviewFindings: [],
@@ -203,59 +233,87 @@ export class UpdateManualNoteUseCase {
         reminderTime: payload.actions.reminderTime,
         reminderAt: payload.actions.reminderAt,
       },
-      links: [existingReminder?.path].filter(Boolean) as string[],
+      links: existingReminder ? [existingReminder.path] : [],
     });
+  }
 
-    let reminderNoteId = '';
+  private async syncReminderSibling(
+    userId: string,
+    note: NoteRecord,
+    project: Project,
+    updatedEvent: NoteRecord,
+    existingReminder: NoteRecord | null,
+    payload: IngestPayload,
+    paths: ReturnType<typeof buildNotePaths>,
+    title: string,
+  ) {
     if (payload.actions.reminderDate) {
-      const reminderPath = existingReminder?.path || paths.reminderRelativePath.replace(/\\/g, '/');
-      const reminder = await this.contentRepository.upsertNote(userId, {
-        id: existingReminder?.id,
-        path: reminderPath,
-        type: CanonicalType.Reminder,
-        title: `Reminder ${title}`,
-        projectSlug: updatedEvent.projectSlug,
-        workspaceSlug: updatedEvent.workspaceSlug,
-        status: KnowledgeStatus.Open,
-        tags: payload.classification.tags,
-        occurredAt: payload.actions.reminderAt || payload.actions.reminderDate,
-        sourceChannel: updatedEvent.sourceChannel,
-        summary: title,
-        markdown: renderReminderNote(project, payload, updatedEvent.path, payload.actions.reminderAt || payload.actions.reminderDate),
-        frontmatter: {
-          id: String(note.frontmatter.id || `manual:${note.id}`),
-          type: CanonicalType.Reminder,
-          workspace: updatedEvent.workspaceSlug,
-          project: updatedEvent.projectSlug,
-          status: KnowledgeStatus.Open,
-          reminder_date: payload.actions.reminderDate,
-          reminder_time: payload.actions.reminderTime,
-          reminder_at: payload.actions.reminderAt,
-        },
-        metadata: {
-          sourceNotePath: updatedEvent.path,
-          reminderDate: payload.actions.reminderDate,
-          reminderTime: payload.actions.reminderTime,
-          reminderAt: payload.actions.reminderAt,
-        },
-        origin: updatedEvent.origin,
-        source: updatedEvent.source,
-        links: [updatedEvent.path],
-      });
-      reminderNoteId = reminder.id;
-      await this.contentRepository.upsertNote(userId, {
-        ...updatedEvent,
-        links: [reminder.path],
-      });
-    } else if (existingReminder) {
-      await this.contentRepository.deleteNote(userId, existingReminder.id);
-      await this.contentRepository.upsertNote(userId, {
-        ...updatedEvent,
-        links: [],
-      });
+      return this.upsertReminderSibling(userId, note, project, updatedEvent, existingReminder, payload, paths, title);
     }
+    if (existingReminder) {
+      await this.deleteReminderSibling(userId, existingReminder, updatedEvent);
+    }
+    return '';
+  }
 
-    return { ok: true as const, noteId: updatedEvent.id, reminderNoteId };
+  private async upsertReminderSibling(
+    userId: string,
+    note: NoteRecord,
+    project: Project,
+    updatedEvent: NoteRecord,
+    existingReminder: NoteRecord | null,
+    payload: IngestPayload,
+    paths: ReturnType<typeof buildNotePaths>,
+    title: string,
+  ) {
+    const reminderAt = payload.actions.reminderAt || payload.actions.reminderDate;
+    const reminderPath = existingReminder?.path || paths.reminderRelativePath.replace(/\\/g, '/');
+    const reminder = await this.contentRepository.upsertNote(userId, {
+      id: existingReminder?.id,
+      path: reminderPath,
+      type: CanonicalType.Reminder,
+      title: `Reminder ${title}`,
+      projectSlug: updatedEvent.projectSlug,
+      workspaceSlug: updatedEvent.workspaceSlug,
+      status: KnowledgeStatus.Open,
+      tags: payload.classification.tags,
+      occurredAt: reminderAt,
+      sourceChannel: updatedEvent.sourceChannel,
+      summary: title,
+      markdown: renderReminderNote(project, payload, updatedEvent.path, reminderAt),
+      frontmatter: {
+        id: String(note.frontmatter.id || `manual:${note.id}`),
+        type: CanonicalType.Reminder,
+        workspace: updatedEvent.workspaceSlug,
+        project: updatedEvent.projectSlug,
+        status: KnowledgeStatus.Open,
+        reminder_date: payload.actions.reminderDate,
+        reminder_time: payload.actions.reminderTime,
+        reminder_at: payload.actions.reminderAt,
+      },
+      metadata: {
+        sourceNotePath: updatedEvent.path,
+        reminderDate: payload.actions.reminderDate,
+        reminderTime: payload.actions.reminderTime,
+        reminderAt: payload.actions.reminderAt,
+      },
+      origin: updatedEvent.origin,
+      source: updatedEvent.source,
+      links: [updatedEvent.path],
+    });
+    await this.contentRepository.upsertNote(userId, {
+      ...updatedEvent,
+      links: [reminder.path],
+    });
+    return reminder.id;
+  }
+
+  private async deleteReminderSibling(userId: string, existingReminder: NoteRecord, updatedEvent: NoteRecord) {
+    await this.contentRepository.deleteNote(userId, existingReminder.id);
+    await this.contentRepository.upsertNote(userId, {
+      ...updatedEvent,
+      links: [],
+    });
   }
 }
 

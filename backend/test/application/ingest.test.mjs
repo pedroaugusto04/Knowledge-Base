@@ -6,7 +6,6 @@ import { createPostgresTestRepositories } from '../helpers/postgres-test-reposit
 
 function payload() {
   return {
-    schemaVersion: 1,
     source: {
       channel: 'n8n-workflow',
       system: 'test-suite',

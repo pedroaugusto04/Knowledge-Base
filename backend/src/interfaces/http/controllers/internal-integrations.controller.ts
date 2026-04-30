@@ -1,5 +1,4 @@
-import { Controller, Body, Param, Post, Req, UseGuards } from '@nestjs/common';
-import type { Request } from 'express';
+import { Controller, Body, Param, Post, UseGuards } from '@nestjs/common';
 
 import { IntegrationCredentialService } from '../../../application/credentials.js';
 import { InternalServiceTokenGuard } from '../auth.guards.js';
@@ -20,14 +19,12 @@ export class InternalIntegrationsController {
   resolve(
     @Param(new ZodValidationPipe(providerParamSchema, 'provider_not_supported')) params: ProviderParam,
     @Body(new ZodValidationPipe(resolveIntegrationCredentialBodySchema, 'invalid_integration_resolution_payload')) body: ResolveIntegrationCredentialBody,
-    @Req() request: Request,
   ) {
     return this.credentials.resolve({
       provider: params.provider,
       workspaceSlug: body.workspaceSlug,
       userId: body.userId,
       externalIdentity: body.externalIdentity,
-      authorization: request.headers.authorization,
     });
   }
 }

@@ -85,11 +85,12 @@ Recomendação para vender o produto:
 Fluxo operacional:
 
 - mensagem chega via WhatsApp
-- `POST /api/webhooks/whatsapp` valida o webhook, resolve o workspace pelo `jid` do grupo e processa a conversa livre diretamente no backend
+- `POST /api/webhooks/whatsapp` aceita apenas o payload cru do provider, valida o webhook, resolve o workspace pelo `jid` do grupo e transforma a mensagem em comandos internos de conexao, conversa ou ignore
 - o backend interpreta texto puro e legenda de mídia com IA gerenciada quando `ai-conversation` está ativo no workspace
 - o core pergunta só o que falta
-- ao confirmar, o core gera o payload canonico, persiste em Postgres e responde ao grupo via Evolution API
+- ao confirmar, o core gera o payload canonico de ingestao, persiste em Postgres e responde ao grupo via Evolution API
 - mídia sem legenda ainda não é baixada nem salva nesta versão; o backend pede um texto/legenda
+- esse endpoint nao aceita mais payload canonico nem modo hibrido de compatibilidade
 
 ### Git push do usuário
 
@@ -202,6 +203,12 @@ Endpoints principais:
 - `POST /api/internal/n8n/reminders/mark-sent`
 
 Endpoints mutáveis de navegador validam `Origin`/`Referer`. A API interna exige `Authorization: Bearer ${KB_INTERNAL_SERVICE_TOKEN}` e retorna o segredo descriptografado somente para o provider solicitado.
+
+Contratos canonicos atuais:
+
+- `POST /api/ingest` usa apenas o payload canonico de ingestao, sem `schemaVersion`
+- `POST /api/internal/n8n/ingest` usa o mesmo payload canonico, direto ou em `{ payload }`, tambem sem `schemaVersion`
+- `POST /api/webhooks/whatsapp` nao e endpoint canonico de ingestao; ele recebe somente o webhook cru do provider
 
 Erros HTTP agora usam envelope comum e seguro, sem alterar os contratos de sucesso:
 
@@ -410,7 +417,7 @@ Endpoints HTTP principais:
 
 ## Workflows opcionais
 
-Os adapters em `knowledge-base/workflows/` são opcionais/legados para integrações externas. O fluxo principal de conversa livre no WhatsApp agora roda direto no backend em `POST /api/webhooks/whatsapp`; n8n não entra nesse caminho conversacional.
+Os adapters em `knowledge-base/workflows/` são opcionais/legados para integrações externas. O fluxo principal de conversa livre no WhatsApp agora roda direto no backend em `POST /api/webhooks/whatsapp`; n8n não entra nesse caminho conversacional, e esse endpoint nao aceita mais payload canonico de ingestao.
 
 Quando usados, os workflows fazem apenas:
 

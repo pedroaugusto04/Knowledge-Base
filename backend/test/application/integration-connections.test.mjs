@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 
 import { IntegrationCredentialService } from '../../dist/application/credentials.js';
 import { IntegrationConnectionService } from '../../dist/application/integration-connections.js';
-import { HandleTelegramWebhookUseCase, HandleWhatsappWebhookUseCase, IngestEntryUseCase } from '../../dist/application/use-cases/index.js';
+import { HandleTelegramWebhookUseCase, HandleWhatsappWebhookUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
 function configureEnv() {
@@ -44,8 +44,7 @@ async function fixture(t) {
     repositories.connectionSessionRepository,
     repositories.contentRepository,
   );
-  const ingest = new IngestEntryUseCase(repositories.contentRepository);
-  const whatsapp = new HandleWhatsappWebhookUseCase(ingest, repositories.externalIdentityRepository, repositories.webhookEventRepository, connections);
+  const whatsapp = new HandleWhatsappWebhookUseCase(repositories.externalIdentityRepository, repositories.webhookEventRepository, connections);
   const telegram = new HandleTelegramWebhookUseCase(repositories.externalIdentityRepository, repositories.webhookEventRepository, connections);
   return { repositories, user, connections, whatsapp, telegram };
 }

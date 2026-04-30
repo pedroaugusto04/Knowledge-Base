@@ -61,7 +61,6 @@ async function fixture(t, sender = new CapturingWhatsappSender()) {
     ingest,
   );
   const whatsapp = new HandleWhatsappWebhookUseCase(
-    ingest,
     repositories.externalIdentityRepository,
     repositories.webhookEventRepository,
     undefined,
@@ -87,50 +86,6 @@ function evolutionInput(message, overrides = {}) {
       },
       ...overrides,
     },
-  };
-}
-
-function canonicalPayload() {
-  return {
-    schemaVersion: 1,
-    source: {
-      channel: 'whatsapp',
-      system: 'test',
-      actor: '5511999999999@s.whatsapp.net',
-      conversationId: '120363@g.us',
-      correlationId: 'wpp:direct-canonical',
-    },
-    event: {
-      type: 'manual_note',
-      occurredAt: '2026-04-27T10:00:00.000Z',
-      projectSlug: 'n8n-automations',
-    },
-    content: {
-      rawText: 'registro canonico direto',
-      title: '',
-      attachments: [],
-      sections: {
-        summary: 'registro canonico direto',
-        impact: '',
-        risks: [],
-        nextSteps: [],
-        reviewFindings: [],
-      },
-    },
-    classification: {
-      kind: 'note',
-      canonicalType: 'event',
-      importance: 'low',
-      status: 'active',
-      tags: [],
-      decisionFlag: false,
-    },
-    actions: {
-      reminderDate: '',
-      reminderTime: '',
-      followUpBy: '',
-    },
-    metadata: {},
   };
 }
 
@@ -219,18 +174,6 @@ test('unknown whatsapp group is still rejected', async (t) => {
     })),
     /identity_not_found/,
   );
-});
-
-test('schemaVersion 1 whatsapp payload still performs direct ingest', async (t) => {
-  const { repositories, whatsapp, user } = await fixture(t);
-
-  const result = await whatsapp.execute({
-    headers: { authorization: 'Bearer webhook-secret' },
-    body: canonicalPayload(),
-  });
-
-  assert.equal(result.ingestResult.ok, true);
-  assert.equal((await repositories.contentRepository.listNotes(user.id)).length, 1);
 });
 
 test('evolution send failure returns replySent false after confirmation without duplicating note', async (t) => {

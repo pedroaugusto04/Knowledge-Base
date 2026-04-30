@@ -27,7 +27,6 @@ const attachmentSchema = z.object({
 
 export const ingestPayloadSchema = z
   .object({
-    schemaVersion: z.literal(1),
     source: z.object({
       channel: sourceChannelSchema,
       system: z.string().min(1),

@@ -12,7 +12,6 @@ function configureEnv() {
 
 function canonicalPayload(projectSlug = 'acme-api') {
   return {
-    schemaVersion: 1,
     source: {
       channel: 'external',
       system: 'test',

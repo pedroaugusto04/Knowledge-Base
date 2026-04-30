@@ -116,7 +116,6 @@ export function normalizeConversationTags(tags: unknown): string[] {
 
 export function buildConversationPayload(input: ConversationInput, state: ConversationState): IngestPayload {
   return ingestPayloadSchema.parse({
-    schemaVersion: 1,
     source: {
       channel: SourceChannel.Whatsapp,
       system: 'evolution-api',

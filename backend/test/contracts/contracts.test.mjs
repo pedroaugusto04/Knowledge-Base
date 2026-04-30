@@ -6,7 +6,6 @@ import { ingestPayloadSchema, withDerivedReminderAt } from '../../dist/contracts
 test('normalizes canonical ingest payload and derives reminderAt', () => {
   const parsed = withDerivedReminderAt(
     ingestPayloadSchema.parse({
-      schemaVersion: 1,
       source: {
         channel: 'external',
         system: 'test',
@@ -58,7 +57,6 @@ test('normalizes canonical ingest payload and derives reminderAt', () => {
 test('rejects reminder time without reminder date', () => {
   assert.throws(() => {
     ingestPayloadSchema.parse({
-      schemaVersion: 1,
       source: {
         channel: 'external',
         system: 'test',

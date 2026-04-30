@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { readEnvironment } from '../adapters/environment.js';
 import {
@@ -219,20 +219,9 @@ export class IntegrationCredentialService {
     workspaceSlug?: string;
     userId?: string;
     externalIdentity?: { provider: string; identityType?: string; externalId: string };
-    authorization?: string;
   }) {
-    const token = input.authorization?.startsWith('Bearer ') ? input.authorization.slice('Bearer '.length) : '';
-    if (!readEnvironment().internalServiceToken || token !== readEnvironment().internalServiceToken) {
-      throw new UnauthorizedException('invalid_internal_token');
-    }
     if (!isGuidedProvider(input.provider)) throw new NotFoundException('provider_not_found');
-    let userId = input.userId || '';
-    if (!userId && input.externalIdentity) {
-      const identityType = input.externalIdentity.identityType || defaultIdentityType(input.externalIdentity.provider);
-      const identity = await this.externalIdentities.findExternalIdentity(input.externalIdentity.provider, identityType, input.externalIdentity.externalId);
-      userId = identity?.userId || '';
-    }
-    if (!userId) throw new NotFoundException('identity_not_found');
+    const userId = await this.resolveUserId(input.userId, input.externalIdentity);
     const record = await this.credentials.findCredential(userId, input.workspaceSlug || 'default', input.provider);
     if (!record || record.status !== CredentialRecordStatus.Connected || record.revokedAt) throw new NotFoundException('credential_not_found');
     return {
@@ -243,5 +232,17 @@ export class IntegrationCredentialService {
       config: decryptConfig(record.encryptedConfig),
       publicMetadata: record.publicMetadata,
     };
+  }
+
+  private async resolveUserId(
+    userId: string | undefined,
+    externalIdentity: { provider: string; identityType?: string; externalId: string } | undefined,
+  ) {
+    if (userId) return userId;
+    if (!externalIdentity) throw new NotFoundException('identity_not_found');
+    const identityType = externalIdentity.identityType || defaultIdentityType(externalIdentity.provider);
+    const identity = await this.externalIdentities.findExternalIdentity(externalIdentity.provider, identityType, externalIdentity.externalId);
+    if (!identity) throw new NotFoundException('identity_not_found');
+    return identity.userId;
   }
 }

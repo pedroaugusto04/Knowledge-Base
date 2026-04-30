@@ -108,7 +108,6 @@ export async function buildGithubReviewEvent(
   );
 
   return ingestPayloadSchema.parse({
-    schemaVersion: 1,
     source: {
       channel: SourceChannel.GithubPush,
       system: 'github-webhook',

@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+function looksLikeCanonicalIngestPayload(body: Record<string, unknown>): boolean {
+  const source = body.source;
+  const event = body.event;
+  const content = body.content;
+  const classification = body.classification;
+  return Boolean(
+    source && typeof source === 'object' &&
+    event && typeof event === 'object' &&
+    content && typeof content === 'object' &&
+    classification && typeof classification === 'object',
+  );
+}
+
 export const githubPushWebhookBodySchema = z
   .object({
     installation: z
@@ -21,10 +34,15 @@ export const githubPushWebhookBodySchema = z
   }));
 
 export const whatsappWebhookBodySchema = z
-  .object({
-    schemaVersion: z.coerce.number().optional(),
-  })
-  .passthrough();
+  .object({})
+  .passthrough()
+  .superRefine((body, ctx) => {
+    if (!looksLikeCanonicalIngestPayload(body)) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Canonical ingest payload is not accepted on the WhatsApp webhook endpoint.',
+    });
+  });
 
 export const telegramWebhookBodySchema = z
   .object({
