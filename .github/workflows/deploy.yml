@@ -68,6 +68,8 @@ jobs:
     environment: production
     permissions:
       contents: read
+    env:
+      KB_RUN_INTEGRATION_TESTS: ${{ vars.KB_RUN_INTEGRATION_TESTS || 'true' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -82,6 +84,7 @@ jobs:
         run: npm ci
 
       - name: Run API tests
+        if: env.KB_RUN_INTEGRATION_TESTS == 'true'
         run: npm run test:api
 
       - name: Generate backend env file

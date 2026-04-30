@@ -10,7 +10,7 @@
     "build": "npm run clean && npm run build:api && npm run build:frontend",
     "dev:api": "node scripts/dev-api.mjs",
     "dev:frontend": "vite --config frontend/vite.config.ts",
-    "test:api": "npm run clean && npm run build:api && node --test \"backend/test/**/*.test.mjs\"",
+    "test:api": "node scripts/run-api-tests.mjs",
     "test:frontend": "vitest run --config frontend/vite.config.ts",
     "test": "npm run test:api && npm run test:frontend"
   },
