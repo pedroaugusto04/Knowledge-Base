@@ -87,6 +87,7 @@ test('create note dto normalizes project, tags and reminder fields', () => {
     tags: ['deploy'],
     reminderDate: '2026-04-29',
     reminderTime: '09:30',
+    reminderAt: '',
   });
 });
 

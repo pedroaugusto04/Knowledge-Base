@@ -4,7 +4,7 @@ import type { IngestPayload } from '../contracts/ingest.js';
 import { renderFrontmatter } from './frontmatter.js';
 import type { Project } from './projects.js';
 import { sanitizeFileStem, trimText } from './strings.js';
-import { getSaoPauloParts } from './time.js';
+import { getUtcParts } from './time.js';
 
 export const vaultFolders = {
   home: '00 Home',
@@ -40,7 +40,7 @@ export function buildNotePaths(project: Project, payload: IngestPayload): {
 } {
   const occurredAt = new Date(payload.event.occurredAt);
   const safeDate = Number.isNaN(occurredAt.getTime()) ? new Date() : occurredAt;
-  const { year, month, day, time } = getSaoPauloParts(safeDate);
+  const { year, month, day, time } = getUtcParts(safeDate);
   const titleStem = sanitizeFileStem(payload.content.title || payload.content.rawText, payload.classification.kind);
   const baseFile = `${year}${month}${day}-${time}-${titleStem}.md`;
   const eventRelativePath = path.join(vaultFolders.inbox, project.projectSlug, year, month, baseFile);

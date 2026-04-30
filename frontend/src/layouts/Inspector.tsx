@@ -1,5 +1,5 @@
 import type { Dashboard } from '../shared/api/models/dashboard';
-import { noteStatusLabel, noteTypeLabel, projectName } from '../entities/format';
+import { formatUsDate, noteStatusLabel, noteTypeLabel, projectName } from '../entities/format';
 import type { View } from '../app/routing/routes';
 
 export function Inspector({
@@ -63,7 +63,7 @@ export function Inspector({
             <dt>Status</dt>
             <dd>{noteStatusLabel(note.status)}</dd>
             <dt>Data</dt>
-            <dd>{note.date}</dd>
+            <dd>{formatUsDate(note.date)}</dd>
           </dl>
         </div>
       ) : null}

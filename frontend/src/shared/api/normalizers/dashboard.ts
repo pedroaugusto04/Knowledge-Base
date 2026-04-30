@@ -1,4 +1,5 @@
 import type { Dashboard, DashboardPayload } from '../models/dashboard';
+import { buildDashboardHome } from './dashboard-home';
 
 export function normalizeDashboard(payload: DashboardPayload): Dashboard {
   return {
@@ -7,6 +8,6 @@ export function normalizeDashboard(payload: DashboardPayload): Dashboard {
     notes: payload.notes || [],
     reviews: payload.reviews || [],
     reminders: payload.reminders || [],
-    home: payload.home,
+    home: buildDashboardHome(payload.projects || [], payload.notes || [], payload.reviews || [], payload.reminders || []),
   };
 }

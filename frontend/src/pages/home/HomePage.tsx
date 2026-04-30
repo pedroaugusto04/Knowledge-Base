@@ -1,6 +1,6 @@
 import type { PageContext } from '../../app/page-context';
 import type { HomeNavigationTarget, HomePriority } from '../../shared/api/models/dashboard-home';
-import { projectName } from '../../entities/format';
+import { formatUsDate, projectName } from '../../entities/format';
 import { Badge, EmptyState, PageHead, Panel } from '../../shared/ui/primitives';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Link } from 'react-router-dom';
@@ -10,6 +10,7 @@ export function HomePage({ dashboard, openNote, openReview, setSelectedProject }
   const { home } = dashboard;
   const activeWorkspace = dashboard.workspaces[0] || null;
   const needsIntegrationSetup = activeWorkspace && activeWorkspace.githubRepos.length === 0;
+  const activityByDay = home.activityByDay.map((point) => ({ ...point, label: formatUsDate(point.date) }));
 
   function openTarget(target: HomeNavigationTarget) {
     if (target.kind === 'review' && target.id) {
@@ -73,7 +74,7 @@ export function HomePage({ dashboard, openNote, openReview, setSelectedProject }
                       <div className="meta-row">
                         <Badge value={priority.type} tone={priorityTone(priority)} />
                         <span className="meta">
-                          {projectName(dashboard.projects, priority.project)} / {priority.date}
+                          {projectName(dashboard.projects, priority.project)} / {formatUsDate(priority.date)}
                         </span>
                       </div>
                       <h3>{priority.title}</h3>
@@ -95,7 +96,7 @@ export function HomePage({ dashboard, openNote, openReview, setSelectedProject }
             </div>
             <div className="chart-box" aria-label="Grafico de atividade por dia">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={home.activityByDay} margin={{ left: 0, right: 10, top: 12, bottom: 0 }}>
+                <AreaChart data={activityByDay} margin={{ left: 0, right: 10, top: 12, bottom: 0 }}>
                   <CartesianGrid stroke="rgba(148, 163, 184, 0.14)" vertical={false} />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} stroke="#8da0ae" fontSize={12} />
                   <YAxis allowDecimals={false} tickLine={false} axisLine={false} stroke="#8da0ae" fontSize={12} width={28} />
@@ -149,7 +150,7 @@ export function HomePage({ dashboard, openNote, openReview, setSelectedProject }
                       <div className="meta-row">
                         <Badge value={event.type} tone={event.type} />
                         <span className="meta">
-                          {projectName(dashboard.projects, event.project)} / {event.date}
+                          {projectName(dashboard.projects, event.project)} / {formatUsDate(event.date)}
                         </span>
                       </div>
                       <h3>{event.title}</h3>

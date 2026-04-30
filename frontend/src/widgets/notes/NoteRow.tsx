@@ -1,6 +1,6 @@
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
-import { noteStatusLabel, noteTypeLabel, projectName, typeIcon } from '../../entities/format';
+import { formatUsDate, noteStatusLabel, noteTypeLabel, projectName, typeIcon } from '../../entities/format';
 import { Badge } from '../../shared/ui/primitives';
 
 function PencilIcon() {
@@ -42,7 +42,7 @@ export function NoteRow({
           <Badge value={noteTypeLabel(note.type)} tone={note.type} />
           <Badge value={noteStatusLabel(note.status)} tone={note.status} />
           <span className="meta">
-            {projectName(dashboard.projects, note.project)} / {note.date}
+            {projectName(dashboard.projects, note.project)} / {formatUsDate(note.date)}
           </span>
         </div>
         <h3>{note.title}</h3>

@@ -66,6 +66,7 @@ export const ingestPayloadSchema = z
       .object({
         reminderDate: z.string().default(''),
         reminderTime: z.string().default(''),
+        reminderAt: z.string().default(''),
         followUpBy: z.string().default(''),
       })
       .default({}),
@@ -85,6 +86,7 @@ export const ingestPayloadSchema = z
       ...payload.actions,
       reminderDate: normalizeDate(payload.actions.reminderDate || ''),
       reminderTime: normalizeTime(payload.actions.reminderTime || ''),
+      reminderAt: payload.actions.reminderAt || '',
       followUpBy: normalizeDate(payload.actions.followUpBy || ''),
     },
   }))
@@ -100,12 +102,16 @@ export const ingestPayloadSchema = z
 
 export type IngestPayload = z.infer<typeof ingestPayloadSchema>;
 
-export function withDerivedReminderAt(payload: IngestPayload): IngestPayload & { actions: IngestPayload['actions'] & { reminderAt: string } } {
+export function withDerivedReminderAt(
+  payload: IngestPayload,
+  timeZone = 'UTC',
+): IngestPayload & { actions: IngestPayload['actions'] & { reminderAt: string } } {
+  const existingReminderAt = 'reminderAt' in payload.actions ? String((payload.actions as Record<string, unknown>).reminderAt || '') : '';
   return {
     ...payload,
     actions: {
       ...payload.actions,
-      reminderAt: buildReminderAt(payload.actions.reminderDate || '', payload.actions.reminderTime || ''),
+      reminderAt: existingReminderAt || buildReminderAt(payload.actions.reminderDate || '', payload.actions.reminderTime || '', timeZone),
     },
   };
 }

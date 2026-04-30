@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 
 import type { PageContext } from '../../app/page-context';
+import { formatUsDate } from '../../entities/format';
 import { Badge, EmptyState, PageHead, Panel, Tags } from '../../shared/ui/primitives';
 import { ReviewRow } from '../../widgets/reviews/ReviewRow';
 
@@ -24,7 +25,7 @@ export function ReviewsPage({ dashboard, selectedReviewId, openReview }: PageCon
               <div className="meta-row">
                 <Badge value={selected.status} tone={selected.status} />
                 <span className="meta">
-                  {selected.repo || selected.project} / {selected.branch} / {selected.date}
+                  {selected.repo || selected.project} / {selected.branch} / {formatUsDate(selected.date)}
                 </span>
               </div>
               <h1>{selected.title}</h1>

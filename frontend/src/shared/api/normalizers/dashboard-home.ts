@@ -1,39 +1,46 @@
-import { CanonicalType, HomePriorityType, HomeTargetKind, KnowledgeStatus } from '../../contracts/enums.js';
-import { formatDateInTimeZone, formatTimeInTimeZone, normalizeTimeZone } from '../../domain/time.js';
-import type { Project } from '../../domain/projects.js';
-import type { DashboardHomeSummary, HomePriority } from '../models/dashboard-home.models.js';
-import type { ReminderView } from '../models/reminder.models.js';
-import type { ReviewView } from '../models/review.models.js';
-import type { VaultNoteSummary } from '../models/vault-note.models.js';
+import { HomePriorityType, HomeTargetKind } from '../enums';
+import type { DashboardHomeSummary, HomePriority } from '../models/dashboard-home';
+import type { NoteSummary } from '../models/note';
+import type { Project } from '../models/project';
+import type { Reminder } from '../models/reminder';
+import type { Review } from '../models/review';
 
 const HOME_WINDOW_DAYS = 7;
-const OPEN_STATUSES = new Set([KnowledgeStatus.Open, KnowledgeStatus.Active, 'pending', 'todo']);
-const INTERESTING_TYPES = [CanonicalType.Incident, CanonicalType.Decision, CanonicalType.Followup, CanonicalType.Reminder, CanonicalType.Event];
+const OPEN_STATUSES = new Set(['open', 'active', 'pending', 'todo']);
+const INTERESTING_TYPES = ['incident', 'decision', 'followup', 'reminder', 'event'];
 
-function normalizeDateInput(value: string) {
-  const trimmed = String(value || '').trim();
-  if (!trimmed) return '';
-  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(trimmed)) return trimmed.replace(' ', 'T');
-  return trimmed;
-}
-
-function parseTimestamp(value: string): number {
-  const normalized = normalizeDateInput(value);
-  if (!normalized) return 0;
-  const timestamp = Date.parse(normalized);
+function parseTimestamp(value: string) {
+  const timestamp = Date.parse(String(value || '').trim());
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-function dateKey(value: string, timeZone: string) {
-  const direct = String(value || '').match(/\d{4}-\d{2}-\d{2}/)?.[0];
-  if (direct && !String(value || '').includes('T')) return direct;
-  const timestamp = parseTimestamp(value);
-  return timestamp ? formatDateInTimeZone(new Date(timestamp), timeZone) : '';
+function localDateKey(value: string) {
+  if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  const year = String(parsed.getFullYear());
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function formatDayLabel(key: string) {
   const [, month, day] = key.match(/\d{4}-(\d{2})-(\d{2})/) || [];
-  return month && day ? `${day}/${month}` : key;
+  return month && day ? `${month}/${day}` : key;
+}
+
+function shiftDateKey(dateKey: string, days: number) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const date = new Date(year, month - 1, day + days);
+  const outYear = String(date.getFullYear());
+  const outMonth = String(date.getMonth() + 1).padStart(2, '0');
+  const outDay = String(date.getDate()).padStart(2, '0');
+  return `${outYear}-${outMonth}-${outDay}`;
+}
+
+function projectLabel(projects: Project[], slug: string) {
+  return projects.find((project) => project.projectSlug === slug)?.displayName || slug || 'Sem projeto';
 }
 
 function isOpen(status: string) {
@@ -44,32 +51,11 @@ function isHigh(severity: string) {
   return ['high', 'critical'].includes(String(severity || '').toLowerCase());
 }
 
-function projectLabel(projects: Project[], slug: string) {
-  return projects.find((project) => project.projectSlug === slug)?.displayName || slug || 'Sem projeto';
+function noteTarget(note: NoteSummary) {
+  return { kind: HomeTargetKind.Note, id: note.id, path: note.path } as const;
 }
 
-function shiftDateKey(dateKey: string, days: number) {
-  const [year, month, day] = dateKey.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day + days));
-  return formatDateInTimeZone(date, 'UTC');
-}
-
-function recentWindow(now: Date, windowDays: number, timeZone: string) {
-  const end = formatDateInTimeZone(now, timeZone);
-  const start = shiftDateKey(end, -(windowDays - 1));
-  return { start, end };
-}
-
-function isWithinWindow(value: string, start: string, end: string, timeZone: string) {
-  const key = dateKey(value, timeZone);
-  return Boolean(key && key >= start && key <= end);
-}
-
-function noteTarget(note: VaultNoteSummary) {
-  return { kind: HomeTargetKind.Note, id: note.id, path: note.path };
-}
-
-function findNoteByPath(notes: VaultNoteSummary[], path: string) {
+function findNoteByPath(notes: NoteSummary[], path: string) {
   if (!path) return undefined;
   return notes.find((note) => note.path === path || note.path.endsWith(path));
 }
@@ -78,19 +64,15 @@ function sortPriorities(left: HomePriority & { rank?: number; timestamp?: number
   return (left.rank || 0) - (right.rank || 0) || (left.timestamp || 0) - (right.timestamp || 0) || left.title.localeCompare(right.title);
 }
 
-export function buildDashboardHome(
-  projects: Project[],
-  notes: VaultNoteSummary[],
-  reviews: ReviewView[],
-  reminders: ReminderView[],
-  now = new Date(),
-  timeZone = 'UTC',
-): DashboardHomeSummary {
-  const zone = normalizeTimeZone(timeZone);
-  const { start, end } = recentWindow(now, HOME_WINDOW_DAYS, zone);
-  const todayDate = formatDateInTimeZone(now, zone);
-  const currentTime = formatTimeInTimeZone(now, zone);
-  const recentNotes = notes.filter((note) => isWithinWindow(note.date, start, end, zone));
+export function buildDashboardHome(projects: Project[], notes: NoteSummary[], reviews: Review[], reminders: Reminder[], now = new Date()): DashboardHomeSummary {
+  const todayDate = localDateKey(now.toISOString());
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const end = todayDate;
+  const start = shiftDateKey(end, -(HOME_WINDOW_DAYS - 1));
+  const recentNotes = notes.filter((note) => {
+    const key = localDateKey(note.date);
+    return Boolean(key && key >= start && key <= end);
+  });
   const openReminders = reminders.filter((reminder) => isOpen(reminder.status));
   const overdueReminders = openReminders.filter((reminder) => {
     if (reminder.reminderAt) {
@@ -107,7 +89,7 @@ export function buildDashboardHome(
   const dayKeys = Array.from({ length: HOME_WINDOW_DAYS }, (_, index) => shiftDateKey(start, index));
   const countByDay = new Map(dayKeys.map((key) => [key, 0]));
   for (const note of recentNotes) {
-    const key = dateKey(note.date, zone);
+    const key = localDateKey(note.date);
     if (countByDay.has(key)) countByDay.set(key, (countByDay.get(key) || 0) + 1);
   }
 
@@ -133,7 +115,7 @@ export function buildDashboardHome(
         status: reminder.status,
         target: relatedNote ? noteTarget(relatedNote) : { kind: HomeTargetKind.Note, path: reminder.sourceNotePath || reminder.relativePath },
         rank: overdue ? 0 : 1,
-        timestamp: timestamp || Date.parse(`${reminder.reminderDate}T${reminder.reminderTime || '00:00'}Z`) || Number.MAX_SAFE_INTEGER,
+        timestamp: timestamp || Number.MAX_SAFE_INTEGER,
       };
     }),
     ...openHighFindings.map(({ review, finding }, index) => ({
@@ -151,7 +133,7 @@ export function buildDashboardHome(
     })),
     ...recentIncidentsAndFollowups.map((note) => ({
       id: `note:${note.id}`,
-      type: note.type === CanonicalType.Incident ? HomePriorityType.Incident : HomePriorityType.Followup,
+      type: note.type === 'incident' ? HomePriorityType.Incident : HomePriorityType.Followup,
       title: note.title,
       project: note.project,
       date: note.date,
@@ -164,9 +146,9 @@ export function buildDashboardHome(
   ];
 
   const recentInterestingEvents = recentNotes
-    .filter((note) => INTERESTING_TYPES.includes(note.type as CanonicalType) && isOpen(note.status))
+    .filter((note) => INTERESTING_TYPES.includes(note.type) && isOpen(note.status))
     .sort((left, right) => {
-      const typePriority = INTERESTING_TYPES.indexOf(left.type as CanonicalType) - INTERESTING_TYPES.indexOf(right.type as CanonicalType);
+      const typePriority = INTERESTING_TYPES.indexOf(left.type) - INTERESTING_TYPES.indexOf(right.type);
       return typePriority || (parseTimestamp(right.date) || 0) - (parseTimestamp(left.date) || 0) || left.title.localeCompare(right.title);
     })
     .slice(0, 5)
@@ -187,17 +169,10 @@ export function buildDashboardHome(
       { id: 'recent-notes', label: 'Mudancas recentes', value: recentNotes.length, meta: `notas em ${HOME_WINDOW_DAYS} dias`, tone: 'active' },
       { id: 'active-projects', label: 'Projetos ativos', value: countByProject.size, meta: 'com movimento recente', tone: 'active' },
       { id: 'open-reminders', label: 'Lembretes abertos', value: openReminders.length, meta: `${overdueReminders.length} vencidos`, tone: overdueReminders.length ? 'high' : 'active' },
-      {
-        id: 'open-findings',
-        label: 'Findings abertos',
-        value: openHighFindings.length,
-        meta: `${reviewsWithOpenFindings.length} reviews com pendencias`,
-        tone: openHighFindings.length ? 'high' : 'active',
-      },
+      { id: 'open-findings', label: 'Findings abertos', value: openHighFindings.length, meta: `${reviewsWithOpenFindings.length} reviews com pendencias`, tone: openHighFindings.length ? 'high' : 'active' },
     ],
     activityByDay: dayKeys.map((key) => ({ date: key, label: formatDayLabel(key), count: countByDay.get(key) || 0 })),
-    activityByProject: Array.from(countByProject.entries())
-      .map(([project, count]) => ({ project, label: projectLabel(projects, project), count }))
+    activityByProject: Array.from(countByProject.entries()).map(([project, count]) => ({ project, label: projectLabel(projects, project), count }))
       .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
       .slice(0, 5),
     priorities: priorityCandidates.sort(sortPriorities).slice(0, 5).map(({ rank: _rank, timestamp: _timestamp, ...priority }) => priority),

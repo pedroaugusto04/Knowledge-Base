@@ -6,6 +6,7 @@ import { useParams } from 'react-router-dom';
 
 import type { PageContext } from '../../app/page-context';
 import { createNote, createProject, deleteNote, deleteProject, fetchNote, updateNote, updateProject } from '../../shared/api/client';
+import { localDateTimeToUtcIso } from '../../entities/format';
 import type { NoteDetail, NoteSummary } from '../../shared/api/models/note';
 import type { Project } from '../../shared/api/models/project';
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../shared/forms/errors';
@@ -328,6 +329,7 @@ function NoteModal({
         tags: parseList(values.tags),
         reminderDate: values.reminderDate,
         reminderTime: values.reminderTime,
+        reminderAt: localDateTimeToUtcIso(values.reminderDate, values.reminderTime),
       };
       return mode === 'create'
         ? createNote({ ...payload, projectSlug })

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { ReminderDispatchMode } from '../../../contracts/enums.js';
 import { slugify } from '../../../domain/strings.js';
-import { currentSaoPauloDateTime } from '../../../domain/time.js';
+import { currentDateTimeInTimeZone } from '../../../domain/time.js';
 import { ContentQueryRepository } from '../../ports/content.repository.js';
 import { ReminderDispatchRepository } from '../../ports/workflow-state.repository.js';
 
@@ -18,7 +18,8 @@ export class BuildReminderDispatchUseCase {
     const reminders = (await this.contentQueryRepository.listReminders(userId)).filter(
       (reminder) => reminder.workspace === workspace && (reminder.status === 'open' || reminder.status === 'active'),
     );
-    const now = currentSaoPauloDateTime();
+    const now = currentDateTimeInTimeZone('UTC');
+    const nowMinuteKey = `${now.date}T${now.time}`;
     if (mode === ReminderDispatchMode.Daily) {
       const pending = [];
       for (const reminder of reminders) {
@@ -29,9 +30,12 @@ export class BuildReminderDispatchUseCase {
       await Promise.all(pending.map((item) => this.reminderDispatchRepository.markSent(userId, workspace, ReminderDispatchMode.Daily, now.date, item.id)));
       return { ok: true, shouldSend: true, text, remindersArg: pending.map((item) => item.id).join(',') };
     }
-    const due = reminders.filter((item) => item.reminderDate === now.date && item.reminderTime === now.time);
+    const due = reminders.filter((item) => {
+      if (!item.reminderAt) return false;
+      return item.reminderAt.slice(0, 16) === nowMinuteKey;
+    });
     const pending = [];
-    const dispatchKey = `${now.date}T${now.time}`;
+    const dispatchKey = nowMinuteKey;
     for (const reminder of due) {
       if (!(await this.reminderDispatchRepository.hasSent(userId, workspace, ReminderDispatchMode.Exact, dispatchKey, reminder.id))) pending.push(reminder);
     }

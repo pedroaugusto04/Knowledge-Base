@@ -11,6 +11,7 @@ export const createNoteBodySchema = z
     tags: z.array(z.string().trim().max(60, 'Use no maximo 60 caracteres.')).optional().default([]),
     reminderDate: z.string().trim().optional().default(''),
     reminderTime: z.string().trim().optional().default(''),
+    reminderAt: z.string().trim().optional().default(''),
   })
   .strict()
   .transform((body) => ({
@@ -20,6 +21,7 @@ export const createNoteBodySchema = z
     tags: [...new Set(body.tags.map((tag) => slugify(tag)).filter(Boolean))],
     reminderDate: normalizeDate(body.reminderDate),
     reminderTime: normalizeTime(body.reminderTime),
+    reminderAt: body.reminderAt,
   }))
   .superRefine((body, ctx) => {
     if (body.reminderTime && !body.reminderDate) {
@@ -44,6 +46,7 @@ export const updateNoteBodySchema = z
     tags: z.array(z.string().trim().max(60, 'Use no maximo 60 caracteres.')).optional().default([]),
     reminderDate: z.string().trim().optional().default(''),
     reminderTime: z.string().trim().optional().default(''),
+    reminderAt: z.string().trim().optional().default(''),
   })
   .strict()
   .transform((body) => ({
@@ -52,6 +55,7 @@ export const updateNoteBodySchema = z
     tags: [...new Set(body.tags.map((tag) => slugify(tag)).filter(Boolean))],
     reminderDate: normalizeDate(body.reminderDate),
     reminderTime: normalizeTime(body.reminderTime),
+    reminderAt: body.reminderAt,
   }))
   .superRefine((body, ctx) => {
     if (body.reminderTime && !body.reminderDate) {

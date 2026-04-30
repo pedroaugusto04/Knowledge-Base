@@ -5,6 +5,7 @@ export type CreateManualNoteInput = {
   tags: string[];
   reminderDate: string;
   reminderTime: string;
+  reminderAt?: string;
 };
 
 export type UpdateManualNoteInput = {
@@ -14,4 +15,5 @@ export type UpdateManualNoteInput = {
   tags: string[];
   reminderDate: string;
   reminderTime: string;
+  reminderAt?: string;
 };

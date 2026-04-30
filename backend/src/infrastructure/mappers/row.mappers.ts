@@ -118,7 +118,7 @@ export function noteFromRow(row: Row): NoteRecord {
     workspaceSlug: String(row.workspace_slug || ''),
     status: String(row.status || 'active'),
     tags: stringArray(row.tags),
-    occurredAt: String(row.occurred_at || ''),
+    occurredAt: nowIso(row.occurred_at),
     sourceChannel: String(row.source_channel || ''),
     summary: String(row.summary || ''),
     markdown: String(row.markdown || ''),

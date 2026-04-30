@@ -52,7 +52,7 @@ test('normalizes canonical ingest payload and derives reminderAt', () => {
   assert.deepEqual(parsed.classification.tags, ['deploy', 'n8n']);
   assert.equal(parsed.actions.reminderDate, '2026-04-27');
   assert.equal(parsed.actions.reminderTime, '09:15');
-  assert.equal(parsed.actions.reminderAt, '2026-04-27T09:15:00-03:00');
+  assert.equal(parsed.actions.reminderAt, '2026-04-27T09:15:00.000Z');
 });
 
 test('rejects reminder time without reminder date', () => {

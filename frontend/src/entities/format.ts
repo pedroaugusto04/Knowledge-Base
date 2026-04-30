@@ -4,6 +4,44 @@ export function projectName(projects: Project[], slug: string) {
   return projects.find((project) => project.projectSlug === slug)?.displayName || slug;
 }
 
+export function formatUsDate(value: string | null | undefined) {
+  if (!value) return '';
+
+  const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    return `${month}/${day}/${year}`;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const year = String(parsed.getFullYear());
+  return `${month}/${day}/${year}`;
+}
+
+export function formatUsDateTime(value: string | null | undefined) {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const year = String(parsed.getFullYear());
+  const hours = String(parsed.getHours()).padStart(2, '0');
+  const minutes = String(parsed.getMinutes()).padStart(2, '0');
+  return `${month}/${day}/${year} ${hours}:${minutes}`;
+}
+
+export function localDateTimeToUtcIso(date: string | null | undefined, time: string | null | undefined) {
+  if (!date || !time) return '';
+  const [year, month, day] = date.split('-').map(Number);
+  const [hours, minutes] = time.split(':').map(Number);
+  const local = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  return Number.isNaN(local.getTime()) ? '' : local.toISOString();
+}
+
 export function noteTypeLabel(type: string) {
   return (
     {

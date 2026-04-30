@@ -32,7 +32,7 @@ test('postgres repositories share state across content query and workflow ports'
     metadata: {
       reminderDate: '2026-04-28',
       reminderTime: '09:00',
-      reminderAt: '2026-04-28T09:00:00-03:00',
+      reminderAt: '2026-04-28T12:00:00.000Z',
       sourceNotePath: '20 Inbox/acme/2026/04/item.md',
     },
     origin: 'postgres',

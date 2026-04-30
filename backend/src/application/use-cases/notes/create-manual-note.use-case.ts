@@ -66,6 +66,7 @@ export class CreateManualNoteUseCase {
       actions: {
         reminderDate: input.reminderDate,
         reminderTime: input.reminderTime,
+        reminderAt: input.reminderAt || '',
         followUpBy: '',
       },
       metadata: {
@@ -75,7 +76,7 @@ export class CreateManualNoteUseCase {
       },
     };
 
-    return this.ingestEntryUseCase.execute(payload, userId, workspace.workspaceSlug);
+    return this.ingestEntryUseCase.execute(withDerivedReminderAt(payload), userId, workspace.workspaceSlug);
   }
 }
 
@@ -105,6 +106,7 @@ function buildManualNotePayload(note: NoteRecord, project: Project, input: {
   tags: string[];
   reminderDate: string;
   reminderTime: string;
+  reminderAt?: string;
 }): IngestPayload {
   return {
     schemaVersion: 1,
@@ -143,6 +145,7 @@ function buildManualNotePayload(note: NoteRecord, project: Project, input: {
     actions: {
       reminderDate: input.reminderDate,
       reminderTime: input.reminderTime,
+      reminderAt: input.reminderAt || '',
       followUpBy: '',
     },
     metadata: {

@@ -13,6 +13,7 @@ export type CreateNoteParams = {
   tags?: string[];
   reminderDate?: string;
   reminderTime?: string;
+  reminderAt?: string;
 };
 
 export type CreateNoteResponse = {
@@ -37,6 +38,7 @@ export type UpdateNoteParams = {
   tags?: string[];
   reminderDate?: string;
   reminderTime?: string;
+  reminderAt?: string;
 };
 
 export function updateNote(id: string, params: UpdateNoteParams) {

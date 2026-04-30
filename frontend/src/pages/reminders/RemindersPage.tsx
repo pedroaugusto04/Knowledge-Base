@@ -1,4 +1,5 @@
 import type { PageContext } from '../../app/page-context';
+import { formatUsDate } from '../../entities/format';
 import type { Reminder } from '../../shared/api/models/reminder';
 import { PageHead, Panel } from '../../shared/ui/primitives';
 import { ReminderRow } from '../../widgets/reminders/ReminderRow';
@@ -16,7 +17,7 @@ export function RemindersPage({ dashboard }: PageContext) {
       <div className="grid">
         {Object.entries(grouped).map(([date, reminders]) => (
           <Panel key={date}>
-            <h2>{date}</h2>
+            <h2>{date === 'sem-data' ? date : formatUsDate(date)}</h2>
             <div className="list">
               {reminders.map((reminder) => (
                 <ReminderRow key={reminder.id} reminder={reminder} dashboard={dashboard} onOpenPath={() => undefined} />

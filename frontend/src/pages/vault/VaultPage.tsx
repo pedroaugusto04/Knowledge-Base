@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 
 import type { PageContext } from '../../app/page-context';
-import { noteStatusLabel, noteTypeLabel, projectName } from '../../entities/format';
+import { formatUsDate, noteStatusLabel, noteTypeLabel, projectName } from '../../entities/format';
 import { fetchNote } from '../../shared/api/client';
 import { Badge, EmptyState, PageHead, Tags } from '../../shared/ui/primitives';
 import { MarkdownView } from '../../widgets/markdown/MarkdownView';
@@ -34,7 +34,7 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, openNote
                   <Badge value={projectName(dashboard.projects, noteQuery.data.project)} tone="project" />
                   <Badge value={noteTypeLabel(noteQuery.data.type)} tone={noteQuery.data.type} />
                   <Badge value={noteStatusLabel(noteQuery.data.status)} tone={noteQuery.data.status} />
-                  <span className="meta">{noteQuery.data.date}</span>
+                  <span className="meta">{formatUsDate(noteQuery.data.date)}</span>
                 </div>
                 {noteQuery.data.tags.length ? <Tags items={noteQuery.data.tags} /> : null}
               </header>

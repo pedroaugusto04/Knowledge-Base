@@ -16,7 +16,7 @@ async function createStoreWithReminder(t) {
     workspaceSlug: 'default',
     status: 'open',
     tags: [],
-    occurredAt: '2099-12-31T09:00:00-03:00',
+    occurredAt: '2099-12-31T12:00:00.000Z',
     sourceChannel: 'test',
     summary: 'Reminder deploy',
     markdown: '',
@@ -24,7 +24,7 @@ async function createStoreWithReminder(t) {
     metadata: {
       reminderDate: '2099-12-31',
       reminderTime: '09:00',
-      reminderAt: '2099-12-31T09:00:00-03:00',
+      reminderAt: '2099-12-31T12:00:00.000Z',
     },
     origin: 'postgres',
     source: 'test',
@@ -48,9 +48,9 @@ test('daily reminders are aggregated once per date by user and workspace', async
 test('markRemindersAsSent updates exact reminder state', async (t) => {
   const { repositories, user } = await createStoreWithReminder(t);
   const marker = new MarkReminderAsSentUseCase(repositories.reminderDispatchRepository);
-  const result = await marker.execute(['11111111-1111-1111-1111-111111111111'], user.id, 'default', 'exact', '2099-12-31T09:00');
+  const result = await marker.execute(['11111111-1111-1111-1111-111111111111'], user.id, 'default', 'exact', '2099-12-31T12:00');
 
   assert.equal(result.ok, true);
   assert.equal(result.marked, 1);
-  assert.equal(await repositories.reminderDispatchRepository.hasSent(user.id, 'default', 'exact', '2099-12-31T09:00', '11111111-1111-1111-1111-111111111111'), true);
+  assert.equal(await repositories.reminderDispatchRepository.hasSent(user.id, 'default', 'exact', '2099-12-31T12:00', '11111111-1111-1111-1111-111111111111'), true);
 });

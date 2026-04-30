@@ -59,7 +59,7 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       status: 'open',
       reminderDate: '2026-04-26',
       reminderTime: '09:00',
-      reminderAt: '2026-04-26T09:00:00-03:00',
+      reminderAt: '2026-04-26T12:00:00.000Z',
       relativePath: '30 Reminders/overdue.md',
       sourceNotePath: '20 Inbox/incident.md',
     },
@@ -71,7 +71,7 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       status: 'active',
       reminderDate: '2026-04-27',
       reminderTime: '16:00',
-      reminderAt: '2026-04-27T16:00:00-03:00',
+      reminderAt: '2026-04-27T19:00:00.000Z',
       relativePath: '30 Reminders/upcoming.md',
       sourceNotePath: '20 Inbox/event.md',
     },
@@ -83,13 +83,13 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       status: 'done',
       reminderDate: '2026-04-25',
       reminderTime: '09:00',
-      reminderAt: '2026-04-25T09:00:00-03:00',
+      reminderAt: '2026-04-25T12:00:00.000Z',
       relativePath: '30 Reminders/done.md',
       sourceNotePath: '',
     },
   ];
 
-  const home = buildDashboardHome(projects, notes, reviews, reminders, new Date('2026-04-27T12:00:00-03:00'));
+  const home = buildDashboardHome(projects, notes, reviews, reminders, new Date('2026-04-27T15:00:00.000Z'));
 
   assert.equal(home.windowDays, 7);
   assert.equal(home.metrics.find((metric) => metric.id === 'open-reminders')?.value, 2);

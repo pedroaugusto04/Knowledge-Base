@@ -122,7 +122,7 @@ export class PostgresSchemaMigrator extends SchemaMigrator {
         workspace_slug text not null default '',
         status text not null default 'active',
         tags jsonb not null default '[]'::jsonb,
-        occurred_at text not null default '',
+        occurred_at timestamptz not null default now(),
         source_channel text not null default '',
         summary text not null default '',
         markdown_storage_key text not null default '',
