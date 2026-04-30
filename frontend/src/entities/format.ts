@@ -4,6 +4,13 @@ export function projectName(projects: Project[], slug: string) {
   return projects.find((project) => project.projectSlug === slug)?.displayName || slug;
 }
 
+function buildUsDate(parsed: Date) {
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const year = String(parsed.getFullYear());
+  return `${month}/${day}/${year}`;
+}
+
 export function formatUsDate(value: string | null | undefined) {
   if (!value) return '';
 
@@ -16,22 +23,18 @@ export function formatUsDate(value: string | null | undefined) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
 
-  const month = String(parsed.getMonth() + 1).padStart(2, '0');
-  const day = String(parsed.getDate()).padStart(2, '0');
-  const year = String(parsed.getFullYear());
-  return `${month}/${day}/${year}`;
+  return buildUsDate(parsed);
 }
 
 export function formatUsDateTime(value: string | null | undefined) {
   if (!value) return '';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  const month = String(parsed.getMonth() + 1).padStart(2, '0');
-  const day = String(parsed.getDate()).padStart(2, '0');
-  const year = String(parsed.getFullYear());
+  
+  const datePart = buildUsDate(parsed);
   const hours = String(parsed.getHours()).padStart(2, '0');
   const minutes = String(parsed.getMinutes()).padStart(2, '0');
-  return `${month}/${day}/${year} ${hours}:${minutes}`;
+  return `${datePart} ${hours}:${minutes}`;
 }
 
 export function localDateTimeToUtcIso(date: string | null | undefined, time: string | null | undefined) {

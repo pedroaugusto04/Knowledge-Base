@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -393,4 +394,16 @@ export function GuidedIntegrationsSection({
       {showGithubRepositories ? <GithubRepositoriesModal workspaceSlug={workspaceSlug} onClose={() => setShowGithubRepositories(false)} onSaved={onGithubRepositoriesSaved} /> : null}
     </>
   );
+}
+
+export function useIntegrationCallback() {
+  const location = useLocation();
+  return useMemo(() => {
+    const search = new URLSearchParams(location.search);
+    return {
+      integration: search.get('integration'),
+      status: search.get('status'),
+      workspaceSlug: search.get('workspaceSlug'),
+    };
+  }, [location.search]);
 }

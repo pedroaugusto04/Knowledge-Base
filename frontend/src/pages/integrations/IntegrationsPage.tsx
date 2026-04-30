@@ -1,21 +1,10 @@
-import { useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
-
 import { withFrontendBasePath } from '../../app/base-path';
 import { routes } from '../../app/routing/routes';
-import { GuidedIntegrationsSection, IntegrationCallbackNotice } from '../../features/integrations/GuidedIntegrationsSection';
+import { GuidedIntegrationsSection, IntegrationCallbackNotice, useIntegrationCallback } from '../../features/integrations/GuidedIntegrationsSection';
 import { PageHead } from '../../shared/ui/primitives';
 
 export function IntegrationsPage({ workspaceSlug }: { workspaceSlug: string }) {
-  const location = useLocation();
-  const callback = useMemo(() => {
-    const search = new URLSearchParams(location.search);
-    return {
-      integration: search.get('integration'),
-      status: search.get('status'),
-      workspaceSlug: search.get('workspaceSlug'),
-    };
-  }, [location.search]);
+  const callback = useIntegrationCallback();
 
   return (
     <>

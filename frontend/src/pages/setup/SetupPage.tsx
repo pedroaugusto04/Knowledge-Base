@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { withFrontendBasePath } from '../../app/base-path';
 import { routes } from '../../app/routing/routes';
-import { GuidedIntegrationsSection, IntegrationCallbackNotice } from '../../features/integrations/GuidedIntegrationsSection';
+import { GuidedIntegrationsSection, IntegrationCallbackNotice, useIntegrationCallback } from '../../features/integrations/GuidedIntegrationsSection';
 import { createWorkspace, getErrorMessage } from '../../shared/api/client';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { UserIntegration } from '../../shared/api/models/integration';
@@ -32,7 +32,6 @@ function StepState({ complete, pendingLabel, doneLabel }: { complete: boolean; p
 
 export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboard; refetchDashboard: () => Promise<unknown> }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const queryClient = useQueryClient();
   const formRef = useRef<HTMLFormElement>(null);
   const [slugTouched, setSlugTouched] = useState(false);
@@ -43,14 +42,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
   const [chatIntegrations, setChatIntegrations] = useState<UserIntegration[]>([]);
   const activeWorkspace = dashboard.workspaces[0] || null;
   const effectiveWorkspaceSlug = createdWorkspaceSlug || activeWorkspace?.workspaceSlug || '';
-  const githubCallbackStatus = useMemo(() => {
-    const search = new URLSearchParams(location.search);
-    return {
-      integration: search.get('integration'),
-      status: search.get('status'),
-      workspaceSlug: search.get('workspaceSlug'),
-    };
-  }, [location.search]);
+  const githubCallbackStatus = useIntegrationCallback();
 
   const {
     formState: { errors },
