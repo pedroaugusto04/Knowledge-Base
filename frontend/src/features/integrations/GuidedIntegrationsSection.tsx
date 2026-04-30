@@ -53,6 +53,15 @@ function openExternalIntegration(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+function buildChatComposeUrl(connection: IntegrationConnectionResponse): string {
+  const text = String(connection.instruction || '').trim();
+  if (!text) return '';
+  const encoded = encodeURIComponent(text);
+  if (connection.provider === 'whatsapp') return `https://wa.me/?text=${encoded}`;
+  if (connection.provider === 'telegram') return `https://t.me/share/url?url=&text=${encoded}`;
+  return '';
+}
+
 function IntegrationLogo({ integration }: { integration: UserIntegration }) {
   const logo = integrationLogos[integrationId(integration)];
   if (!logo) return <div className="integration-logo-fallback">{integration.name.slice(0, 2).toUpperCase()}</div>;
@@ -71,6 +80,7 @@ function IntegrationSteps({ integration }: { integration: UserIntegration }) {
 function CodeConnectionModal({ connection, onClose, workspaceSlug }: { connection: IntegrationConnectionResponse; onClose: () => void; workspaceSlug: string }) {
   const queryClient = useQueryClient();
   const session = connection.session;
+  const composeUrl = buildChatComposeUrl(connection);
   const sessionQuery = useQuery({
     queryKey: ['integration-session', workspaceSlug, connection.provider, session?.id],
     queryFn: () => fetchIntegrationSession({ provider: connection.provider, sessionId: session?.id || '' }),
@@ -100,7 +110,24 @@ function CodeConnectionModal({ connection, onClose, workspaceSlug }: { connectio
 
         <div className="connection-code" aria-label="Codigo de conexao">{connection.verificationCode}</div>
         <p>Envie <strong>{connection.instruction}</strong> no chat autorizado.</p>
-        {connection.pairingUrl ? <a className="integration-link" href={connection.pairingUrl} rel="noreferrer" target="_blank"><span>Abrir pairing</span><code>{connection.pairingUrl}</code></a> : null}
+        <div className="integration-actions">
+          {composeUrl ? (
+            <button className="icon-button" type="button" onClick={() => openExternalIntegration(composeUrl)}>
+              {connection.provider === 'telegram' ? 'Abrir Telegram com mensagem' : 'Abrir WhatsApp com mensagem'}
+            </button>
+          ) : null}
+          {connection.instruction ? (
+            <button
+              className="filter-chip"
+              type="button"
+              onClick={() => {
+                void navigator.clipboard?.writeText(connection.instruction || '');
+              }}
+            >
+              Copiar comando
+            </button>
+          ) : null}
+        </div>
         {currentSession ? <Badge value={statusLabel[currentSession.status] || currentSession.status} tone={statusTone[currentSession.status] || 'medium'} /> : null}
         {currentSession?.connectedAccount ? <p className="meta">Conectado em {currentSession.connectedAccount}</p> : null}
         {currentSession?.lastError ? <InlineMessage tone="error">{currentSession.lastError}</InlineMessage> : null}

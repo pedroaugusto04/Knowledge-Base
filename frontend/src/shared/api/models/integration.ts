@@ -38,7 +38,6 @@ export type IntegrationConnectionResponse = {
   session?: IntegrationConnectionSession;
   primaryAction?: { type: string; label: string; url?: string };
   verificationCode?: string;
-  pairingUrl?: string;
   instruction?: string;
   steps?: string[];
 };

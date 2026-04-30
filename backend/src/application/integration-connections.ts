@@ -406,7 +406,6 @@ export class IntegrationConnectionService {
   }
 
   private async startWhatsappConnection(userId: string, workspaceSlug: string) {
-    const environment = readEnvironment();
     const verificationCode = randomVerificationCode();
     const session = await this.sessions.createConnectionSession({
       userId,
@@ -427,7 +426,6 @@ export class IntegrationConnectionService {
         label: 'Conectar WhatsApp',
       },
       verificationCode,
-      pairingUrl: environment.evolutionApiPublicUrl || '',
       instruction: `/kb conectar ${verificationCode}`,
       steps: ['Envie a mensagem no grupo do WhatsApp.', 'Mantenha esta janela aberta ate o grupo aparecer como conectado.'],
     };
