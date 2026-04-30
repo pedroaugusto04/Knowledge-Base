@@ -103,7 +103,10 @@ function CodeConnectionModal({ connection, onClose, workspaceSlug }: { connectio
         <div className="modal-head">
           <div>
             <div className="card-kicker">{connection.provider}</div>
-            <h2 id="connection-title">Conectar {providerLabel}</h2>
+            <div className="integration-modal-title">
+              <h2 id="connection-title">Conectar {providerLabel}</h2>
+              {currentSession ? <Badge value={statusLabel[currentSession.status] || currentSession.status} tone={statusTone[currentSession.status] || 'medium'} /> : null}
+            </div>
           </div>
           <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={onClose}>x</button>
         </div>
@@ -128,7 +131,6 @@ function CodeConnectionModal({ connection, onClose, workspaceSlug }: { connectio
             </button>
           ) : null}
         </div>
-        {currentSession ? <Badge value={statusLabel[currentSession.status] || currentSession.status} tone={statusTone[currentSession.status] || 'medium'} /> : null}
         {currentSession?.connectedAccount ? <p className="meta">Conectado em {currentSession.connectedAccount}</p> : null}
         {currentSession?.lastError ? <InlineMessage tone="error">{currentSession.lastError}</InlineMessage> : null}
       </section>
@@ -277,10 +279,12 @@ function IntegrationCard({
           <p>{integration.description}</p>
         </div>
       </div>
-      <IntegrationSteps integration={integration} />
-      {integration.connectedAccount ? <p className="meta">Conta: {integration.connectedAccount}</p> : null}
-      {integration.lastError ? <InlineMessage tone="error">{integration.lastError}</InlineMessage> : null}
-      {actionError ? <InlineMessage tone="error">{actionError}</InlineMessage> : null}
+      <div className="integration-card-body">
+        <IntegrationSteps integration={integration} />
+        {integration.connectedAccount ? <p className="meta">Conta: {integration.connectedAccount}</p> : null}
+        {integration.lastError ? <InlineMessage tone="error">{integration.lastError}</InlineMessage> : null}
+        {actionError ? <InlineMessage tone="error">{actionError}</InlineMessage> : null}
+      </div>
       <div className="integration-card-foot">
         <Badge value={statusLabel[integration.status] || integration.status} tone={statusTone[integration.status] || 'medium'} />
         <div className="integration-actions">
