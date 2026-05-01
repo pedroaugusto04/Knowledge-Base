@@ -259,7 +259,7 @@ describe('ProjectsPage', () => {
     fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Billing API' } });
     fireEvent.change(screen.getByLabelText('Repositorios GitHub'), { target: { value: [repoId] } });
     fireEvent.change(screen.getByLabelText('Aliases'), { target: { value: 'billing' } });
-    fireEvent.change(screen.getByLabelText('Tags padrao'), { target: { value: 'finance' } });
+    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'finance' } });
     fireEvent.click(screen.getByRole('button', { name: 'Criar projeto' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/projects', expect.objectContaining({ method: 'POST' })));
@@ -277,8 +277,10 @@ describe('ProjectsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
 
-    expect(await screen.findByText('Conecte o GitHub em Integracoes para listar e selecionar repositorios.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Repositorios GitHub')).toBeDisabled();
+    const repositoryInput = await screen.findByDisplayValue('Conecte o GitHub em Integrações para listar e selecionar repositórios.');
+    expect(repositoryInput).toBeDisabled();
+    expect(screen.getByText('Repositorios GitHub')).toBeInTheDocument();
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
   it('creates a note with reminder fields and opens the created note', async () => {

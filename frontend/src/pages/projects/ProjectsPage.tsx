@@ -267,11 +267,11 @@ function ProjectModal({
     },
   });
   const closeGuard = useModalCloseGuard({ isDirty, onClose });
-  const repositoryHint = !githubConnected
-    ? 'Conecte o GitHub em Integracoes para listar e selecionar repositorios.'
-    : workspaceRepositories.length === 0
-      ? 'Nenhum repositorio disponivel neste workspace. Verifique a selecao em Integracoes > GitHub.'
-      : 'Selecione um ou mais repositorios vinculados ao workspace.';
+  const hasRepositoryOptions = workspaceRepositories.length > 0;
+  const repositoryHint = 'Selecione um ou mais repositorios vinculados ao workspace.';
+  const repositoryPlaceholder = !githubConnected
+    ? 'Conecte o GitHub em Integrações para listar e selecionar repositórios.'
+    : 'Nenhum repositorio disponivel neste workspace. Verifique a selecao em Integracoes > GitHub.';
 
   return (
     <>
@@ -309,24 +309,33 @@ function ProjectModal({
             </div>
             <FormField name="repositoryIds" label="Repositorios GitHub" error={errors.repositoryIds?.message} optional>
               {(fieldProps) => (
-                <select
-                  multiple
-                  {...fieldProps}
-                  {...register('repositoryIds')}
-                  disabled={mutation.isPending || !githubConnected || workspaceRepositories.length === 0}
-                >
-                  {workspaceRepositories.map((repo) => (
-                    <option key={repo.id} value={repo.id}>{repo.fullName}</option>
-                  ))}
-                </select>
+                hasRepositoryOptions ? (
+                  <select
+                    multiple
+                    {...fieldProps}
+                    {...register('repositoryIds')}
+                    disabled={mutation.isPending || !githubConnected}
+                  >
+                    {workspaceRepositories.map((repo) => (
+                      <option key={repo.id} value={repo.id}>{repo.fullName}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    {...fieldProps}
+                    value={repositoryPlaceholder}
+                    disabled
+                    readOnly
+                  />
+                )
               )}
             </FormField>
-            <p className="meta">{repositoryHint}</p>
+            {hasRepositoryOptions ? <p className="meta">{repositoryHint}</p> : null}
             <div className="form-grid">
               <FormField name="aliases" label="Aliases" error={errors.aliases?.message} optional>
                 {(fieldProps) => <input {...fieldProps} {...register('aliases')} />}
               </FormField>
-              <FormField name="defaultTags" label="Tags padrao" error={errors.defaultTags?.message} optional>
+              <FormField name="defaultTags" label="Tags" error={errors.defaultTags?.message} optional>
                 {(fieldProps) => <input {...fieldProps} {...register('defaultTags')} />}
               </FormField>
             </div>

@@ -21,7 +21,7 @@ export class GithubRepositoryResolutionService {
       if (input.missingCredentialError === 'not_found') throw new NotFoundException('credential_not_found');
       throw new BadRequestException({
         code: 'github_connection_required',
-        details: { fieldErrors: { repositoryIds: 'Conecte o GitHub antes de vincular repositorios ao projeto.' } },
+        details: { fieldErrors: { repositoryIds: 'Conecte o GitHub antes de vincular repositórios ao projeto.' } },
       });
     }
 
