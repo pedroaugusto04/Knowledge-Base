@@ -310,7 +310,8 @@ export class IntegrationConnectionService {
       privateKey: environment.githubAppPrivateKey,
       installationId,
     });
-    const selected = new Set(workspace.githubRepos || []);
+    const projects = await this.content.listProjects(input.userId);
+    const selected = new Set(projects.filter(p => p.workspaceSlug === workspaceSlug && p.repoFullName).map(p => p.repoFullName));
     return {
       ok: true as const,
       workspaceSlug,
@@ -328,14 +329,11 @@ export class IntegrationConnectionService {
     if (!credential || credential.status !== CredentialRecordStatus.Connected || credential.revokedAt) throw new NotFoundException('credential_not_found');
     const selectedRepos = Array.from(new Set(input.repositories.map((repo) => String(repo || '').trim()).filter(Boolean)));
     const now = new Date().toISOString();
-    const projectSlugs = Array.from(new Set([...workspace.projectSlugs, ...selectedRepos.map((repo) => slugify(repo.split('/').pop() || repo) || 'inbox')]));
     await this.content.upsertWorkspace(input.userId, {
       workspaceSlug,
       displayName: workspace.displayName,
       whatsappGroupJid: workspace.whatsappGroupJid,
       telegramChatId: workspace.telegramChatId,
-      githubRepos: selectedRepos,
-      projectSlugs,
       createdAt: workspace.createdAt,
       updatedAt: now,
     });

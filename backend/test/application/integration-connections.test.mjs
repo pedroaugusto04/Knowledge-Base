@@ -33,8 +33,6 @@ async function fixture(t) {
     displayName: 'Default',
     whatsappGroupJid: '',
     telegramChatId: '',
-    githubRepos: [],
-    projectSlugs: ['inbox'],
     createdAt: '2026-04-27T00:00:00.000Z',
     updatedAt: '2026-04-27T00:00:00.000Z',
   });
@@ -270,8 +268,6 @@ test('github app repositories are listed by installation token and saved into wo
 
   const saved = await connections.saveGithubRepositories({ userId: user.id, workspaceSlug: 'default', repositories: ['acme/api', 'acme/api'] });
   assert.deepEqual(saved.repositories, ['acme/api']);
-  const workspaces = await repositories.contentRepository.listWorkspaces(user.id);
-  assert.deepEqual(workspaces[0].githubRepos, ['acme/api']);
   const projects = await repositories.contentRepository.listProjects(user.id);
   assert.equal(projects.find((project) => project.projectSlug === 'api').repoFullName, 'acme/api');
   globalThis.fetch = originalFetch;
@@ -284,8 +280,6 @@ test('guided integrations reject missing workspace and github callback keeps bro
     displayName: 'Product Team',
     whatsappGroupJid: '',
     telegramChatId: '',
-    githubRepos: [],
-    projectSlugs: ['inbox'],
     createdAt: '2026-04-27T00:00:00.000Z',
     updatedAt: '2026-04-27T00:00:00.000Z',
   });

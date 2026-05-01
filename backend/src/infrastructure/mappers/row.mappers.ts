@@ -89,8 +89,6 @@ export function workspaceFromRow(row: Row): WorkspaceRecord {
     displayName: String(row.display_name || row.workspace_slug),
     whatsappGroupJid: String(row.whatsapp_group_jid || ''),
     telegramChatId: String(row.telegram_chat_id || ''),
-    githubRepos: stringArray(row.github_repos),
-    projectSlugs: stringArray(row.project_slugs),
     createdAt: nowIso(row.created_at),
     updatedAt: nowIso(row.updated_at),
   };

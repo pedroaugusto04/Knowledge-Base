@@ -43,16 +43,10 @@ export class CreateProjectUseCase {
       enabled: true,
     });
 
-    const projectSlugs = [...new Set([...workspace.projectSlugs, project.projectSlug])];
-    const updatedWorkspace = await this.contentRepository.upsertWorkspace(userId, {
-      ...workspace,
-      projectSlugs,
-    });
-
     return {
       ok: true as const,
       project,
-      workspace: updatedWorkspace,
+      workspace,
     };
   }
 }
@@ -108,13 +102,7 @@ export class DeleteProjectUseCase {
     await this.contentRepository.deleteProject(userId, projectSlug);
 
     const workspace = (await this.contentRepository.listWorkspaces(userId)).find((item) => item.workspaceSlug === project.workspaceSlug);
-    const updatedWorkspace = workspace
-      ? await this.contentRepository.upsertWorkspace(userId, {
-          ...workspace,
-          projectSlugs: workspace.projectSlugs.filter((slug) => slug !== projectSlug),
-        })
-      : null;
 
-    return { ok: true as const, projectSlug, workspace: updatedWorkspace };
+    return { ok: true as const, projectSlug, workspace };
   }
 }

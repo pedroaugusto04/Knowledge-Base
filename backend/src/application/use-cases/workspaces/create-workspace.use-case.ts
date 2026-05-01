@@ -24,8 +24,6 @@ export class CreateWorkspaceUseCase {
       displayName: input.displayName,
       whatsappGroupJid: '',
       telegramChatId: '',
-      githubRepos: [],
-      projectSlugs: ['inbox'],
       createdAt: now,
       updatedAt: now,
     });

@@ -31,19 +31,15 @@ export class PostgresContentRepository extends ContentRepository {
     displayName: string;
     whatsappGroupJid: string;
     telegramChatId: string;
-    githubRepos: string[];
-    projectSlugs: string[];
   }) {
     const result = await this.database.getPool().query(
-      `insert into kb_workspaces (id, user_id, workspace_slug, display_name, whatsapp_group_jid, telegram_chat_id, github_repos, project_slugs)
-       values ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb)
+      `insert into kb_workspaces (id, user_id, workspace_slug, display_name, whatsapp_group_jid, telegram_chat_id)
+       values ($1, $2, $3, $4, $5, $6)
        on conflict (user_id, workspace_slug)
        do update set
          display_name = excluded.display_name,
          whatsapp_group_jid = excluded.whatsapp_group_jid,
          telegram_chat_id = excluded.telegram_chat_id,
-         github_repos = excluded.github_repos,
-         project_slugs = excluded.project_slugs,
          updated_at = now()
        returning *`,
       [
@@ -53,8 +49,6 @@ export class PostgresContentRepository extends ContentRepository {
         input.displayName,
         input.whatsappGroupJid,
         input.telegramChatId,
-        JSON.stringify(input.githubRepos),
-        JSON.stringify(input.projectSlugs),
       ],
     );
     return workspaceFromRow(result.rows[0]);

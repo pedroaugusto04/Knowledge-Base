@@ -32,10 +32,10 @@ export function link(label: string, url: string, external = true) {
 
 export function workspaceRepos(workspace: Workspace | undefined, projects: Project[]): string[] {
   const workspaceProjectRepos = projects
-    .filter((project) => !workspace || project.workspaceSlug === workspace.workspaceSlug || workspace.projectSlugs.includes(project.projectSlug))
+    .filter((project) => !workspace || project.workspaceSlug === workspace.workspaceSlug)
     .map((project) => project.repoFullName)
     .filter(Boolean);
-  return Array.from(new Set([...(workspace?.githubRepos || []), ...workspaceProjectRepos]));
+  return Array.from(new Set(workspaceProjectRepos));
 }
 
 export function secretConfigured(value: string): boolean {

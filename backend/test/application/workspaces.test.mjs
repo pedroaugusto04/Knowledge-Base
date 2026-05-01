@@ -51,7 +51,6 @@ test('create project persists metadata, updates workspace slugs and rejects dupl
 
   assert.equal(result.ok, true);
   assert.equal(result.project.projectSlug, 'acme-api');
-  assert.deepEqual(result.workspace.projectSlugs, ['inbox', 'acme-api']);
 
   await assert.rejects(
     () => useCase.execute({ displayName: 'Other API', projectSlug: 'acme-api', repoFullName: 'acme/other', aliases: [], defaultTags: [] }, user.id),
