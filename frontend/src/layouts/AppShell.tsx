@@ -140,7 +140,12 @@ export function AppShell() {
         <header className="topbar">
           <label className="command-bar">
             <span>&gt;_</span>
-            <input type="search" placeholder="Buscar notas, reviews, paths ou tags" onKeyDown={(event) => { if (event.key === 'Enter') navigate(routes.search); }} />
+            <input type="search" placeholder="Buscar notas, reviews, paths ou tags" onKeyDown={(event) => { 
+              if (event.key === 'Enter') {
+                const q = event.currentTarget.value.trim();
+                navigate(q ? `${routes.search}?q=${encodeURIComponent(q)}` : routes.search); 
+              }
+            }} />
           </label>
           <div className="topbar-meta">
             <span>{dashboard.notes.length} docs</span>

@@ -1,13 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { useSearchParams } from 'react-router-dom';
+
 import type { PageContext } from '../../app/page-context';
 import { runQuery } from '../../shared/api/client';
 import { EmptyState, PageHead, Panel } from '../../shared/ui/primitives';
 import { NoteRow } from '../../widgets/notes/NoteRow';
 
 export function SearchPage({ dashboard, openNote }: PageContext) {
-  const [query, setQuery] = useState('timeout webhook deploy');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') || '';
+  const setQuery = (newQuery: string) => {
+    setSearchParams((prev) => {
+      if (newQuery) {
+        prev.set('q', newQuery);
+      } else {
+        prev.delete('q');
+      }
+      return prev;
+    }, { replace: true });
+  };
   const [projectSlug, setProjectSlug] = useState('');
   const result = useQuery({
     queryKey: ['search', query, projectSlug],
@@ -18,7 +31,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
 
   return (
     <>
-      <PageHead title="Busca" subtitle="Consulta deterministica e semantica sobre notas, paths citados e resposta consolidada." />
+      <PageHead title="Busca" subtitle="Consulta semântica sobre notas e paths citados" />
       <section className="search-box">
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex: riscos do ultimo push no n8n" type="search" />
         <div className="filters">
@@ -40,7 +53,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
       </section>
       <section className="grid cols-2">
         <Panel>
-          <h2>Resposta consolidada</h2>
+          <h2>Resposta</h2>
           <p>{result.data?.answer.answer || 'Digite uma busca para consultar o vault.'}</p>
           <div className="list">
             {result.data?.answer.citedPaths.slice(0, 3).map((path) => (
