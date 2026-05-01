@@ -220,6 +220,7 @@ jobs:
             git reset --hard origin/main
             cp backend.env .env.prod
             sudo docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build --remove-orphans api
+            sudo docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T api node backend/dist/infrastructure/persistence/run-migrations.js
             sudo docker image prune -f
 
   deploy-frontend:
