@@ -7,14 +7,15 @@ import { useParams } from 'react-router-dom';
 import type { PageContext } from '../../app/page-context';
 import { createNote, createProject, deleteNote, deleteProject, fetchNote, updateNote, updateProject } from '../../shared/api/client';
 import { localDateTimeToUtcIso } from '../../entities/format';
+import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
+import type { GithubIntegrationRepository } from '../../shared/api/models/integration';
 import type { NoteDetail, NoteSummary } from '../../shared/api/models/note';
-import type { Project, Repository } from '../../shared/api/models/project';
+import type { Project } from '../../shared/api/models/project';
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../shared/forms/errors';
 import { FormActions, FormField } from '../../shared/forms/fields';
 import { notifySuccess } from '../../shared/ui/notifications';
 import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
 import { discardChangesConfirmationCopy, useModalCloseGuard } from '../../shared/ui/use-modal-close-guard';
-import { fetchWorkspaceRepositories } from '../../shared/api/workspaces';
 import { PageHead, Panel, Tags } from '../../shared/ui/primitives';
 import { NoteRow } from '../../widgets/notes/NoteRow';
 import { ProjectCard } from '../../widgets/projects/ProjectCard';
@@ -42,10 +43,19 @@ export function ProjectsPage({ dashboard, selectedProject, setSelectedProject, o
   const selectedSlug = routeProject || selectedProject;
   const selected = dashboard.projects.find((project) => project.projectSlug === selectedSlug) || dashboard.projects[0];
   const notes = dashboard.notes.filter((note) => !selected || note.project === selected.projectSlug);
+  const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug;
+  const { data: integrationsResponse } = useQuery({
+    queryKey: ['integrations', workspaceSlug],
+    queryFn: () => fetchIntegrations(workspaceSlug || ''),
+    enabled: Boolean(workspaceSlug),
+  });
+  const githubConnected = integrationsResponse?.integrations.some(
+    (integration) => integration.provider === 'github-app' && integration.status === 'connected',
+  ) || false;
   const { data: repositoriesResponse } = useQuery({
-    queryKey: ['workspace-repositories', dashboard.workspaces[0]?.workspaceSlug],
-    queryFn: () => fetchWorkspaceRepositories(dashboard.workspaces[0]?.workspaceSlug),
-    enabled: !!dashboard.workspaces[0]?.workspaceSlug,
+    queryKey: ['github-repositories', workspaceSlug],
+    queryFn: () => fetchGithubRepositories(workspaceSlug || ''),
+    enabled: Boolean(workspaceSlug) && githubConnected,
   });
   const workspaceRepositories = repositoriesResponse?.repositories || [];
   const loadNoteMutation = useMutation({
@@ -137,6 +147,7 @@ export function ProjectsPage({ dashboard, selectedProject, setSelectedProject, o
       ) : null}
       {projectModal ? (
         <ProjectModal
+          githubConnected={githubConnected}
           workspaceRepositories={workspaceRepositories}
           mode={projectModal.mode}
           project={projectModal.mode === 'edit' ? projectModal.project : undefined}
@@ -199,13 +210,15 @@ function parseList(value: string): string[] {
 }
 
 function ProjectModal({
+  githubConnected,
   workspaceRepositories,
   mode,
   project,
   onClose,
   onSaved,
 }: {
-  workspaceRepositories: Repository[];
+  githubConnected: boolean;
+  workspaceRepositories: GithubIntegrationRepository[];
   mode: 'create' | 'edit';
   project?: Project;
   onClose: () => void;
@@ -223,7 +236,7 @@ function ProjectModal({
     defaultValues: {
       displayName: project?.displayName || '',
       projectSlug: project?.projectSlug || '',
-      repositoryIds: project?.repositories.map((r) => r.id) || [],
+      repositoryIds: project?.repositories.map((r) => r.externalId) || [],
       aliases: project?.aliases.join(', ') || '',
       defaultTags: project?.defaultTags.join(', ') || '',
     },
@@ -254,6 +267,11 @@ function ProjectModal({
     },
   });
   const closeGuard = useModalCloseGuard({ isDirty, onClose });
+  const repositoryHint = !githubConnected
+    ? 'Conecte o GitHub em Integracoes para listar e selecionar repositorios.'
+    : workspaceRepositories.length === 0
+      ? 'Nenhum repositorio disponivel neste workspace. Verifique a selecao em Integracoes > GitHub.'
+      : 'Selecione um ou mais repositorios vinculados ao workspace.';
 
   return (
     <>
@@ -291,13 +309,19 @@ function ProjectModal({
             </div>
             <FormField name="repositoryIds" label="Repositorios GitHub" error={errors.repositoryIds?.message} optional>
               {(fieldProps) => (
-                <select multiple {...fieldProps} {...register('repositoryIds')} disabled={mutation.isPending}>
+                <select
+                  multiple
+                  {...fieldProps}
+                  {...register('repositoryIds')}
+                  disabled={mutation.isPending || !githubConnected || workspaceRepositories.length === 0}
+                >
                   {workspaceRepositories.map((repo) => (
                     <option key={repo.id} value={repo.id}>{repo.fullName}</option>
                   ))}
                 </select>
               )}
             </FormField>
+            <p className="meta">{repositoryHint}</p>
             <div className="form-grid">
               <FormField name="aliases" label="Aliases" error={errors.aliases?.message} optional>
                 {(fieldProps) => <input {...fieldProps} {...register('aliases')} />}

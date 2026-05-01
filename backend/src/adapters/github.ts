@@ -91,6 +91,8 @@ export type GithubInstallationRepository = {
   owner: string;
   private: boolean;
   htmlUrl: string;
+  description: string | null;
+  defaultBranch: string | null;
 };
 
 export async function fetchGithubInstallationRepositories(input: {
@@ -115,6 +117,8 @@ export async function fetchGithubInstallationRepositories(input: {
       name?: string;
       private?: boolean;
       html_url?: string;
+      description?: string | null;
+      default_branch?: string | null;
       owner?: { login?: string };
     }>;
   };
@@ -126,6 +130,8 @@ export async function fetchGithubInstallationRepositories(input: {
       owner: String(repo.owner?.login || '').trim(),
       private: Boolean(repo.private),
       htmlUrl: String(repo.html_url || '').trim(),
+      description: repo.description == null ? null : String(repo.description),
+      defaultBranch: repo.default_branch == null ? null : String(repo.default_branch),
     }))
     .filter((repo) => repo.fullName);
 }

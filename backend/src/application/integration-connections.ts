@@ -317,6 +317,7 @@ export class IntegrationConnectionService {
       workspaceSlug,
       repositories: repositories.map((repository) => ({
         ...repository,
+        id: String(repository.id),
         selected: selected.has(repository.fullName),
       })),
     };

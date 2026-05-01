@@ -2,8 +2,6 @@ import { z } from 'zod';
 
 import { slugify } from '../../../domain/strings.js';
 
-import { githubRepositoryInputSchema } from './integration-credentials.dto.js';
-
 function normalizedStringList(value: string[]): string[] {
   return [...new Set(value.map((item) => item.trim()).filter(Boolean))];
 }
@@ -12,7 +10,7 @@ export const createProjectBodySchema = z
   .object({
     displayName: z.string().trim().min(1, 'Informe o nome do projeto.').max(120, 'Use no maximo 120 caracteres.'),
     projectSlug: z.string().trim().max(80, 'Use no maximo 80 caracteres.').optional(),
-    repositoryIds: z.array(z.string().uuid()).optional().default([]),
+    repositoryIds: z.array(z.union([z.string(), z.number()]).transform((value) => String(value).trim()).pipe(z.string().min(1, 'Selecione um repositorio valido do GitHub.'))).optional().default([]),
     aliases: z.array(z.string().trim().max(80, 'Use no maximo 80 caracteres.')).optional().default([]),
     defaultTags: z.array(z.string().trim().max(60, 'Use no maximo 60 caracteres.')).optional().default([]),
   })
@@ -43,7 +41,7 @@ export const projectSlugParamSchema = z.object({
 export const updateProjectBodySchema = z
   .object({
     displayName: z.string().trim().min(1, 'Informe o nome do projeto.').max(120, 'Use no maximo 120 caracteres.'),
-    repositoryIds: z.array(z.string().uuid()).optional().default([]),
+    repositoryIds: z.array(z.union([z.string(), z.number()]).transform((value) => String(value).trim()).pipe(z.string().min(1, 'Selecione um repositorio valido do GitHub.'))).optional().default([]),
     aliases: z.array(z.string().trim().max(80, 'Use no maximo 80 caracteres.')).optional().default([]),
     defaultTags: z.array(z.string().trim().max(60, 'Use no maximo 60 caracteres.')).optional().default([]),
   })

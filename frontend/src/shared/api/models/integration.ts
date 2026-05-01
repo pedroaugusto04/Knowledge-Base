@@ -43,11 +43,14 @@ export type IntegrationConnectionResponse = {
 };
 
 export type GithubIntegrationRepository = {
+  id: string;
   fullName: string;
   name: string;
   owner: string;
   private: boolean;
   htmlUrl: string;
+  description?: string | null;
+  defaultBranch?: string | null;
   selected: boolean;
 };
 

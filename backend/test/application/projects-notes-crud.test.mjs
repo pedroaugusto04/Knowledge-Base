@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { encryptConfig } from '../../dist/application/credentials.js';
 import { DeleteManualNoteUseCase, DeleteProjectUseCase, GetNoteDetailUseCase, UpdateManualNoteUseCase, UpdateProjectUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
@@ -192,20 +193,36 @@ test('updates project metadata while keeping slug immutable', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await seedProject(repositories, user.id);
-
-  const repo = await repositories.contentRepository.upsertRepository({
+  await repositories.credentialRepository.upsertCredential({
+    userId: user.id,
     workspaceSlug: 'default',
-    externalId: '0',
-    fullName: 'acme/platform',
-    htmlUrl: 'https://github.com/acme/platform',
-    description: null,
-    defaultBranch: null,
+    provider: 'github-app',
+    status: 'connected',
+    encryptedConfig: encryptConfig({ installationId: '42', accountLogin: 'acme' }),
+    publicMetadata: { connectedAccount: 'acme' },
   });
+  const originalFetch = globalThis.fetch;
+  const originalAppId = process.env.KB_GITHUB_APP_ID;
+  const originalPrivateKey = process.env.KB_GITHUB_APP_PRIVATE_KEY;
+  process.env.KB_GITHUB_APP_ID = 'app-id';
+  process.env.KB_GITHUB_APP_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEA4dPaANJrsQts5dPc\\n3bWKP9Cp2rzAKQm+zsBRyEM9CWippQOzuaLbv9eE3/5zm8HtPtPHsJW8jrdzdLIZ\\nNVJ/3wIDAQABAkANtRhEeIFE69aeVK/RXVWY7geBWXeohgjo78+HAl3QFkcLy0G7\\nd8yRE6NyoSzgNKhUapCIIgXIdg5zm0+HYz4xAiEA/O/BAkqlqna0Naou6pjryLIv\\nCkk9ET2ztq5xucIo840CIQDkkAthErxSTqi+6VFu7Fe3l+mJnkTahWi24CMVROgQ\\nGwIhAMY3oXsJQsDO27T+lFvW0Vhrgv+9m3TKdO7h0E/xv6P1AiAqwPMP9nQ5pTMV\\newlbiWQjGIx7zJoukhPzWVvWp6wNDwIge5mo6tY09C+IjQR23ibEDwYwxVTymK4s\\nUgCovTDoi6o=\\n-----END PRIVATE KEY-----';
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+    if (target.includes('/access_tokens')) return Response.json({ token: 'installation-token' });
+    if (target.includes('/installation/repositories')) {
+      return Response.json({
+        repositories: [
+          { id: 102, full_name: 'acme/platform', name: 'platform', private: true, html_url: 'https://github.com/acme/platform', default_branch: 'main', owner: { login: 'acme' } },
+        ],
+      });
+    }
+    return new Response(null, { status: 404 });
+  };
 
-  const result = await new UpdateProjectUseCase(repositories.contentRepository).execute({
+  const result = await new UpdateProjectUseCase(repositories.contentRepository, repositories.credentialRepository).execute({
     projectSlug: 'platform',
     displayName: 'Platform Core',
-    repositoryIds: [repo.id],
+    repositoryIds: ['102'],
     aliases: ['core'],
     defaultTags: ['backend'],
   }, user.id);
@@ -213,4 +230,8 @@ test('updates project metadata while keeping slug immutable', async (t) => {
   assert.equal(result.ok, true);
   assert.equal(result.project.projectSlug, 'platform');
   assert.equal(result.project.displayName, 'Platform Core');
+  assert.equal(result.project.repositories[0].externalId, '102');
+  globalThis.fetch = originalFetch;
+  process.env.KB_GITHUB_APP_ID = originalAppId;
+  process.env.KB_GITHUB_APP_PRIVATE_KEY = originalPrivateKey;
 });

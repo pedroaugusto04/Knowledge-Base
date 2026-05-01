@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { encryptConfig } from '../../dist/application/credentials.js';
 import { CreateProjectUseCase, CreateWorkspaceUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
@@ -39,35 +40,55 @@ test('create project persists metadata, updates workspace slugs and rejects dupl
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await new CreateWorkspaceUseCase(repositories.contentRepository).execute({ displayName: 'Acme Team', workspaceSlug: 'acme-team' }, user.id);
-  const useCase = new CreateProjectUseCase(repositories.contentRepository);
-
-  const repo = await repositories.contentRepository.upsertRepository({
+  const useCase = new CreateProjectUseCase(repositories.contentRepository, repositories.credentialRepository);
+  await repositories.credentialRepository.upsertCredential({
+    userId: user.id,
     workspaceSlug: 'acme-team',
-    externalId: '101',
-    fullName: 'acme/api',
-    htmlUrl: 'https://github.com/acme/api',
-    description: null,
-    defaultBranch: null,
+    provider: 'github-app',
+    status: 'connected',
+    encryptedConfig: encryptConfig({ installationId: '42', accountLogin: 'acme' }),
+    publicMetadata: { connectedAccount: 'acme' },
   });
+  const originalFetch = globalThis.fetch;
+  const originalAppId = process.env.KB_GITHUB_APP_ID;
+  const originalPrivateKey = process.env.KB_GITHUB_APP_PRIVATE_KEY;
+  process.env.KB_GITHUB_APP_ID = 'app-id';
+  process.env.KB_GITHUB_APP_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEA4dPaANJrsQts5dPc\\n3bWKP9Cp2rzAKQm+zsBRyEM9CWippQOzuaLbv9eE3/5zm8HtPtPHsJW8jrdzdLIZ\\nNVJ/3wIDAQABAkANtRhEeIFE69aeVK/RXVWY7geBWXeohgjo78+HAl3QFkcLy0G7\\nd8yRE6NyoSzgNKhUapCIIgXIdg5zm0+HYz4xAiEA/O/BAkqlqna0Naou6pjryLIv\\nCkk9ET2ztq5xucIo840CIQDkkAthErxSTqi+6VFu7Fe3l+mJnkTahWi24CMVROgQ\\nGwIhAMY3oXsJQsDO27T+lFvW0Vhrgv+9m3TKdO7h0E/xv6P1AiAqwPMP9nQ5pTMV\\newlbiWQjGIx7zJoukhPzWVvWp6wNDwIge5mo6tY09C+IjQR23ibEDwYwxVTymK4s\\nUgCovTDoi6o=\\n-----END PRIVATE KEY-----';
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+    if (target.includes('/access_tokens')) return Response.json({ token: 'installation-token' });
+    if (target.includes('/installation/repositories')) {
+      return Response.json({
+        repositories: [
+          { id: 101, full_name: 'acme/api', name: 'api', private: true, html_url: 'https://github.com/acme/api', default_branch: 'main', owner: { login: 'acme' } },
+        ],
+      });
+    }
+    return new Response(null, { status: 404 });
+  };
 
   const result = await useCase.execute({
     displayName: 'Acme API',
     projectSlug: 'acme-api',
-    repositoryIds: [repo.id],
+    repositoryIds: ['101'],
     aliases: ['api'],
     defaultTags: ['backend'],
   }, user.id);
 
   assert.equal(result.ok, true);
   assert.equal(result.project.projectSlug, 'acme-api');
+  assert.equal(result.project.repositories[0].fullName, 'acme/api');
 
   await assert.rejects(
-    () => useCase.execute({ displayName: 'Other API', projectSlug: 'acme-api', repositories: [], aliases: [], defaultTags: [] }, user.id),
+    () => useCase.execute({ displayName: 'Other API', projectSlug: 'acme-api', repositoryIds: [], aliases: [], defaultTags: [] }, user.id),
     (error) => {
       assert.equal(error.getResponse().code, 'project_slug_already_exists');
       assert.deepEqual(error.getResponse().details.fieldErrors, { projectSlug: 'Este slug de projeto ja existe.' });
       return true;
     },
   );
-  // Removed duplicate repo rejection test as requested by user
+
+  globalThis.fetch = originalFetch;
+  process.env.KB_GITHUB_APP_ID = originalAppId;
+  process.env.KB_GITHUB_APP_PRIVATE_KEY = originalPrivateKey;
 });

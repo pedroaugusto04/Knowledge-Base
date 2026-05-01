@@ -7,6 +7,29 @@ import { ProjectsPage } from '../../../src/pages/projects/ProjectsPage';
 import type { Dashboard } from '../../../src/shared/api/models/dashboard';
 import { localDateTimeToUtcIso } from '../../../src/entities/format';
 
+function githubIntegrationsResponse(status: 'connected' | 'missing' = 'connected') {
+  return {
+    ok: true,
+    workspaceSlug: 'default',
+    integrations: [
+      {
+        provider: 'github-app',
+        name: 'GitHub App',
+        description: 'Dados de instalacao do GitHub App.',
+        status,
+        workspaceSlug: 'default',
+        publicMetadata: {},
+        primaryAction: { type: status === 'connected' ? 'revoke' : 'connect', label: status === 'connected' ? 'Revogar' : 'Conectar GitHub' },
+        steps: [],
+        lastError: null,
+        connectedAccount: status === 'connected' ? 'acme' : null,
+        updatedAt: null,
+        revokedAt: null,
+      },
+    ],
+  };
+}
+
 const notificationSpies = vi.hoisted(() => ({
   notifySuccess: vi.fn(),
   notifyError: vi.fn(),
@@ -191,7 +214,8 @@ describe('ProjectsPage', () => {
 
   it('shows frontend validation inline and focuses the first invalid project field', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input) === '/api/workspaces/default/repositories') return Response.json({ ok: true, repositories: [] });
+      if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
       return Response.error();
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -208,11 +232,13 @@ describe('ProjectsPage', () => {
   it('opens the project modal and creates a project with an explicit GitHub repository', async () => {
     const repoId = '11111111-1111-1111-1111-111111111111';
     const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {
-      if (input.includes('/repositories')) {
+      if (input === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (input === '/api/integrations/github-app/repositories?workspaceSlug=default') {
         return Response.json({
           ok: true,
+          workspaceSlug: 'default',
           repositories: [
-            { id: repoId, workspaceSlug: 'default', externalId: '101', fullName: 'acme/api', htmlUrl: null, description: null, defaultBranch: null, createdAt: '', updatedAt: '' },
+            { id: repoId, fullName: 'acme/api', name: 'api', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/api', description: null, defaultBranch: 'main', selected: false },
           ]
         });
       }
@@ -236,13 +262,29 @@ describe('ProjectsPage', () => {
     fireEvent.change(screen.getByLabelText('Tags padrao'), { target: { value: 'finance' } });
     fireEvent.click(screen.getByRole('button', { name: 'Criar projeto' }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/projects', expect.objectContaining({ method: 'POST' })));
     expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Projeto criado com sucesso.');
     expect(setSelectedProject).toHaveBeenCalledWith('billing-api');
   });
 
+  it('shows a GitHub connection hint when repositories are unavailable because the integration is not connected', async () => {
+    const fetchMock = vi.fn(async (input: string) => {
+      if (input === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse('missing'));
+      return Response.error();
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
+
+    expect(await screen.findByText('Conecte o GitHub em Integracoes para listar e selecionar repositorios.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Repositorios GitHub')).toBeDisabled();
+  });
+
   it('creates a note with reminder fields and opens the created note', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
       expect(String(input)).toBe('/api/notes');
       expect(JSON.parse(String(init?.body))).toMatchObject({
         projectSlug: 'platform',
@@ -266,13 +308,15 @@ describe('ProjectsPage', () => {
     fireEvent.change(screen.getByLabelText('Hora do lembrete'), { target: { value: '09:30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Criar nota' }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/notes', expect.objectContaining({ method: 'POST' })));
     expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Nota criada com sucesso.');
     expect(openNote).toHaveBeenCalledWith('note-2');
   });
 
   it('loads note editor data and prefills the edit modal without opening the note row', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
       expect(String(input)).toBe('/api/notes/note-1');
       return Response.json({
         ok: true,
@@ -304,11 +348,13 @@ describe('ProjectsPage', () => {
   it('updates a project and keeps the selected slug', async () => {
     const repoId = '22222222-2222-2222-2222-222222222222';
     const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {
-      if (input.includes('/repositories')) {
+      if (input === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (input === '/api/integrations/github-app/repositories?workspaceSlug=default') {
         return Response.json({
           ok: true,
+          workspaceSlug: 'default',
           repositories: [
-            { id: repoId, workspaceSlug: 'default', externalId: '102', fullName: 'acme/platform', htmlUrl: null, description: null, defaultBranch: null, createdAt: '', updatedAt: '' },
+            { id: repoId, fullName: 'acme/platform', name: 'platform', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/platform', description: null, defaultBranch: 'main', selected: false },
           ]
         });
       }
@@ -330,13 +376,15 @@ describe('ProjectsPage', () => {
     fireEvent.change(screen.getByLabelText('Aliases'), { target: { value: 'core' } });
     fireEvent.click(screen.getByRole('button', { name: 'Salvar projeto' }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/projects/platform', expect.objectContaining({ method: 'PATCH' })));
     expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Projeto atualizado com sucesso.');
     expect(setSelectedProject).toHaveBeenCalledWith('platform');
   });
 
   it('deletes a note after confirmation and refreshes the dashboard', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
       expect(String(input)).toBe('/api/notes/note-1');
       expect(init?.method).toBe('DELETE');
       return Response.json({ ok: true, noteId: 'note-1', reminderNoteId: 'reminder-1' });
@@ -347,7 +395,7 @@ describe('ProjectsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Excluir nota Deploy antigo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar exclusão' }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/notes/note-1', expect.objectContaining({ method: 'DELETE' })));
     expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Nota excluida com sucesso.');
   });
 
@@ -361,6 +409,8 @@ describe('ProjectsPage', () => {
 
   it('deletes an empty project after confirmation and redirects selection', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
       expect(String(input)).toBe('/api/projects/empty');
       expect(init?.method).toBe('DELETE');
       return Response.json({ ok: true, projectSlug: 'empty' });
@@ -371,14 +421,16 @@ describe('ProjectsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Excluir projeto Empty' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar exclusão' }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/projects/empty', expect.objectContaining({ method: 'DELETE' })));
     expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Projeto excluido com sucesso.');
     expect(setSelectedProject).toHaveBeenCalledWith('inbox');
   });
 
   it('shows backend field errors inline when project creation fails', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () =>
-      Response.json({
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      return Response.json({
         ok: false,
         error: {
           code: 'project_slug_already_exists',
@@ -389,8 +441,8 @@ describe('ProjectsPage', () => {
       }, {
         status: 409,
         headers: { 'x-request-id': 'req-project' },
-      }),
-    ));
+      });
+    }));
     renderProjects();
 
     fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
@@ -403,8 +455,10 @@ describe('ProjectsPage', () => {
   });
 
   it('shows backend field errors inline when note creation fails', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () =>
-      Response.json({
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      return Response.json({
         ok: false,
         error: {
           code: 'invalid_create_note_payload',
@@ -415,8 +469,8 @@ describe('ProjectsPage', () => {
       }, {
         status: 400,
         headers: { 'x-request-id': 'req-note' },
-      }),
-    ));
+      });
+    }));
     renderProjects();
 
     fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
