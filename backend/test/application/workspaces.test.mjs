@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { encryptConfig } from '../../dist/application/credentials.js';
+import { GithubRepositoryResolutionService } from '../../dist/application/services/github-repository-resolution.service.js';
 import { CreateProjectUseCase, CreateWorkspaceUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
@@ -40,7 +41,8 @@ test('create project persists metadata, updates workspace slugs and rejects dupl
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await new CreateWorkspaceUseCase(repositories.contentRepository).execute({ displayName: 'Acme Team', workspaceSlug: 'acme-team' }, user.id);
-  const useCase = new CreateProjectUseCase(repositories.contentRepository, repositories.credentialRepository);
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(repositories.contentRepository, repositories.credentialRepository);
+  const useCase = new CreateProjectUseCase(repositories.contentRepository, githubRepositoryResolution);
   await repositories.credentialRepository.upsertCredential({
     userId: user.id,
     workspaceSlug: 'acme-team',

@@ -1,4 +1,5 @@
 import type {
+  GithubIntegrationRepository,
   GithubRepositoriesResponse,
   IntegrationConnectionResponse,
   IntegrationConnectionSession,
@@ -41,7 +42,7 @@ export function fetchGithubRepositories(workspaceSlug: string): Promise<GithubRe
   return request<GithubRepositoriesResponse>(`/api/integrations/github-app/repositories?${search.toString()}`);
 }
 
-export function saveGithubRepositories(workspaceSlug: string, repositories: string[]) {
+export function saveGithubRepositories(workspaceSlug: string, repositories: Array<Pick<GithubIntegrationRepository, 'id' | 'fullName'>>) {
   return request('/api/integrations/github-app/repositories', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

@@ -1,0 +1,85 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+
+import { readEnvironment } from '../../adapters/environment.js';
+import { fetchGithubInstallationRepositories, type GithubInstallationRepository } from '../../adapters/github.js';
+import { CredentialRecordStatus, IntegrationProvider } from '../../contracts/enums.js';
+import { decryptConfig } from '../credentials.js';
+import type { RepositoryRecord } from '../models/repository-records.models.js';
+import { ContentRepository } from '../ports/content.repository.js';
+import { CredentialRepository } from '../ports/integrations.repository.js';
+
+@Injectable()
+export class GithubRepositoryResolutionService {
+  constructor(
+    private readonly contentRepository: ContentRepository,
+    private readonly credentialRepository: CredentialRepository,
+  ) {}
+
+  async listAccessibleRepositories(input: { userId: string; workspaceSlug: string; missingCredentialError: 'not_found' | 'connection_required' }) {
+    const credential = await this.credentialRepository.findCredential(input.userId, input.workspaceSlug, IntegrationProvider.GithubApp);
+    if (!credential || credential.status !== CredentialRecordStatus.Connected || credential.revokedAt) {
+      if (input.missingCredentialError === 'not_found') throw new NotFoundException('credential_not_found');
+      throw new BadRequestException({
+        code: 'github_connection_required',
+        details: { fieldErrors: { repositoryIds: 'Conecte o GitHub antes de vincular repositorios ao projeto.' } },
+      });
+    }
+
+    const environment = readEnvironment();
+    const config = decryptConfig(credential.encryptedConfig) as { installationId?: string };
+    const installationId = String(config.installationId || '').trim();
+    if (!environment.githubAppId || !environment.githubAppPrivateKey || !installationId) {
+      throw new BadRequestException('github_app_installation_not_configured');
+    }
+
+    return fetchGithubInstallationRepositories({
+      appId: environment.githubAppId,
+      privateKey: environment.githubAppPrivateKey,
+      installationId,
+    });
+  }
+
+  async resolveSelectedRepositories(input: {
+    userId: string;
+    workspaceSlug: string;
+    repositoryIds: string[];
+    missingCredentialError?: 'not_found' | 'connection_required';
+  }): Promise<RepositoryRecord[]> {
+    if (input.repositoryIds.length === 0) return [];
+
+    const availableRepositories = await this.listAccessibleRepositories({
+      userId: input.userId,
+      workspaceSlug: input.workspaceSlug,
+      missingCredentialError: input.missingCredentialError || 'connection_required',
+    });
+    const repositoryById = new Map(availableRepositories.map((repository) => [String(repository.id), repository]));
+    const missingRepositoryId = input.repositoryIds.find((repositoryId) => !repositoryById.has(repositoryId));
+    if (missingRepositoryId) {
+      throw new BadRequestException({
+        code: 'invalid_project_repository_selection',
+        details: { fieldErrors: { repositoryIds: 'Selecione apenas repositorios acessiveis no GitHub vinculado.' } },
+      });
+    }
+
+    const uniqueRepositoryIds = [...new Set(input.repositoryIds)];
+    return Promise.all(uniqueRepositoryIds.map(async (repositoryId) => {
+      const repository = repositoryById.get(repositoryId);
+      return this.contentRepository.upsertRepository({
+        workspaceSlug: input.workspaceSlug,
+        externalId: String(repository?.id || repositoryId),
+        fullName: repository?.fullName || '',
+        htmlUrl: repository?.htmlUrl || null,
+        description: repository?.description ?? null,
+        defaultBranch: repository?.defaultBranch ?? null,
+      });
+    }));
+  }
+
+  markSelectedRepositories(availableRepositories: GithubInstallationRepository[], selectedRepositoryFullNames: Set<string>) {
+    return availableRepositories.map((repository) => ({
+      ...repository,
+      id: String(repository.id),
+      selected: selectedRepositoryFullNames.has(repository.fullName),
+    }));
+  }
+}

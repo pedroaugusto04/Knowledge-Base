@@ -164,13 +164,16 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
   useEffect(() => {
     if (repositoriesQuery.data) {
       reset({
-        repositories: repositoriesQuery.data.repositories.filter((repo) => repo.selected).map((repo) => repo.fullName),
+        repositories: repositoriesQuery.data.repositories.filter((repo) => repo.selected).map((repo) => repo.id),
       });
     }
   }, [repositoriesQuery.data, reset]);
 
   const saveMutation = useMutation({
-    mutationFn: (values: GithubRepositoriesFormValues) => saveGithubRepositories(workspaceSlug, values.repositories),
+    mutationFn: (values: GithubRepositoriesFormValues) => saveGithubRepositories(
+      workspaceSlug,
+      repositories.filter((repo) => values.repositories.includes(repo.id)).map((repo) => ({ id: repo.id, fullName: repo.fullName })),
+    ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['integrations', workspaceSlug] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -190,9 +193,9 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
   });
 
   const toggle = (repository: GithubIntegrationRepository) => {
-    setValue('repositories', selected.includes(repository.fullName)
-      ? selected.filter((item) => item !== repository.fullName)
-      : [...selected, repository.fullName], { shouldDirty: true, shouldValidate: true });
+    setValue('repositories', selected.includes(repository.id)
+      ? selected.filter((item) => item !== repository.id)
+      : [...selected, repository.id], { shouldDirty: true, shouldValidate: true });
   };
 
   return (
@@ -221,7 +224,7 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
           <div className="repository-picker" data-field="repositories">
             {repositories.map((repository) => (
               <label className="repository-option" key={repository.fullName}>
-                <input checked={selected.includes(repository.fullName)} name="repositories" type="checkbox" value={repository.fullName} onChange={() => toggle(repository)} />
+                <input checked={selected.includes(repository.id)} name="repositories" type="checkbox" value={repository.id} onChange={() => toggle(repository)} />
                 <span>
                   <strong>{repository.fullName}</strong>
                   <small>{repository.private ? 'Privado' : 'Publico'}</small>

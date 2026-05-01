@@ -53,7 +53,7 @@ describe('GuidedIntegrationsSection', () => {
           ok: true,
           workspaceSlug: 'default',
           repositories: [
-            { fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: true },
+            { id: '101', fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: true },
           ],
         });
       }
@@ -100,7 +100,7 @@ describe('GuidedIntegrationsSection', () => {
           ok: true,
           workspaceSlug: 'default',
           repositories: [
-            { fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
+            { id: '101', fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
           ],
         });
       }
@@ -150,7 +150,7 @@ describe('GuidedIntegrationsSection', () => {
           ok: true,
           workspaceSlug: 'default',
           repositories: [
-            { fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
+            { id: '101', fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
           ],
         });
       }
@@ -300,7 +300,7 @@ describe('GuidedIntegrationsSection', () => {
           ok: true,
           workspaceSlug: 'default',
           repositories: [
-            { fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
+            { id: '101', fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
           ],
         });
       }
@@ -351,7 +351,7 @@ describe('GuidedIntegrationsSection', () => {
           ok: true,
           workspaceSlug: 'default',
           repositories: [
-            { fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
+            { id: '101', fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
           ],
         });
       }

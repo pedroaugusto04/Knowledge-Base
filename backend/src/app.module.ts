@@ -5,6 +5,7 @@ import { AuthService } from './application/auth.js';
 import { IntegrationConnectionService } from './application/integration-connections.js';
 import { IntegrationCredentialService } from './application/credentials.js';
 import { ContentObjectStorageService } from './application/services/content-object-storage.service.js';
+import { GithubRepositoryResolutionService } from './application/services/github-repository-resolution.service.js';
 import { SchemaMigrator, UserRepository } from './application/ports/auth.repository.js';
 import { ContentQueryRepository, ContentRepository } from './application/ports/content.repository.js';
 import { ObjectStorage } from './application/ports/object-storage.js';
@@ -81,6 +82,7 @@ import { AppLogger } from './observability/logger.js';
     IntegrationConnectionService,
     IntegrationCredentialService,
     ContentObjectStorageService,
+    GithubRepositoryResolutionService,
     GetNoteDetailUseCase,
     QueryKnowledgeUseCase,
     IngestEntryUseCase,

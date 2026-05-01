@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { AuthService } from '../../../dist/application/auth.js';
 import { IntegrationConnectionService } from '../../../dist/application/integration-connections.js';
 import { IntegrationCredentialService } from '../../../dist/application/credentials.js';
+import { GithubRepositoryResolutionService } from '../../../dist/application/services/github-repository-resolution.service.js';
 import { TrustedOriginGuard } from '../../../dist/interfaces/http/auth.guards.js';
 import { AuthController, InternalIntegrationsController, UserIntegrationsController } from '../../../dist/interfaces/http/controllers/index.js';
 import { createPostgresTestRepositories } from '../../helpers/postgres-test-repositories.mjs';
@@ -53,6 +54,7 @@ async function fixture(t) {
       updatedAt: '2026-04-27T00:00:00.000Z',
     });
   }
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(repositories.contentRepository, repositories.credentialRepository);
   return {
     repositories,
     auth,
@@ -62,6 +64,7 @@ async function fixture(t) {
       repositories.externalIdentityRepository,
       repositories.connectionSessionRepository,
       repositories.contentRepository,
+      githubRepositoryResolution,
     ),
   };
 }
@@ -234,11 +237,13 @@ test('guided connection rejects identity hijacking', async (t) => {
   const secondRepositories = first.repositories;
   const secondAuth = new AuthService(secondRepositories.userRepository, secondRepositories.schemaMigrator);
   const secondCredentials = new IntegrationCredentialService(secondRepositories.credentialRepository, secondRepositories.externalIdentityRepository);
+  const secondGithubRepositoryResolution = new GithubRepositoryResolutionService(secondRepositories.contentRepository, secondRepositories.credentialRepository);
   const secondConnections = new IntegrationConnectionService(
     secondRepositories.credentialRepository,
     secondRepositories.externalIdentityRepository,
     secondRepositories.connectionSessionRepository,
     secondRepositories.contentRepository,
+    secondGithubRepositoryResolution,
   );
   const secondUser = await secondRepositories.userRepository.createUser({ email: 'user@example.com', passwordHash: firstLogin.user.id, role: 'user' });
   await secondRepositories.contentRepository.upsertWorkspace(secondUser.id, {

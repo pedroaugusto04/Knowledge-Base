@@ -1,22 +1,14 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { readEnvironment } from '../../../adapters/environment.js';
-import { fetchGithubInstallationRepositories } from '../../../adapters/github.js';
-import { CredentialRecordStatus, IntegrationProvider } from '../../../contracts/enums.js';
 import type { CreateProjectInput, UpdateProjectInput } from '../../models/project-input.models.js';
-import { decryptConfig } from '../../credentials.js';
 import { ContentRepository } from '../../ports/content.repository.js';
-import { CredentialRepository } from '../../ports/integrations.repository.js';
-
-function sameRepo(left: string, right: string) {
-  return left.trim().toLowerCase() === right.trim().toLowerCase();
-}
+import { GithubRepositoryResolutionService } from '../../services/github-repository-resolution.service.js';
 
 @Injectable()
 export class CreateProjectUseCase {
   constructor(
     private readonly contentRepository: ContentRepository,
-    private readonly credentialRepository: CredentialRepository,
+    private readonly githubRepositoryResolution: GithubRepositoryResolutionService,
   ) { }
 
   async execute(input: CreateProjectInput, userId: string) {
@@ -32,7 +24,11 @@ export class CreateProjectUseCase {
       });
     }
 
-    const selectedRepositories = await this.resolveSelectedRepositories(userId, workspace.workspaceSlug, input.repositoryIds);
+    const selectedRepositories = await this.githubRepositoryResolution.resolveSelectedRepositories({
+      userId,
+      workspaceSlug: workspace.workspaceSlug,
+      repositoryIds: input.repositoryIds,
+    });
 
     const project = await this.contentRepository.upsertProject(userId, {
       projectSlug: input.projectSlug,
@@ -50,58 +46,13 @@ export class CreateProjectUseCase {
       workspace,
     };
   }
-
-  private async resolveSelectedRepositories(userId: string, workspaceSlug: string, repositoryIds: string[]) {
-    if (repositoryIds.length === 0) return [];
-    const credential = await this.credentialRepository.findCredential(userId, workspaceSlug, IntegrationProvider.GithubApp);
-    if (!credential || credential.status !== CredentialRecordStatus.Connected || credential.revokedAt) {
-      throw new BadRequestException({
-        code: 'github_connection_required',
-        details: { fieldErrors: { repositoryIds: 'Conecte o GitHub antes de vincular repositorios ao projeto.' } },
-      });
-    }
-
-    const environment = readEnvironment();
-    const config = decryptConfig(credential.encryptedConfig) as { installationId?: string };
-    const installationId = String(config.installationId || '').trim();
-    if (!environment.githubAppId || !environment.githubAppPrivateKey || !installationId) {
-      throw new BadRequestException('github_app_installation_not_configured');
-    }
-
-    const availableRepositories = await fetchGithubInstallationRepositories({
-      appId: environment.githubAppId,
-      privateKey: environment.githubAppPrivateKey,
-      installationId,
-    });
-    const repositoryById = new Map(availableRepositories.map((repository) => [String(repository.id), repository]));
-    const missingRepositoryId = repositoryIds.find((repositoryId) => !repositoryById.has(repositoryId));
-    if (missingRepositoryId) {
-      throw new BadRequestException({
-        code: 'invalid_project_repository_selection',
-        details: { fieldErrors: { repositoryIds: 'Selecione apenas repositorios acessiveis no GitHub vinculado.' } },
-      });
-    }
-
-    const uniqueRepositoryIds = [...new Set(repositoryIds)];
-    return Promise.all(uniqueRepositoryIds.map(async (repositoryId) => {
-      const repository = repositoryById.get(repositoryId);
-      return this.contentRepository.upsertRepository({
-        workspaceSlug,
-        externalId: String(repository?.id || repositoryId),
-        fullName: repository?.fullName || '',
-        htmlUrl: repository?.htmlUrl || null,
-        description: repository?.description ?? null,
-        defaultBranch: repository?.defaultBranch ?? null,
-      });
-    }));
-  }
 }
 
 @Injectable()
 export class UpdateProjectUseCase {
   constructor(
     private readonly contentRepository: ContentRepository,
-    private readonly credentialRepository: CredentialRepository,
+    private readonly githubRepositoryResolution: GithubRepositoryResolutionService,
   ) { }
 
   async execute(input: UpdateProjectInput, userId: string) {
@@ -109,7 +60,11 @@ export class UpdateProjectUseCase {
     const project = await this.contentRepository.getProjectBySlug(userId, input.projectSlug);
     if (!project || !project.enabled) throw new NotFoundException('project_not_found');
 
-    const selectedRepositories = await this.resolveSelectedRepositories(userId, project.workspaceSlug, input.repositoryIds);
+    const selectedRepositories = await this.githubRepositoryResolution.resolveSelectedRepositories({
+      userId,
+      workspaceSlug: project.workspaceSlug,
+      repositoryIds: input.repositoryIds,
+    });
 
     const updatedProject = await this.contentRepository.upsertProject(userId, {
       ...project,
@@ -120,51 +75,6 @@ export class UpdateProjectUseCase {
     });
 
     return { ok: true as const, project: updatedProject };
-  }
-
-  private async resolveSelectedRepositories(userId: string, workspaceSlug: string, repositoryIds: string[]) {
-    if (repositoryIds.length === 0) return [];
-    const credential = await this.credentialRepository.findCredential(userId, workspaceSlug, IntegrationProvider.GithubApp);
-    if (!credential || credential.status !== CredentialRecordStatus.Connected || credential.revokedAt) {
-      throw new BadRequestException({
-        code: 'github_connection_required',
-        details: { fieldErrors: { repositoryIds: 'Conecte o GitHub antes de vincular repositorios ao projeto.' } },
-      });
-    }
-
-    const environment = readEnvironment();
-    const config = decryptConfig(credential.encryptedConfig) as { installationId?: string };
-    const installationId = String(config.installationId || '').trim();
-    if (!environment.githubAppId || !environment.githubAppPrivateKey || !installationId) {
-      throw new BadRequestException('github_app_installation_not_configured');
-    }
-
-    const availableRepositories = await fetchGithubInstallationRepositories({
-      appId: environment.githubAppId,
-      privateKey: environment.githubAppPrivateKey,
-      installationId,
-    });
-    const repositoryById = new Map(availableRepositories.map((repository) => [String(repository.id), repository]));
-    const missingRepositoryId = repositoryIds.find((repositoryId) => !repositoryById.has(repositoryId));
-    if (missingRepositoryId) {
-      throw new BadRequestException({
-        code: 'invalid_project_repository_selection',
-        details: { fieldErrors: { repositoryIds: 'Selecione apenas repositorios acessiveis no GitHub vinculado.' } },
-      });
-    }
-
-    const uniqueRepositoryIds = [...new Set(repositoryIds)];
-    return Promise.all(uniqueRepositoryIds.map(async (repositoryId) => {
-      const repository = repositoryById.get(repositoryId);
-      return this.contentRepository.upsertRepository({
-        workspaceSlug,
-        externalId: String(repository?.id || repositoryId),
-        fullName: repository?.fullName || '',
-        htmlUrl: repository?.htmlUrl || null,
-        description: repository?.description ?? null,
-        defaultBranch: repository?.defaultBranch ?? null,
-      });
-    }));
   }
 }
 

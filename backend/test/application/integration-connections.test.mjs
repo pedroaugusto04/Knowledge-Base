@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 
 import { IntegrationCredentialService } from '../../dist/application/credentials.js';
 import { IntegrationConnectionService } from '../../dist/application/integration-connections.js';
+import { GithubRepositoryResolutionService } from '../../dist/application/services/github-repository-resolution.service.js';
 import { HandleTelegramWebhookUseCase, HandleWhatsappWebhookUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
@@ -36,11 +37,13 @@ async function fixture(t) {
     createdAt: '2026-04-27T00:00:00.000Z',
     updatedAt: '2026-04-27T00:00:00.000Z',
   });
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(repositories.contentRepository, repositories.credentialRepository);
   const connections = new IntegrationConnectionService(
     repositories.credentialRepository,
     repositories.externalIdentityRepository,
     repositories.connectionSessionRepository,
     repositories.contentRepository,
+    githubRepositoryResolution,
   );
   const whatsapp = new HandleWhatsappWebhookUseCase(repositories.externalIdentityRepository, repositories.webhookEventRepository, connections);
   const telegram = new HandleTelegramWebhookUseCase(repositories.externalIdentityRepository, repositories.webhookEventRepository, connections);
@@ -274,7 +277,7 @@ test('github app repositories are listed by installation token and saved into wo
       { id: '101', fullName: 'acme/api' }
     ] 
   });
-  assert.equal(saved.repositories.length, 2); // It's a list now, duplicates handled by upsert logic if needed, but here we just pass what we got
+  assert.deepEqual(saved.repositories, [{ id: '101', fullName: 'acme/api' }]);
   const projects = await repositories.contentRepository.listProjects(user.id);
   const apiProject = projects.find((project) => project.projectSlug === 'api');
   assert.equal(apiProject.repositories[0].fullName, 'acme/api');

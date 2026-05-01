@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { encryptConfig } from '../../dist/application/credentials.js';
+import { GithubRepositoryResolutionService } from '../../dist/application/services/github-repository-resolution.service.js';
 import { DeleteManualNoteUseCase, DeleteProjectUseCase, GetNoteDetailUseCase, UpdateManualNoteUseCase, UpdateProjectUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
@@ -219,7 +220,8 @@ test('updates project metadata while keeping slug immutable', async (t) => {
     return new Response(null, { status: 404 });
   };
 
-  const result = await new UpdateProjectUseCase(repositories.contentRepository, repositories.credentialRepository).execute({
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(repositories.contentRepository, repositories.credentialRepository);
+  const result = await new UpdateProjectUseCase(repositories.contentRepository, githubRepositoryResolution).execute({
     projectSlug: 'platform',
     displayName: 'Platform Core',
     repositoryIds: ['102'],

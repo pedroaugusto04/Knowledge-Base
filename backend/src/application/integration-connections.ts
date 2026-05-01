@@ -3,13 +3,13 @@ import crypto from 'node:crypto';
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 import { readEnvironment } from '../adapters/environment.js';
-import { fetchGithubInstallationRepositories } from '../adapters/github.js';
 import { CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider } from '../contracts/enums.js';
 import { slugify } from '../domain/strings.js';
-import { decryptConfig, encryptConfig } from './credentials.js';
+import { encryptConfig } from './credentials.js';
 import type { IntegrationConnectionSessionRecord, WorkspaceRecord } from './models/repository-records.models.js';
 import { ContentRepository } from './ports/content.repository.js';
 import { CredentialRepository, ExternalIdentityRepository, IntegrationConnectionSessionRepository } from './ports/integrations.repository.js';
+import { GithubRepositoryResolutionService } from './services/github-repository-resolution.service.js';
 
 const CONNECTION_TTL_MS = 10 * 60 * 1000;
 const PENDING_STATUS = 'pending';
@@ -194,6 +194,7 @@ export class IntegrationConnectionService {
     private readonly externalIdentities: ExternalIdentityRepository,
     private readonly sessions: IntegrationConnectionSessionRepository,
     private readonly content: ContentRepository,
+    private readonly githubRepositoryResolution: GithubRepositoryResolutionService,
   ) {}
 
   async connect(input: { userId: string; workspaceSlug: string; provider: string; returnToPath?: string; browserOrigin?: string }) {
@@ -299,35 +300,23 @@ export class IntegrationConnectionService {
   async listGithubRepositories(input: { userId: string; workspaceSlug: string }) {
     const workspace = await this.requireWorkspace(input.userId, input.workspaceSlug);
     const workspaceSlug = workspace.workspaceSlug;
-    const credential = await this.credentials.findCredential(input.userId, workspaceSlug, IntegrationProvider.GithubApp);
-    if (!credential || credential.status !== CredentialRecordStatus.Connected || credential.revokedAt) throw new NotFoundException('credential_not_found');
-    const config = decryptConfig(credential.encryptedConfig);
-    const installationId = String(config.installationId || '').trim();
-    const environment = readEnvironment();
-    if (!environment.githubAppId || !environment.githubAppPrivateKey || !installationId) throw new BadRequestException('github_app_installation_not_configured');
-    const repositories = await fetchGithubInstallationRepositories({
-      appId: environment.githubAppId,
-      privateKey: environment.githubAppPrivateKey,
-      installationId,
+    const repositories = await this.githubRepositoryResolution.listAccessibleRepositories({
+      userId: input.userId,
+      workspaceSlug,
+      missingCredentialError: 'not_found',
     });
     const projects = await this.content.listProjects(input.userId);
     const selected = new Set(projects.filter(p => p.workspaceSlug === workspaceSlug).flatMap(p => p.repositories.map(r => r.fullName)));
     return {
       ok: true as const,
       workspaceSlug,
-      repositories: repositories.map((repository) => ({
-        ...repository,
-        id: String(repository.id),
-        selected: selected.has(repository.fullName),
-      })),
+      repositories: this.githubRepositoryResolution.markSelectedRepositories(repositories, selected),
     };
   }
 
   async saveGithubRepositories(input: { userId: string; workspaceSlug: string; repositories: { id: string; fullName: string }[] }) {
     const workspace = await this.requireWorkspace(input.userId, input.workspaceSlug);
     const workspaceSlug = workspace.workspaceSlug;
-    const credential = await this.credentials.findCredential(input.userId, workspaceSlug, IntegrationProvider.GithubApp);
-    if (!credential || credential.status !== CredentialRecordStatus.Connected || credential.revokedAt) throw new NotFoundException('credential_not_found');
     const now = new Date().toISOString();
     await this.content.upsertWorkspace(input.userId, {
       workspaceSlug,
@@ -337,16 +326,12 @@ export class IntegrationConnectionService {
       createdAt: workspace.createdAt,
       updatedAt: now,
     });
-    const savedRepositories = await Promise.all(input.repositories.map((repo) => {
-      return this.content.upsertRepository({
-        workspaceSlug,
-        externalId: repo.id,
-        fullName: repo.fullName,
-        htmlUrl: `https://github.com/${repo.fullName}`,
-        description: null,
-        defaultBranch: null,
-      });
-    }));
+    const savedRepositories = await this.githubRepositoryResolution.resolveSelectedRepositories({
+      userId: input.userId,
+      workspaceSlug,
+      repositoryIds: input.repositories.map((repo) => repo.id),
+      missingCredentialError: 'not_found',
+    });
 
     const projects = await Promise.all(savedRepositories.map((repo) => {
       const projectSlug = slugify(repo.fullName.split('/').pop() || repo.fullName) || 'inbox';
@@ -360,7 +345,12 @@ export class IntegrationConnectionService {
         enabled: true,
       });
     }));
-    return { ok: true as const, workspaceSlug, repositories: input.repositories, projects };
+    return {
+      ok: true as const,
+      workspaceSlug,
+      repositories: savedRepositories.map((repo) => ({ id: repo.externalId, fullName: repo.fullName })),
+      projects,
+    };
   }
 
   private async startGithubConnection(userId: string, workspaceSlug: string, returnToPath?: string, browserOrigin?: string) {
