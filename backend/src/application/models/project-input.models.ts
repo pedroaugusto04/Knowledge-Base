@@ -1,7 +1,12 @@
+export type ProjectRepositoryInput = {
+  externalRepoId: string;
+  repoFullName: string;
+};
+
 export type CreateProjectInput = {
   displayName: string;
   projectSlug: string;
-  repoFullName: string;
+  repositories: ProjectRepositoryInput[];
   aliases: string[];
   defaultTags: string[];
 };
@@ -9,7 +14,7 @@ export type CreateProjectInput = {
 export type UpdateProjectInput = {
   projectSlug: string;
   displayName: string;
-  repoFullName: string;
+  repositories: ProjectRepositoryInput[];
   aliases: string[];
   defaultTags: string[];
 };

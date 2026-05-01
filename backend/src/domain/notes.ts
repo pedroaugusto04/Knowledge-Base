@@ -242,14 +242,14 @@ export function renderProjectSummary(project: Project, recentEntries: string[]):
     type: 'project_summary',
     workspace: project.workspaceSlug,
     project: project.projectSlug,
-    repo_full_name: project.repoFullName,
+    repo_full_name: project.repositories[0]?.repoFullName || '',
     tags: ['project', project.projectSlug],
   });
   return [
     frontmatter,
     `# ${project.displayName}`,
     '',
-    project.repoFullName ? `Repo: ${project.repoFullName}` : '',
+    project.repositories.length > 0 ? `Repos: ${project.repositories.map((r) => r.repoFullName).join(', ')}` : '',
     '',
     '## Entradas recentes',
     '',

@@ -9,7 +9,8 @@ import { routes } from '../../app/routing/routes';
 export function HomePage({ dashboard, openNote, openReview, setSelectedProject }: PageContext) {
   const { home } = dashboard;
   const activeWorkspace = dashboard.workspaces[0] || null;
-  const needsIntegrationSetup = activeWorkspace && activeWorkspace.githubRepos.length === 0;
+  const hasRepositories = dashboard.projects.some((p) => p.repositories.length > 0);
+  const needsIntegrationSetup = activeWorkspace && !hasRepositories;
   const activityByDay = home.activityByDay.map((point) => ({ ...point, label: formatUsDate(point.date) }));
 
   function openTarget(target: HomeNavigationTarget) {

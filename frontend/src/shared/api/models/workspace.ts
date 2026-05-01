@@ -1,8 +1,6 @@
 export type Workspace = {
   workspaceSlug: string;
   displayName: string;
-  githubRepos: string[];
-  projectSlugs: string[];
 };
 
 export type CreateWorkspaceResponse = {
@@ -11,7 +9,7 @@ export type CreateWorkspaceResponse = {
   initialProject: {
     projectSlug: string;
     displayName: string;
-    repoFullName: string;
+    repositories: { externalRepoId: string; repoFullName: string }[];
     workspaceSlug: string;
     aliases: string[];
     defaultTags: string[];

@@ -30,7 +30,7 @@ export class CreateWorkspaceUseCase {
     const initialProject = await this.contentRepository.upsertProject(userId, {
       projectSlug: 'inbox',
       displayName: 'Inbox',
-      repoFullName: '',
+      repositories: [],
       workspaceSlug,
       aliases: [],
       defaultTags: [],

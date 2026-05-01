@@ -60,15 +60,22 @@ export type WorkspaceRecord = {
   displayName: string;
   whatsappGroupJid: string;
   telegramChatId: string;
+  githubRepos: string[];
+  projectSlugs: string[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type ProjectRepositoryRecord = {
+  externalRepoId: string;
+  repoFullName: string;
 };
 
 export type ProjectRecord = {
   projectSlug: string;
   displayName: string;
-  repoFullName: string;
   workspaceSlug: string;
+  repositories: ProjectRepositoryRecord[];
   aliases: string[];
   defaultTags: string[];
   enabled: boolean;

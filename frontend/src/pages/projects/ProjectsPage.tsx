@@ -41,7 +41,7 @@ export function ProjectsPage({ dashboard, selectedProject, setSelectedProject, o
   const selectedSlug = routeProject || selectedProject;
   const selected = dashboard.projects.find((project) => project.projectSlug === selectedSlug) || dashboard.projects[0];
   const notes = dashboard.notes.filter((note) => !selected || note.project === selected.projectSlug);
-  const githubRepos = dashboard.workspaces[0]?.githubRepos || [];
+  const githubRepos = Array.from(new Set(dashboard.projects.flatMap((p) => p.repositories.map((r) => r.repoFullName))));
   const loadNoteMutation = useMutation({
     mutationFn: (id: string) => fetchNote(id),
     onSuccess: (note) => setNoteModal({ mode: 'edit', note }),
@@ -101,7 +101,13 @@ export function ProjectsPage({ dashboard, selectedProject, setSelectedProject, o
           <div className="page-head">
             <div>
               <h2>{selected.displayName}</h2>
-              <p>{selected.repoFullName}</p>
+              <div className="card-repos">
+                {selected.repositories.map((repo) => (
+                  <span key={repo.externalRepoId} className="repo-tag">
+                    {repo.repoFullName}
+                  </span>
+                ))}
+              </div>
             </div>
             <div className="project-actions">
               <Tags items={selected.defaultTags} />
@@ -211,7 +217,7 @@ function ProjectModal({
     defaultValues: {
       displayName: project?.displayName || '',
       projectSlug: project?.projectSlug || '',
-      repoFullName: project?.repoFullName || '',
+      repositories: project?.repositories.map((r) => r.repoFullName).join(', ') || '',
       aliases: project?.aliases.join(', ') || '',
       defaultTags: project?.defaultTags.join(', ') || '',
     },
@@ -220,7 +226,7 @@ function ProjectModal({
     mutationFn: (values: ProjectFormValues) => {
       const payload = {
         displayName: values.displayName,
-        repoFullName: values.repoFullName || undefined,
+        repositories: parseList(values.repositories).map((name) => ({ id: '0', fullName: name })),
         aliases: parseList(values.aliases),
         defaultTags: parseList(values.defaultTags),
       };
@@ -246,56 +252,56 @@ function ProjectModal({
   return (
     <>
       <div className="modal-backdrop" role="presentation" onClick={closeGuard.requestClose}>
-      <section aria-labelledby="project-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
-        <div className="modal-head">
-          <div>
-            <h2 id="project-modal-title">{mode === 'create' ? 'Novo projeto' : 'Editar projeto'}</h2>
-            <p>Cadastre o vinculo explicito com um repositorio GitHub.</p>
+        <section aria-labelledby="project-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
+          <div className="modal-head">
+            <div>
+              <h2 id="project-modal-title">{mode === 'create' ? 'Novo projeto' : 'Editar projeto'}</h2>
+              <p>Cadastre o vinculo explicito com um repositorio GitHub.</p>
+            </div>
+            <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
           </div>
-          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
-        </div>
-        <form
-          className="auth-form"
-          ref={formRef}
-          noValidate
-          onSubmit={handleSubmit(
-            (values) => mutation.mutate(values),
-            (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
-          )}
-        >
-          <div className="form-grid">
-            <FormField name="displayName" label="Nome" error={errors.displayName?.message} required>
-              {(fieldProps) => <input {...fieldProps} {...register('displayName')} />}
-            </FormField>
-            {mode === 'create' ? (
-              <FormField name="projectSlug" label="Slug" error={errors.projectSlug?.message} optional>
-                {(fieldProps) => <input {...fieldProps} {...register('projectSlug')} />}
-              </FormField>
-            ) : (
-              <FormField name="projectSlug" label="Slug" error={undefined} optional>
-                {(fieldProps) => <input {...fieldProps} value={project?.projectSlug || ''} disabled readOnly />}
-              </FormField>
+          <form
+            className="auth-form"
+            ref={formRef}
+            noValidate
+            onSubmit={handleSubmit(
+              (values) => mutation.mutate(values),
+              (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
             )}
-          </div>
-          <FormField name="repoFullName" label="Repositorio GitHub" error={errors.repoFullName?.message} optional>
-            {(fieldProps) => <input list="project-github-repos" {...fieldProps} {...register('repoFullName')} />}
-          </FormField>
-          <datalist id="project-github-repos">
-            {githubRepos.map((repo) => (
-              <option key={repo} value={repo} />
-            ))}
-          </datalist>
-          <div className="form-grid">
-            <FormField name="aliases" label="Aliases" error={errors.aliases?.message} optional>
-              {(fieldProps) => <input {...fieldProps} {...register('aliases')} />}
+          >
+            <div className="form-grid">
+              <FormField name="displayName" label="Nome" error={errors.displayName?.message} required>
+                {(fieldProps) => <input {...fieldProps} {...register('displayName')} />}
+              </FormField>
+              {mode === 'create' ? (
+                <FormField name="projectSlug" label="Slug" error={errors.projectSlug?.message} optional>
+                  {(fieldProps) => <input {...fieldProps} {...register('projectSlug')} />}
+                </FormField>
+              ) : (
+                <FormField name="projectSlug" label="Slug" error={undefined} optional>
+                  {(fieldProps) => <input {...fieldProps} value={project?.projectSlug || ''} disabled readOnly />}
+                </FormField>
+              )}
+            </div>
+            <FormField name="repositories" label="Repositorios GitHub" error={errors.repositories?.message} optional>
+              {(fieldProps) => <input list="project-github-repos" {...fieldProps} {...register('repositories')} />}
             </FormField>
-            <FormField name="defaultTags" label="Tags padrao" error={errors.defaultTags?.message} optional>
-              {(fieldProps) => <input {...fieldProps} {...register('defaultTags')} />}
-            </FormField>
-          </div>
-          <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar projeto' : 'Salvar projeto'} />
-        </form>
-      </section>
+            <datalist id="project-github-repos">
+              {githubRepos.map((repo) => (
+                <option key={repo} value={repo} />
+              ))}
+            </datalist>
+            <div className="form-grid">
+              <FormField name="aliases" label="Aliases" error={errors.aliases?.message} optional>
+                {(fieldProps) => <input {...fieldProps} {...register('aliases')} />}
+              </FormField>
+              <FormField name="defaultTags" label="Tags padrao" error={errors.defaultTags?.message} optional>
+                {(fieldProps) => <input {...fieldProps} {...register('defaultTags')} />}
+              </FormField>
+            </div>
+            <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar projeto' : 'Salvar projeto'} />
+          </form>
+        </section>
       </div>
       {closeGuard.isDiscardConfirmationOpen ? (
         <ConfirmationModal
@@ -374,43 +380,43 @@ function NoteModal({
   return (
     <>
       <div className="modal-backdrop" role="presentation" onClick={closeGuard.requestClose}>
-      <section aria-labelledby="note-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
-        <div className="modal-head">
-          <div>
-            <h2 id="note-modal-title">{mode === 'create' ? 'Nova nota' : 'Editar nota'}</h2>
-            <p>{projectSlug}</p>
+        <section aria-labelledby="note-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
+          <div className="modal-head">
+            <div>
+              <h2 id="note-modal-title">{mode === 'create' ? 'Nova nota' : 'Editar nota'}</h2>
+              <p>{projectSlug}</p>
+            </div>
+            <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
           </div>
-          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
-        </div>
-        <form
-          className="auth-form"
-          ref={formRef}
-          noValidate
-          onSubmit={handleSubmit(
-            (values) => mutation.mutate(values),
-            (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
-          )}
-        >
-          <FormField name="title" label="Titulo" error={errors.title?.message} optional>
-            {(fieldProps) => <input {...fieldProps} {...register('title')} />}
-          </FormField>
-          <FormField name="rawText" label="Texto" error={errors.rawText?.message} required>
-            {(fieldProps) => <textarea {...fieldProps} {...register('rawText')} />}
-          </FormField>
-          <FormField name="tags" label="Tags" error={errors.tags?.message} optional>
-            {(fieldProps) => <input {...fieldProps} {...register('tags')} />}
-          </FormField>
-          <div className="form-grid">
-            <FormField name="reminderDate" label="Data do lembrete" error={errors.reminderDate?.message} optional>
-              {(fieldProps) => <input type="date" {...fieldProps} {...register('reminderDate')} />}
+          <form
+            className="auth-form"
+            ref={formRef}
+            noValidate
+            onSubmit={handleSubmit(
+              (values) => mutation.mutate(values),
+              (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
+            )}
+          >
+            <FormField name="title" label="Titulo" error={errors.title?.message} optional>
+              {(fieldProps) => <input {...fieldProps} {...register('title')} />}
             </FormField>
-            <FormField name="reminderTime" label="Hora do lembrete" error={errors.reminderTime?.message} optional>
-              {(fieldProps) => <input type="time" {...fieldProps} {...register('reminderTime')} />}
+            <FormField name="rawText" label="Texto" error={errors.rawText?.message} required>
+              {(fieldProps) => <textarea {...fieldProps} {...register('rawText')} />}
             </FormField>
-          </div>
-          <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar nota' : 'Salvar nota'} />
-        </form>
-      </section>
+            <FormField name="tags" label="Tags" error={errors.tags?.message} optional>
+              {(fieldProps) => <input {...fieldProps} {...register('tags')} />}
+            </FormField>
+            <div className="form-grid">
+              <FormField name="reminderDate" label="Data do lembrete" error={errors.reminderDate?.message} optional>
+                {(fieldProps) => <input type="date" {...fieldProps} {...register('reminderDate')} />}
+              </FormField>
+              <FormField name="reminderTime" label="Hora do lembrete" error={errors.reminderTime?.message} optional>
+                {(fieldProps) => <input type="time" {...fieldProps} {...register('reminderTime')} />}
+              </FormField>
+            </div>
+            <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar nota' : 'Salvar nota'} />
+          </form>
+        </section>
       </div>
       {closeGuard.isDiscardConfirmationOpen ? (
         <ConfirmationModal

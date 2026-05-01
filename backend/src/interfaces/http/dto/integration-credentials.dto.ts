@@ -4,6 +4,10 @@ import { ExternalIdentityProvider, IntegrationProvider as IntegrationProviderEnu
 
 const requiredWorkspaceSlugSchema = z.string().trim().min(1, 'Informe o workspace.').max(80, 'Use no maximo 80 caracteres.').regex(/^[a-zA-Z0-9._-]+$/, 'Use apenas letras, numeros, ponto, hifen ou underline.');
 const repoFullNameSchema = z.string().trim().min(1, 'Informe o repositorio.').max(200, 'Use no maximo 200 caracteres.').regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/, 'Use o formato owner/repositorio.');
+export const githubRepositoryInputSchema = z.object({
+  id: z.union([z.string(), z.number()]).transform((value) => String(value).trim()),
+  fullName: repoFullNameSchema,
+});
 const returnToPathSchema = z.string().trim().optional().transform((value, ctx) => {
   if (!value) return undefined;
   if (!value.startsWith('/') || value.startsWith('//')) {
@@ -86,12 +90,12 @@ export const sessionParamSchema = z.object({
 export const githubRepositoriesBodySchema = z
   .object({
     workspaceSlug: requiredWorkspaceSlugSchema,
-    repositories: z.array(repoFullNameSchema).max(100),
+    repositories: z.array(githubRepositoryInputSchema).max(100),
   })
   .strict()
   .transform((body) => ({
     workspaceSlug: body.workspaceSlug,
-    repositories: Array.from(new Set(body.repositories)),
+    repositories: body.repositories,
   }));
 
 export type ResolveIntegrationCredentialBody = z.infer<typeof resolveIntegrationCredentialBodySchema>;

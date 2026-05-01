@@ -125,7 +125,7 @@ test('manual note creation uses ingest and creates optional reminder', async (t)
   await repositories.contentRepository.upsertProject(user.id, {
     projectSlug: 'acme-api',
     displayName: 'Acme API',
-    repoFullName: '',
+    repositories: [],
     workspaceSlug: 'default',
     aliases: [],
     defaultTags: ['backend'],

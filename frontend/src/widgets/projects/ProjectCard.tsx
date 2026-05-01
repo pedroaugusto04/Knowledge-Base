@@ -71,7 +71,14 @@ export function ProjectCard({
       ) : null}
       <div className="card-kicker">{project.workspaceSlug || 'workspace'}</div>
       <h3>{project.displayName}</h3>
-      <p>{project.repoFullName}</p>
+      <div className="card-repos">
+        {project.repositories.map((repo) => (
+          <span key={repo.externalRepoId} className="repo-tag">
+            {repo.repoFullName}
+          </span>
+        ))}
+        {project.repositories.length === 0 && <span className="repo-tag empty">No repos</span>}
+      </div>
       <div className="meta-row">
         <Badge value={project.enabled ? 'active' : 'archived'} tone={project.enabled ? 'active' : 'archived'} />
         <span className="meta">{project.defaultTags.slice(0, 2).join(' / ')}</span>

@@ -98,8 +98,11 @@ export function projectFromRow(row: Row): ProjectRecord {
   return {
     projectSlug: String(row.project_slug),
     displayName: String(row.display_name || row.project_slug),
-    repoFullName: String(row.repo_full_name || ''),
     workspaceSlug: String(row.workspace_slug || ''),
+    repositories: (Array.isArray(row.repositories) ? row.repositories : []).map((r: any) => ({
+      externalRepoId: String(r.external_repo_id ?? '0'),
+      repoFullName: String(r.repo_full_name ?? ''),
+    })),
     aliases: stringArray(row.aliases),
     defaultTags: stringArray(row.default_tags),
     enabled: row.enabled !== false,

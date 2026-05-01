@@ -22,8 +22,8 @@ function projectFromPayload(payload: IngestPayload, workspaceSlug: string): Proj
   const projectSlug = slugify(payload.event.projectSlug) || 'inbox';
   return {
     projectSlug,
-    displayName: projectSlug === 'inbox' ? 'Inbox' : projectSlug,
-    repoFullName: projectSlug === 'inbox' ? '' : String(payload.metadata.repoFullName || ''),
+    displayName: payload.event.projectSlug || 'Inbox',
+    repositories: [{ externalRepoId: '0', repoFullName: String(payload.metadata.repoFullName || '') }],
     workspaceSlug,
     aliases: [],
     defaultTags: [],

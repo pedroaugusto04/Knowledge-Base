@@ -85,6 +85,7 @@ export async function fetchComparePayload(repoFullName: string, before: string, 
 }
 
 export type GithubInstallationRepository = {
+  id: number;
   fullName: string;
   name: string;
   owner: string;
@@ -109,6 +110,7 @@ export async function fetchGithubInstallationRepositories(input: {
   if (!response.ok) return [];
   const data = (await response.json()) as {
     repositories?: Array<{
+      id?: number;
       full_name?: string;
       name?: string;
       private?: boolean;
@@ -118,6 +120,7 @@ export async function fetchGithubInstallationRepositories(input: {
   };
   return (data.repositories || [])
     .map((repo) => ({
+      id: Number(repo.id || 0),
       fullName: String(repo.full_name || '').trim(),
       name: String(repo.name || '').trim(),
       owner: String(repo.owner?.login || '').trim(),

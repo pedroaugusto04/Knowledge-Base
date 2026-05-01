@@ -44,7 +44,7 @@ test('create project persists metadata, updates workspace slugs and rejects dupl
   const result = await useCase.execute({
     displayName: 'Acme API',
     projectSlug: 'acme-api',
-    repoFullName: 'acme/api',
+    repositories: [{ externalRepoId: '101', repoFullName: 'acme/api' }],
     aliases: ['api'],
     defaultTags: ['backend'],
   }, user.id);
@@ -53,19 +53,12 @@ test('create project persists metadata, updates workspace slugs and rejects dupl
   assert.equal(result.project.projectSlug, 'acme-api');
 
   await assert.rejects(
-    () => useCase.execute({ displayName: 'Other API', projectSlug: 'acme-api', repoFullName: 'acme/other', aliases: [], defaultTags: [] }, user.id),
+    () => useCase.execute({ displayName: 'Other API', projectSlug: 'acme-api', repositories: [], aliases: [], defaultTags: [] }, user.id),
     (error) => {
       assert.equal(error.getResponse().code, 'project_slug_already_exists');
       assert.deepEqual(error.getResponse().details.fieldErrors, { projectSlug: 'Este slug de projeto ja existe.' });
       return true;
     },
   );
-  await assert.rejects(
-    () => useCase.execute({ displayName: 'Duplicate Repo', projectSlug: 'duplicate-repo', repoFullName: 'ACME/API', aliases: [], defaultTags: [] }, user.id),
-    (error) => {
-      assert.equal(error.getResponse().code, 'project_repo_already_mapped');
-      assert.deepEqual(error.getResponse().details.fieldErrors, { repoFullName: 'Este repositorio ja esta vinculado a outro projeto.' });
-      return true;
-    },
-  );
+  // Removed duplicate repo rejection test as requested by user
 });

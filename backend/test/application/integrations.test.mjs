@@ -8,7 +8,7 @@ const baseProjects = [
   {
     projectSlug: 'n8n-automations',
     displayName: 'N8N Automations',
-    repoFullName: 'acme/repo',
+    repositories: [{ externalRepoId: '0', repoFullName: 'acme/repo' }],
     workspaceSlug: 'default',
     aliases: [],
     defaultTags: [],

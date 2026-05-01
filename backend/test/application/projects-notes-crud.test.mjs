@@ -18,7 +18,7 @@ async function seedProject(repositories, userId) {
   await repositories.contentRepository.upsertProject(userId, {
     projectSlug: 'platform',
     displayName: 'Platform',
-    repoFullName: 'acme/api',
+    repositories: [{ externalRepoId: '0', repoFullName: 'acme/api' }],
     workspaceSlug: 'default',
     aliases: ['api'],
     defaultTags: ['backend'],
@@ -188,7 +188,7 @@ test('updates project metadata while keeping slug immutable', async (t) => {
   const result = await new UpdateProjectUseCase(repositories.contentRepository).execute({
     projectSlug: 'platform',
     displayName: 'Platform Core',
-    repoFullName: 'acme/platform',
+    repositories: [{ externalRepoId: '0', repoFullName: 'acme/platform' }],
     aliases: ['core'],
     defaultTags: ['backend'],
   }, user.id);

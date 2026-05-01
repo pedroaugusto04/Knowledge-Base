@@ -58,7 +58,8 @@ export class PostgresContentRepository extends ContentRepository {
     const result = await this.database.getPool().query(
       `SELECT p.*,
          COALESCE((SELECT jsonb_agg(alias) FROM kb_project_aliases WHERE project_id = p.id), '[]'::jsonb) as aliases,
-         COALESCE((SELECT jsonb_agg(tag) FROM kb_project_default_tags WHERE project_id = p.id), '[]'::jsonb) as default_tags
+         COALESCE((SELECT jsonb_agg(tag) FROM kb_project_default_tags WHERE project_id = p.id), '[]'::jsonb) as default_tags,
+         COALESCE((SELECT jsonb_agg(jsonb_build_object('external_repo_id', external_repo_id, 'repo_full_name', repo_full_name)) FROM kb_project_repositories WHERE project_id = p.id), '[]'::jsonb) as repositories
        FROM kb_projects p
        WHERE p.user_id = $1 AND p.enabled = true
        ORDER BY p.project_slug`,
@@ -71,7 +72,8 @@ export class PostgresContentRepository extends ContentRepository {
     const result = await this.database.getPool().query(
       `SELECT p.*,
          COALESCE((SELECT jsonb_agg(alias) FROM kb_project_aliases WHERE project_id = p.id), '[]'::jsonb) as aliases,
-         COALESCE((SELECT jsonb_agg(tag) FROM kb_project_default_tags WHERE project_id = p.id), '[]'::jsonb) as default_tags
+         COALESCE((SELECT jsonb_agg(tag) FROM kb_project_default_tags WHERE project_id = p.id), '[]'::jsonb) as default_tags,
+         COALESCE((SELECT jsonb_agg(jsonb_build_object('external_repo_id', external_repo_id, 'repo_full_name', repo_full_name)) FROM kb_project_repositories WHERE project_id = p.id), '[]'::jsonb) as repositories
        FROM kb_projects p
        WHERE p.user_id = $1 AND p.project_slug = $2
        LIMIT 1`,
@@ -83,8 +85,8 @@ export class PostgresContentRepository extends ContentRepository {
   async upsertProject(userId: string, input: {
     projectSlug: string;
     displayName: string;
-    repoFullName: string;
     workspaceSlug: string;
+    repositories: { externalRepoId: string; repoFullName: string }[];
     aliases: string[];
     defaultTags: string[];
     enabled: boolean;
@@ -93,12 +95,11 @@ export class PostgresContentRepository extends ContentRepository {
     try {
       await client.query('BEGIN');
       const result = await client.query(
-        `insert into kb_projects (id, user_id, project_slug, display_name, repo_full_name, workspace_slug, enabled)
-         values ($1, $2, $3, $4, $5, $6, $7)
+        `insert into kb_projects (id, user_id, project_slug, display_name, workspace_slug, enabled)
+         values ($1, $2, $3, $4, $5, $6)
          on conflict (user_id, project_slug)
          do update set
            display_name = excluded.display_name,
-           repo_full_name = excluded.repo_full_name,
            workspace_slug = excluded.workspace_slug,
            enabled = excluded.enabled,
            updated_at = now()
@@ -108,29 +109,45 @@ export class PostgresContentRepository extends ContentRepository {
           userId,
           input.projectSlug,
           input.displayName,
-          input.repoFullName,
           input.workspaceSlug,
           input.enabled,
         ],
       );
       const project = result.rows[0];
+      const { aliases, defaultTags, repositories } = input;
 
       await client.query('DELETE FROM kb_project_aliases WHERE project_id = $1', [project.id]);
-      if (input.aliases.length > 0) {
-        for (const alias of input.aliases) {
+      if (aliases.length > 0) {
+        for (const alias of aliases) {
           await client.query('INSERT INTO kb_project_aliases (project_id, alias) VALUES ($1, $2)', [project.id, alias]);
         }
       }
 
       await client.query('DELETE FROM kb_project_default_tags WHERE project_id = $1', [project.id]);
-      if (input.defaultTags.length > 0) {
-        for (const tag of input.defaultTags) {
+      if (defaultTags.length > 0) {
+        for (const tag of defaultTags) {
           await client.query('INSERT INTO kb_project_default_tags (project_id, tag) VALUES ($1, $2)', [project.id, tag]);
         }
       }
 
+      await client.query('DELETE FROM kb_project_repositories WHERE project_id = $1', [project.id]);
+      if (repositories.length > 0) {
+        for (const repo of repositories) {
+          await client.query('INSERT INTO kb_project_repositories (project_id, external_repo_id, repo_full_name) VALUES ($1, $2, $3)', [
+            project.id,
+            repo.externalRepoId || '0',
+            repo.repoFullName,
+          ]);
+        }
+      }
+
       await client.query('COMMIT');
-      return projectFromRow({ ...project, aliases: input.aliases, default_tags: input.defaultTags });
+      return projectFromRow({ 
+        ...project, 
+        aliases, 
+        default_tags: defaultTags, 
+        repositories: repositories.map(r => ({ external_repo_id: r.externalRepoId, repo_full_name: r.repoFullName })) 
+      });
     } catch (e) {
       await client.query('ROLLBACK');
       throw e;

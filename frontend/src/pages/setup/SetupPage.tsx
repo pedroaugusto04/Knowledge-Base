@@ -89,7 +89,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
   });
 
   const githubConnected = githubIntegrations.some((integration) => integration.provider === 'github-app' && integration.status === 'connected');
-  const githubReposSelected = (activeWorkspace?.githubRepos.length || 0) > 0;
+  const githubReposSelected = dashboard.projects.some((p) => p.repositories.length > 0);
   const chatConnected = chatIntegrations.some((integration) => (
     (integration.provider === 'whatsapp' || integration.provider === 'telegram') && integration.status === 'connected'
   ));

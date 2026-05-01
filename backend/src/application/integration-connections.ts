@@ -311,7 +311,7 @@ export class IntegrationConnectionService {
       installationId,
     });
     const projects = await this.content.listProjects(input.userId);
-    const selected = new Set(projects.filter(p => p.workspaceSlug === workspaceSlug && p.repoFullName).map(p => p.repoFullName));
+    const selected = new Set(projects.filter(p => p.workspaceSlug === workspaceSlug).flatMap(p => p.repositories.map(r => r.repoFullName)));
     return {
       ok: true as const,
       workspaceSlug,
@@ -322,12 +322,11 @@ export class IntegrationConnectionService {
     };
   }
 
-  async saveGithubRepositories(input: { userId: string; workspaceSlug: string; repositories: string[] }) {
+  async saveGithubRepositories(input: { userId: string; workspaceSlug: string; repositories: { id: string; fullName: string }[] }) {
     const workspace = await this.requireWorkspace(input.userId, input.workspaceSlug);
     const workspaceSlug = workspace.workspaceSlug;
     const credential = await this.credentials.findCredential(input.userId, workspaceSlug, IntegrationProvider.GithubApp);
     if (!credential || credential.status !== CredentialRecordStatus.Connected || credential.revokedAt) throw new NotFoundException('credential_not_found');
-    const selectedRepos = Array.from(new Set(input.repositories.map((repo) => String(repo || '').trim()).filter(Boolean)));
     const now = new Date().toISOString();
     await this.content.upsertWorkspace(input.userId, {
       workspaceSlug,
@@ -337,19 +336,19 @@ export class IntegrationConnectionService {
       createdAt: workspace.createdAt,
       updatedAt: now,
     });
-    const projects = await Promise.all(selectedRepos.map((repoFullName) => {
-      const projectSlug = slugify(repoFullName.split('/').pop() || repoFullName) || 'inbox';
+    const projects = await Promise.all(input.repositories.map((repo) => {
+      const projectSlug = slugify(repo.fullName.split('/').pop() || repo.fullName) || 'inbox';
       return this.content.upsertProject(input.userId, {
         projectSlug,
-        displayName: repoFullName,
-        repoFullName,
+        displayName: repo.fullName,
         workspaceSlug,
+        repositories: [{ externalRepoId: repo.id, repoFullName: repo.fullName }],
         aliases: [],
         defaultTags: [],
         enabled: true,
       });
     }));
-    return { ok: true as const, workspaceSlug, repositories: selectedRepos, projects };
+    return { ok: true as const, workspaceSlug, repositories: input.repositories, projects };
   }
 
   private async startGithubConnection(userId: string, workspaceSlug: string, returnToPath?: string, browserOrigin?: string) {

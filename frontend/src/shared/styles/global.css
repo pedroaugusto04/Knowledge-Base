@@ -82,6 +82,9 @@ p { color: var(--muted); line-height: 1.6; }
 .spaced { margin-top: 16px; }
 .card { min-height: 112px; transition: transform 140ms ease, border-color 140ms ease, background 140ms ease; }
 .card:hover { transform: translateY(-1px); border-color: rgba(83, 199, 222, 0.34); background: rgba(18, 35, 43, 0.9); }
+.card-repos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.repo-tag { padding: 2px 8px; border: 1px solid var(--line-soft); border-radius: 4px; background: rgba(148, 163, 184, 0.08); font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.repo-tag.empty { opacity: 0.5; font-style: italic; }
 .card-actions { display: flex; justify-content: flex-end; gap: 6px; margin: -4px -4px 10px 0; }
 .card-kicker, .meta, .path, .tag, .badge { font-family: var(--mono); font-size: 12px; }
 .path { color: var(--faint); word-break: break-word; }

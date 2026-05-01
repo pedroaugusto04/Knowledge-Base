@@ -9,7 +9,7 @@ function sameRepo(left: string, right: string) {
 
 @Injectable()
 export class CreateProjectUseCase {
-  constructor(private readonly contentRepository: ContentRepository) {}
+  constructor(private readonly contentRepository: ContentRepository) { }
 
   async execute(input: CreateProjectInput, userId: string) {
     const workspaces = await this.contentRepository.listWorkspaces(userId);
@@ -23,21 +23,12 @@ export class CreateProjectUseCase {
         details: { fieldErrors: { projectSlug: 'Este slug de projeto ja existe.' } },
       });
     }
-    if (
-      input.repoFullName &&
-      projects.some((project) => project.enabled && project.workspaceSlug === workspace.workspaceSlug && project.repoFullName && sameRepo(project.repoFullName, input.repoFullName))
-    ) {
-      throw new ConflictException({
-        code: 'project_repo_already_mapped',
-        details: { fieldErrors: { repoFullName: 'Este repositorio ja esta vinculado a outro projeto.' } },
-      });
-    }
 
     const project = await this.contentRepository.upsertProject(userId, {
       projectSlug: input.projectSlug,
       displayName: input.displayName,
-      repoFullName: input.repoFullName,
       workspaceSlug: workspace.workspaceSlug,
+      repositories: input.repositories,
       aliases: input.aliases,
       defaultTags: input.defaultTags,
       enabled: true,
@@ -53,29 +44,17 @@ export class CreateProjectUseCase {
 
 @Injectable()
 export class UpdateProjectUseCase {
-  constructor(private readonly contentRepository: ContentRepository) {}
+  constructor(private readonly contentRepository: ContentRepository) { }
 
   async execute(input: UpdateProjectInput, userId: string) {
-    if (input.projectSlug === 'inbox') throw new BadRequestException('project_immutable');
 
     const project = await this.contentRepository.getProjectBySlug(userId, input.projectSlug);
     if (!project || !project.enabled) throw new NotFoundException('project_not_found');
 
-    const projects = await this.contentRepository.listProjects(userId);
-    if (
-      input.repoFullName &&
-      projects.some((item) => item.projectSlug !== input.projectSlug && item.enabled && item.workspaceSlug === project.workspaceSlug && item.repoFullName && sameRepo(item.repoFullName, input.repoFullName))
-    ) {
-      throw new ConflictException({
-        code: 'project_repo_already_mapped',
-        details: { fieldErrors: { repoFullName: 'Este repositorio ja esta vinculado a outro projeto.' } },
-      });
-    }
-
     const updatedProject = await this.contentRepository.upsertProject(userId, {
       ...project,
       displayName: input.displayName,
-      repoFullName: input.repoFullName,
+      repositories: input.repositories,
       aliases: input.aliases,
       defaultTags: input.defaultTags,
     });
@@ -86,10 +65,9 @@ export class UpdateProjectUseCase {
 
 @Injectable()
 export class DeleteProjectUseCase {
-  constructor(private readonly contentRepository: ContentRepository) {}
+  constructor(private readonly contentRepository: ContentRepository) { }
 
   async execute(projectSlug: string, userId: string) {
-    if (projectSlug === 'inbox') throw new BadRequestException('project_immutable');
 
     const project = await this.contentRepository.getProjectBySlug(userId, projectSlug);
     if (!project || !project.enabled) throw new NotFoundException('project_not_found');

@@ -21,7 +21,7 @@ function validationDetails(error: ZodError): Record<string, unknown> {
 @Injectable()
 export class ZodValidationPipe<TOutput> implements PipeTransform<unknown, TOutput> {
   constructor(
-    private readonly schema: ZodType<TOutput>,
+    private readonly schema: ZodType<TOutput, any, any>,
     private readonly errorCode: string,
   ) {}
 

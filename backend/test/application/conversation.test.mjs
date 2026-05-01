@@ -20,7 +20,7 @@ async function createUseCase(t) {
   await repositories.contentRepository.upsertProject(user.id, {
     projectSlug: 'n8n-automations',
     displayName: 'N8N Automations',
-    repoFullName: '',
+    repositories: [],
     workspaceSlug: 'default',
     aliases: ['n8n'],
     defaultTags: [],

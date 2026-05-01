@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
-import { BuildDashboardUseCase, HandleGithubPushUseCase, IngestEntryUseCase } from '../../dist/application/use-cases/index.js';
+import { BuildDashboardUseCase, CreateWorkspaceUseCase, HandleGithubPushUseCase, IngestEntryUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
 function configureEnv() {
@@ -127,16 +127,10 @@ test('github app webhook resolves user by installation id and rejects unknown id
   configureEnv();
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.userRepository.createUser({ email: 'owner@example.com', displayName: 'Owner', passwordHash: 'hash', role: 'user' });
-  await repositories.contentRepository.upsertWorkspace(user.id, {
-    workspaceSlug: 'default',
+  await new CreateWorkspaceUseCase(repositories.contentRepository).execute({
     displayName: 'Default',
-    whatsappGroupJid: '',
-    telegramChatId: '',
-    githubRepos: [],
-    projectSlugs: ['inbox'],
-    createdAt: '2026-04-27T00:00:00.000Z',
-    updatedAt: '2026-04-27T00:00:00.000Z',
-  });
+    workspaceSlug: 'default',
+  }, user.id);
   const ingest = new IngestEntryUseCase(repositories.contentRepository);
   const handler = new HandleGithubPushUseCase(ingest, repositories.externalIdentityRepository, repositories.webhookEventRepository, repositories.contentRepository);
 
@@ -162,7 +156,7 @@ test('github app webhook resolves user by installation id and rejects unknown id
   assert.equal(notes[0].metadata.headSha, '2222222');
   assert.deepEqual(notes[0].metadata.changedFiles, ['src/app.ts']);
   const projects = await repositories.contentRepository.listProjects(user.id);
-  assert.equal(projects.find((project) => project.projectSlug === 'inbox')?.repoFullName, '');
+  assert.equal(projects.find((project) => project.projectSlug === 'inbox')?.repositories.length, 0);
 });
 
 test('github push resolves project by explicit repoFullName mapping', async (t) => {
@@ -182,7 +176,7 @@ test('github push resolves project by explicit repoFullName mapping', async (t) 
   await repositories.contentRepository.upsertProject(user.id, {
     projectSlug: 'platform',
     displayName: 'Platform',
-    repoFullName: 'acme/api',
+    repositories: [{ externalRepoId: '0', repoFullName: 'acme/api' }],
     workspaceSlug: 'default',
     aliases: [],
     defaultTags: ['backend'],
