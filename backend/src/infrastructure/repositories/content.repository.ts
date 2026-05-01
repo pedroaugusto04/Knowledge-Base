@@ -55,12 +55,28 @@ export class PostgresContentRepository extends ContentRepository {
   }
 
   async listProjects(userId: string) {
-    const result = await this.database.getPool().query('select * from kb_projects where user_id = $1 and enabled = true order by project_slug', [userId]);
+    const result = await this.database.getPool().query(
+      `SELECT p.*,
+         COALESCE((SELECT jsonb_agg(alias) FROM kb_project_aliases WHERE project_id = p.id), '[]'::jsonb) as aliases,
+         COALESCE((SELECT jsonb_agg(tag) FROM kb_project_default_tags WHERE project_id = p.id), '[]'::jsonb) as default_tags
+       FROM kb_projects p
+       WHERE p.user_id = $1 AND p.enabled = true
+       ORDER BY p.project_slug`,
+      [userId],
+    );
     return result.rows.map(projectFromRow);
   }
 
   async getProjectBySlug(userId: string, projectSlug: string) {
-    const result = await this.database.getPool().query('select * from kb_projects where user_id = $1 and project_slug = $2 limit 1', [userId, projectSlug]);
+    const result = await this.database.getPool().query(
+      `SELECT p.*,
+         COALESCE((SELECT jsonb_agg(alias) FROM kb_project_aliases WHERE project_id = p.id), '[]'::jsonb) as aliases,
+         COALESCE((SELECT jsonb_agg(tag) FROM kb_project_default_tags WHERE project_id = p.id), '[]'::jsonb) as default_tags
+       FROM kb_projects p
+       WHERE p.user_id = $1 AND p.project_slug = $2
+       LIMIT 1`,
+      [userId, projectSlug],
+    );
     return result.rows[0] ? projectFromRow(result.rows[0]) : null;
   }
 
@@ -73,32 +89,54 @@ export class PostgresContentRepository extends ContentRepository {
     defaultTags: string[];
     enabled: boolean;
   }) {
-    const result = await this.database.getPool().query(
-      `insert into kb_projects (id, user_id, project_slug, display_name, repo_full_name, workspace_slug, aliases, default_tags, enabled)
-       values ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)
-       on conflict (user_id, project_slug)
-       do update set
-         display_name = excluded.display_name,
-         repo_full_name = excluded.repo_full_name,
-         workspace_slug = excluded.workspace_slug,
-         aliases = excluded.aliases,
-         default_tags = excluded.default_tags,
-         enabled = excluded.enabled,
-         updated_at = now()
-       returning *`,
-      [
-        crypto.randomUUID(),
-        userId,
-        input.projectSlug,
-        input.displayName,
-        input.repoFullName,
-        input.workspaceSlug,
-        JSON.stringify(input.aliases),
-        JSON.stringify(input.defaultTags),
-        input.enabled,
-      ],
-    );
-    return projectFromRow(result.rows[0]);
+    const client = await this.database.getPool().connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(
+        `insert into kb_projects (id, user_id, project_slug, display_name, repo_full_name, workspace_slug, enabled)
+         values ($1, $2, $3, $4, $5, $6, $7)
+         on conflict (user_id, project_slug)
+         do update set
+           display_name = excluded.display_name,
+           repo_full_name = excluded.repo_full_name,
+           workspace_slug = excluded.workspace_slug,
+           enabled = excluded.enabled,
+           updated_at = now()
+         returning *`,
+        [
+          crypto.randomUUID(),
+          userId,
+          input.projectSlug,
+          input.displayName,
+          input.repoFullName,
+          input.workspaceSlug,
+          input.enabled,
+        ],
+      );
+      const project = result.rows[0];
+
+      await client.query('DELETE FROM kb_project_aliases WHERE project_id = $1', [project.id]);
+      if (input.aliases.length > 0) {
+        for (const alias of input.aliases) {
+          await client.query('INSERT INTO kb_project_aliases (project_id, alias) VALUES ($1, $2)', [project.id, alias]);
+        }
+      }
+
+      await client.query('DELETE FROM kb_project_default_tags WHERE project_id = $1', [project.id]);
+      if (input.defaultTags.length > 0) {
+        for (const tag of input.defaultTags) {
+          await client.query('INSERT INTO kb_project_default_tags (project_id, tag) VALUES ($1, $2)', [project.id, tag]);
+        }
+      }
+
+      await client.query('COMMIT');
+      return projectFromRow({ ...project, aliases: input.aliases, default_tags: input.defaultTags });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   }
 
   async deleteProject(userId: string, projectSlug: string) {
