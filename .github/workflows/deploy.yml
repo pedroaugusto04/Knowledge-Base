@@ -98,6 +98,10 @@ jobs:
           KB_ACCESS_TOKEN_TTL_SECONDS: ${{ vars.KB_ACCESS_TOKEN_TTL_SECONDS || '900' }}
           KB_REFRESH_TOKEN_TTL_SECONDS: ${{ vars.KB_REFRESH_TOKEN_TTL_SECONDS || '2592000' }}
           KB_DATABASE_URL: ${{ secrets.KB_DATABASE_URL }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          KB_SUPABASE_STORAGE_BUCKET: ${{ vars.KB_SUPABASE_STORAGE_BUCKET }}
+          KB_SUPABASE_CACHE_CONTROL: ${{ vars.KB_SUPABASE_CACHE_CONTROL || '31536000' }}
           KB_ADMIN_EMAIL: ${{ secrets.KB_ADMIN_EMAIL }}
           KB_ADMIN_PASSWORD: ${{ secrets.KB_ADMIN_PASSWORD }}
           KB_JWT_ACCESS_SECRET: ${{ secrets.KB_JWT_ACCESS_SECRET }}
@@ -140,6 +144,9 @@ jobs:
           KB_PUBLIC_BASE_URL: ${{ vars.KB_PUBLIC_BASE_URL }}
           KB_ALLOWED_ORIGINS: ${{ vars.KB_ALLOWED_ORIGINS }}
           KB_DATABASE_URL: ${{ secrets.KB_DATABASE_URL }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          KB_SUPABASE_STORAGE_BUCKET: ${{ vars.KB_SUPABASE_STORAGE_BUCKET }}
           KB_ADMIN_EMAIL: ${{ secrets.KB_ADMIN_EMAIL }}
           KB_ADMIN_PASSWORD: ${{ secrets.KB_ADMIN_PASSWORD }}
           KB_JWT_ACCESS_SECRET: ${{ secrets.KB_JWT_ACCESS_SECRET }}
@@ -157,6 +164,9 @@ jobs:
           test -n "$KB_PUBLIC_BASE_URL" || { echo "Missing variable: KB_PUBLIC_BASE_URL"; exit 1; }
           test -n "$KB_ALLOWED_ORIGINS" || { echo "Missing variable: KB_ALLOWED_ORIGINS"; exit 1; }
           test -n "$KB_DATABASE_URL" || { echo "Missing secret: KB_DATABASE_URL"; exit 1; }
+          test -n "$SUPABASE_URL" || { echo "Missing variable: SUPABASE_URL"; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "Missing secret: SUPABASE_SERVICE_ROLE_KEY"; exit 1; }
+          test -n "$KB_SUPABASE_STORAGE_BUCKET" || { echo "Missing variable: KB_SUPABASE_STORAGE_BUCKET"; exit 1; }
           test -n "$KB_ADMIN_EMAIL" || { echo "Missing secret: KB_ADMIN_EMAIL"; exit 1; }
           test -n "$KB_ADMIN_PASSWORD" || { echo "Missing secret: KB_ADMIN_PASSWORD"; exit 1; }
           test -n "$KB_JWT_ACCESS_SECRET" || { echo "Missing secret: KB_JWT_ACCESS_SECRET"; exit 1; }
