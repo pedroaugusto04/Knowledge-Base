@@ -16,6 +16,12 @@ vi.mock('../../../src/shared/ui/notifications', () => ({
   ...notificationSpies,
 }));
 
+vi.mock('../../../src/features/integrations/GuidedIntegrationsSection', () => ({
+  GuidedIntegrationsSection: () => null,
+  IntegrationCallbackNotice: () => null,
+  useIntegrationCallback: () => ({ integration: null, status: null, workspaceSlug: null }),
+}));
+
 const emptyDashboard = {
   workspaces: [],
   projects: [],

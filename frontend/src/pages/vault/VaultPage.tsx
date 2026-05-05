@@ -14,6 +14,7 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, openNote
   const noteId = routeNoteId || selectedNoteId;
   const notes = dashboard.notes.filter((note) => !selectedProject || note.project === selectedProject);
   const noteQuery = useQuery({ queryKey: ['note', noteId], queryFn: () => fetchNote(noteId), enabled: Boolean(noteId) });
+  const visibleTags = noteQuery.data ? noteQuery.data.tags.filter((tag) => tag !== noteQuery.data?.project) : [];
 
   return (
     <>
@@ -36,7 +37,7 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, openNote
                   <Badge value={noteStatusLabel(noteQuery.data.status)} tone={noteQuery.data.status} />
                   <span className="meta">{formatUsDate(noteQuery.data.date)}</span>
                 </div>
-                {noteQuery.data.tags.length ? <Tags items={noteQuery.data.tags} /> : null}
+                {visibleTags.length ? <Tags items={visibleTags} /> : null}
               </header>
               <MarkdownView markdown={readerMarkdown(noteQuery.data.markdown, noteQuery.data.title, noteQuery.data.summary)} />
             </>
