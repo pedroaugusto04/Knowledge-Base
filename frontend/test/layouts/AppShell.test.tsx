@@ -229,8 +229,24 @@ function mockFetch() {
         ok: true,
         mode: 'answer',
         query: 'deploy',
-        matches: [{ path: '20 Inbox/note.md', title: 'Deploy rollout', projectSlug: 'n8n-automations', score: 10, snippet: 'deploy' }],
-        answer: { answer: 'Encontrei 1 nota.', bullets: [], citedPaths: ['20 Inbox/note.md'] },
+        pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
+        matches: [{
+          id: 'note-1',
+          path: '20 Inbox/note.md',
+          title: 'Deploy rollout',
+          type: 'event',
+          project: 'n8n-automations',
+          workspace: 'default',
+          tags: ['deploy'],
+          date: '2026-04-27',
+          status: 'open',
+          summary: 'Revisar deploy.',
+          source: 'test',
+          projectSlug: 'n8n-automations',
+          score: 10,
+          snippet: 'deploy',
+        }],
+        answer: { answer: 'Encontrei 1 nota.', bullets: [] },
       });
     }
     return new Response(null, { status: 404 });
@@ -281,6 +297,17 @@ describe('AppShell', () => {
     expect((await screen.findAllByText('Evento')).length).toBeGreaterThan(0);
     expect((await screen.findAllByText('Aberta')).length).toBeGreaterThan(0);
     expect(screen.queryByText('20 Inbox/note.md')).not.toBeInTheDocument();
+  });
+
+  it('does not expose cited note paths in the search answer UI', async () => {
+    vi.stubGlobal('fetch', mockFetch());
+
+    renderWithAppProviders(<AppShell />, { route: '/search?q=deploy' });
+
+    expect(await screen.findByRole('heading', { name: 'Busca' })).toBeInTheDocument();
+    expect(await screen.findByText('Encontrei 1 nota.')).toBeInTheDocument();
+    expect(screen.queryByText('20 Inbox/note.md')).not.toBeInTheDocument();
+    expect(screen.getByText('Deploy rollout')).toBeInTheDocument();
   });
 
   it('navigates to home when clicking the brand section', async () => {

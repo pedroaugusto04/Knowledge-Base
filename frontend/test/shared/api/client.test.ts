@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiClientError, fetchDashboard, getErrorMessage } from '../../../src/shared/api/client';
+import { ApiClientError, fetchDashboard, getErrorMessage, runQuery } from '../../../src/shared/api/client';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -62,5 +62,22 @@ describe('api client', () => {
   it('uses the fallback for unknown errors', () => {
     expect(getErrorMessage(new Error('boom'), 'Nao foi possivel concluir a operacao.')).toBe('Nao foi possivel concluir a operacao.');
     expect(getErrorMessage('boom', 'Nao foi possivel concluir a operacao.')).toBe('Nao foi possivel concluir a operacao.');
+  });
+
+  it('clamps query limit to the backend maximum', async () => {
+    const fetchMock = vi.fn(async () => Response.json({
+      ok: true,
+      answer: { answer: '', bullets: [] },
+      matches: [],
+      pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await runQuery({ query: 'Nota1', workspaceSlug: 'workspace1', limit: 50, page: 1, pageSize: 10 });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/query?query=Nota1&mode=answer&projectSlug=&workspaceSlug=workspace1&limit=10&page=1&pageSize=10'),
+      expect.any(Object),
+    );
   });
 });

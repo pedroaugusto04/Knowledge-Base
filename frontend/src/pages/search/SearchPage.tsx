@@ -29,7 +29,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
   const hasQuery = Boolean(query.trim());
   const queryResult = useQuery({
     queryKey: ['search', query, projectSlug, workspaceSlug, page],
-    queryFn: () => runQuery({ query, projectSlug, workspaceSlug, limit: 50, page, pageSize: 10 }),
+    queryFn: () => runQuery({ query, projectSlug, workspaceSlug, limit: 10, page, pageSize: 10 }),
     enabled: hasQuery,
   });
   const notesResult = useQuery({
@@ -80,16 +80,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
         <Panel>
           <h2>Resposta</h2>
           {hasQuery ? (
-            <>
-              <p>{queryResult.data?.answer.answer || 'Consultando o vault...'}</p>
-              <div className="list">
-                {queryResult.data?.answer.citedPaths.slice(0, 3).map((path) => (
-                  <div className="path" key={path}>
-                    {path}
-                  </div>
-                ))}
-              </div>
-            </>
+            <p>{queryResult.data?.answer.answer || 'Consultando o vault...'}</p>
           ) : (
             <EmptyState>Selecione filtros ou digite uma busca para consultar o vault.</EmptyState>
           )}

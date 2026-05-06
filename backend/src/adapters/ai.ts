@@ -28,7 +28,6 @@ export type ConversationExtraction = {
 export type KnowledgeAnswer = {
   answer: string;
   bullets: string[];
-  citedPaths: string[];
 };
 
 type ChatConfig = {
@@ -154,9 +153,8 @@ export async function answerKnowledgeQuery(
     [
       'You answer questions about a knowledge base in Brazilian Portuguese.',
       'Use only the provided notes and never invent facts.',
-      'Return strict JSON with keys answer, bullets, citedPaths.',
+      'Return strict JSON with keys answer, bullets.',
       'bullets must be an array of concise supporting points.',
-      'citedPaths must contain only file paths present in the provided notes.',
     ].join(' '),
     JSON.stringify(payload),
   );
@@ -165,6 +163,5 @@ export async function answerKnowledgeQuery(
   return {
     answer: String(parsed.answer || '').trim(),
     bullets: Array.isArray(parsed.bullets) ? parsed.bullets.map((item) => String(item || '').trim()).filter(Boolean) : [],
-    citedPaths: Array.isArray(parsed.citedPaths) ? parsed.citedPaths.map((item) => String(item || '').trim()).filter(Boolean) : [],
   };
 }

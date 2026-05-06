@@ -24,6 +24,5 @@ export type QueryResponse = {
   answer: {
     answer: string;
     bullets: string[];
-    citedPaths: string[];
   };
 };

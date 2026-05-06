@@ -94,8 +94,8 @@ async function processConversationInPostgres(args: ProcessConversationArgs) {
       result.answer.answer,
       '',
       ...result.answer.bullets.slice(0, 4).map((item) => `- ${item}`),
-      result.answer.citedPaths.length ? '' : '',
-      ...result.answer.citedPaths.slice(0, 4).map((item) => `Fonte: ${item}`),
+      result.matches.length ? '' : '',
+      ...result.matches.slice(0, 4).map((item) => `Fonte: ${item.path}`),
     ].filter(Boolean);
     return { action: 'reply', replyText: lines.join('\n'), payload: null };
   }

@@ -24,9 +24,8 @@ export class QueryKnowledgeUseCase {
         ? {
             answer: `Encontrei ${matches.length} nota(s) relevante(s) para "${input.query}".`,
             bullets: matches.map((match) => `${match.title}: ${match.snippet}`),
-            citedPaths: matches.map((match) => match.path),
           }
-        : { answer: `Nao encontrei notas relevantes para: ${input.query}`, bullets: [], citedPaths: [] },
+        : { answer: `Nao encontrei notas relevantes para: ${input.query}`, bullets: [] },
     };
   }
 }
