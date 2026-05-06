@@ -65,13 +65,12 @@ export function HomePage({ dashboard, openNote, openReview, setSelectedProject }
           <Panel className="home-priorities">
             <div className="panel-head">
               <h2>Prioridades</h2>
-              <span className="meta">ate 5 itens</span>
             </div>
             {home.priorities.length ? (
               <div className="list">
                 {home.priorities.slice(0, 5).map((priority) => (
                   <article className="list-row clickable home-priority-row" key={priority.id} onClick={() => openTarget(priority.target)}>
-                    <div>
+                    <div className="list-row-body">
                       <div className="meta-row">
                         <Badge value={priority.type} tone={priorityTone(priority)} />
                         <span className="meta">
@@ -141,13 +140,12 @@ export function HomePage({ dashboard, openNote, openReview, setSelectedProject }
           <Panel>
             <div className="panel-head">
               <h2>Eventos recentes relevantes</h2>
-              <span className="meta">ate 5 notas</span>
             </div>
             {home.recentInterestingEvents.length ? (
               <div className="list">
                 {home.recentInterestingEvents.slice(0, 5).map((event) => (
                   <article className="list-row clickable" key={event.id} onClick={() => openTarget(event.target)}>
-                    <div>
+                    <div className="list-row-body">
                       <div className="meta-row">
                         <Badge value={event.type} tone={event.type} />
                         <span className="meta">

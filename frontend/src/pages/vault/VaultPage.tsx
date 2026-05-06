@@ -30,7 +30,6 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, openNote
             <>
               <header className="note-reader-head">
                 <h1 className="note-title">{noteQuery.data.title}</h1>
-                {isUsefulSummary(noteQuery.data.summary, noteQuery.data.title) ? <p className="note-summary">{noteQuery.data.summary}</p> : null}
                 <div className="note-meta-row">
                   <Badge value={projectName(dashboard.projects, noteQuery.data.project)} tone="project" />
                   <Badge value={noteTypeLabel(noteQuery.data.type)} tone={noteQuery.data.type} />
@@ -48,12 +47,6 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, openNote
       </div>
     </>
   );
-}
-
-function isUsefulSummary(summary: string, title: string) {
-  const normalizedSummary = summary.trim().toLocaleLowerCase();
-  if (!normalizedSummary) return false;
-  return normalizedSummary !== title.trim().toLocaleLowerCase();
 }
 
 function readerMarkdown(markdown: string, title: string, summary: string) {

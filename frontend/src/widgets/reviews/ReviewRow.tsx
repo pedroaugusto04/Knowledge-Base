@@ -8,7 +8,7 @@ export function ReviewRow({ review, dashboard, onOpen }: { review: Review; dashb
 
   return (
     <article className="list-row clickable" onClick={() => onOpen(review.id)}>
-      <div>
+      <div className="list-row-body">
         <div className="meta-row">
           <Badge value={highCount ? `${highCount} high` : 'sem high'} tone={highCount ? 'high' : 'low'} />
           <span className="meta">

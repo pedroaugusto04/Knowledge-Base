@@ -37,7 +37,7 @@ export function NoteRow({
 }) {
   return (
     <article className="list-row clickable" onClick={() => onOpen(note.id)}>
-      <div className="note-row-body">
+      <div className="list-row-body note-row-body">
         <div className="meta-row">
           <Badge value={noteTypeLabel(note.type)} tone={note.type} />
           <Badge value={noteStatusLabel(note.status)} tone={note.status} />

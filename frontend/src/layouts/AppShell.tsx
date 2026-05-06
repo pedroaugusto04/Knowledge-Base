@@ -148,7 +148,6 @@ export function AppShell() {
             }} />
           </label>
           <div className="topbar-meta">
-            <span>{dashboard.notes.length} docs</span>
             <button
               className="topbar-link"
               type="button"
