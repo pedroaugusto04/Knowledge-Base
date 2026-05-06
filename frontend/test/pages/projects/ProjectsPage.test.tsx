@@ -347,6 +347,49 @@ describe('ProjectsPage', () => {
     expect(screen.getByDisplayValue('2026-04-29')).toBeInTheDocument();
   });
 
+  it('renders folder actions from the project tree and opens the edit folder modal', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (url === '/api/projects/platform/folders') {
+        return Response.json({
+          ok: true,
+          projectSlug: 'platform',
+          folders: [
+            {
+              id: 'folder-1',
+              projectSlug: 'platform',
+              workspaceSlug: 'default',
+              parentFolderId: null,
+              displayName: 'Specs',
+              folderSlug: 'specs',
+              fullSlugPath: 'specs',
+              children: [],
+            },
+          ],
+        });
+      }
+      if (url.startsWith('/api/notes?')) {
+        return Response.json({
+          ok: true,
+          notes: [],
+          pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
+        });
+      }
+      return Response.error();
+    }));
+    renderProjects();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Specs' }));
+
+    expect(await screen.findByRole('button', { name: 'Nova subpasta' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Editar pasta' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Editar pasta' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Specs')).toBeInTheDocument();
+  });
+
   it('updates a project and keeps the selected slug', async () => {
     const repoId = '22222222-2222-2222-2222-222222222222';
     const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {

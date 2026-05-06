@@ -10,7 +10,16 @@ export {
   testIntegration,
 } from './integrations';
 export { createNote, deleteNote, fetchNote, fetchNotes, updateNote } from './notes';
-export { createProject, deleteProject, fetchProjects, updateProject } from './projects';
+export {
+  createProject,
+  createProjectFolder,
+  deleteProject,
+  deleteProjectFolder,
+  fetchProjectFolders,
+  fetchProjects,
+  updateProject,
+  updateProjectFolder,
+} from './projects';
 export { fetchReminders } from './reminders';
 export { fetchReview, fetchReviews } from './reviews';
 export { runQuery } from './query';

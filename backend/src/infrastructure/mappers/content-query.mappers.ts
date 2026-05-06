@@ -11,6 +11,7 @@ export function noteSummary(record: NoteRecord): VaultNoteSummary {
     title: record.title,
     project: record.projectSlug,
     workspace: record.workspaceSlug,
+    folderId: record.folderId,
     tags: record.tags,
     date: record.occurredAt,
     status: record.status,

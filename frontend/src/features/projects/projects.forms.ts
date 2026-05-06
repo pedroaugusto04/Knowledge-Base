@@ -13,7 +13,15 @@ export const projectFormSchema = z.object({
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
+export const folderFormSchema = z.object({
+  displayName: z.string().trim().min(1, 'Informe o nome da pasta.').max(120, 'Use no maximo 120 caracteres.'),
+  parentFolderId: z.string(),
+});
+
+export type FolderFormValues = z.infer<typeof folderFormSchema>;
+
 export const noteFormSchema = z.object({
+  folderId: z.string(),
   title: z.string().trim().max(160, 'Use no maximo 160 caracteres.'),
   rawText: z.string().trim().min(1, 'Informe o texto da nota.').max(20000, 'Use no maximo 20000 caracteres.'),
   tags: z.string().max(500, 'Use no maximo 500 caracteres.'),

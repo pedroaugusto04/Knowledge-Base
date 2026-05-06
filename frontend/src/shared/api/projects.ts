@@ -1,4 +1,5 @@
 import type { Project } from './models/project';
+import type { ProjectFolder } from './models/project-folder';
 import type { PaginatedResponse } from './models/pagination';
 import type { Workspace } from './models/workspace';
 import { request } from './request';
@@ -51,6 +52,32 @@ export function updateProject(projectSlug: string, params: UpdateProjectParams) 
 
 export function deleteProject(projectSlug: string) {
   return request<{ ok: true; projectSlug: string }>(`/api/projects/${encodeURIComponent(projectSlug)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function fetchProjectFolders(projectSlug: string) {
+  return request<{ ok: true; projectSlug: string; folders: ProjectFolder[] }>(`/api/projects/${encodeURIComponent(projectSlug)}/folders`);
+}
+
+export function createProjectFolder(projectSlug: string, params: { displayName: string; parentFolderId?: string }) {
+  return request<{ ok: true; folder: ProjectFolder }>(`/api/projects/${encodeURIComponent(projectSlug)}/folders`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+}
+
+export function updateProjectFolder(projectSlug: string, folderId: string, params: { displayName: string; parentFolderId?: string }) {
+  return request<{ ok: true; folder: ProjectFolder }>(`/api/projects/${encodeURIComponent(projectSlug)}/folders/${encodeURIComponent(folderId)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+}
+
+export function deleteProjectFolder(projectSlug: string, folderId: string) {
+  return request<{ ok: true; folderId: string; projectSlug: string }>(`/api/projects/${encodeURIComponent(projectSlug)}/folders/${encodeURIComponent(folderId)}`, {
     method: 'DELETE',
   });
 }

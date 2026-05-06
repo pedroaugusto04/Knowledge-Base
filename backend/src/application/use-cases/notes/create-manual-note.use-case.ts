@@ -71,6 +71,8 @@ export class CreateManualNoteUseCase {
       },
     };
 
-    return this.ingestEntryUseCase.execute(withDerivedReminderAt(payload), userId, workspace.workspaceSlug);
+    return this.ingestEntryUseCase.execute(withDerivedReminderAt(payload), userId, workspace.workspaceSlug, {
+      folderId: input.folderId,
+    });
   }
 }

@@ -7,6 +7,7 @@ import type {
   IntegrationCredentialRecord,
   KbUser,
   NoteRecord,
+  ProjectFolderRecord,
   ProjectRecord,
   RepositoryRecord,
   WebhookEventRecord,
@@ -131,6 +132,20 @@ export function projectFromRow(row: Row): ProjectRecord {
   };
 }
 
+export function projectFolderFromRow(row: Row): ProjectFolderRecord {
+  return {
+    id: String(row.id),
+    projectSlug: String(row.project_slug || ''),
+    workspaceSlug: String(row.workspace_slug || ''),
+    parentFolderId: row.parent_folder_id ? String(row.parent_folder_id) : null,
+    displayName: String(row.display_name || ''),
+    folderSlug: String(row.folder_slug || ''),
+    fullSlugPath: String(row.full_slug_path || ''),
+    createdAt: nowIso(row.created_at),
+    updatedAt: nowIso(row.updated_at),
+  };
+}
+
 export function noteFromRow(row: Row): NoteRecord {
   return {
     id: String(row.id),
@@ -139,6 +154,7 @@ export function noteFromRow(row: Row): NoteRecord {
     title: String(row.title || ''),
     projectSlug: String(row.project_slug || ''),
     workspaceSlug: String(row.workspace_slug || ''),
+    folderId: row.folder_id ? String(row.folder_id) : null,
     status: String(row.status || 'active'),
     tags: stringArray(row.tags),
     occurredAt: nowIso(row.occurred_at),

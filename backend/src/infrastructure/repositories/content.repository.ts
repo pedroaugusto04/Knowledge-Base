@@ -6,10 +6,17 @@ import type { ListNotesInput } from '../../application/models/note-list.models.j
 import type { ListProjectsInput } from '../../application/models/project-list.models.js';
 import { ContentObjectStorageService } from '../../application/services/content-object-storage.service.js';
 import { ContentRepository } from '../../application/ports/content.repository.js';
-import type { NoteRecord, RepositoryRecord, SaveAttachmentInput, SaveNoteInput, SaveWorkspaceInput } from '../../application/models/repository-records.models.js';
+import type {
+  NoteRecord,
+  RepositoryRecord,
+  SaveAttachmentInput,
+  SaveNoteInput,
+  SaveProjectFolderInput,
+  SaveWorkspaceInput,
+} from '../../application/models/repository-records.models.js';
 import { buildPaginationMeta } from '../../contracts/pagination.js';
 import { noteSummary } from '../mappers/content-query.mappers.js';
-import { attachmentFromRow, noteFromRow, projectFromRow, repositoryFromRow, workspaceFromRow } from '../mappers/row.mappers.js';
+import { attachmentFromRow, noteFromRow, projectFolderFromRow, projectFromRow, repositoryFromRow, workspaceFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
 
 @Injectable()
@@ -249,6 +256,64 @@ export class PostgresContentRepository extends ContentRepository {
     return (result.rowCount || 0) > 0;
   }
 
+  async listProjectFolders(userId: string, projectSlug: string) {
+    const result = await this.database.getPool().query(
+      `select * from kb_project_folders
+       where user_id = $1 and project_slug = $2
+       order by full_slug_path`,
+      [userId, projectSlug],
+    );
+    return result.rows.map(projectFolderFromRow);
+  }
+
+  async getProjectFolderById(userId: string, projectSlug: string, folderId: string) {
+    const result = await this.database.getPool().query(
+      `select * from kb_project_folders
+       where user_id = $1 and project_slug = $2 and id = $3
+       limit 1`,
+      [userId, projectSlug, folderId],
+    );
+    return result.rows[0] ? projectFolderFromRow(result.rows[0]) : null;
+  }
+
+  async upsertProjectFolder(userId: string, input: SaveProjectFolderInput) {
+    const result = await this.database.getPool().query(
+      `insert into kb_project_folders (
+         id, user_id, workspace_slug, project_slug, parent_folder_id, display_name, folder_slug, full_slug_path
+       )
+       values ($1, $2, $3, $4, $5, $6, $7, $8)
+       on conflict (id)
+       do update set
+         workspace_slug = excluded.workspace_slug,
+         project_slug = excluded.project_slug,
+         parent_folder_id = excluded.parent_folder_id,
+         display_name = excluded.display_name,
+         folder_slug = excluded.folder_slug,
+         full_slug_path = excluded.full_slug_path,
+         updated_at = now()
+       returning *`,
+      [
+        input.id || crypto.randomUUID(),
+        userId,
+        input.workspaceSlug,
+        input.projectSlug,
+        input.parentFolderId,
+        input.displayName,
+        input.folderSlug,
+        input.fullSlugPath,
+      ],
+    );
+    return projectFolderFromRow(result.rows[0]);
+  }
+
+  async deleteProjectFolder(userId: string, projectSlug: string, folderId: string) {
+    const result = await this.database.getPool().query(
+      'delete from kb_project_folders where user_id = $1 and project_slug = $2 and id = $3',
+      [userId, projectSlug, folderId],
+    );
+    return (result.rowCount || 0) > 0;
+  }
+
   async listNotes(userId: string) {
     const result = await this.database.getPool().query('select * from kb_notes where user_id = $1 order by occurred_at desc, title asc', [userId]);
     return result.rows.map(noteFromRow);
@@ -265,6 +330,12 @@ export class PostgresContentRepository extends ContentRepository {
     if (input.projectSlug) {
       values.push(input.projectSlug);
       clauses.push(`project_slug = $${values.length}`);
+    }
+    if (input.folderId) {
+      values.push(input.folderId);
+      clauses.push(`folder_id = $${values.length}`);
+    } else if (input.rootOnly) {
+      clauses.push('folder_id is null');
     }
 
     const where = clauses.join(' and ');
@@ -297,16 +368,17 @@ export class PostgresContentRepository extends ContentRepository {
     const markdownStorageKey = await this.contentObjectStorage.saveNoteMarkdown(userId, input);
     const result = await this.database.getPool().query(
       `insert into kb_notes (
-         id, user_id, path, type, title, project_slug, workspace_slug, status, tags, occurred_at,
+         id, user_id, path, type, title, project_slug, workspace_slug, folder_id, status, tags, occurred_at,
          source_channel, summary, markdown_storage_key, frontmatter, metadata, origin, source, links
        )
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14::jsonb, $15::jsonb, $16, $17, $18::jsonb)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15::jsonb, $16::jsonb, $17, $18, $19::jsonb)
        on conflict (user_id, path)
        do update set
          type = excluded.type,
          title = excluded.title,
          project_slug = excluded.project_slug,
          workspace_slug = excluded.workspace_slug,
+         folder_id = excluded.folder_id,
          status = excluded.status,
          tags = excluded.tags,
          occurred_at = excluded.occurred_at,
@@ -328,6 +400,7 @@ export class PostgresContentRepository extends ContentRepository {
         input.title,
         input.projectSlug,
         input.workspaceSlug,
+        input.folderId,
         input.status,
         JSON.stringify(input.tags),
         input.occurredAt,
@@ -341,6 +414,59 @@ export class PostgresContentRepository extends ContentRepository {
         JSON.stringify(input.links),
       ],
     );
+    return { ...noteFromRow(result.rows[0]), markdown: input.markdown };
+  }
+
+  async updateNote(userId: string, input: SaveNoteInput) {
+    const existing = await this.getNoteById(userId, String(input.id || ''));
+    const markdownStorageKey = await this.contentObjectStorage.saveNoteMarkdown(userId, input);
+    const result = await this.database.getPool().query(
+      `update kb_notes
+       set path = $3,
+           type = $4,
+           title = $5,
+           project_slug = $6,
+           workspace_slug = $7,
+           folder_id = $8,
+           status = $9,
+           tags = $10::jsonb,
+           occurred_at = $11,
+           source_channel = $12,
+           summary = $13,
+           markdown_storage_key = $14,
+           frontmatter = $15::jsonb,
+           metadata = $16::jsonb,
+           origin = $17,
+           source = $18,
+           links = $19::jsonb,
+           updated_at = now()
+       where user_id = $1 and id = $2
+       returning *`,
+      [
+        userId,
+        input.id,
+        input.path,
+        input.type,
+        input.title,
+        input.projectSlug,
+        input.workspaceSlug,
+        input.folderId,
+        input.status,
+        JSON.stringify(input.tags),
+        input.occurredAt,
+        input.sourceChannel,
+        input.summary,
+        markdownStorageKey,
+        JSON.stringify(input.frontmatter),
+        JSON.stringify(input.metadata),
+        input.origin,
+        input.source,
+        JSON.stringify(input.links),
+      ],
+    );
+    if (existing?.markdownStorageKey && existing.markdownStorageKey !== markdownStorageKey) {
+      await this.contentObjectStorage.deleteObjects([existing.markdownStorageKey]);
+    }
     return { ...noteFromRow(result.rows[0]), markdown: input.markdown };
   }
 

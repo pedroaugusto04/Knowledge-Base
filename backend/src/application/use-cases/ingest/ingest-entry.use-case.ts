@@ -9,12 +9,16 @@ import type { Project } from '../../../domain/projects.js';
 import { slugify, trimText } from '../../../domain/strings.js';
 import { ContentRepository } from '../../ports/content.repository.js';
 
+type IngestExecutionOptions = {
+  folderId?: string;
+};
+
 @Injectable()
 export class IngestEntryUseCase {
   constructor(private readonly contentRepository: ContentRepository) {}
 
-  async execute(input: IngestPayload, userId: string, workspaceSlug = '') {
-    return saveIngestedNote(this.contentRepository, userId, input, workspaceSlug);
+  async execute(input: IngestPayload, userId: string, workspaceSlug = '', options: IngestExecutionOptions = {}) {
+    return saveIngestedNote(this.contentRepository, userId, input, workspaceSlug, options);
   }
 }
 
@@ -41,7 +45,13 @@ function projectFromPayload(payload: IngestPayload, workspaceSlug: string): Proj
   };
 }
 
-async function saveIngestedNote(contentRepository: ContentRepository, userId: string, input: IngestPayload, workspaceSlugOverride = '') {
+async function saveIngestedNote(
+  contentRepository: ContentRepository,
+  userId: string,
+  input: IngestPayload,
+  workspaceSlugOverride = '',
+  options: IngestExecutionOptions = {},
+) {
   const parsed = withDerivedReminderAt(input);
   const workspaceSlug = slugify(workspaceSlugOverride || String(parsed.metadata.workspaceSlug || 'default')) || 'default';
   const workspace = (await contentRepository.listWorkspaces(userId)).find((item) => item.workspaceSlug === workspaceSlug);
@@ -62,7 +72,11 @@ async function saveIngestedNote(contentRepository: ContentRepository, userId: st
       tags: Array.from(new Set([project.projectSlug, ...project.defaultTags, ...parsed.classification.tags].map((tag) => slugify(tag)).filter(Boolean))),
     },
   };
-  const paths = buildNotePaths(project, payload);
+  const folder = options.folderId
+    ? await contentRepository.getProjectFolderById(userId, project.projectSlug, options.folderId)
+    : null;
+  if (options.folderId && (!folder || folder.workspaceSlug !== workspaceSlug)) throw new NotFoundException('folder_not_found');
+  const paths = buildNotePaths(project, payload, folder?.fullSlugPath || '');
   const markdown = renderEventNote(project, payload, paths);
   const title = trimText(payload.content.title, payload.content.rawText);
   if (!existingProject) {
@@ -86,6 +100,7 @@ async function saveIngestedNote(contentRepository: ContentRepository, userId: st
     title,
     projectSlug: project.projectSlug,
     workspaceSlug,
+    folderId: folder?.id || null,
     status: payload.classification.status || KnowledgeStatus.Active,
     tags: payload.classification.tags,
     occurredAt: payload.event.occurredAt,

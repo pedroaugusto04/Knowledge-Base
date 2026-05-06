@@ -20,11 +20,18 @@ export const projectsListQuerySchema = paginationInputSchema.extend({
 export const notesListQuerySchema = paginationInputSchema.extend({
   workspaceSlug: z.string().default(''),
   projectSlug: z.string().default(''),
+  folderId: z.string().default(''),
+  rootOnly: z
+    .union([z.boolean(), z.string()])
+    .optional()
+    .default(false)
+    .transform((value) => value === true || value === 'true'),
   selectedId: z.string().default(''),
 }).transform((input) => ({
   ...input,
   workspaceSlug: slugify(input.workspaceSlug),
   projectSlug: slugify(input.projectSlug),
+  folderId: input.folderId.trim(),
   selectedId: input.selectedId.trim(),
 }));
 

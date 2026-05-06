@@ -7,12 +7,14 @@ export async function fetchNote(id: string): Promise<NoteDetail> {
   return result.note;
 }
 
-export function fetchNotes(params: { page?: number; pageSize?: number; workspaceSlug?: string; projectSlug?: string; selectedId?: string }) {
+export function fetchNotes(params: { page?: number; pageSize?: number; workspaceSlug?: string; projectSlug?: string; folderId?: string; rootOnly?: boolean; selectedId?: string }) {
   const search = new URLSearchParams({
     page: String(params.page || 1),
     pageSize: String(params.pageSize || 10),
     workspaceSlug: params.workspaceSlug || '',
     projectSlug: params.projectSlug || '',
+    folderId: params.folderId || '',
+    rootOnly: params.rootOnly ? 'true' : 'false',
     selectedId: params.selectedId || '',
   });
   return request<PaginatedResponse<NoteSummary, 'notes'>>(`/api/notes?${search.toString()}`);
@@ -20,6 +22,7 @@ export function fetchNotes(params: { page?: number; pageSize?: number; workspace
 
 export type CreateNoteParams = {
   projectSlug: string;
+  folderId?: string;
   title?: string;
   rawText: string;
   tags?: string[];
@@ -44,6 +47,7 @@ export function createNote(params: CreateNoteParams) {
 }
 
 export type UpdateNoteParams = {
+  folderId?: string;
   title?: string;
   rawText: string;
   tags?: string[];

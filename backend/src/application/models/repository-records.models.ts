@@ -86,6 +86,18 @@ export type ProjectRecord = {
   enabled: boolean;
 };
 
+export type ProjectFolderRecord = {
+  id: string;
+  projectSlug: string;
+  workspaceSlug: string;
+  parentFolderId: string | null;
+  displayName: string;
+  folderSlug: string;
+  fullSlugPath: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type NoteRecord = {
   id: string;
   path: string;
@@ -93,6 +105,7 @@ export type NoteRecord = {
   title: string;
   projectSlug: string;
   workspaceSlug: string;
+  folderId: string | null;
   status: string;
   tags: string[];
   occurredAt: string;
@@ -129,6 +142,7 @@ export type ConversationStateRecord = {
 };
 
 export type SaveProjectInput = ProjectRecord;
+export type SaveProjectFolderInput = ProjectFolderRecord;
 
 export type SaveWorkspaceInput = WorkspaceRecord;
 

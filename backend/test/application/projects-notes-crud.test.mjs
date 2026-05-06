@@ -4,7 +4,16 @@ import crypto from 'node:crypto';
 
 import { encryptConfig } from '../../dist/application/credentials.js';
 import { GithubRepositoryResolutionService } from '../../dist/application/services/github-repository-resolution.service.js';
-import { DeleteManualNoteUseCase, DeleteProjectUseCase, GetNoteDetailUseCase, UpdateManualNoteUseCase, UpdateProjectUseCase } from '../../dist/application/use-cases/index.js';
+import {
+  CreateProjectFolderUseCase,
+  DeleteManualNoteUseCase,
+  DeleteProjectFolderUseCase,
+  DeleteProjectUseCase,
+  GetNoteDetailUseCase,
+  UpdateManualNoteUseCase,
+  UpdateProjectFolderUseCase,
+  UpdateProjectUseCase,
+} from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
 async function seedProject(repositories, userId) {
@@ -44,6 +53,7 @@ async function seedManualNote(repositories, userId) {
     title: 'Deploy antigo',
     projectSlug: 'platform',
     workspaceSlug: 'default',
+    folderId: null,
     status: 'active',
     tags: ['deploy'],
     occurredAt: '2026-04-27T10:00:00.000Z',
@@ -149,6 +159,7 @@ test('rejects editing non-manual notes and blocks project deletion with notes', 
     title: 'Review',
     projectSlug: 'platform',
     workspaceSlug: 'default',
+    folderId: null,
     status: 'active',
     tags: [],
     occurredAt: '2026-04-27T10:00:00.000Z',
@@ -223,4 +234,50 @@ test('updates project metadata while keeping slug immutable', async (t) => {
   globalThis.fetch = originalFetch;
   process.env.KB_GITHUB_APP_ID = originalAppId;
   process.env.KB_GITHUB_APP_PRIVATE_KEY = originalPrivateKey;
+});
+
+test('folders organize manual notes and update derived note paths on rename', async (t) => {
+  const repositories = await createPostgresTestRepositories(t);
+  const user = await repositories.createTestUser();
+  await seedProject(repositories, user.id);
+  const { note } = await seedManualNote(repositories, user.id);
+
+  const createFolder = new CreateProjectFolderUseCase(repositories.contentRepository);
+  const updateFolder = new UpdateProjectFolderUseCase(repositories.contentRepository);
+  const deleteFolder = new DeleteProjectFolderUseCase(repositories.contentRepository);
+  const updateNote = new UpdateManualNoteUseCase(repositories.contentRepository);
+
+  const opsFolder = (await createFolder.execute({ projectSlug: 'platform', displayName: 'Ops' }, user.id)).folder;
+  const runbooksFolder = (await createFolder.execute({ projectSlug: 'platform', displayName: 'Runbooks', parentFolderId: opsFolder.id }, user.id)).folder;
+  await assert.rejects(() => createFolder.execute({ projectSlug: 'platform', displayName: 'Runbooks', parentFolderId: opsFolder.id }, user.id));
+
+  await updateNote.execute({
+    id: note.id,
+    folderId: runbooksFolder.id,
+    title: 'Deploy runbook',
+    rawText: 'validar deploy final',
+    tags: ['ops'],
+    reminderDate: '',
+    reminderTime: '',
+  }, user.id);
+
+  const movedDetail = await repositories.contentRepository.getNoteById(user.id, note.id);
+  assert.equal(movedDetail?.folderId, runbooksFolder.id);
+  assert.match(movedDetail?.path || '', /20 Inbox\/platform\/ops\/runbooks\/2026\/04\/note\.md$/);
+  assert.equal(repositories.objectStorage.deletedKeys.includes(note.markdownStorageKey), true);
+
+  await updateFolder.execute({
+    projectSlug: 'platform',
+    folderId: opsFolder.id,
+    displayName: 'Platform Ops',
+    parentFolderId: undefined,
+  }, user.id);
+
+  const renamedDetail = await repositories.contentRepository.getNoteById(user.id, note.id);
+  assert.match(renamedDetail?.path || '', /20 Inbox\/platform\/platform-ops\/runbooks\/2026\/04\/note\.md$/);
+  await assert.rejects(() => deleteFolder.execute('platform', opsFolder.id, user.id));
+
+  const archiveFolder = (await createFolder.execute({ projectSlug: 'platform', displayName: 'Archive' }, user.id)).folder;
+  const deleted = await deleteFolder.execute('platform', archiveFolder.id, user.id);
+  assert.equal(deleted.ok, true);
 });

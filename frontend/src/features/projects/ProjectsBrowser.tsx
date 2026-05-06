@@ -1,0 +1,122 @@
+import type { Dashboard } from '../../shared/api/models/dashboard';
+import type { NoteSummary } from '../../shared/api/models/note';
+import type { ProjectFolder } from '../../shared/api/models/project-folder';
+import type { Project } from '../../shared/api/models/project';
+import { Pagination } from '../../shared/ui/pagination';
+import { EmptyState, Panel, Tags } from '../../shared/ui/primitives';
+import { NoteRow } from '../../widgets/notes/NoteRow';
+import { FolderTree } from './FolderTree';
+import { canManageNote } from './projects.helpers';
+
+type ProjectsBrowserProps = {
+  dashboard: Dashboard;
+  project: Project;
+  folderTree: ProjectFolder[];
+  selectedFolderId: string;
+  selectedFolder: ProjectFolder | null;
+  notes: NoteSummary[];
+  notesPagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+  onFolderSelect: (folderId: string) => void;
+  onCreateNote: () => void;
+  onCreateFolder: () => void;
+  onCreateSubfolder: () => void;
+  onEditFolder: () => void;
+  onDeleteFolder: () => void;
+  onEditNote: (note: NoteSummary) => void;
+  onDeleteNote: (note: NoteSummary) => void;
+  onOpenNote: (noteId: string) => void;
+  onNotesPageChange: (page: number) => void;
+};
+
+export function ProjectsBrowser({
+  dashboard,
+  project,
+  folderTree,
+  selectedFolderId,
+  selectedFolder,
+  notes,
+  notesPagination,
+  onFolderSelect,
+  onCreateNote,
+  onCreateFolder,
+  onCreateSubfolder,
+  onEditFolder,
+  onDeleteFolder,
+  onEditNote,
+  onDeleteNote,
+  onOpenNote,
+  onNotesPageChange,
+}: ProjectsBrowserProps) {
+  return (
+    <Panel className="spaced">
+      <div className="page-head">
+        <div>
+          <h2>{project.displayName}</h2>
+          <div className="card-repos">
+            {project.repositories.map((repo) => (
+              <span key={repo.externalId} className="repo-tag">
+                {repo.fullName}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="project-actions">
+          <Tags items={project.defaultTags} />
+          <button className="icon-button" type="button" onClick={onCreateNote}>Nova nota</button>
+          <button className="icon-button" type="button" onClick={onCreateFolder}>Nova pasta</button>
+          {selectedFolder ? (
+            <>
+              <button className="icon-button" type="button" onClick={onCreateSubfolder}>Nova subpasta</button>
+              <button className="icon-button" type="button" onClick={onEditFolder}>Editar pasta</button>
+              <button className="icon-button danger" type="button" onClick={onDeleteFolder}>Excluir pasta</button>
+            </>
+          ) : null}
+        </div>
+      </div>
+      <div className="project-browser">
+        <aside className="folder-browser">
+          <div className="folder-browser-head">
+            <strong>Pastas</strong>
+            <span className="meta">{selectedFolder ? selectedFolder.displayName : 'Raiz'}</span>
+          </div>
+          <FolderTree
+            folders={folderTree}
+            selectedFolderId={selectedFolderId}
+            onSelect={onFolderSelect}
+          />
+        </aside>
+        <div className="folder-notes">
+          <div className="folder-notes-head">
+            <h3>{selectedFolder ? selectedFolder.displayName : 'Raiz'}</h3>
+            <p className="meta">{selectedFolder ? selectedFolder.fullSlugPath : 'Notas sem pasta dentro do projeto.'}</p>
+          </div>
+          {notes.length > 0 ? (
+            <div className="timeline">
+              {notes.map((note) => (
+                <div className="timeline-item" key={note.id}>
+                  <NoteRow
+                    dashboard={dashboard}
+                    note={note}
+                    onDelete={canManageNote(note) ? onDeleteNote : undefined}
+                    onEdit={canManageNote(note) ? onEditNote : undefined}
+                    onOpen={onOpenNote}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState>Sem notas nesta pasta.</EmptyState>
+          )}
+          {notesPagination ? <Pagination pagination={notesPagination} onPageChange={onNotesPageChange} /> : null}
+        </div>
+      </div>
+    </Panel>
+  );
+}

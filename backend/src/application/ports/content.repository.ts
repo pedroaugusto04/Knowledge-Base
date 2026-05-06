@@ -2,8 +2,10 @@ import type { DueTelegramReminderView, ReminderView } from '../models/reminder.m
 import type {
   AttachmentRecord,
   NoteRecord,
+  ProjectFolderRecord,
   SaveAttachmentInput,
   SaveNoteInput,
+  SaveProjectFolderInput,
   SaveProjectInput,
   SaveWorkspaceInput,
   RepositoryRecord,
@@ -23,11 +25,16 @@ export abstract class ContentRepository {
   abstract getProjectBySlug(userId: string, projectSlug: string): Promise<SaveProjectInput | null>;
   abstract upsertProject(userId: string, input: SaveProjectInput): Promise<SaveProjectInput>;
   abstract deleteProject(userId: string, projectSlug: string): Promise<boolean>;
+  abstract listProjectFolders(userId: string, projectSlug: string): Promise<ProjectFolderRecord[]>;
+  abstract getProjectFolderById(userId: string, projectSlug: string, folderId: string): Promise<ProjectFolderRecord | null>;
+  abstract upsertProjectFolder(userId: string, input: SaveProjectFolderInput): Promise<ProjectFolderRecord>;
+  abstract deleteProjectFolder(userId: string, projectSlug: string, folderId: string): Promise<boolean>;
   abstract listNotes(userId: string): Promise<NoteRecord[]>;
   abstract listNotesPage(userId: string, input: ListNotesInput): Promise<PaginatedNotes>;
   abstract getNoteById(userId: string, id: string): Promise<NoteRecord | null>;
   abstract getNoteByPath(userId: string, path: string): Promise<NoteRecord | null>;
   abstract upsertNote(userId: string, input: SaveNoteInput): Promise<NoteRecord>;
+  abstract updateNote(userId: string, input: SaveNoteInput): Promise<NoteRecord>;
   abstract deleteNote(userId: string, id: string): Promise<boolean>;
   abstract saveAttachment(userId: string, input: SaveAttachmentInput): Promise<AttachmentRecord>;
   abstract listAttachments(userId: string, noteId: string): Promise<AttachmentRecord[]>;

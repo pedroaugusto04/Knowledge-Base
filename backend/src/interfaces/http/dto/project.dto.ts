@@ -62,3 +62,25 @@ export type UpdateProjectBody = {
   aliases: string[];
   defaultTags: string[];
 };
+
+export const projectFolderIdParamSchema = z.object({
+  projectSlug: z.string().trim().min(1).transform((value) => slugify(value)),
+  folderId: z.string().trim().min(1),
+});
+
+export const createProjectFolderBodySchema = z
+  .object({
+    displayName: z.string().trim().min(1, 'Informe o nome da pasta.').max(120, 'Use no maximo 120 caracteres.'),
+    parentFolderId: z.string().trim().optional().default(''),
+  })
+  .strict()
+  .transform((body) => ({
+    displayName: body.displayName,
+    parentFolderId: body.parentFolderId.trim() || undefined,
+  }));
+
+export const updateProjectFolderBodySchema = createProjectFolderBodySchema;
+
+export type ProjectFolderParam = z.infer<typeof projectFolderIdParamSchema>;
+export type CreateProjectFolderBody = z.infer<typeof createProjectFolderBodySchema>;
+export type UpdateProjectFolderBody = z.infer<typeof updateProjectFolderBodySchema>;

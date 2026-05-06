@@ -5,6 +5,7 @@ export type NoteSummary = {
   title: string;
   project: string;
   workspace: string;
+  folderId: string | null;
   tags: string[];
   date: string;
   status: string;

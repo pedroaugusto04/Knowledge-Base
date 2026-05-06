@@ -3,6 +3,10 @@ export { CreateWorkspaceUseCase } from './workspaces/create-workspace.use-case.j
 export { ListWorkspaceRepositoriesUseCase } from './workspaces/list-workspace-repositories.use-case.js';
 export { CreateProjectUseCase } from './projects/create-project.use-case.js';
 export { DeleteProjectUseCase } from './projects/delete-project.use-case.js';
+export { ListProjectFoldersUseCase } from './projects/list-project-folders.use-case.js';
+export { CreateProjectFolderUseCase } from './projects/create-project-folder.use-case.js';
+export { UpdateProjectFolderUseCase } from './projects/update-project-folder.use-case.js';
+export { DeleteProjectFolderUseCase } from './projects/delete-project-folder.use-case.js';
 export { UpdateProjectUseCase } from './projects/update-project.use-case.js';
 export { CreateManualNoteUseCase } from './notes/create-manual-note.use-case.js';
 export { DeleteManualNoteUseCase } from './notes/delete-manual-note.use-case.js';

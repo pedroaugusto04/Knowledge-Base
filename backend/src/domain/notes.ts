@@ -28,7 +28,32 @@ export function folderForCanonicalType(type: IngestPayload['classification']['ca
   return vaultFolders.inbox;
 }
 
-export function buildNotePaths(project: Project, payload: IngestPayload): {
+function folderPathSegments(folderSlugPath = ''): string[] {
+  return String(folderSlugPath || '')
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+export function noteProjectPathPrefix(projectSlug: string, folderSlugPath = ''): string {
+  return path.join(vaultFolders.inbox, projectSlug, ...folderPathSegments(folderSlugPath)).replace(/\\/g, '/');
+}
+
+export function rewriteNotePathForFolder(
+  notePath: string,
+  projectSlug: string,
+  previousFolderSlugPath: string,
+  nextFolderSlugPath: string,
+): string {
+  const normalizedPath = notePath.replace(/\\/g, '/');
+  const previousPrefix = `${noteProjectPathPrefix(projectSlug, previousFolderSlugPath)}/`;
+  const nextPrefix = `${noteProjectPathPrefix(projectSlug, nextFolderSlugPath)}/`;
+  return normalizedPath.startsWith(previousPrefix)
+    ? `${nextPrefix}${normalizedPath.slice(previousPrefix.length)}`
+    : normalizedPath;
+}
+
+export function buildNotePaths(project: Project, payload: IngestPayload, folderSlugPath = ''): {
   eventRelativePath: string;
   canonicalRelativePath: string;
   followupRelativePath: string;
@@ -40,18 +65,18 @@ export function buildNotePaths(project: Project, payload: IngestPayload): {
   const { year, month, day, time } = getUtcParts(safeDate);
   const titleStem = sanitizeFileStem(payload.content.title || payload.content.rawText, payload.classification.kind);
   const baseFile = `${year}${month}${day}-${time}-${titleStem}.md`;
-  const eventRelativePath = path.join(vaultFolders.inbox, project.projectSlug, year, month, baseFile);
+  const eventRelativePath = path.join(noteProjectPathPrefix(project.projectSlug, folderSlugPath), year, month, baseFile);
   const canonicalRelativePath =
     payload.classification.canonicalType !== 'event'
-      ? path.join(folderForCanonicalType(payload.classification.canonicalType), project.projectSlug, year, month, baseFile)
+      ? path.join(folderForCanonicalType(payload.classification.canonicalType), project.projectSlug, ...folderPathSegments(folderSlugPath), year, month, baseFile)
       : '';
   const followupRelativePath = payload.actions.followUpBy
-    ? path.join(vaultFolders.followups, project.projectSlug, year, month, `${year}${month}${day}-${time}-${titleStem}-followup.md`)
+    ? path.join(vaultFolders.followups, project.projectSlug, ...folderPathSegments(folderSlugPath), year, month, `${year}${month}${day}-${time}-${titleStem}-followup.md`)
     : '';
   const assetRelativePaths = payload.content.attachments.map((attachment) =>
-    path.join(vaultFolders.assets, project.projectSlug, year, month, `${year}${month}${day}-${time}-${sanitizeFileStem(attachment.fileName, 'attachment')}`),
+    path.join(vaultFolders.assets, project.projectSlug, ...folderPathSegments(folderSlugPath), year, month, `${year}${month}${day}-${time}-${sanitizeFileStem(attachment.fileName, 'attachment')}`),
   );
-  const dailyRelativePath = path.join(vaultFolders.inbox, project.projectSlug, year, `${year}-${month}-${day}.md`);
+  const dailyRelativePath = path.join(noteProjectPathPrefix(project.projectSlug, folderSlugPath), year, `${year}-${month}-${day}.md`);
   return {
     eventRelativePath,
     canonicalRelativePath,

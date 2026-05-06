@@ -1,10 +1,31 @@
-import { Body, Controller, Delete, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 
 import type { AuthenticatedUser } from '../../../application/auth.js';
-import { CreateProjectUseCase, DeleteProjectUseCase, UpdateProjectUseCase } from '../../../application/use-cases/index.js';
+import {
+  CreateProjectFolderUseCase,
+  CreateProjectUseCase,
+  DeleteProjectFolderUseCase,
+  DeleteProjectUseCase,
+  ListProjectFoldersUseCase,
+  UpdateProjectFolderUseCase,
+  UpdateProjectUseCase,
+} from '../../../application/use-cases/index.js';
 import { CurrentUser } from '../auth.decorators.js';
 import { AccessTokenAuthGuard, TrustedOriginGuard } from '../auth.guards.js';
-import { createProjectBodySchema, projectSlugParamSchema, updateProjectBodySchema, type CreateProjectBody, type ProjectSlugParam, type UpdateProjectBody } from '../dto/project.dto.js';
+import {
+  createProjectBodySchema,
+  createProjectFolderBodySchema,
+  projectFolderIdParamSchema,
+  projectSlugParamSchema,
+  updateProjectBodySchema,
+  updateProjectFolderBodySchema,
+  type CreateProjectBody,
+  type CreateProjectFolderBody,
+  type ProjectFolderParam,
+  type ProjectSlugParam,
+  type UpdateProjectBody,
+  type UpdateProjectFolderBody,
+} from '../dto/project.dto.js';
 import { ZodValidationPipe } from '../zod-validation.pipe.js';
 
 @Controller('api/projects')
@@ -14,6 +35,10 @@ export class ProjectsController {
     private readonly createProject: CreateProjectUseCase,
     private readonly updateProject: UpdateProjectUseCase,
     private readonly deleteProjectUseCase: DeleteProjectUseCase,
+    private readonly listProjectFoldersUseCase: ListProjectFoldersUseCase,
+    private readonly createProjectFolderUseCase: CreateProjectFolderUseCase,
+    private readonly updateProjectFolderUseCase: UpdateProjectFolderUseCase,
+    private readonly deleteProjectFolderUseCase: DeleteProjectFolderUseCase,
   ) {}
 
   @Post()
@@ -42,5 +67,42 @@ export class ProjectsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.deleteProjectUseCase.execute(params.projectSlug, user.id);
+  }
+
+  @Get(':projectSlug/folders')
+  listFolders(
+    @Param(new ZodValidationPipe(projectSlugParamSchema, 'invalid_project_slug')) params: ProjectSlugParam,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.listProjectFoldersUseCase.execute(params.projectSlug, user.id);
+  }
+
+  @Post(':projectSlug/folders')
+  @UseGuards(TrustedOriginGuard)
+  createFolder(
+    @Param(new ZodValidationPipe(projectSlugParamSchema, 'invalid_project_slug')) params: ProjectSlugParam,
+    @Body(new ZodValidationPipe(createProjectFolderBodySchema, 'invalid_create_folder_payload')) body: CreateProjectFolderBody,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.createProjectFolderUseCase.execute({ ...body, projectSlug: params.projectSlug }, user.id);
+  }
+
+  @Patch(':projectSlug/folders/:folderId')
+  @UseGuards(TrustedOriginGuard)
+  updateFolder(
+    @Param(new ZodValidationPipe(projectFolderIdParamSchema, 'invalid_folder_id')) params: ProjectFolderParam,
+    @Body(new ZodValidationPipe(updateProjectFolderBodySchema, 'invalid_update_folder_payload')) body: UpdateProjectFolderBody,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.updateProjectFolderUseCase.execute({ ...body, projectSlug: params.projectSlug, folderId: params.folderId }, user.id);
+  }
+
+  @Delete(':projectSlug/folders/:folderId')
+  @UseGuards(TrustedOriginGuard)
+  deleteFolder(
+    @Param(new ZodValidationPipe(projectFolderIdParamSchema, 'invalid_folder_id')) params: ProjectFolderParam,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.deleteProjectFolderUseCase.execute(params.projectSlug, params.folderId, user.id);
   }
 }

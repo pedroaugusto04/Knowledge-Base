@@ -11,6 +11,7 @@ export type {
 } from './models/dashboard-home';
 export type { IntegrationsResponse, UserIntegration } from './models/integration';
 export type { NoteDetail, NoteSummary } from './models/note';
+export type { ProjectFolder } from './models/project-folder';
 export type { Project } from './models/project';
 export type { QueryResponse } from './models/query';
 export type { Reminder } from './models/reminder';
