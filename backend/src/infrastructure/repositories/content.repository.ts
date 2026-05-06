@@ -226,17 +226,6 @@ export class PostgresContentRepository extends ContentRepository {
     return result.rows[0] ? noteFromRow(result.rows[0]) : null;
   }
 
-  async findReminderBySourceNotePath(userId: string, sourceNotePath: string) {
-    const result = await this.database.getPool().query(
-      `select * from kb_notes
-       where user_id = $1 and type = 'reminder' and metadata ->> 'sourceNotePath' = $2
-       order by occurred_at desc
-       limit 1`,
-      [userId, sourceNotePath],
-    );
-    return result.rows[0] ? this.hydrateMarkdown(noteFromRow(result.rows[0])) : null;
-  }
-
   async upsertNote(userId: string, input: SaveNoteInput) {
     const markdownStorageKey = await this.contentObjectStorage.saveNoteMarkdown(userId, input);
     const result = await this.database.getPool().query(

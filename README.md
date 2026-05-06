@@ -199,8 +199,8 @@ Endpoints principais:
 - `POST /api/internal/n8n/ingest`
 - `POST /api/internal/n8n/query`
 - `POST /api/internal/n8n/conversation`
-- `GET /api/internal/n8n/reminders/dispatch`
-- `POST /api/internal/n8n/reminders/mark-sent`
+- `GET /api/internal/n8n/reminders/dispatch` (legado/manual)
+- `POST /api/internal/n8n/reminders/mark-sent` (legado/manual)
 
 Endpoints mutáveis de navegador validam `Origin`/`Referer`. A API interna exige `Authorization: Bearer ${KB_INTERNAL_SERVICE_TOKEN}` e retorna o segredo descriptografado somente para o provider solicitado.
 
@@ -229,6 +229,8 @@ Toda resposta HTTP inclui `x-request-id`; a API reaproveita o valor recebido do 
 ## Persistência
 
 A persistência suportada é Postgres para metadados e Supabase Storage privado para payloads. O backend não importa dados antigos de markdown e não grava vault em disco. Markdown renderizado de notas é salvo no bucket em `users/{userId}/workspaces/{workspaceSlug}/notes/{normalized-note-path}` e `kb_notes` mantém `markdown_storage_key` com título, resumo, tags, links e metadados para listagem/busca. Anexos são salvos no bucket em `users/{userId}/workspaces/{workspaceSlug}/attachments/{noteId}/{safe-file-name}` e `kb_attachments` mantém `storage_key`, metadados, tamanho e checksum; estado de conversa fica em `kb_conversation_states`; controle de disparo de lembretes fica em `kb_reminder_dispatch_state`.
+
+O fluxo oficial de reminders agora roda direto na aplicação: um worker do backend executa a cada minuto, busca reminders vencidos de todos os workspaces com `workspace.telegramChatId` preenchido, envia uma mensagem por reminder via Telegram e marca como enviado apenas após sucesso. Reminders sem `reminderTime` usam fallback fixo `09:00` em UTC. O workflow n8n de reminders continua disponível apenas como legado/manual.
 
 As migrations do Postgres usam `node-pg-migrate` com arquivos versionados em `backend/src/infrastructure/persistence/migrations/**`. Para aplicar migrations pendentes manualmente:
 
@@ -412,12 +414,12 @@ Endpoints HTTP principais:
 - `POST /api/internal/n8n/ingest`
 - `POST /api/internal/n8n/query`
 - `POST /api/internal/n8n/conversation`
-- `GET /api/internal/n8n/reminders/dispatch`
-- `POST /api/internal/n8n/reminders/mark-sent`
+- `GET /api/internal/n8n/reminders/dispatch` (legado/manual)
+- `POST /api/internal/n8n/reminders/mark-sent` (legado/manual)
 
 ## Workflows opcionais
 
-Os adapters em `knowledge-base/workflows/` são opcionais/legados para integrações externas. O fluxo principal de conversa livre no WhatsApp agora roda direto no backend em `POST /api/webhooks/whatsapp`; n8n não entra nesse caminho conversacional, e esse endpoint nao aceita mais payload canonico de ingestao.
+Os adapters em `knowledge-base/workflows/` são opcionais/legados para integrações externas. O fluxo principal de conversa livre no WhatsApp agora roda direto no backend em `POST /api/webhooks/whatsapp`; n8n não entra nesse caminho conversacional, e esse endpoint nao aceita mais payload canonico de ingestao. Reminders oficiais também saem direto da aplicação via worker interno + Telegram; `workflows/kb-reminders.json` permanece apenas como fluxo legado/manual.
 
 Quando usados, os workflows fazem apenas:
 
@@ -429,5 +431,6 @@ Quando usados, os workflows fazem apenas:
 Workflows adicionais disponíveis:
 
 - `kb-query.json`
+- `kb-reminders.json` (legado/manual)
 
 Se você quiser remover completamente o n8n no futuro, o core já está preparado para isso.

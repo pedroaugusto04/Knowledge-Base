@@ -12,6 +12,7 @@ export { QueryKnowledgeUseCase } from './query/query-knowledge.use-case.js';
 export { IngestEntryUseCase } from './ingest/ingest-entry.use-case.js';
 export { ProcessConversationUseCase, processConversationInPostgres } from './conversation/process-conversation.use-case.js';
 export { BuildReminderDispatchUseCase } from './reminders/build-reminder-dispatch.use-case.js';
+export { DispatchDueTelegramRemindersUseCase } from './reminders/dispatch-due-telegram-reminders.use-case.js';
 export { MarkReminderAsSentUseCase } from './reminders/mark-reminder-as-sent.use-case.js';
 export { HandleGithubPushUseCase } from './webhooks/github/handle-github-push.use-case.js';
 export { HandleWhatsappWebhookUseCase } from './webhooks/whatsapp/handle-whatsapp-webhook.use-case.js';

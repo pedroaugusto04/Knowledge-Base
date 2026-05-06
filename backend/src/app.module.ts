@@ -15,8 +15,10 @@ import {
   IntegrationConnectionSessionRepository,
 } from './application/ports/integrations.repository.js';
 import { WebhookEventRepository } from './application/ports/webhook-events.repository.js';
+import { TelegramMessageSender } from './application/ports/telegram-message.sender.js';
 import { WhatsappReplySender } from './application/ports/whatsapp-reply.sender.js';
 import { ConversationStateRepository, ReminderDispatchRepository } from './application/ports/workflow-state.repository.js';
+import { TelegramHttpMessageSender } from './adapters/telegram.js';
 import { EvolutionWhatsappReplySender } from './adapters/evolution.js';
 import { PostgresUserRepository } from './infrastructure/repositories/auth.repository.js';
 import { PostgresContentQueryRepository } from './infrastructure/repositories/content-query.repository.js';
@@ -33,6 +35,7 @@ import {
   CreateManualNoteUseCase,
   CreateProjectUseCase,
   CreateWorkspaceUseCase,
+  DispatchDueTelegramRemindersUseCase,
   DeleteManualNoteUseCase,
   DeleteProjectUseCase,
   GetNoteDetailUseCase,
@@ -50,6 +53,7 @@ import {
   ListNotesUseCase,
   ListWorkspaceRepositoriesUseCase,
 } from './application/use-cases/index.js';
+import { TelegramReminderDispatchWorker } from './application/services/telegram-reminder-dispatch.worker.js';
 import { AuthController, DashboardController, GithubAppCallbackController, HealthController, InternalIntegrationsController, InternalN8NController, NotesController, OperationsController, ProjectsController, UserIntegrationsController, WebhookController, WorkspacesController } from './interfaces/http/controllers/index.js';
 import { AccessTokenAuthGuard, AuthRateLimitGuard, GlobalRateLimitGuard, InternalServiceTokenGuard, TrustedOriginGuard, WebhookRateLimitGuard } from './interfaces/http/auth.guards.js';
 import { GlobalExceptionFilter } from './observability/global-exception.filter.js';
@@ -88,11 +92,14 @@ import { AppLogger } from './observability/logger.js';
     IngestEntryUseCase,
     ProcessConversationUseCase,
     BuildReminderDispatchUseCase,
+    DispatchDueTelegramRemindersUseCase,
     MarkReminderAsSentUseCase,
     HandleGithubPushUseCase,
     HandleWhatsappWebhookUseCase,
     HandleTelegramWebhookUseCase,
+    TelegramReminderDispatchWorker,
     EvolutionWhatsappReplySender,
+    TelegramHttpMessageSender,
     PostgresDatabase,
     PostgresSchemaMigrator,
     PostgresUserRepository,
@@ -114,6 +121,7 @@ import { AppLogger } from './observability/logger.js';
     { provide: ReminderDispatchRepository, useExisting: PostgresWorkflowStateRepository },
     { provide: WebhookEventRepository, useExisting: PostgresWebhookEventRepository },
     { provide: WhatsappReplySender, useExisting: EvolutionWhatsappReplySender },
+    { provide: TelegramMessageSender, useExisting: TelegramHttpMessageSender },
     { provide: APP_GUARD, useClass: GlobalRateLimitGuard },
   ],
 })

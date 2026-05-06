@@ -5,7 +5,7 @@ import { Badge } from '../../shared/ui/primitives';
 
 export function ReminderRow({ reminder, dashboard, onOpenPath }: { reminder: Reminder; dashboard: Dashboard; onOpenPath: (path: string) => void }) {
   return (
-    <article className="list-row clickable" onClick={() => onOpenPath(reminder.sourceNotePath || reminder.relativePath)}>
+    <article className="list-row clickable" onClick={() => onOpenPath(reminder.relativePath)}>
       <div>
         <div className="meta-row">
           <Badge value={reminder.status} tone={reminder.status} />

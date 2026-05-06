@@ -31,7 +31,8 @@ export class ContentObjectStorageService {
   }
 
   async saveNoteMarkdown(userId: string, input: SaveNoteInput): Promise<string> {
-    const markdownStorageKey = input.markdownStorageKey || noteStorageKey(userId, input.workspaceSlug, input.path);
+    const markdownStorageKey = input.
+    markdownStorageKey || noteStorageKey(userId, input.workspaceSlug, input.path);
     await this.objectStorage.put({
       key: markdownStorageKey,
       body: input.markdown,

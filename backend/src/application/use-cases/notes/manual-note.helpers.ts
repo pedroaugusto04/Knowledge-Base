@@ -9,13 +9,13 @@ export function isManualEventNote(note: NoteRecord): boolean {
   return note.type === 'event' && note.source === 'manual-api' && note.metadata.manual === true;
 }
 
-export function buildManualEditorState(note: NoteRecord, reminder: NoteRecord | null) {
+export function buildManualEditorState(note: NoteRecord) {
   if (!isManualEventNote(note)) return null;
 
   const rawText = String(note.metadata.rawText || '').trim();
   if (!rawText) throw new BadRequestException('note_raw_text_missing');
-  const reminderDate = String(reminder?.metadata.reminderDate || note.metadata.reminderDate || '').trim();
-  const reminderTime = String(reminder?.metadata.reminderTime || note.metadata.reminderTime || '').trim();
+  const reminderDate = String(note.metadata.reminderDate || '').trim();
+  const reminderTime = String(note.metadata.reminderTime || '').trim();
 
   return {
     canDelete: true,

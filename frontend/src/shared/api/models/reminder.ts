@@ -7,5 +7,4 @@ export type Reminder = {
   reminderTime: string;
   reminderAt: string;
   relativePath: string;
-  sourceNotePath: string;
 };

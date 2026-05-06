@@ -8,5 +8,16 @@ export type ReminderView = {
   reminderTime: string;
   reminderAt: string;
   relativePath: string;
-  sourceNotePath: string;
+};
+
+export type DueTelegramReminderView = {
+  userId: string;
+  workspaceSlug: string;
+  telegramChatId: string;
+  reminderId: string;
+  title: string;
+  project: string;
+  relativePath: string;
+  status: string;
+  scheduledAt: string;
 };

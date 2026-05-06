@@ -18,11 +18,11 @@ test('postgres repositories share state across content query and workflow ports'
   const user = await repositories.createTestUser();
   const note = await repositories.contentRepository.upsertNote(user.id, {
     path: '20 Inbox/acme/2026/04/item.md',
-    type: 'reminder',
+    type: 'event',
     title: 'Shared state',
     projectSlug: 'acme',
     workspaceSlug: 'default',
-    status: 'open',
+    status: 'active',
     tags: ['shared'],
     occurredAt: '2026-04-28',
     sourceChannel: 'test',
@@ -33,7 +33,6 @@ test('postgres repositories share state across content query and workflow ports'
       reminderDate: '2026-04-28',
       reminderTime: '09:00',
       reminderAt: '2026-04-28T12:00:00.000Z',
-      sourceNotePath: '20 Inbox/acme/2026/04/item.md',
     },
     origin: 'postgres',
     source: 'test',
@@ -43,7 +42,20 @@ test('postgres repositories share state across content query and workflow ports'
   const reminders = await repositories.contentQueryRepository.listReminders(user.id);
   assert.equal(reminders.length, 1);
   assert.equal(reminders[0].id, note.id);
-  assert.equal((await repositories.contentRepository.findReminderBySourceNotePath(user.id, '20 Inbox/acme/2026/04/item.md'))?.id, note.id);
+  assert.equal(reminders[0].relativePath, note.path);
+
+  await repositories.contentRepository.upsertWorkspace(user.id, {
+    workspaceSlug: 'default',
+    displayName: 'Default',
+    whatsappGroupJid: '',
+    telegramChatId: 'telegram-chat-1',
+    createdAt: '2026-04-28T00:00:00.000Z',
+    updatedAt: '2026-04-28T00:00:00.000Z',
+  });
+  const dueTelegramReminders = await repositories.contentQueryRepository.listDueTelegramReminders('2026-04-28T12:00:00.000Z');
+  assert.equal(dueTelegramReminders.length, 1);
+  assert.equal(dueTelegramReminders[0].reminderId, note.id);
+  assert.equal(dueTelegramReminders[0].telegramChatId, 'telegram-chat-1');
 
   await repositories.conversationStateRepository.upsert(user.id, 'default', 'conversation-1', { phase: 'collecting' });
   const storedState = await repositories.conversationStateRepository.get(user.id, 'default', 'conversation-1');
@@ -53,7 +65,7 @@ test('postgres repositories share state across content query and workflow ports'
   await repositories.reminderDispatchRepository.markSent(user.id, 'default', 'daily', '2026-04-28', note.id);
   assert.equal(await repositories.reminderDispatchRepository.hasSent(user.id, 'default', 'daily', '2026-04-28', note.id), true);
   await repositories.contentRepository.deleteNote(user.id, note.id);
-  assert.equal(await repositories.contentRepository.findReminderBySourceNotePath(user.id, '20 Inbox/acme/2026/04/item.md'), null);
+  assert.equal((await repositories.contentQueryRepository.listReminders(user.id)).length, 0);
 });
 
 test('app module resolves repository providers without KnowledgeStore wiring', async () => {

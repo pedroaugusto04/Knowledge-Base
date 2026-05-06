@@ -297,7 +297,7 @@ describe('ProjectsPage', () => {
         reminderTime: '09:30',
         reminderAt: localDateTimeToUtcIso('2026-04-29', '09:30'),
       });
-      return Response.json({ ok: true, project: 'platform', noteId: 'note-2', reminderNoteId: 'reminder-1', eventPath: 'path.md' });
+      return Response.json({ ok: true, project: 'platform', noteId: 'note-2', eventPath: 'path.md' });
     });
     vi.stubGlobal('fetch', fetchMock);
     const { openNote } = renderProjects();
@@ -389,7 +389,7 @@ describe('ProjectsPage', () => {
       if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
       expect(String(input)).toBe('/api/notes/note-1');
       expect(init?.method).toBe('DELETE');
-      return Response.json({ ok: true, noteId: 'note-1', reminderNoteId: 'reminder-1' });
+      return Response.json({ ok: true, noteId: 'note-1' });
     });
     vi.stubGlobal('fetch', fetchMock);
     renderProjects();

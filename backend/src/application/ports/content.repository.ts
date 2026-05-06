@@ -1,4 +1,4 @@
-import type { ReminderView } from '../models/reminder.models.js';
+import type { DueTelegramReminderView, ReminderView } from '../models/reminder.models.js';
 import type {
   AttachmentRecord,
   NoteRecord,
@@ -23,7 +23,6 @@ export abstract class ContentRepository {
   abstract listNotes(userId: string): Promise<NoteRecord[]>;
   abstract getNoteById(userId: string, id: string): Promise<NoteRecord | null>;
   abstract getNoteByPath(userId: string, path: string): Promise<NoteRecord | null>;
-  abstract findReminderBySourceNotePath(userId: string, sourceNotePath: string): Promise<NoteRecord | null>;
   abstract upsertNote(userId: string, input: SaveNoteInput): Promise<NoteRecord>;
   abstract deleteNote(userId: string, id: string): Promise<boolean>;
   abstract saveAttachment(userId: string, input: SaveAttachmentInput): Promise<AttachmentRecord>;
@@ -35,4 +34,5 @@ export abstract class ContentQueryRepository {
   abstract getById(userId: string, id: string): Promise<VaultNoteDetail | null>;
   abstract listReviews(userId: string): Promise<ReviewView[]>;
   abstract listReminders(userId: string): Promise<ReminderView[]>;
+  abstract listDueTelegramReminders(nowIso: string): Promise<DueTelegramReminderView[]>;
 }

@@ -26,7 +26,6 @@ export enum CanonicalType {
   Decision = 'decision',
   Incident = 'incident',
   Followup = 'followup',
-  Reminder = 'reminder',
 }
 
 export enum Importance {

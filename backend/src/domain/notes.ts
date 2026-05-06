@@ -13,7 +13,6 @@ export const vaultFolders = {
   knowledge: '30 Knowledge',
   incidents: '40 Incidents',
   followups: '50 Followups',
-  reminders: '60 Reminders',
   assets: '90 Assets',
 } as const;
 
@@ -26,7 +25,6 @@ export function folderForCanonicalType(type: IngestPayload['classification']['ca
   if (type === 'knowledge' || type === 'decision') return vaultFolders.knowledge;
   if (type === 'incident') return vaultFolders.incidents;
   if (type === 'followup') return vaultFolders.followups;
-  if (type === 'reminder') return vaultFolders.reminders;
   return vaultFolders.inbox;
 }
 
@@ -34,7 +32,6 @@ export function buildNotePaths(project: Project, payload: IngestPayload): {
   eventRelativePath: string;
   canonicalRelativePath: string;
   followupRelativePath: string;
-  reminderRelativePath: string;
   assetRelativePaths: string[];
   dailyRelativePath: string;
 } {
@@ -51,9 +48,6 @@ export function buildNotePaths(project: Project, payload: IngestPayload): {
   const followupRelativePath = payload.actions.followUpBy
     ? path.join(vaultFolders.followups, project.projectSlug, year, month, `${year}${month}${day}-${time}-${titleStem}-followup.md`)
     : '';
-  const reminderRelativePath = payload.actions.reminderDate
-    ? path.join(vaultFolders.reminders, project.projectSlug, year, month, `${year}${month}${day}-${time}-${titleStem}-reminder.md`)
-    : '';
   const assetRelativePaths = payload.content.attachments.map((attachment) =>
     path.join(vaultFolders.assets, project.projectSlug, year, month, `${year}${month}${day}-${time}-${sanitizeFileStem(attachment.fileName, 'attachment')}`),
   );
@@ -62,7 +56,6 @@ export function buildNotePaths(project: Project, payload: IngestPayload): {
     eventRelativePath,
     canonicalRelativePath,
     followupRelativePath,
-    reminderRelativePath,
     assetRelativePaths,
     dailyRelativePath,
   };
@@ -101,7 +94,7 @@ export function renderEventNote(project: Project, payload: IngestPayload, paths:
     status: payload.classification.status || 'active',
     tags: payload.classification.tags,
     occurred_at: payload.event.occurredAt,
-    related: [paths.canonicalRelativePath, paths.followupRelativePath, paths.reminderRelativePath].filter(Boolean),
+    related: [paths.canonicalRelativePath, paths.followupRelativePath].filter(Boolean),
   });
   return [
     frontmatter,
@@ -206,36 +199,6 @@ export function renderFollowupNote(project: Project, payload: IngestPayload, rel
   ].join('\n');
 }
 
-export function renderReminderNote(project: Project, payload: IngestPayload, relatedEventPath: string, reminderAt: string): string {
-  const frontmatter = renderFrontmatter({
-    id: `${payload.source.correlationId}:reminder`,
-    type: 'reminder',
-    workspace: project.workspaceSlug,
-    project: project.projectSlug,
-    importance: payload.classification.importance,
-    status: 'open',
-    tags: [...payload.classification.tags, 'reminder'],
-    occurred_at: payload.event.occurredAt,
-    reminder_date: payload.actions.reminderDate,
-    reminder_time: payload.actions.reminderTime,
-    reminder_at: reminderAt,
-    related: [relatedEventPath],
-  });
-  return [
-    frontmatter,
-    `# Reminder ${trimText(payload.content.title, payload.content.rawText)}`,
-    '',
-    '## O que lembrar',
-    '',
-    payload.content.sections.summary || payload.content.rawText,
-    '',
-    `Agendado para: ${payload.actions.reminderDate}${payload.actions.reminderTime ? ` ${payload.actions.reminderTime}` : ''}`,
-    '',
-    `Origem: ${vaultLink(relatedEventPath, 'evento original')}`,
-    '',
-  ].join('\n');
-}
-
 export function renderProjectSummary(project: Project, recentEntries: string[]): string {
   const frontmatter = renderFrontmatter({
     id: `project:${project.projectSlug}`,
@@ -267,7 +230,6 @@ export function renderHomePage(projects: Project[]): string {
     '## Navegacao',
     '',
     `- ${vaultLink(path.join(vaultFolders.projects, 'Projects.md'), 'Projetos')}`,
-    `- ${vaultLink(path.join(vaultFolders.reminders, 'Reminders.md'), 'Lembretes')}`,
     '',
     '## Projetos',
     '',
@@ -281,15 +243,6 @@ export function renderProjectsIndex(projects: Project[]): string {
     '# Projetos',
     '',
     ...projects.map((project) => `- ${vaultLink(path.join(vaultFolders.projects, `${project.projectSlug}.md`), project.displayName)}`),
-    '',
-  ].join('\n');
-}
-
-export function renderRemindersIndex(reminders: string[]): string {
-  return [
-    '# Lembretes',
-    '',
-    ...reminders.map((entry) => `- ${entry}`),
     '',
   ].join('\n');
 }

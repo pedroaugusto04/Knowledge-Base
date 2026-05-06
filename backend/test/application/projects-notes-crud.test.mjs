@@ -53,34 +53,16 @@ async function seedManualNote(repositories, userId) {
     metadata: { manual: true, rawText: 'confirmar deploy', reminderDate: '2026-04-29', reminderTime: '09:30' },
     origin: 'postgres',
     source: 'manual-api',
-    links: ['60 Reminders/platform/2026/04/reminder.md'],
+    links: [],
   });
-  const reminder = await repositories.contentRepository.upsertNote(userId, {
-    path: '60 Reminders/platform/2026/04/reminder.md',
-    type: 'reminder',
-    title: 'Reminder Deploy antigo',
-    projectSlug: 'platform',
-    workspaceSlug: 'default',
-    status: 'open',
-    tags: ['deploy'],
-    occurredAt: '2026-04-29T12:30:00.000Z',
-    sourceChannel: 'external',
-    summary: 'Deploy antigo',
-    markdown: '',
-    frontmatter: {},
-    metadata: { sourceNotePath: note.path, reminderDate: '2026-04-29', reminderTime: '09:30', reminderAt: '2026-04-29T12:30:00.000Z' },
-    origin: 'postgres',
-    source: 'manual-api',
-    links: [note.path],
-  });
-  return { note, reminder };
+  return { note };
 }
 
-test('updates manual note content and reminder sibling', async (t) => {
+test('updates manual note content and reminder metadata only', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await seedProject(repositories, user.id);
-  const { note, reminder: seededReminder } = await seedManualNote(repositories, user.id);
+  const { note } = await seedManualNote(repositories, user.id);
 
   const useCase = new UpdateManualNoteUseCase(repositories.contentRepository);
   const result = await useCase.execute({
@@ -93,21 +75,21 @@ test('updates manual note content and reminder sibling', async (t) => {
   }, user.id);
 
   assert.equal(result.ok, true);
+  assert.equal(result.noteId, note.id);
   const updated = await repositories.contentRepository.getNoteById(user.id, note.id);
-  const reminder = await repositories.contentRepository.getNoteById(user.id, seededReminder.id);
   assert.equal(updated?.metadata.rawText, 'validar deploy final');
   assert.deepEqual(updated?.tags, ['release']);
   assert.match((await repositories.objectStorage.get(updated.markdownStorageKey)).toString('utf8'), /validar deploy final/);
   assert.doesNotMatch((await repositories.objectStorage.get(updated.markdownStorageKey)).toString('utf8'), /confirmar deploy/);
-  assert.equal(reminder?.metadata.reminderDate, '2026-05-01');
-  assert.equal(reminder?.metadata.reminderTime, '10:15');
+  assert.equal(updated?.metadata.reminderDate, '2026-05-01');
+  assert.equal(updated?.metadata.reminderTime, '10:15');
 });
 
-test('removes reminder sibling when manual note reminder is cleared', async (t) => {
+test('clears manual note reminder metadata', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await seedProject(repositories, user.id);
-  const { note, reminder } = await seedManualNote(repositories, user.id);
+  const { note } = await seedManualNote(repositories, user.id);
 
   const useCase = new UpdateManualNoteUseCase(repositories.contentRepository);
   await useCase.execute({
@@ -119,14 +101,18 @@ test('removes reminder sibling when manual note reminder is cleared', async (t) 
     reminderTime: '',
   }, user.id);
 
-  assert.equal(await repositories.contentRepository.getNoteById(user.id, reminder.id), null);
+  const updated = await repositories.contentRepository.getNoteById(user.id, note.id);
+  assert.equal(updated?.metadata.reminderDate, '');
+  assert.equal(updated?.metadata.reminderTime, '');
+  assert.equal(updated?.metadata.reminderAt, '');
+  assert.equal((await repositories.contentQueryRepository.listReminders(user.id)).length, 0);
 });
 
-test('deletes manual note with reminder cascade and editor detail', async (t) => {
+test('deletes manual note and attachments', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await seedProject(repositories, user.id);
-  const { note, reminder } = await seedManualNote(repositories, user.id);
+  const { note } = await seedManualNote(repositories, user.id);
   await repositories.contentRepository.saveAttachment(user.id, {
     noteId: note.id,
     fileName: 'evidence.txt',
@@ -146,11 +132,10 @@ test('deletes manual note with reminder cascade and editor detail', async (t) =>
 
   await new DeleteManualNoteUseCase(repositories.contentRepository).execute(note.id, user.id);
   assert.equal(await repositories.contentRepository.getNoteById(user.id, note.id), null);
-  assert.equal(await repositories.contentRepository.getNoteById(user.id, reminder.id), null);
   assert.equal((await repositories.contentRepository.listAttachments(user.id, note.id)).length, 0);
   assert.equal(repositories.objectStorage.deletedKeys.includes(note.markdownStorageKey), true);
-  assert.equal(repositories.objectStorage.deletedKeys.includes(reminder.markdownStorageKey), true);
   assert.equal(repositories.objectStorage.deletedKeys.includes(attachments[0].storageKey), true);
+  assert.equal((await repositories.contentQueryRepository.listReminders(user.id)).length, 0);
 });
 
 test('rejects editing non-manual notes and blocks project deletion with notes', async (t) => {

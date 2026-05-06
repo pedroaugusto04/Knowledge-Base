@@ -11,10 +11,9 @@ export class GetNoteDetailUseCase {
   async execute(userId: string, id: string) {
     const note = await this.contentRepository.getNoteById(userId, id);
     if (!note) return null;
-    const reminder = await this.contentRepository.findReminderBySourceNotePath(userId, note.path);
     return {
       ...noteDetail(note),
-      editor: buildManualEditorState(note, reminder),
+      editor: buildManualEditorState(note),
     };
   }
 }

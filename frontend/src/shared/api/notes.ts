@@ -20,7 +20,6 @@ export type CreateNoteResponse = {
   ok: true;
   project: string;
   noteId: string;
-  reminderNoteId: string;
   eventPath: string;
 };
 
@@ -42,7 +41,7 @@ export type UpdateNoteParams = {
 };
 
 export function updateNote(id: string, params: UpdateNoteParams) {
-  return request<{ ok: true; noteId: string; reminderNoteId: string }>(`/api/notes/${encodeURIComponent(id)}`, {
+  return request<{ ok: true; noteId: string }>(`/api/notes/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(params),
@@ -50,7 +49,7 @@ export function updateNote(id: string, params: UpdateNoteParams) {
 }
 
 export function deleteNote(id: string) {
-  return request<{ ok: true; noteId: string; reminderNoteId: string }>(`/api/notes/${encodeURIComponent(id)}`, {
+  return request<{ ok: true; noteId: string }>(`/api/notes/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
 }

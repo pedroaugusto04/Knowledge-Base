@@ -60,8 +60,7 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       reminderDate: '2026-04-26',
       reminderTime: '09:00',
       reminderAt: '2026-04-26T12:00:00.000Z',
-      relativePath: '30 Reminders/overdue.md',
-      sourceNotePath: '20 Inbox/incident.md',
+      relativePath: '20 Inbox/incident.md',
     },
     {
       id: 'reminder-upcoming',
@@ -72,8 +71,7 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       reminderDate: '2026-04-27',
       reminderTime: '16:00',
       reminderAt: '2026-04-27T19:00:00.000Z',
-      relativePath: '30 Reminders/upcoming.md',
-      sourceNotePath: '20 Inbox/event.md',
+      relativePath: '20 Inbox/event.md',
     },
     {
       id: 'reminder-done',
@@ -84,8 +82,7 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       reminderDate: '2026-04-25',
       reminderTime: '09:00',
       reminderAt: '2026-04-25T12:00:00.000Z',
-      relativePath: '30 Reminders/done.md',
-      sourceNotePath: '',
+      relativePath: '20 Inbox/done.md',
     },
   ];
 

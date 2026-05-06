@@ -61,17 +61,17 @@ export function reviewFromNote(record: NoteRecord): ReviewView | null {
 }
 
 export function reminderFromNote(record: NoteRecord): ReminderView | null {
-  if (record.type !== 'reminder') return null;
+  const reminderDate = String(record.metadata.reminderDate || '');
+  if (!reminderDate) return null;
   return {
     id: record.id,
     title: record.title,
     project: record.projectSlug,
     workspace: record.workspaceSlug,
     status: record.status,
-    reminderDate: String(record.metadata.reminderDate || ''),
+    reminderDate,
     reminderTime: String(record.metadata.reminderTime || ''),
     reminderAt: String(record.metadata.reminderAt || ''),
     relativePath: record.path,
-    sourceNotePath: String(record.metadata.sourceNotePath || ''),
   };
 }

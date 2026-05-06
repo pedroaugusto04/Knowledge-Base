@@ -8,7 +8,7 @@ import type { VaultNoteSummary } from '../models/vault-note.models.js';
 
 const HOME_WINDOW_DAYS = 7;
 const OPEN_STATUSES = new Set([KnowledgeStatus.Open, KnowledgeStatus.Active, 'pending', 'todo']);
-const INTERESTING_TYPES = [CanonicalType.Incident, CanonicalType.Decision, CanonicalType.Followup, CanonicalType.Reminder, CanonicalType.Event];
+const INTERESTING_TYPES = [CanonicalType.Incident, CanonicalType.Decision, CanonicalType.Followup, CanonicalType.Event];
 
 function normalizeDateInput(value: string) {
   const trimmed = value.trim();
@@ -119,7 +119,7 @@ export function buildDashboardHome(
   const priorityCandidates: Array<HomePriority & { rank: number; timestamp: number }> = [
     ...openReminders.map((reminder) => {
       const timestamp = parseTimestamp(reminder.reminderAt);
-      const relatedNote = findNoteByPath(notes, reminder.sourceNotePath) || findNoteByPath(notes, reminder.relativePath);
+      const relatedNote = findNoteByPath(notes, reminder.relativePath);
       const overdue = reminder.reminderAt
         ? Boolean(timestamp && timestamp < now.getTime())
         : reminder.reminderDate < todayDate || (reminder.reminderDate === todayDate && Boolean(reminder.reminderTime && reminder.reminderTime < currentTime));
@@ -131,7 +131,7 @@ export function buildDashboardHome(
         date: reminder.reminderAt || reminder.reminderDate,
         description: overdue ? 'Lembrete vencido' : 'Lembrete aberto',
         status: reminder.status,
-        target: relatedNote ? noteTarget(relatedNote) : { kind: HomeTargetKind.Note, path: reminder.sourceNotePath || reminder.relativePath },
+        target: relatedNote ? noteTarget(relatedNote) : { kind: HomeTargetKind.Note, path: reminder.relativePath },
         rank: overdue ? 0 : 1,
         timestamp: timestamp || Date.parse(`${reminder.reminderDate}T${reminder.reminderTime || '00:00'}Z`) || Number.MAX_SAFE_INTEGER,
       };

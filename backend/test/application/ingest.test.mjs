@@ -54,7 +54,7 @@ function payload() {
   };
 }
 
-test('ingest persists event note, reminder note, attachment and workspace in repository', async (t) => {
+test('ingest persists one event note with derived reminder, attachment and workspace in repository', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await repositories.contentRepository.upsertWorkspace(user.id, {
@@ -71,14 +71,17 @@ test('ingest persists event note, reminder note, attachment and workspace in rep
 
   assert.equal(result.ok, true);
   assert.match(result.eventPath, /^20 Inbox\/n8n-automations\//);
-  assert.match(result.reminderPath, /^60 Reminders\/n8n-automations\//);
   assert.equal(result.attachmentIds.length, 1);
-  assert.ok(result.reminderNoteId);
 
   const notes = await repositories.contentRepository.listNotes(user.id);
   assert.equal(notes.filter((note) => note.type === 'event').length, 1);
-  assert.equal(notes.filter((note) => note.type === 'reminder').length, 1);
   const detail = await repositories.contentRepository.getNoteById(user.id, result.noteId);
+  assert.equal(detail.metadata.reminderDate, '2026-04-28');
+  assert.equal(detail.metadata.reminderTime, '09:30');
+  const reminders = await repositories.contentQueryRepository.listReminders(user.id);
+  assert.equal(reminders.length, 1);
+  assert.equal(reminders[0].id, result.noteId);
+  assert.equal(reminders[0].relativePath, result.eventPath);
   assert.match(detail.markdownStorageKey, new RegExp(`^users/${user.id}/workspaces/default/notes/20 Inbox/n8n-automations/`));
   assert.match(detail.markdown, /Deploy needs coordinated rollout/);
   assert.match((await repositories.objectStorage.get(detail.markdownStorageKey)).toString('utf8'), /Deploy needs coordinated rollout/);
@@ -109,7 +112,7 @@ test('ingest fails when the target workspace does not exist', async (t) => {
   );
 });
 
-test('manual note creation uses ingest and creates optional reminder', async (t) => {
+test('manual note creation uses ingest and derives optional reminder from the note', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await repositories.contentRepository.upsertWorkspace(user.id, {
@@ -154,11 +157,11 @@ test('manual note creation uses ingest and creates optional reminder', async (t)
   }, user.id);
 
   assert.ok(withoutReminder.noteId);
-  assert.equal(withoutReminder.reminderNoteId, '');
-  assert.ok(withReminder.reminderNoteId);
   const notes = await repositories.contentRepository.listNotes(user.id);
   assert.equal(notes.filter((note) => note.type === 'event').length, 2);
-  assert.equal(notes.filter((note) => note.type === 'reminder').length, 1);
+  const reminders = await repositories.contentQueryRepository.listReminders(user.id);
+  assert.equal(reminders.length, 1);
+  assert.equal(reminders[0].id, withReminder.noteId);
   assert.equal(notes.every((note) => note.projectSlug === 'acme-api'), true);
   assert.equal(notes.some((note) => note.tags.includes('backend')), true);
 });
