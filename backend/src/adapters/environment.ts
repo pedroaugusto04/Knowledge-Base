@@ -82,7 +82,7 @@ export function readEnvironment(env = process.env): RuntimeEnvironment {
     trustProxy: String(env.KB_TRUST_PROXY || 'false').toLowerCase() === 'true',
     githubPushWebhookPath: String(env.KB_GITHUB_WEBHOOK_PATH || '/n8n/webhook/kb-github-push').trim(),
     ingestWebhookPath: String(env.KB_INGEST_WEBHOOK_PATH || '/n8n/webhook/kb-event').trim(),
-    whatsappWebhookPath: String(env.KB_WPP_WEBHOOK_PATH || '/n8n/webhook/whatsapp-kb-event').trim(),
+    whatsappWebhookPath: String(env.KB_WPP_WEBHOOK_PATH || '/api/webhooks/whatsapp').trim(),
     queryWebhookPath: String(env.KB_QUERY_WEBHOOK_PATH || '/n8n/webhook/kb-query').trim(),
     githubAppInstallUrl: String(env.KB_GITHUB_APP_INSTALL_URL || '').trim(),
     githubAppCallbackPath: normalizeGithubAppCallbackPath(env.KB_GITHUB_APP_CALLBACK_PATH),
