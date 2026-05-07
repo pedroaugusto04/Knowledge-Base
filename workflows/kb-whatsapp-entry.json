@@ -158,7 +158,7 @@
       {
         "parameters": {
           "method": "POST",
-          "url": "={{$env.KB_API_BASE_URL || 'http://knowledge-base:3000'}}/api/internal/n8n/conversation",
+          "url": "={{$env.KB_API_BASE_URL || 'http://knowledge-base:3000'}}/api/internal/n8n/conversation/agent",
           "sendHeaders": true,
           "headerParameters": {
             "parameters": [

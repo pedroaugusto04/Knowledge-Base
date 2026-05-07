@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
+import { readEnvironment } from '../../../../adapters/environment.js';
 import { AiProvider, CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
 import { buildTelegramCodeReviewMessage } from '../../../../domain/notifications.js';
 import { buildGithubReviewEvent } from '../../../github-review.js';
@@ -27,7 +28,7 @@ export class HandleGithubPushUseCase {
   ) {}
 
   async execute(input: GithubPushWebhookRequest) {
-    const environment = this.environmentProvider.read();
+    const environment = this.environmentProvider?.read ? this.environmentProvider.read() : readEnvironment();
     const headers = normalizeHeaders(input.headers || {});
     const body = input.body || {};
     const installationId = String((body.installation as { id?: unknown } | undefined)?.id || '').trim();

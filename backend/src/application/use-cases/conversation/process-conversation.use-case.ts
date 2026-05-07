@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { readEnvironment } from '../../../adapters/environment.js';
 import { type ConversationInput, conversationStateSchema, type ConversationState } from '../../../contracts/conversation.js';
 import { CredentialRecordStatus, ConversationConfidence, ConversationPhase, IntegrationProvider, KnowledgeKind, QueryMode } from '../../../contracts/enums.js';
 import { slugify } from '../../../domain/strings.js';
@@ -79,7 +80,7 @@ type ConversationContext = {
 };
 
 async function processConversationInPostgres(args: ProcessConversationArgs) {
-  const environment = args.environmentProvider.read();
+  const environment = args.environmentProvider?.read ? args.environmentProvider.read() : readEnvironment();
   const context = await loadConversationContext(args, environment.conversationTimeoutMs);
   const command = context.current.phase === ConversationPhase.Idle ? parseKnowledgeCommand(context.message) : null;
 
@@ -254,6 +255,7 @@ async function resolveAiExtraction(
 ) {
   if (args.input.agentResult?.extracted) return args.input.agentResult.extracted;
   if (!args.credentials) return {};
+  if (!args.conversationExtractionGateway) return {};
   const aiCredential = await args.credentials.findCredential(args.userId, args.workspaceSlug, IntegrationProvider.AiConversation);
   const aiEnabled = Boolean(aiCredential && aiCredential.status === CredentialRecordStatus.Connected && !aiCredential.revokedAt);
   if (!aiEnabled) return {};

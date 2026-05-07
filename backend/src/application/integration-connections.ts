@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
+import { readEnvironment } from '../adapters/environment.js';
 import { CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider } from '../contracts/enums.js';
 import { slugify } from '../domain/strings.js';
 import { encryptConfig } from './credentials.js';
@@ -198,6 +199,10 @@ export class IntegrationConnectionService {
     private readonly environmentProvider: RuntimeEnvironmentProvider,
   ) {}
 
+  private environment() {
+    return this.environmentProvider?.read ? this.environmentProvider.read() : readEnvironment();
+  }
+
   async connect(input: { userId: string; workspaceSlug: string; provider: string; returnToPath?: string; browserOrigin?: string }) {
     const workspace = await this.requireWorkspace(input.userId, input.workspaceSlug);
     if (input.provider === IntegrationProvider.GithubApp) return this.startGithubConnection(input.userId, workspace.workspaceSlug, input.returnToPath, input.browserOrigin);
@@ -355,7 +360,7 @@ export class IntegrationConnectionService {
   }
 
   private async startGithubConnection(userId: string, workspaceSlug: string, returnToPath?: string, browserOrigin?: string) {
-    const environment = this.environmentProvider.read();
+    const environment = this.environment();
     if (!environment.githubAppInstallUrl) throw new BadRequestException('github_app_install_url_not_configured');
     const state = randomState();
     const session = await this.createConnectionSession({
@@ -394,7 +399,7 @@ export class IntegrationConnectionService {
   }
 
   private async startTelegramConnection(userId: string, workspaceSlug: string) {
-    const environment = this.environmentProvider.read();
+    const environment = this.environment();
     if (!environment.telegramBotToken) throw new BadRequestException('telegram_bot_token_not_configured');
     return this.startCodeBasedConnection({
       userId,
@@ -406,7 +411,7 @@ export class IntegrationConnectionService {
   }
 
   private async activateAi(userId: string, workspaceSlug: string, provider: IntegrationProvider.AiReview | IntegrationProvider.AiConversation) {
-    const environment = this.environmentProvider.read();
+    const environment = this.environment();
     const review = provider === IntegrationProvider.AiReview;
     const configured = review
       ? environment.reviewAiProvider !== 'none' && environment.reviewAiBaseUrl && environment.reviewAiModel && environment.reviewAiApiKey
@@ -438,7 +443,7 @@ export class IntegrationConnectionService {
   }
 
   private async verifyGithubInstallation(code: string, installationId: string): Promise<GithubInstallation> {
-    const environment = this.environmentProvider.read();
+    const environment = this.environment();
     if (!environment.githubAppClientId || !environment.githubAppClientSecret) throw new BadRequestException('github_app_oauth_not_configured');
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
@@ -621,7 +626,7 @@ export class IntegrationConnectionService {
   }
 
   private buildGithubCallbackRedirect(session: IntegrationConnectionSessionRecord, status: 'connected' | 'error') {
-    const environment = this.environmentProvider.read();
+    const environment = this.environment();
     const metadata = session.metadata as ConnectionSessionMetadata;
     const origin = normalizeBrowserOrigin(metadata.browserOrigin) || environment.publicBaseUrl || '';
     const returnToPath = normalizeReturnToPath(metadata.returnToPath, '/settings/integrations');
@@ -633,7 +638,7 @@ export class IntegrationConnectionService {
   }
 
   private fallbackGithubCallbackRedirect() {
-    const environment = this.environmentProvider.read();
+    const environment = this.environment();
     const origin = environment.publicBaseUrl || '';
     const base = buildBrowserRedirectUrl(origin, '/settings/integrations');
     base.searchParams.set('integration', IntegrationProvider.GithubApp);

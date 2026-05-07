@@ -199,6 +199,7 @@ Endpoints principais:
 - `POST /api/internal/n8n/ingest`
 - `POST /api/internal/n8n/query`
 - `POST /api/internal/n8n/conversation`
+- `POST /api/internal/n8n/conversation/agent`
 - `GET /api/internal/n8n/reminders/dispatch` (legado/manual)
 - `POST /api/internal/n8n/reminders/mark-sent` (legado/manual)
 
@@ -408,12 +409,14 @@ Endpoints HTTP principais:
 - `GET|POST /api/query`
 - `POST /api/ingest`
 - `POST /api/conversation`
+- `POST /api/conversation/agent`
 - `POST /api/webhooks/github/push`
 - `POST /api/webhooks/whatsapp`
 - `POST /api/webhooks/telegram`
 - `POST /api/internal/n8n/ingest`
 - `POST /api/internal/n8n/query`
 - `POST /api/internal/n8n/conversation`
+- `POST /api/internal/n8n/conversation/agent`
 - `GET /api/internal/n8n/reminders/dispatch` (legado/manual)
 - `POST /api/internal/n8n/reminders/mark-sent` (legado/manual)
 

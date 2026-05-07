@@ -5,11 +5,13 @@ import {
   BuildReminderDispatchUseCase,
   IngestEntryUseCase,
   MarkReminderAsSentUseCase,
+  ProcessAgentConversationUseCase,
   ProcessConversationUseCase,
   QueryKnowledgeUseCase,
 } from '../../../application/use-cases/index.js';
 import { InternalServiceTokenGuard } from '../auth.guards.js';
 import {
+  internalN8nAgentConversationBodySchema,
   internalN8nConversationBodySchema,
   internalN8nIngestBodySchema,
   internalN8nMarkSentBodySchema,
@@ -17,6 +19,7 @@ import {
   internalReminderDispatchQuerySchema,
   resolveExternalIdentityLookup,
   type ExternalIdentityLookup,
+  type InternalN8nAgentConversationBody,
   type InternalN8nConversationBody,
   type InternalN8nIngestBody,
   type InternalN8nMarkSentBody,
@@ -31,6 +34,7 @@ export class InternalN8NController {
   constructor(
     private readonly ingestEntry: IngestEntryUseCase,
     private readonly conversation: ProcessConversationUseCase,
+    private readonly agentConversation: ProcessAgentConversationUseCase,
     private readonly queryKnowledge: QueryKnowledgeUseCase,
     private readonly reminderDispatch: BuildReminderDispatchUseCase,
     private readonly markReminders: MarkReminderAsSentUseCase,
@@ -53,6 +57,12 @@ export class InternalN8NController {
   async conversationPost(@Body(new ZodValidationPipe(internalN8nConversationBodySchema, 'invalid_internal_conversation_payload')) body: InternalN8nConversationBody) {
     const tenant = await this.resolveTenant(body);
     return this.conversation.execute(body.payload || body, tenant.userId, tenant.workspaceSlug);
+  }
+
+  @Post('conversation/agent')
+  async agentConversationPost(@Body(new ZodValidationPipe(internalN8nAgentConversationBodySchema, 'invalid_internal_agent_conversation_payload')) body: InternalN8nAgentConversationBody) {
+    const tenant = await this.resolveTenant(body);
+    return this.agentConversation.execute(body.payload || body, tenant.userId, tenant.workspaceSlug);
   }
 
   @Get('reminders/dispatch')

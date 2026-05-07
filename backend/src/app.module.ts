@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthService } from './application/auth.js';
 import { IntegrationConnectionService } from './application/integration-connections.js';
 import { IntegrationCredentialService } from './application/credentials.js';
+import { ConversationAgentGateway } from './application/ports/conversation-agent.gateway.js';
 import { ConversationExtractionGateway } from './application/ports/conversation-extraction.port.js';
 import { GithubIntegrationGateway } from './application/ports/github-integration.port.js';
 import { ReviewAnalysisGateway } from './application/ports/review-analysis.port.js';
@@ -24,6 +25,7 @@ import { WhatsappReplySender } from './application/ports/whatsapp-reply.sender.j
 import { ConversationStateRepository, ReminderDispatchRepository } from './application/ports/workflow-state.repository.js';
 import { TelegramHttpMessageSender } from './adapters/telegram.js';
 import { EvolutionWhatsappReplySender } from './adapters/evolution.js';
+import { DefaultConversationAgentGateway } from './infrastructure/ai/conversation-agent.gateway.js';
 import { DefaultConversationExtractionGateway } from './infrastructure/ai/conversation-extraction.gateway.js';
 import { DefaultReviewAnalysisGateway } from './infrastructure/ai/review-analysis.gateway.js';
 import { DefaultGithubIntegrationGateway } from './infrastructure/integrations/github-integration.gateway.js';
@@ -59,6 +61,7 @@ import {
   ListPaginatedRemindersUseCase,
   ListPaginatedReviewsUseCase,
   MarkReminderAsSentUseCase,
+  ProcessAgentConversationUseCase,
   ProcessConversationUseCase,
   QueryKnowledgeUseCase,
   ListProjectFoldersUseCase,
@@ -113,6 +116,7 @@ import { AppLogger } from './observability/logger.js';
     QueryKnowledgeUseCase,
     IngestEntryUseCase,
     ProcessConversationUseCase,
+    ProcessAgentConversationUseCase,
     BuildReminderDispatchUseCase,
     DispatchDueTelegramRemindersUseCase,
     MarkReminderAsSentUseCase,
@@ -122,6 +126,7 @@ import { AppLogger } from './observability/logger.js';
     TelegramReminderDispatchWorker,
     EvolutionWhatsappReplySender,
     TelegramHttpMessageSender,
+    DefaultConversationAgentGateway,
     DefaultConversationExtractionGateway,
     DefaultReviewAnalysisGateway,
     DefaultGithubIntegrationGateway,
@@ -138,6 +143,7 @@ import { AppLogger } from './observability/logger.js';
     { provide: SchemaMigrator, useExisting: PostgresSchemaMigrator },
     { provide: UserRepository, useExisting: PostgresUserRepository },
     { provide: RuntimeEnvironmentProvider, useExisting: ProcessRuntimeEnvironmentProvider },
+    { provide: ConversationAgentGateway, useExisting: DefaultConversationAgentGateway },
     { provide: ConversationExtractionGateway, useExisting: DefaultConversationExtractionGateway },
     { provide: CredentialRepository, useExisting: PostgresIntegrationRepository },
     { provide: ExternalIdentityRepository, useExisting: PostgresIntegrationRepository },

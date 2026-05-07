@@ -5,15 +5,18 @@ import {
   BuildReminderDispatchUseCase,
   IngestEntryUseCase,
   MarkReminderAsSentUseCase,
+  ProcessAgentConversationUseCase,
   ProcessConversationUseCase,
 } from '../../../application/use-cases/index.js';
 import { CurrentUser } from '../auth.decorators.js';
 import { AccessTokenAuthGuard, TrustedOriginGuard } from '../auth.guards.js';
 import {
+  agentConversationBodySchema,
   conversationBodySchema,
   ingestBodySchema,
   reminderDispatchQuerySchema,
   workspaceQuerySchema,
+  type AgentConversationBody,
   type ConversationBody,
   type IngestBody,
   type ReminderDispatchQuery,
@@ -28,6 +31,7 @@ export class OperationsController {
   constructor(
     private readonly ingestEntry: IngestEntryUseCase,
     private readonly conversation: ProcessConversationUseCase,
+    private readonly agentConversation: ProcessAgentConversationUseCase,
     private readonly reminderDispatch: BuildReminderDispatchUseCase,
     private readonly markReminders: MarkReminderAsSentUseCase,
   ) {}
@@ -46,6 +50,16 @@ export class OperationsController {
     @Query(new ZodValidationPipe(workspaceQuerySchema, 'invalid_workspace_query')) query: WorkspaceQuery,
   ) {
     return this.conversation.execute(body, user.id, query.workspaceSlug);
+  }
+
+  @Post('conversation/agent')
+  @UseGuards(TrustedOriginGuard)
+  processAgentConversation(
+    @Body(new ZodValidationPipe(agentConversationBodySchema, 'invalid_agent_conversation_payload')) body: AgentConversationBody,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(workspaceQuerySchema, 'invalid_workspace_query')) query: WorkspaceQuery,
+  ) {
+    return this.agentConversation.execute(body, user.id, query.workspaceSlug);
   }
 
   @Get('reminders/dispatch')

@@ -1,4 +1,5 @@
 import { AiProvider, CanonicalType, Importance, KnowledgeKind, ReviewFindingSeverity } from '../contracts/enums.js';
+import { conversationAgentDecisionSchema, type ConversationAgentDecision } from '../contracts/agent-conversation.js';
 import { stripMarkdownFences } from '../domain/strings.js';
 
 export type ReviewAnalysis = {
@@ -28,6 +29,24 @@ export type ConversationExtraction = {
 export type KnowledgeAnswer = {
   answer: string;
   bullets: string[];
+};
+
+export type ConversationAgentTurnPayload = {
+  messageText: string;
+  currentState: unknown;
+  availableProjects: Array<{
+    projectSlug: string;
+    displayName: string;
+    aliases: string[];
+    defaultTags: string[];
+  }>;
+  candidateProjectSlug: string;
+  candidateFolders: Array<{
+    id: string;
+    displayName: string;
+    fullSlugPath: string;
+    children: unknown[];
+  }>;
 };
 
 type ChatConfig = {
@@ -63,6 +82,17 @@ async function runChatCompletion(
     choices?: Array<{ message?: { content?: string } }>;
   };
   return stripMarkdownFences(data.choices?.[0]?.message?.content || '');
+}
+
+async function runStructuredChatCompletion<T>(
+  config: ChatConfig,
+  systemPrompt: string,
+  userContent: string,
+  parse: (input: unknown) => T,
+): Promise<T | null> {
+  const content = await runChatCompletion(config, systemPrompt, userContent);
+  if (!content) return null;
+  return parse(JSON.parse(content));
 }
 
 export async function generateReviewAnalysis(
@@ -119,7 +149,7 @@ export async function extractConversationFields(
     projectSlugs: string[];
   },
 ): Promise<ConversationExtraction | null> {
-  const content = await runChatCompletion(
+  return runStructuredChatCompletion(
     config,
     [
       'Extract structured fields from a WhatsApp knowledge-capture message written in Brazilian Portuguese.',
@@ -131,10 +161,29 @@ export async function extractConversationFields(
       'Do not invent missing information.',
     ].join(' '),
     payload.messageText,
+    (parsed) => (parsed && typeof parsed === 'object' ? (parsed as ConversationExtraction) : null),
   );
-  if (!content) return null;
-  const parsed = JSON.parse(content) as ConversationExtraction;
-  return parsed && typeof parsed === 'object' ? parsed : null;
+}
+
+export async function decideConversationAgentTurn(
+  config: ChatConfig,
+  payload: ConversationAgentTurnPayload,
+): Promise<ConversationAgentDecision | null> {
+  return runStructuredChatCompletion(
+    config,
+    [
+      'You orchestrate a multi-turn note capture flow in Brazilian Portuguese.',
+      'Return strict JSON with keys replyText, resolvedDraft, selectedProjectSlug, selectedFolderId, suggestedFolderPath, pendingApproval, confidence, action.',
+      'selectedProjectSlug must be one of the provided project slugs or "inbox". Never invent a new project.',
+      'Use pendingApproval="folder_create" only when you are suggesting a folder path that still needs explicit approval before creation.',
+      'Use pendingApproval="final_confirmation" only when the draft is ready and the user should confirm before persistence.',
+      'Use action="ask" for missing or ambiguous information, "confirm" for approval questions, "submit" only when the user is clearly confirming a final summary, and "cancel" only when the user clearly wants to discard the flow.',
+      'suggestedFolderPath must be an array of human-readable folder names.',
+      'Do not mention internal JSON or implementation details.',
+    ].join(' '),
+    JSON.stringify(payload),
+    (parsed) => conversationAgentDecisionSchema.parse(parsed),
+  );
 }
 
 export async function answerKnowledgeQuery(
@@ -148,7 +197,7 @@ export async function answerKnowledgeQuery(
     }>;
   },
 ): Promise<KnowledgeAnswer | null> {
-  const content = await runChatCompletion(
+  return runStructuredChatCompletion(
     config,
     [
       'You answer questions about a knowledge base in Brazilian Portuguese.',
@@ -157,11 +206,12 @@ export async function answerKnowledgeQuery(
       'bullets must be an array of concise supporting points.',
     ].join(' '),
     JSON.stringify(payload),
+    (parsed) => {
+      const typed = parsed as Partial<KnowledgeAnswer>;
+      return {
+        answer: String(typed.answer || '').trim(),
+        bullets: Array.isArray(typed.bullets) ? typed.bullets.map((item) => String(item || '').trim()).filter(Boolean) : [],
+      };
+    },
   );
-  if (!content) return null;
-  const parsed = JSON.parse(content) as Partial<KnowledgeAnswer>;
-  return {
-    answer: String(parsed.answer || '').trim(),
-    bullets: Array.isArray(parsed.bullets) ? parsed.bullets.map((item) => String(item || '').trim()).filter(Boolean) : [],
-  };
 }
