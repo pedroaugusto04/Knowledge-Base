@@ -8,14 +8,67 @@ import { GithubRepositoryResolutionService } from '../../dist/application/servic
 import { HandleTelegramWebhookUseCase, HandleWhatsappWebhookUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
+function runtimeEnvironmentProvider() {
+  return {
+    read: () => ({
+      credentialsEncryptionKey: process.env.KB_CREDENTIALS_ENCRYPTION_KEY || '',
+      publicBaseUrl: process.env.KB_PUBLIC_BASE_URL || '',
+      githubAppInstallUrl: process.env.KB_GITHUB_APP_INSTALL_URL || '',
+      githubAppId: process.env.KB_GITHUB_APP_ID || '',
+      githubAppPrivateKey: process.env.KB_GITHUB_APP_PRIVATE_KEY || '',
+      reviewAiProvider: process.env.KB_REVIEW_AI_PROVIDER || 'none',
+      reviewAiBaseUrl: process.env.KB_REVIEW_AI_BASE_URL || 'https://ai.example.com/review',
+      reviewAiModel: process.env.KB_REVIEW_AI_MODEL || 'review-model',
+      reviewAiApiKey: process.env.KB_REVIEW_AI_API_KEY || '',
+      conversationAiProvider: process.env.KB_CONVERSATION_AI_PROVIDER || 'none',
+      conversationAiBaseUrl: process.env.KB_CONVERSATION_AI_BASE_URL || 'https://ai.example.com/conversation',
+      conversationAiModel: process.env.KB_CONVERSATION_AI_MODEL || 'conversation-model',
+      conversationAiApiKey: process.env.KB_CONVERSATION_AI_API_KEY || '',
+      telegramBotToken: process.env.KB_TELEGRAM_BOT_TOKEN || '',
+      telegramWebhookToken: process.env.KB_TELEGRAM_WEBHOOK_TOKEN || '',
+      webhookSecret: process.env.KB_WEBHOOK_SECRET || '',
+      whatsappWebhookApiKey: process.env.KB_WPP_WEBHOOK_API_KEY || '',
+      evolutionApiKey: process.env.EVOLUTION_API_KEY || '',
+    }),
+  };
+}
+
+function githubIntegrationGateway() {
+  return {
+    verifyWebhookSignature() {},
+    async fetchInstallationToken({ installationId }) {
+      const response = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, { method: 'POST' });
+      if (!response.ok) return '';
+      const payload = await response.json();
+      return String(payload.token || '');
+    },
+    async fetchComparePayload() {
+      return { files: [], commits: [] };
+    },
+    async fetchInstallationRepositories() {
+      const response = await fetch('https://api.github.com/installation/repositories?per_page=100');
+      if (!response.ok) return [];
+      const payload = await response.json();
+      return (payload.repositories || []).map((repo) => ({
+        id: Number(repo.id || 0),
+        fullName: String(repo.full_name || '').trim(),
+        name: String(repo.name || '').trim(),
+        owner: String(repo.owner?.login || '').trim(),
+        private: Boolean(repo.private),
+        htmlUrl: String(repo.html_url || '').trim(),
+        description: repo.description == null ? null : String(repo.description),
+        defaultBranch: repo.default_branch == null ? null : String(repo.default_branch),
+      }));
+    },
+  };
+}
+
 function configureEnv() {
   process.env.KB_CREDENTIALS_ENCRYPTION_KEY = crypto.randomBytes(32).toString('base64');
   process.env.KB_WEBHOOK_SECRET = 'webhook-secret';
   process.env.KB_TELEGRAM_WEBHOOK_TOKEN = 'telegram-webhook-secret';
   process.env.KB_TELEGRAM_BOT_TOKEN = 'telegram-bot-token';
   process.env.KB_GITHUB_APP_INSTALL_URL = 'https://github.com/apps/kb/installations/new';
-  process.env.KB_GITHUB_APP_CLIENT_ID = 'client-id';
-  process.env.KB_GITHUB_APP_CLIENT_SECRET = 'client-secret';
   process.env.KB_GITHUB_APP_ID = '12345';
   process.env.KB_GITHUB_APP_PRIVATE_KEY = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' });
   process.env.KB_REVIEW_AI_PROVIDER = 'openrouter';
@@ -38,13 +91,22 @@ async function fixture(t) {
     createdAt: '2026-04-27T00:00:00.000Z',
     updatedAt: '2026-04-27T00:00:00.000Z',
   });
-  const githubRepositoryResolution = new GithubRepositoryResolutionService(repositories.contentRepository, repositories.credentialRepository);
+  const environmentProvider = runtimeEnvironmentProvider();
+  const githubGateway = githubIntegrationGateway();
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(
+    repositories.contentRepository,
+    repositories.credentialRepository,
+    environmentProvider,
+    githubGateway,
+  );
   const connections = new IntegrationConnectionService(
     repositories.credentialRepository,
     repositories.externalIdentityRepository,
     repositories.connectionSessionRepository,
     repositories.contentRepository,
     githubRepositoryResolution,
+    environmentProvider,
+    githubGateway,
   );
   const whatsapp = new HandleWhatsappWebhookUseCase(
     repositories.externalIdentityRepository,
@@ -53,7 +115,12 @@ async function fixture(t) {
     connections,
     undefined,
   );
-  const telegram = new HandleTelegramWebhookUseCase(repositories.externalIdentityRepository, repositories.webhookEventRepository, connections);
+  const telegram = new HandleTelegramWebhookUseCase(
+    repositories.externalIdentityRepository,
+    repositories.webhookEventRepository,
+    environmentProvider,
+    connections,
+  );
   return { repositories, user, connections, whatsapp, telegram };
 }
 
@@ -61,6 +128,7 @@ function whatsappInput(code, overrides = {}) {
   return {
     headers: {
       cookie: 'kb_access_token=secret-cookie',
+      authorization: 'Bearer leaked-token',
       apikey: 'provider-key',
     },
     body: {
@@ -116,7 +184,7 @@ test('connection sessions expire and can only be consumed once', async (t) => {
 test('github app callback validates state, installation ownership, conflicts and success', async (t) => {
   const { repositories, user, connections } = await fixture(t);
   await assert.rejects(
-    () => connections.completeGithub({ userId: user.id, state: 'bad-state', code: 'code', installationId: '42' }),
+    () => connections.completeGithub({ userId: user.id, state: 'bad-state', installationId: '42' }),
     /invalid_connection_state/,
   );
 
@@ -124,12 +192,12 @@ test('github app callback validates state, installation ownership, conflicts and
   const state = stateFromRedirect(setup);
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
-    if (String(url).includes('/login/oauth/access_token')) return Response.json({ access_token: 'oauth-token' });
-    return Response.json({ installations: [{ id: 7, account: { login: 'other' } }] });
+    if (String(url).includes('/access_tokens')) return new Response(null, { status: 404 });
+    return new Response(null, { status: 404 });
   };
   await assert.rejects(
-    () => connections.completeGithub({ userId: user.id, state, code: 'code', installationId: '42' }),
-    /github_installation_not_accessible/,
+    () => connections.completeGithub({ userId: user.id, state, installationId: '42' }),
+    /UnauthorizedException/,
   );
 
   const secondUser = await repositories.userRepository.createUser({ email: 'other@example.com', displayName: 'Other', passwordHash: 'hash', role: 'user' });
@@ -144,11 +212,13 @@ test('github app callback validates state, installation ownership, conflicts and
   const conflictSetup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'github-app' });
   const conflictState = stateFromRedirect(conflictSetup);
   globalThis.fetch = async (url) => {
-    if (String(url).includes('/login/oauth/access_token')) return Response.json({ access_token: 'oauth-token' });
-    return Response.json({ installations: [{ id: 42, account: { login: 'acme' } }] });
+    if (String(url).includes('/access_tokens')) return Response.json({ token: 'installation-token' });
+    return Response.json({
+      repositories: [{ id: 42, full_name: 'acme/core', name: 'core', private: true, html_url: 'https://github.com/acme/core', owner: { login: 'acme' } }],
+    });
   };
   await assert.rejects(
-    () => connections.completeGithub({ userId: user.id, state: conflictState, code: 'code', installationId: '42' }),
+    () => connections.completeGithub({ userId: user.id, state: conflictState, installationId: '42' }),
     /external_identity_already_bound/,
   );
 
@@ -162,14 +232,35 @@ test('github app callback validates state, installation ownership, conflicts and
   });
   const successSetup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'github-app' });
   globalThis.fetch = async (url) => {
-    if (String(url).includes('/login/oauth/access_token')) return Response.json({ access_token: 'oauth-token' });
-    return Response.json({ installations: [{ id: 99, account: { login: 'acme' } }] });
+    if (String(url).includes('/access_tokens')) return Response.json({ token: 'installation-token' });
+    return Response.json({
+      repositories: [{ id: 99, full_name: 'acme/api', name: 'api', private: true, html_url: 'https://github.com/acme/api', owner: { login: 'acme' } }],
+    });
   };
-  const success = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(successSetup), code: 'code', installationId: '99' });
+  const success = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(successSetup), installationId: '99' });
   assert.equal(success.connectedAccount, 'acme');
   const credential = await repositories.credentialRepository.findCredential(user.id, 'default', 'github-app');
   assert.equal(credential.status, 'connected');
   globalThis.fetch = originalFetch;
+});
+
+test('github app callback accepts installation flow without oauth code', async (t) => {
+  const { user, connections } = await fixture(t);
+  const setup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'github-app' });
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url) => {
+      if (String(url).includes('/access_tokens')) return Response.json({ token: 'installation-token' });
+      return Response.json({
+        repositories: [{ id: 42, full_name: 'acme/api', name: 'api', private: true, html_url: 'https://github.com/acme/api', owner: { login: 'acme' } }],
+      });
+    };
+
+    const result = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), installationId: '42' });
+    assert.equal(result.connectedAccount, 'acme');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('github connection normalizes app settings URLs to the installation flow', async (t) => {
@@ -262,8 +353,6 @@ test('github app repositories are listed by installation token and saved into wo
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
     const target = String(url);
-    if (target.includes('/login/oauth/access_token')) return Response.json({ access_token: 'oauth-token' });
-    if (target.includes('/user/installations')) return Response.json({ installations: [{ id: 42, account: { login: 'acme' } }] });
     if (target.includes('/access_tokens')) return Response.json({ token: 'installation-token' });
     if (target.includes('/installation/repositories')) {
       return Response.json({
@@ -275,7 +364,7 @@ test('github app repositories are listed by installation token and saved into wo
     }
     return new Response(null, { status: 404 });
   };
-  await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), code: 'code', installationId: '42' });
+  await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), installationId: '42' });
 
   const listed = await connections.listGithubRepositories({ userId: user.id, workspaceSlug: 'default' });
   assert.deepEqual(listed.repositories.map((repo) => repo.fullName), ['acme/api', 'acme/web']);
@@ -322,11 +411,13 @@ test('guided integrations reject missing workspace and github callback keeps bro
   const originalFetch = globalThis.fetch;
   try {
     globalThis.fetch = async (url) => {
-      if (String(url).includes('/login/oauth/access_token')) return Response.json({ access_token: 'oauth-token' });
-      return Response.json({ installations: [{ id: 55, account: { login: 'acme' } }] });
+      if (String(url).includes('/access_tokens')) return Response.json({ token: 'installation-token' });
+      return Response.json({
+        repositories: [{ id: 55, full_name: 'acme/product', name: 'product', private: true, html_url: 'https://github.com/acme/product', owner: { login: 'acme' } }],
+      });
     };
 
-    const result = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), code: 'code', installationId: '55' });
+    const result = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), installationId: '55' });
     assert.equal(result.redirectUrl, 'https://kb.example.com/knowledge-base/setup?integration=github-app&status=connected&workspaceSlug=product-team');
   } finally {
     globalThis.fetch = originalFetch;
@@ -346,11 +437,13 @@ test('github callback fallback redirect preserves base path from public base url
       provider: 'github-app',
     });
     globalThis.fetch = async (url) => {
-      if (String(url).includes('/login/oauth/access_token')) return Response.json({ access_token: 'oauth-token' });
-      return Response.json({ installations: [{ id: 42, account: { login: 'acme' } }] });
+      if (String(url).includes('/access_tokens')) return Response.json({ token: 'installation-token' });
+      return Response.json({
+        repositories: [{ id: 42, full_name: 'acme/default', name: 'default', private: true, html_url: 'https://github.com/acme/default', owner: { login: 'acme' } }],
+      });
     };
 
-    const result = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), code: 'code', installationId: '42' });
+    const result = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), installationId: '42' });
     assert.equal(result.redirectUrl, 'https://kb.example.com/knowledge-base/settings/integrations?integration=github-app&status=connected&workspaceSlug=default');
   } finally {
     globalThis.fetch = originalFetch;

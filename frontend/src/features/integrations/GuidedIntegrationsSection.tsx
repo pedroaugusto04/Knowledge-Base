@@ -52,8 +52,12 @@ function integrationId(integration: UserIntegration) {
   return integration.provider;
 }
 
-function openExternalIntegration(url: string) {
-  window.open(url, '_blank', 'noopener,noreferrer');
+function openExternalIntegration(url: string, target: '_self' | '_blank' = '_blank') {
+  if (target === '_self') {
+    window.location.assign(url);
+    return;
+  }
+  window.open(url, target, 'noopener,noreferrer');
 }
 
 function buildChatComposeUrl(connection: IntegrationConnectionResponse): string {
@@ -273,7 +277,7 @@ function IntegrationCard({
     mutationFn: () => connectIntegration({ provider: integration.provider, workspaceSlug, returnToPath }),
     onSuccess: (result) => {
       if (result.primaryAction?.url) {
-        openExternalIntegration(result.primaryAction.url);
+        openExternalIntegration(result.primaryAction.url, integration.provider === 'github-app' ? '_self' : '_blank');
         return;
       }
       if (result.session) onCodeConnection(result);
@@ -355,6 +359,7 @@ export function GuidedIntegrationsSection({
   const [codeConnection, setCodeConnection] = useState<IntegrationConnectionResponse | null>(null);
   const [showGithubRepositories, setShowGithubRepositories] = useState(false);
   const didAutoOpen = useRef(false);
+  const queryClient = useQueryClient();
   const integrationsQuery = useQuery({ queryKey: ['integrations', workspaceSlug], queryFn: () => fetchIntegrations(workspaceSlug), enabled: Boolean(workspaceSlug) });
   const providerSet = useMemo(() => new Set(providers || []), [providers]);
   const integrations = useMemo(() => {
@@ -366,6 +371,12 @@ export function GuidedIntegrationsSection({
   useEffect(() => {
     onLoaded?.(integrations);
   }, [integrations, onLoaded]);
+
+  useEffect(() => {
+    if (!defaultOpenGithubRepositories) return;
+    void queryClient.invalidateQueries({ queryKey: ['integrations', workspaceSlug] });
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  }, [defaultOpenGithubRepositories, queryClient, workspaceSlug]);
 
   useEffect(() => {
     if (didAutoOpen.current || !defaultOpenGithubRepositories) return;

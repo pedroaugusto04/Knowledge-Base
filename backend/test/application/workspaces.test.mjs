@@ -7,6 +7,36 @@ import { GithubRepositoryResolutionService } from '../../dist/application/servic
 import { CreateProjectUseCase, CreateWorkspaceUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
+function runtimeEnvironmentProvider() {
+  return {
+    read: () => ({
+      credentialsEncryptionKey: process.env.KB_CREDENTIALS_ENCRYPTION_KEY || '',
+      githubAppId: process.env.KB_GITHUB_APP_ID || '',
+      githubAppPrivateKey: process.env.KB_GITHUB_APP_PRIVATE_KEY || '',
+    }),
+  };
+}
+
+function githubIntegrationGateway() {
+  return {
+    async fetchInstallationRepositories() {
+      const response = await fetch('https://api.github.com/installation/repositories?per_page=100');
+      if (!response.ok) return [];
+      const payload = await response.json();
+      return (payload.repositories || []).map((repo) => ({
+        id: Number(repo.id || 0),
+        fullName: String(repo.full_name || '').trim(),
+        name: String(repo.name || '').trim(),
+        owner: String(repo.owner?.login || '').trim(),
+        private: Boolean(repo.private),
+        htmlUrl: String(repo.html_url || '').trim(),
+        description: repo.description == null ? null : String(repo.description),
+        defaultBranch: repo.default_branch == null ? null : String(repo.default_branch),
+      }));
+    },
+  };
+}
+
 test('create workspace persists the workspace and the initial Inbox project', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
@@ -43,7 +73,12 @@ test('create project persists metadata, updates workspace slugs and rejects dupl
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await new CreateWorkspaceUseCase(repositories.contentRepository).execute({ displayName: 'Acme Team', workspaceSlug: 'acme-team' }, user.id);
-  const githubRepositoryResolution = new GithubRepositoryResolutionService(repositories.contentRepository, repositories.credentialRepository);
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(
+    repositories.contentRepository,
+    repositories.credentialRepository,
+    runtimeEnvironmentProvider(),
+    githubIntegrationGateway(),
+  );
   const useCase = new CreateProjectUseCase(repositories.contentRepository, githubRepositoryResolution);
   await repositories.credentialRepository.upsertCredential({
     userId: user.id,

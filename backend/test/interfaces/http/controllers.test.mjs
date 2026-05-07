@@ -33,12 +33,12 @@ test('github app callback controller delegates completion and redirects the brow
   };
 
   const result = await controller.githubAppCallback(
-    { state: 'state-1', code: 'code-1', installation_id: '42' },
+    { state: 'state-1', installation_id: '42', setup_action: 'install' },
     { id: 'user-1', email: 'user@example.com', displayName: 'User', role: 'user' },
     response,
   );
 
-  assert.deepEqual(calls, [{ userId: 'user-1', state: 'state-1', code: 'code-1', installationId: '42' }]);
+  assert.deepEqual(calls, [{ userId: 'user-1', state: 'state-1', installationId: '42' }]);
   assert.deepEqual(response.redirectCalls, [[302, '/settings/integrations?integration=github-app&status=connected']]);
   assert.equal(result, '/settings/integrations?integration=github-app&status=connected');
 });

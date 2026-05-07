@@ -397,7 +397,7 @@ describe('AppShell', () => {
     expect(screen.getByRole('heading', { name: 'Conectar WhatsApp ou Telegram' })).toBeInTheDocument();
   });
 
-  it('opens the GitHub installation flow in a new tab', async () => {
+  it('opens the GitHub installation flow in the same tab', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/dashboard') {
@@ -439,7 +439,12 @@ describe('AppShell', () => {
       return new Response(null, { status: 404 });
     });
     vi.stubGlobal('fetch', fetchMock);
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(window);
+    const originalLocation = window.location;
+    const assignSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, assign: assignSpy },
+    });
 
     renderWithAppProviders(<AppShell />, { route: '/settings/integrations' });
 
@@ -447,11 +452,12 @@ describe('AppShell', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Conectar GitHub' }));
 
     await waitFor(() => {
-      expect(openSpy).toHaveBeenCalledWith(
-        'https://github.com/apps/kb/installations/new?state=test-state',
-        '_blank',
-        'noopener,noreferrer',
-      );
+      expect(assignSpy).toHaveBeenCalledWith('https://github.com/apps/kb/installations/new?state=test-state');
+    });
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
     });
   });
 

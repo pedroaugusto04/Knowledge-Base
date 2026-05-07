@@ -78,8 +78,8 @@ export const connectIntegrationBodySchema = z
 
 export const githubAppCallbackQuerySchema = z.object({
   state: z.string().trim().min(1).max(300),
-  code: z.string().trim().min(1).max(500),
   installation_id: z.union([z.string(), z.number()]).transform((value) => String(value).trim()),
+  setup_action: z.string().trim().min(1).max(120).optional(),
 });
 
 export const sessionParamSchema = z.object({

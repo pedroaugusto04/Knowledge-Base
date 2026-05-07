@@ -7,6 +7,7 @@ import { CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider }
 import { slugify } from '../domain/strings.js';
 import { encryptConfig } from './credentials.js';
 import type { IntegrationConnectionSessionRecord, WorkspaceRecord } from './models/repository-records.models.js';
+import { GithubIntegrationGateway } from './ports/github-integration.port.js';
 import { ContentRepository } from './ports/content.repository.js';
 import { CredentialRepository, ExternalIdentityRepository, IntegrationConnectionSessionRepository } from './ports/integrations.repository.js';
 import { RuntimeEnvironmentProvider } from './ports/runtime-environment.port.js';
@@ -104,7 +105,7 @@ function normalizeGithubAppInstallUrl(url: string): string {
 
 function extractGithubInstallationId(value: unknown): string {
   const installationId = String(value ?? '').trim();
-  if (!installationId) throw new BadRequestException('github_callback_missing_code_or_installation');
+  if (!installationId) throw new BadRequestException('github_callback_missing_installation');
   return installationId;
 }
 
@@ -197,6 +198,7 @@ export class IntegrationConnectionService {
     private readonly content: ContentRepository,
     private readonly githubRepositoryResolution: GithubRepositoryResolutionService,
     private readonly environmentProvider: RuntimeEnvironmentProvider,
+    private readonly githubIntegrationGateway: GithubIntegrationGateway,
   ) {}
 
   private environment() {
@@ -218,14 +220,13 @@ export class IntegrationConnectionService {
     return { ok: true as const, session: publicSession(session) };
   }
 
-  async completeGithub(input: { userId: string; state: string; code: string; installationId: string }) {
+  async completeGithub(input: { userId: string; state: string; installationId: string }) {
     const session = await this.sessions.findActiveConnectionSessionByState(IntegrationProvider.GithubApp, sha256(input.state), new Date().toISOString());
     if (!session || session.userId !== input.userId) throw new UnauthorizedException('invalid_connection_state');
-    if (!input.code) throw new BadRequestException('github_callback_missing_code_or_installation');
     const installationId = extractGithubInstallationId(input.installationId);
 
     try {
-      const installation = await this.verifyGithubInstallation(input.code, installationId);
+      const installation = await this.verifyGithubInstallation(installationId);
       const accountLogin = this.normalizeGithubAccountLogin(installation);
       await this.assertExternalIdentityAvailable(ExternalIdentityProvider.GithubApp, 'installation_id', installationId, input.userId);
       const credential = await this.upsertConnectedCredential({
@@ -262,7 +263,7 @@ export class IntegrationConnectionService {
     }
   }
 
-  async completeGithubForBrowser(input: { userId: string; state: string; code: string; installationId: string }) {
+  async completeGithubForBrowser(input: { userId: string; state: string; installationId: string }) {
     const session = await this.sessions.findActiveConnectionSessionByState(IntegrationProvider.GithubApp, sha256(input.state), new Date().toISOString());
     const redirectFromSession = session ? this.buildGithubCallbackRedirect(session, 'error') : this.fallbackGithubCallbackRedirect();
     try {
@@ -384,7 +385,7 @@ export class IntegrationConnectionService {
         label: 'Conectar GitHub',
         url: appendQuery(normalizeGithubAppInstallUrl(environment.githubAppInstallUrl), { state }),
       },
-      steps: ['Autorize o GitHub App.', 'Aguarde o retorno para concluir o vinculo.'],
+      steps: ['Instale o GitHub App nos repositorios desejados.', 'Aguarde o retorno para concluir o vinculo.'],
     };
   }
 
@@ -442,33 +443,24 @@ export class IntegrationConnectionService {
     };
   }
 
-  private async verifyGithubInstallation(code: string, installationId: string): Promise<GithubInstallation> {
+  private async verifyGithubInstallation(installationId: string): Promise<GithubInstallation> {
     const environment = this.environment();
-    if (!environment.githubAppClientId || !environment.githubAppClientSecret) throw new BadRequestException('github_app_oauth_not_configured');
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: { accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: environment.githubAppClientId,
-        client_secret: environment.githubAppClientSecret,
-        code,
-      }),
+    if (!environment.githubAppId || !environment.githubAppPrivateKey) throw new BadRequestException('github_app_installation_not_configured');
+    const token = await this.githubIntegrationGateway.fetchInstallationToken({
+      appId: environment.githubAppId,
+      privateKey: environment.githubAppPrivateKey,
+      installationId,
     });
-    if (!tokenResponse.ok) throw new UnauthorizedException('github_oauth_exchange_failed');
-    const tokenPayload = await tokenResponse.json() as { access_token?: string; error?: string };
-    if (!tokenPayload.access_token || tokenPayload.error) throw new UnauthorizedException('github_oauth_exchange_failed');
-    const installationsResponse = await fetch('https://api.github.com/user/installations', {
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${tokenPayload.access_token}`,
-        'x-github-api-version': '2022-11-28',
-      },
+    if (!token) throw new UnauthorizedException('github_installation_not_accessible');
+    const repositories = await this.githubIntegrationGateway.fetchInstallationRepositories({
+      appId: environment.githubAppId,
+      privateKey: environment.githubAppPrivateKey,
+      installationId,
     });
-    if (!installationsResponse.ok) throw new UnauthorizedException('github_installation_validation_failed');
-    const payload = await installationsResponse.json() as { installations?: GithubInstallation[] };
-    const installation = (payload.installations || []).find((candidate) => String(candidate.id || '') === installationId);
-    if (!installation) throw new UnauthorizedException('github_installation_not_accessible');
-    return installation;
+    return {
+      id: installationId,
+      account: { login: repositories[0]?.owner || '' },
+    };
   }
 
   private async createConnectionSession(

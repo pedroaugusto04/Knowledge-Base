@@ -25,7 +25,6 @@ export class GithubAppCallbackController {
     const result = await this.connections.completeGithubForBrowser({
       userId: currentUser.id,
       state: query.state,
-      code: query.code,
       installationId: query.installation_id,
     });
     return response.redirect(302, result.redirectUrl);

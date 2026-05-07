@@ -23,6 +23,56 @@ afterEach(() => {
 });
 
 describe('GuidedIntegrationsSection', () => {
+  it('auto-opens the repositories modal after returning connected from the github callback flow', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          integrations: [
+            {
+              provider: 'github-app',
+              name: 'GitHub App',
+              description: 'Dados de instalacao do GitHub App.',
+              status: 'connected',
+              workspaceSlug: 'default',
+              publicMetadata: {},
+              primaryAction: { type: 'revoke', label: 'Revogar' },
+              steps: ['Integracao conectada.'],
+              lastError: null,
+              connectedAccount: 'acme',
+              updatedAt: '2026-04-27T10:00:00.000Z',
+              revokedAt: null,
+            },
+          ],
+        });
+      }
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          repositories: [
+            { id: '101', fullName: 'acme/repo', name: 'repo', owner: 'acme', private: true, htmlUrl: 'https://github.com/acme/repo', selected: false },
+          ],
+        });
+      }
+      return new Response(null, { status: 404 });
+    }));
+
+    renderWithAppProviders(
+      <GuidedIntegrationsSection
+        returnToPath="/setup"
+        workspaceSlug="default"
+        providers={['github-app']}
+        defaultOpenGithubRepositories
+      />,
+    );
+
+    expect(await screen.findByRole('dialog', { name: 'Selecionar repositorios' })).toBeInTheDocument();
+    expect(notificationSpies.notifySuccess).not.toHaveBeenCalled();
+  });
+
   it('closes the repositories modal immediately when nothing changed', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

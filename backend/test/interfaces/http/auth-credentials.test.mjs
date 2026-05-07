@@ -10,6 +10,48 @@ import { TrustedOriginGuard } from '../../../dist/interfaces/http/auth.guards.js
 import { AuthController, InternalIntegrationsController, UserIntegrationsController } from '../../../dist/interfaces/http/controllers/index.js';
 import { createPostgresTestRepositories } from '../../helpers/postgres-test-repositories.mjs';
 
+function runtimeEnvironmentProvider() {
+  return {
+    read: () => ({
+      credentialsEncryptionKey: process.env.KB_CREDENTIALS_ENCRYPTION_KEY || '',
+      publicBaseUrl: process.env.KB_PUBLIC_BASE_URL || '',
+      githubAppInstallUrl: process.env.KB_GITHUB_APP_INSTALL_URL || '',
+      githubAppId: process.env.KB_GITHUB_APP_ID || '',
+      githubAppPrivateKey: process.env.KB_GITHUB_APP_PRIVATE_KEY || '',
+    }),
+  };
+}
+
+function githubIntegrationGateway() {
+  return {
+    verifyWebhookSignature() {},
+    async fetchInstallationToken({ installationId }) {
+      const response = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, { method: 'POST' });
+      if (!response.ok) return '';
+      const payload = await response.json();
+      return String(payload.token || '');
+    },
+    async fetchComparePayload() {
+      return { files: [], commits: [] };
+    },
+    async fetchInstallationRepositories() {
+      const response = await fetch('https://api.github.com/installation/repositories?per_page=100');
+      if (!response.ok) return [];
+      const payload = await response.json();
+      return (payload.repositories || []).map((repo) => ({
+        id: Number(repo.id || 0),
+        fullName: String(repo.full_name || '').trim(),
+        name: String(repo.name || '').trim(),
+        owner: String(repo.owner?.login || '').trim(),
+        private: Boolean(repo.private),
+        htmlUrl: String(repo.html_url || '').trim(),
+        description: repo.description == null ? null : String(repo.description),
+        defaultBranch: repo.default_branch == null ? null : String(repo.default_branch),
+      }));
+    },
+  };
+}
+
 function configureEnv() {
   process.env.KB_ADMIN_EMAIL = 'admin@example.com';
   process.env.KB_ADMIN_PASSWORD = 'admin-password';
@@ -54,7 +96,14 @@ async function fixture(t) {
       updatedAt: '2026-04-27T00:00:00.000Z',
     });
   }
-  const githubRepositoryResolution = new GithubRepositoryResolutionService(repositories.contentRepository, repositories.credentialRepository);
+  const environmentProvider = runtimeEnvironmentProvider();
+  const githubGateway = githubIntegrationGateway();
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(
+    repositories.contentRepository,
+    repositories.credentialRepository,
+    environmentProvider,
+    githubGateway,
+  );
   return {
     repositories,
     auth,
@@ -65,6 +114,8 @@ async function fixture(t) {
       repositories.connectionSessionRepository,
       repositories.contentRepository,
       githubRepositoryResolution,
+      environmentProvider,
+      githubGateway,
     ),
   };
 }
@@ -237,13 +288,22 @@ test('guided connection rejects identity hijacking', async (t) => {
   const secondRepositories = first.repositories;
   const secondAuth = new AuthService(secondRepositories.userRepository, secondRepositories.schemaMigrator);
   const secondCredentials = new IntegrationCredentialService(secondRepositories.credentialRepository, secondRepositories.externalIdentityRepository);
-  const secondGithubRepositoryResolution = new GithubRepositoryResolutionService(secondRepositories.contentRepository, secondRepositories.credentialRepository);
+  const secondEnvironmentProvider = runtimeEnvironmentProvider();
+  const secondGithubGateway = githubIntegrationGateway();
+  const secondGithubRepositoryResolution = new GithubRepositoryResolutionService(
+    secondRepositories.contentRepository,
+    secondRepositories.credentialRepository,
+    secondEnvironmentProvider,
+    secondGithubGateway,
+  );
   const secondConnections = new IntegrationConnectionService(
     secondRepositories.credentialRepository,
     secondRepositories.externalIdentityRepository,
     secondRepositories.connectionSessionRepository,
     secondRepositories.contentRepository,
     secondGithubRepositoryResolution,
+    secondEnvironmentProvider,
+    secondGithubGateway,
   );
   const secondUser = await secondRepositories.userRepository.createUser({ email: 'user@example.com', passwordHash: firstLogin.user.id, role: 'user' });
   await secondRepositories.contentRepository.upsertWorkspace(secondUser.id, {

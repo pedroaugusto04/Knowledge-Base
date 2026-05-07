@@ -16,6 +16,36 @@ import {
 } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
+function runtimeEnvironmentProvider() {
+  return {
+    read: () => ({
+      credentialsEncryptionKey: process.env.KB_CREDENTIALS_ENCRYPTION_KEY || '',
+      githubAppId: process.env.KB_GITHUB_APP_ID || '',
+      githubAppPrivateKey: process.env.KB_GITHUB_APP_PRIVATE_KEY || '',
+    }),
+  };
+}
+
+function githubIntegrationGateway() {
+  return {
+    async fetchInstallationRepositories() {
+      const response = await fetch('https://api.github.com/installation/repositories?per_page=100');
+      if (!response.ok) return [];
+      const payload = await response.json();
+      return (payload.repositories || []).map((repo) => ({
+        id: Number(repo.id || 0),
+        fullName: String(repo.full_name || '').trim(),
+        name: String(repo.name || '').trim(),
+        owner: String(repo.owner?.login || '').trim(),
+        private: Boolean(repo.private),
+        htmlUrl: String(repo.html_url || '').trim(),
+        description: repo.description == null ? null : String(repo.description),
+        defaultBranch: repo.default_branch == null ? null : String(repo.default_branch),
+      }));
+    },
+  };
+}
+
 async function seedProject(repositories, userId) {
   await repositories.contentRepository.upsertWorkspace(userId, {
     workspaceSlug: 'default',
@@ -218,7 +248,12 @@ test('updates project metadata while keeping slug immutable', async (t) => {
     return new Response(null, { status: 404 });
   };
 
-  const githubRepositoryResolution = new GithubRepositoryResolutionService(repositories.contentRepository, repositories.credentialRepository);
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(
+    repositories.contentRepository,
+    repositories.credentialRepository,
+    runtimeEnvironmentProvider(),
+    githubIntegrationGateway(),
+  );
   const result = await new UpdateProjectUseCase(repositories.contentRepository, githubRepositoryResolution).execute({
     projectSlug: 'platform',
     displayName: 'Platform Core',
