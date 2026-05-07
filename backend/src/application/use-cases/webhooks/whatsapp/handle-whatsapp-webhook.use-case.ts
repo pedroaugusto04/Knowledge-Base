@@ -11,6 +11,7 @@ import { WhatsappReplySender } from '../../../ports/whatsapp-reply.sender.js';
 import { buildWhatsappWebhookCommand } from '../../../utils/whatsapp-webhook-command.utils.js';
 import { normalizeHeaders } from '../../../utils/webhook.utils.js';
 import { ProcessConversationUseCase } from '../../conversation/process-conversation.use-case.js';
+import { AppLogger } from '../../../../observability/logger.js';
 
 type WhatsappWebhookContext = {
   headers: Record<string, string>;
@@ -27,6 +28,7 @@ export class HandleWhatsappWebhookUseCase {
     private readonly connections?: IntegrationConnectionService,
     private readonly processConversationUseCase?: ProcessConversationUseCase,
     private readonly whatsappReplySender?: WhatsappReplySender,
+    private readonly logger?: AppLogger,
   ) {}
 
   async execute(input: WhatsappWebhookRequest) {
@@ -125,10 +127,27 @@ export class HandleWhatsappWebhookUseCase {
       userId,
       workspaceSlug,
     );
+    this.logger?.info('whatsapp.conversation.result', {
+      externalId: context.externalIdentity.externalId,
+      senderId: input.senderId,
+      groupId: input.groupId,
+      messageId: input.messageId,
+      messageText: input.messageText,
+      action: conversationResult.action,
+      replyText: conversationResult.replyText,
+    });
     const shouldReply = conversationResult.action === 'reply' || conversationResult.action === 'submit';
     const sendResult = shouldReply
       ? await this.sendReply(input.groupId, conversationResult.replyText)
       : { ok: false as const, error: 'reply_not_needed' };
+    this.logger?.info('whatsapp.reply.dispatch', {
+      externalId: context.externalIdentity.externalId,
+      groupId: input.groupId,
+      shouldReply,
+      replyText: shouldReply ? conversationResult.replyText : '',
+      sendOk: sendResult.ok,
+      sendError: sendResult.ok ? '' : sendResult.error,
+    });
     return this.processed(context, {
       ok: true,
       processed: true,
