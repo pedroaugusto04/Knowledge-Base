@@ -93,10 +93,6 @@ export class HandleWhatsappWebhookUseCase {
     const evolutionApiKey = String(context.headers.apikey || context.body.apikey || '').trim();
     const validWebhookApiKey = Boolean(environment.whatsappWebhookApiKey) && evolutionApiKey === environment.whatsappWebhookApiKey;
     if (!validWebhookApiKey) {
-      console.warn('WHATSAPP_WEBHOOK_APIKEY_RAW', {
-        receivedValueRaw: evolutionApiKey,
-        instance: String(context.body.instance || ''),
-      });
       await this.rejected(context, 'invalid_webhook_token');
       throw new UnauthorizedException('invalid_webhook_token');
     }
