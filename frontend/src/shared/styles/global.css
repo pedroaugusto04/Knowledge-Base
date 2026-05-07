@@ -493,6 +493,10 @@ p { color: var(--muted); line-height: 1.6; }
     background: rgba(83, 199, 222, 0.1);
   }
   .topbar-leading { justify-content: space-between; }
+  .topbar-leading,
+  .topbar-meta {
+    width: 100%;
+  }
   .topbar-context {
     display: grid;
     gap: 2px;
@@ -517,6 +521,7 @@ p { color: var(--muted); line-height: 1.6; }
   .topbar { display: grid; gap: 12px; padding: 14px 16px; z-index: 15; }
   .command-bar { width: 100%; }
   .topbar-meta { justify-content: flex-end; }
+  .topbar-link { margin-left: auto; }
   .view { padding: 18px 16px 28px; }
   .workspace-pill, .tree-item { min-height: 44px; }
   .integration-card-foot { align-items: stretch; flex-direction: column; }
