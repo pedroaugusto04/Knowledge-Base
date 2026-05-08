@@ -499,6 +499,47 @@ describe('ProjectsPage', () => {
     expect(screen.getByRole('button', { name: 'Exclua ou mova as notas do projeto antes de remover.' })).toBeDisabled();
   });
 
+  it('requests the next project page without reusing selectedSlug after manual pagination', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (url === '/api/projects?page=1&pageSize=5&selectedSlug=platform') {
+        return Response.json({
+          ok: true,
+          projects: dashboard.projects,
+          pagination: { page: 1, pageSize: 5, total: 6, totalPages: 2, hasNext: true, hasPrevious: false },
+        });
+      }
+      if (url === '/api/projects?page=2&pageSize=5&selectedSlug=') {
+        return Response.json({
+          ok: true,
+          projects: [
+            ...dashboard.projects,
+            {
+              projectSlug: 'zeta',
+              displayName: 'Zeta',
+              repositories: [],
+              workspaceSlug: 'default',
+              aliases: [],
+              defaultTags: [],
+              enabled: true,
+            },
+          ],
+          pagination: { page: 2, pageSize: 5, total: 6, totalPages: 2, hasNext: false, hasPrevious: true },
+        });
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderProjects();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Próxima página' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/projects?page=2&pageSize=5&selectedSlug=', expect.anything()));
+  });
+
   it('deletes an empty project after confirmation and redirects selection', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());

@@ -100,7 +100,7 @@ export async function generateReviewAnalysis(
   promptPayload: unknown,
 ): Promise<ReviewAnalysis> {
   const fallback: ReviewAnalysis = {
-    summary: 'Push recebido sem analise de IA configurada.',
+    summary: 'Push recebido sem análise de IA configurada.',
     impact: 'Nenhum impacto adicional foi resumido.',
     risks: [],
     nextSteps: [],

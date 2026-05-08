@@ -120,6 +120,35 @@ test('global exception filter returns catalog envelope for HttpException', () =>
   assert.equal(logger.calls.at(-1).level, 'warn');
 });
 
+test('global exception filter preserves known project deletion error code', () => {
+  const logger = loggerMock();
+  const filter = new GlobalExceptionFilter(logger);
+  const request = requestMock({ headers: { 'x-request-id': 'req-project-delete' } });
+  const response = responseMock();
+
+  runWithRequestContext({
+    requestId: 'req-project-delete',
+    startTime: Date.now() - 10,
+    method: 'DELETE',
+    path: '/api/projects/platform',
+    ip: '127.0.0.1',
+  }, () => {
+    filter.catch(new HttpException('project_has_notes', HttpStatus.BAD_REQUEST), hostMock(request, response));
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.body, {
+    ok: false,
+    error: {
+      code: 'project_has_notes',
+      message: 'Exclua ou mova as notas do projeto antes de remover.',
+      details: {},
+    },
+    requestId: 'req-project-delete',
+  });
+  assert.equal(logger.calls.at(-1).level, 'info');
+});
+
 test('global exception filter preserves validation details', () => {
   const logger = loggerMock();
   const filter = new GlobalExceptionFilter(logger);

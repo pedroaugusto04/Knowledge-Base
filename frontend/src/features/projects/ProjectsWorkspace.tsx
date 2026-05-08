@@ -47,9 +47,15 @@ export function ProjectsWorkspace({
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
   const projectPagination = usePaginationState(selectedSlug);
+  const [projectFocusSlug, setProjectFocusSlug] = useState(selectedSlug);
+
+  useEffect(() => {
+    setProjectFocusSlug(selectedSlug);
+  }, [selectedSlug]);
+
   const projectsQuery = useQuery({
-    queryKey: ['projects', selectedSlug, projectPagination.page],
-    queryFn: () => fetchProjects({ page: projectPagination.page, selectedSlug }),
+    queryKey: ['projects', selectedSlug, projectFocusSlug, projectPagination.page],
+    queryFn: () => fetchProjects({ page: projectPagination.page, selectedSlug: projectFocusSlug }),
     initialData: {
       ok: true as const,
       projects: dashboard.projects.slice(0, DEFAULT_PAGE_SIZE),
@@ -107,6 +113,19 @@ export function ProjectsWorkspace({
       : undefined,
   });
   const notes = notesQuery.data?.notes || [];
+  const knownProjectNoteCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const note of dashboard.notes) {
+      counts.set(note.project, (counts.get(note.project) || 0) + 1);
+    }
+    if (selected?.projectSlug) {
+      counts.set(
+        selected.projectSlug,
+        Math.max(counts.get(selected.projectSlug) || 0, notesQuery.data?.pagination.total || 0),
+      );
+    }
+    return counts;
+  }, [dashboard.notes, notesQuery.data?.pagination.total, selected?.projectSlug]);
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug;
   const { data: integrationsResponse } = useQuery({
     queryKey: ['integrations', workspaceSlug],
@@ -157,6 +176,10 @@ export function ProjectsWorkspace({
     },
     onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel excluir a nota.'),
   });
+  const handleProjectPageChange = (page: number) => {
+    setProjectFocusSlug('');
+    projectPagination.setPage(page);
+  };
 
   return (
     <>
@@ -169,7 +192,7 @@ export function ProjectsWorkspace({
         {(projectsQuery.data?.projects || []).map((project) => {
           const deleteBlockedReason = project.projectSlug === 'inbox'
             ? 'Inbox nao pode ser alterado.'
-            : project.projectSlug === selected?.projectSlug && (notesQuery.data?.pagination.total || 0) > 0
+            : (knownProjectNoteCounts.get(project.projectSlug) || 0) > 0
               ? 'Exclua ou mova as notas do projeto antes de remover.'
               : '';
 
@@ -186,7 +209,7 @@ export function ProjectsWorkspace({
           );
         })}
       </section>
-      {projectsQuery.data ? <Pagination pagination={projectsQuery.data.pagination} onPageChange={projectPagination.setPage} /> : null}
+      {projectsQuery.data ? <Pagination pagination={projectsQuery.data.pagination} onPageChange={handleProjectPageChange} /> : null}
       {selected ? (
         <ProjectsBrowser
           dashboard={dashboard}
