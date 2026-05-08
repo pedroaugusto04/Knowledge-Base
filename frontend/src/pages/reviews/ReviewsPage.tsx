@@ -80,8 +80,6 @@ export function ReviewsPage({ dashboard, selectedReviewId, openReview }: PageCon
               </div>
               <h2 className="section-spaced">Arquivos afetados</h2>
               <Tags items={selected.changedFiles} />
-              <h2 className="section-spaced">Nota gerada</h2>
-              <div className="path">{selected.generatedNotePath}</div>
             </>
           ) : (
             <EmptyState>Nenhum review encontrado.</EmptyState>
