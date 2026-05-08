@@ -34,6 +34,8 @@ export type HomePriority = {
   description: string;
   severity?: string;
   status?: string;
+  reminderDate?: string;
+  reminderTime?: string;
   target: HomeNavigationTarget;
 };
 

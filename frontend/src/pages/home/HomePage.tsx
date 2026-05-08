@@ -24,10 +24,23 @@ export function HomePage({ dashboard, openNote, openProject }: PageContext) {
   }
 
   function priorityTone(priority: HomePriority) {
+    if (priority.type === 'reminder') return priority.status || priority.type;
     if (priority.severity) return priority.severity;
-    if (priority.type === 'reminder' && priority.description.toLowerCase().includes('vencido')) return 'high';
     if (priority.type === 'incident') return 'medium';
     return priority.status || priority.type;
+  }
+
+  function priorityLabel(priority: HomePriority) {
+    if (priority.type === 'reminder') return priority.status || priority.type;
+    return priority.type;
+  }
+
+  function priorityMeta(priority: HomePriority) {
+    if (priority.type === 'reminder' && priority.reminderDate) {
+      const time = priority.reminderTime ? ` ${priority.reminderTime}` : '';
+      return `${projectName(dashboard.projects, priority.project)} / ${formatUsDate(priority.reminderDate)}${time}`;
+    }
+    return `${projectName(dashboard.projects, priority.project)} / ${formatUsDate(priority.date)}`;
   }
 
   return (
@@ -65,10 +78,8 @@ export function HomePage({ dashboard, openNote, openProject }: PageContext) {
                   <article className="list-row clickable home-priority-row" key={priority.id} onClick={() => openTarget(priority.target)}>
                     <div className="list-row-body">
                       <div className="meta-row">
-                        <Badge value={priority.type} tone={priorityTone(priority)} />
-                        <span className="meta">
-                          {projectName(dashboard.projects, priority.project)} / {formatUsDate(priority.date)}
-                        </span>
+                        <Badge value={priorityLabel(priority)} tone={priorityTone(priority)} />
+                        <span className="meta">{priorityMeta(priority)}</span>
                       </div>
                       <h3>{priority.title}</h3>
                       <p>{priority.description}</p>

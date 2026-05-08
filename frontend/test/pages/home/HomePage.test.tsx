@@ -79,6 +79,9 @@ const dashboard: Dashboard = {
       project: 'n8n-automations',
       date: '2026-04-27',
       description: 'Resolver item aberto',
+      status: index === 0 ? 'open' : 'expired',
+      reminderDate: index === 0 ? undefined : '2026-04-27',
+      reminderTime: index === 0 ? undefined : '09:30',
       target: index === 0 ? { kind: HomeTargetKind.Note, id: 'review-1', path: 'reviews/review.md' } : { kind: HomeTargetKind.Note, id: 'note-1', path: '20 Inbox/note.md' },
     })),
     recentInterestingEvents: [
@@ -132,6 +135,8 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
     expect(screen.getByText('Mudancas recentes')).toBeInTheDocument();
     expect(screen.getByText('Prioridade 1')).toBeInTheDocument();
+    expect(screen.getAllByText('expired').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/N8N Automations \/ 04\/27\/2026 09:30/i).length).toBeGreaterThan(0);
     expect(screen.queryByText('Prioridade 6')).not.toBeInTheDocument();
     expect(screen.getAllByTestId('chart')).toHaveLength(4);
   });
