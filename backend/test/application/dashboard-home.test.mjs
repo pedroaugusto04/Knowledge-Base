@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildDashboardHome } from '../../dist/application/use-cases/index.js';
+import { BuildDashboardUseCase, buildDashboardHome } from '../../dist/application/use-cases/index.js';
 
 const projects = [
   { projectSlug: 'alpha', displayName: 'Alpha', repositories: [{ id: '1', workspaceSlug: 'default', externalId: '1', fullName: 'acme/alpha', htmlUrl: null, description: null, defaultBranch: null, createdAt: '', updatedAt: '' }], workspaceSlug: 'default', aliases: [], defaultTags: [], enabled: true },
@@ -103,4 +103,78 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
     'note:followup-1',
   ]);
   assert.deepEqual(home.recentInterestingEvents.map((event) => event.id), ['incident-1', 'decision-1', 'followup-1', 'event-1']);
+});
+
+test('dashboard home normalizes reminder statuses with the same model used by reminders page', async (t) => {
+  const userId = 'user-1';
+  const now = '2026-05-08T12:00:00.000Z';
+  const workspaces = [{ workspaceSlug: 'default', displayName: 'Default', whatsappGroupJid: '', telegramChatId: '', createdAt: now, updatedAt: now }];
+  const projectList = [{
+    projectSlug: 'n8n-automations',
+    displayName: 'N8N Automations',
+    workspaceSlug: 'default',
+    aliases: [],
+    defaultTags: [],
+    enabled: true,
+    repositories: [],
+    createdAt: now,
+    updatedAt: now,
+  }];
+  const rawReminders = [
+    {
+      id: 'active-reminder',
+      title: 'Reminder active',
+      project: 'n8n-automations',
+      workspace: 'default',
+      status: 'open',
+      reminderDate: '2099-12-31',
+      reminderTime: '09:00',
+      reminderAt: '2099-12-31T09:00:00.000Z',
+      relativePath: '20 Inbox/n8n-automations/active.md',
+    },
+    {
+      id: 'sent-reminder',
+      title: 'Reminder sent',
+      project: 'n8n-automations',
+      workspace: 'default',
+      status: 'active',
+      reminderDate: '2026-05-08',
+      reminderTime: '11:00',
+      reminderAt: '2026-05-08T11:00:00.000Z',
+      relativePath: '20 Inbox/n8n-automations/sent.md',
+    },
+  ];
+  const contentRepository = {
+    listWorkspaces: async () => workspaces,
+    listProjects: async () => projectList,
+  };
+  const contentQueryRepository = {
+    list: async () => [],
+    listReviews: async () => [],
+    listReminders: async () => rawReminders,
+  };
+  const reminderDispatchRepository = {
+    hasSent: async (inputUserId, workspaceSlug, mode, dispatchKey, reminderId) => {
+      assert.equal(inputUserId, userId);
+      assert.equal(workspaceSlug, 'default');
+      assert.equal(mode, 'exact');
+      if (reminderId === 'active-reminder') assert.equal(dispatchKey, '2099-12-31T09:00');
+      if (reminderId === 'sent-reminder') assert.equal(dispatchKey, '2026-05-08T11:00');
+      return reminderId === 'sent-reminder';
+    },
+  };
+  const useCase = new BuildDashboardUseCase(
+    contentRepository,
+    contentQueryRepository,
+    reminderDispatchRepository,
+  );
+  const dashboard = await useCase.execute(userId);
+  const statuses = dashboard.home.priorities
+    .filter((priority) => priority.type === 'reminder')
+    .map((priority) => ({ id: priority.id, status: priority.status }));
+
+  assert.equal(dashboard.home.metrics.find((metric) => metric.id === 'open-reminders')?.value, 1);
+  assert.deepEqual(statuses, [
+    { id: 'reminder:active-reminder', status: 'active' },
+  ]);
 });
