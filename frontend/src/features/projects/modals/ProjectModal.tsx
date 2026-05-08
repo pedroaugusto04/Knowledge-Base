@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { createProject, updateProject } from '../../../shared/api/client';
 import type { GithubIntegrationRepository } from '../../../shared/api/models/integration';
@@ -32,6 +32,7 @@ export function ProjectModal({
 }: ProjectModalProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const {
+    control,
     formState: { errors, isDirty },
     handleSubmit,
     register,
@@ -74,10 +75,10 @@ export function ProjectModal({
     },
   });
   const hasRepositoryOptions = workspaceRepositories.length > 0;
-  const repositoryHint = 'Selecione um ou mais repositorios vinculados ao workspace.';
+  const repositoryHint = 'Selecione um ou mais repositórios vinculados ao workspace.';
   const repositoryPlaceholder = !githubConnected
     ? 'Conecte o GitHub em Integrações para listar e selecionar repositórios.'
-    : 'Nenhum repositorio disponivel neste workspace. Verifique a selecao em Integracoes > GitHub.';
+    : 'Nenhum repositório disponível neste workspace. Verifique a seleção em Integrations > GitHub.';
 
   return (
     <>
@@ -116,16 +117,43 @@ export function ProjectModal({
             <FormField name="repositoryIds" label="Repositorios GitHub" error={errors.repositoryIds?.message} optional>
               {(fieldProps) => (
                 hasRepositoryOptions ? (
-                  <select
-                    multiple
-                    {...fieldProps}
-                    {...register('repositoryIds')}
-                    disabled={mutation.isPending || !githubConnected}
-                  >
-                    {workspaceRepositories.map((repository) => (
-                      <option key={repository.id} value={repository.id}>{repository.fullName}</option>
-                    ))}
-                  </select>
+                  <Controller
+                    control={control}
+                    name="repositoryIds"
+                    render={({ field }) => (
+                      <div
+                        {...fieldProps}
+                        aria-label="Repositorios GitHub"
+                        className="repository-picker"
+                      >
+                        {workspaceRepositories.map((repository) => {
+                          const checked = field.value.includes(repository.id);
+
+                          return (
+                            <label className="repository-option" key={repository.id}>
+                              <input
+                                checked={checked}
+                                disabled={mutation.isPending || !githubConnected}
+                                name={field.name}
+                                type="checkbox"
+                                value={repository.id}
+                                onBlur={field.onBlur}
+                                onChange={() => field.onChange(
+                                  checked
+                                    ? field.value.filter((repositoryId) => repositoryId !== repository.id)
+                                    : [...field.value, repository.id],
+                                )}
+                              />
+                              <span>
+                                <strong>{repository.fullName}</strong>
+                                <small>{repository.private ? 'Privado' : 'Publico'}</small>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  />
                 ) : (
                   <input
                     {...fieldProps}

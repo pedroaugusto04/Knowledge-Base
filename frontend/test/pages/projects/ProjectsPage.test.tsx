@@ -255,9 +255,10 @@ describe('ProjectsPage', () => {
     const { setSelectedProject } = renderProjects();
 
     fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
-    await screen.findByRole('option', { name: 'acme/api' });
+    const repositoryCheckbox = await screen.findByRole('checkbox', { name: 'acme/api Privado' });
+    expect(repositoryCheckbox).not.toBeChecked();
     fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Billing API' } });
-    fireEvent.change(screen.getByLabelText('Repositorios GitHub'), { target: { value: [repoId] } });
+    fireEvent.click(repositoryCheckbox);
     fireEvent.change(screen.getByLabelText('Aliases'), { target: { value: 'billing' } });
     fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'finance' } });
     fireEvent.click(screen.getByRole('button', { name: 'Criar projeto' }));
@@ -280,7 +281,7 @@ describe('ProjectsPage', () => {
     const repositoryInput = await screen.findByDisplayValue('Conecte o GitHub em Integrações para listar e selecionar repositórios.');
     expect(repositoryInput).toBeDisabled();
     expect(screen.getByText('Repositorios GitHub')).toBeInTheDocument();
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
   it('creates a note with reminder fields and opens the created note', async () => {
@@ -461,9 +462,9 @@ describe('ProjectsPage', () => {
     const { setSelectedProject } = renderProjects();
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar projeto Platform' }));
-    await screen.findByRole('option', { name: 'acme/platform' });
+    const repositoryCheckbox = await screen.findByRole('checkbox', { name: 'acme/platform Privado' });
     fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Platform Core' } });
-    fireEvent.change(screen.getByLabelText('Repositorios GitHub'), { target: { value: [repoId] } });
+    fireEvent.click(repositoryCheckbox);
     fireEvent.change(screen.getByLabelText('Aliases'), { target: { value: 'core' } });
     fireEvent.click(screen.getByRole('button', { name: 'Salvar projeto' }));
 
