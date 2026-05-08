@@ -7,7 +7,6 @@ export type PageContext = {
   selectedNoteId: string;
   setSelectedProject: (slug: string) => void;
   openProject: (slug: string) => void;
-  showVaultProject: (slug: string) => void;
   openNote: (id: string) => void;
   editNote: (noteId: string) => void;
   deleteNote: (note: Pick<NoteSummary, 'id' | 'title'>) => void;

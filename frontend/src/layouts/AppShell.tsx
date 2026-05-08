@@ -28,7 +28,7 @@ import { Inspector } from './Inspector';
 
 function activeView(pathname: string): View {
   if (pathname.startsWith('/projects')) return 'projects';
-  if (pathname.startsWith('/vault')) return 'vault';
+  if (pathname.startsWith('/vault')) return 'note';
   if (pathname.startsWith('/search')) return 'search';
   if (pathname.startsWith('/reminders')) return 'reminders';
   if (pathname.startsWith('/settings/integrations')) return 'integrations';
@@ -67,6 +67,7 @@ export function AppShell() {
   const activeWorkspace = dashboard?.workspaces[0] || null;
   const isSetupRoute = location.pathname.startsWith(routes.setup);
   const activeNavItem = navItems.find((item) => item.view === view);
+  const topbarTitle = view === 'note' ? 'Detalhe da Nota' : activeNavItem?.label || 'Home';
 
   useEffect(() => {
     if (dashboardQuery.isLoading && !dashboardQuery.data) {
@@ -141,11 +142,6 @@ export function AppShell() {
       openProject: (slug: string) => {
         setSelectedProjectState(slug);
         navigate(routes.project(slug));
-      },
-      showVaultProject: (slug: string) => {
-        setSelectedProjectState(slug);
-        setSelectedNoteId('');
-        navigate(routes.vault);
       },
       openNote: (id: string) => {
         setSelectedNoteId(id);
@@ -245,7 +241,7 @@ export function AppShell() {
               </svg>
             </button>
             <div className="topbar-context" aria-live="polite">
-              <strong>{activeNavItem?.label || 'Home'}</strong>
+              <strong>{topbarTitle}</strong>
               <span>{activeWorkspace.displayName}</span>
             </div>
           </div>
@@ -278,7 +274,7 @@ export function AppShell() {
             <Route path="/" element={<HomePage {...pageContext} />} />
             <Route path="/projects" element={<ProjectsPage {...pageContext} />} />
             <Route path="/projects/:projectSlug" element={<ProjectsPage {...pageContext} />} />
-            <Route path="/vault" element={<VaultPage {...pageContext} />} />
+            <Route path="/vault" element={<Navigate replace to={routes.projects} />} />
             <Route path="/vault/:noteId" element={<VaultPage {...pageContext} />} />
             <Route path="/search" element={<SearchPage {...pageContext} />} />
             <Route path="/reminders" element={<RemindersPage {...pageContext} />} />

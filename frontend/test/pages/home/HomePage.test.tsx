@@ -117,7 +117,6 @@ function renderHomeWithDashboard(inputDashboard: Dashboard) {
         openNote={openNote}
         setSelectedProject={setSelectedProject}
         openProject={openProject}
-        showVaultProject={vi.fn()}
         editNote={vi.fn()}
         deleteNote={vi.fn()}
       />

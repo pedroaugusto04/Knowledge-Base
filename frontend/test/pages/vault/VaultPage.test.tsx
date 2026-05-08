@@ -168,7 +168,6 @@ describe('VaultPage', () => {
       selectedProject: 'platform',
       selectedNoteId: foreignNote.id,
       setSelectedProject,
-      showVaultProject: vi.fn(),
     });
 
     expect(await screen.findByRole('heading', { name: foreignNote.title })).toBeInTheDocument();
@@ -184,14 +183,12 @@ function renderVaultPage({
   selectedProject = 'platform',
   selectedNoteId = '',
   setSelectedProject = vi.fn(),
-  showVaultProject = vi.fn(),
   openNote = vi.fn(),
 }: {
   notes: NoteSummary[];
   selectedProject?: string;
   selectedNoteId?: string;
   setSelectedProject?: (slug: string) => void;
-  showVaultProject?: (slug: string) => void;
   openNote?: (id: string) => void;
 }) {
   return renderWithAppProviders(
@@ -201,7 +198,6 @@ function renderVaultPage({
       selectedNoteId={selectedNoteId}
       setSelectedProject={setSelectedProject}
       openProject={vi.fn()}
-      showVaultProject={showVaultProject}
       openNote={openNote}
       editNote={vi.fn()}
       deleteNote={vi.fn()}

@@ -379,9 +379,9 @@ describe('AppShell', () => {
     expect(menuButton).toHaveAttribute('aria-expanded', 'false');
 
     fireEvent.click(menuButton);
-    fireEvent.click(screen.getByRole('link', { name: 'Vault' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Projetos' }));
 
-    expect(await screen.findByRole('heading', { name: 'Vault Explorer' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeInTheDocument();
     await waitFor(() => {
       expect(menuButton).toHaveAttribute('aria-expanded', 'false');
     });

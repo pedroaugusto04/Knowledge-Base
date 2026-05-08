@@ -10,12 +10,11 @@ export const routes = {
   integrations: '/settings/integrations',
 } as const;
 
-export type View = 'home' | 'projects' | 'vault' | 'search' | 'reminders' | 'integrations';
+export type View = 'home' | 'projects' | 'note' | 'search' | 'reminders' | 'integrations';
 
 export const navItems: Array<{ view: View; label: string; path: string }> = [
   { view: 'home', label: 'Home', path: routes.home },
   { view: 'projects', label: 'Projetos', path: routes.projects },
-  { view: 'vault', label: 'Vault', path: routes.vault },
   { view: 'search', label: 'Busca', path: routes.search },
   { view: 'reminders', label: 'Lembretes', path: routes.reminders },
   { view: 'integrations', label: 'Integrações', path: routes.integrations },
