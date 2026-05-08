@@ -106,20 +106,21 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function renderProjects() {
+function renderProjects(options?: { selectedProject?: string; route?: string }) {
   const setSelectedProject = vi.fn();
   const openNote = vi.fn();
+  const selectedProject = options?.selectedProject || 'platform';
   renderWithAppProviders(
     <ProjectsPage
       dashboard={dashboard}
-      selectedProject="platform"
+      selectedProject={selectedProject}
       selectedNoteId=""
       selectedReviewId=""
       setSelectedProject={setSelectedProject}
       openNote={openNote}
       openReview={vi.fn()}
     />,
-    { route: '/projects/platform' },
+    { route: options?.route || `/projects/${selectedProject}` },
   );
   return { setSelectedProject, openNote };
 }
@@ -492,52 +493,32 @@ describe('ProjectsPage', () => {
   });
 
   it('blocks project deletion for inbox and projects with notes', () => {
-    renderProjects();
+    renderProjects({ selectedProject: 'inbox' });
 
     expect(screen.queryByRole('button', { name: 'Editar projeto Inbox' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Inbox nao pode ser alterado.' })).toBeDisabled();
+
+    cleanup();
+    renderProjects({ selectedProject: 'platform' });
+
     expect(screen.getByRole('button', { name: 'Exclua ou mova as notas do projeto antes de remover.' })).toBeDisabled();
   });
 
-  it('requests the next project page without reusing selectedSlug after manual pagination', async () => {
+  it('shows only the focused project workspace without requesting the paginated project list', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
       if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
-      if (url === '/api/projects?page=1&pageSize=5&selectedSlug=platform') {
-        return Response.json({
-          ok: true,
-          projects: dashboard.projects,
-          pagination: { page: 1, pageSize: 5, total: 6, totalPages: 2, hasNext: true, hasPrevious: false },
-        });
-      }
-      if (url === '/api/projects?page=2&pageSize=5&selectedSlug=') {
-        return Response.json({
-          ok: true,
-          projects: [
-            ...dashboard.projects,
-            {
-              projectSlug: 'zeta',
-              displayName: 'Zeta',
-              repositories: [],
-              workspaceSlug: 'default',
-              aliases: [],
-              defaultTags: [],
-              enabled: true,
-            },
-          ],
-          pagination: { page: 2, pageSize: 5, total: 6, totalPages: 2, hasNext: false, hasPrevious: true },
-        });
-      }
       throw new Error(`unexpected fetch ${url}`);
     });
     vi.stubGlobal('fetch', fetchMock);
 
     renderProjects();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Próxima página' }));
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/projects?page=2&pageSize=5&selectedSlug=', expect.anything()));
+    expect(await screen.findByRole('heading', { name: 'Platform' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Inbox' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Empty' })).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/api/projects?'))).toBe(false);
   });
 
   it('deletes an empty project after confirmation and redirects selection', async () => {
@@ -549,7 +530,7 @@ describe('ProjectsPage', () => {
       return Response.json({ ok: true, projectSlug: 'empty' });
     });
     vi.stubGlobal('fetch', fetchMock);
-    const { setSelectedProject } = renderProjects();
+    const { setSelectedProject } = renderProjects({ selectedProject: 'empty' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Excluir projeto Empty' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar exclusão' }));

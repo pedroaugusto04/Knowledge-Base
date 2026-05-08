@@ -10,17 +10,14 @@ import {
   fetchNote,
   fetchNotes,
   fetchProjectFolders,
-  fetchProjects,
 } from '../../shared/api/client';
 import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import { notifyGeneralFormError } from '../../shared/forms/errors';
 import { notifySuccess } from '../../shared/ui/notifications';
 import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
-import { Pagination } from '../../shared/ui/pagination';
 import { PageHead } from '../../shared/ui/primitives';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
-import { ProjectCard } from '../../widgets/projects/ProjectCard';
 import { ROOT_FOLDER_ID } from './projects.constants';
 import { ProjectFolderModal } from './modals/ProjectFolderModal';
 import { ProjectNoteModal } from './modals/ProjectNoteModal';
@@ -47,33 +44,7 @@ export function ProjectsWorkspace({
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
   const dashboardNotes = dashboard.notes || [];
-  const projectPagination = usePaginationState(selectedSlug);
-  const [projectFocusSlug, setProjectFocusSlug] = useState(selectedSlug);
-
-  useEffect(() => {
-    setProjectFocusSlug(selectedSlug);
-  }, [selectedSlug]);
-
-  const projectsQuery = useQuery({
-    queryKey: ['projects', selectedSlug, projectFocusSlug, projectPagination.page],
-    queryFn: () => fetchProjects({ page: projectPagination.page, selectedSlug: projectFocusSlug }),
-    initialData: {
-      ok: true as const,
-      projects: dashboard.projects.slice(0, DEFAULT_PAGE_SIZE),
-      pagination: {
-        page: 1,
-        pageSize: DEFAULT_PAGE_SIZE,
-        total: dashboard.projects.length,
-        totalPages: Math.max(1, Math.ceil(dashboard.projects.length / DEFAULT_PAGE_SIZE)),
-        hasNext: dashboard.projects.length > DEFAULT_PAGE_SIZE,
-        hasPrevious: false,
-      },
-    },
-  });
-  const selected = projectsQuery.data?.projects.find((project) => project.projectSlug === selectedSlug)
-    || projectsQuery.data?.projects[0]
-    || dashboard.projects.find((project) => project.projectSlug === selectedSlug)
-    || dashboard.projects[0];
+  const selected = dashboard.projects.find((project) => project.projectSlug === selectedSlug) || dashboard.projects[0];
 
   useEffect(() => {
     setSelectedFolderId(ROOT_FOLDER_ID);
@@ -114,19 +85,11 @@ export function ProjectsWorkspace({
       : undefined,
   });
   const notes = notesQuery.data?.notes || [];
-  const knownProjectNoteCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const note of dashboardNotes) {
-      counts.set(note.project, (counts.get(note.project) || 0) + 1);
-    }
-    if (selected?.projectSlug) {
-      counts.set(
-        selected.projectSlug,
-        Math.max(counts.get(selected.projectSlug) || 0, notesQuery.data?.pagination.total || 0),
-      );
-    }
-    return counts;
-  }, [dashboardNotes, notesQuery.data?.pagination.total, selected?.projectSlug]);
+  const selectedProjectDeleteBlockedReason = selected?.projectSlug === 'inbox'
+    ? 'Inbox nao pode ser alterado.'
+    : dashboardNotes.some((note) => note.project === selected?.projectSlug)
+      ? 'Exclua ou mova as notas do projeto antes de remover.'
+      : '';
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug;
   const { data: integrationsResponse } = useQuery({
     queryKey: ['integrations', workspaceSlug],
@@ -150,7 +113,7 @@ export function ProjectsWorkspace({
   const deleteProjectMutation = useMutation({
     mutationFn: (projectSlug: string) => deleteProject(projectSlug),
     onSuccess: async (_, projectSlug) => {
-      const nextProjectSlug = (projectsQuery.data?.projects || dashboard.projects).filter((project) => project.projectSlug !== projectSlug)[0]?.projectSlug || 'inbox';
+      const nextProjectSlug = dashboard.projects.filter((project) => project.projectSlug !== projectSlug)[0]?.projectSlug || 'inbox';
       setConfirmState(null);
       notifySuccess('Projeto excluido com sucesso.');
       setSelectedProject(nextProjectSlug);
@@ -177,10 +140,6 @@ export function ProjectsWorkspace({
     },
     onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel excluir a nota.'),
   });
-  const handleProjectPageChange = (page: number) => {
-    setProjectFocusSlug('');
-    projectPagination.setPage(page);
-  };
 
   return (
     <>
@@ -189,28 +148,6 @@ export function ProjectsWorkspace({
         subtitle=""
         action={<button className="icon-button" type="button" onClick={() => setProjectModal({ mode: 'create' })}>Novo projeto</button>}
       />
-      <section className="grid cols-3">
-        {(projectsQuery.data?.projects || []).map((project) => {
-          const deleteBlockedReason = project.projectSlug === 'inbox'
-            ? 'Inbox nao pode ser alterado.'
-            : (knownProjectNoteCounts.get(project.projectSlug) || 0) > 0
-              ? 'Exclua ou mova as notas do projeto antes de remover.'
-              : '';
-
-          return (
-            <ProjectCard
-              key={project.projectSlug}
-              deleteDisabled={Boolean(deleteBlockedReason)}
-              deleteLabel={deleteBlockedReason}
-              onDelete={(item) => setConfirmState({ kind: 'project', project: item })}
-              onEdit={project.projectSlug === 'inbox' ? undefined : (item) => setProjectModal({ mode: 'edit', project: item })}
-              onOpen={setSelectedProject}
-              project={project}
-            />
-          );
-        })}
-      </section>
-      {projectsQuery.data ? <Pagination pagination={projectsQuery.data.pagination} onPageChange={handleProjectPageChange} /> : null}
       {selected ? (
         <ProjectsBrowser
           dashboard={dashboard}
@@ -229,6 +166,9 @@ export function ProjectsWorkspace({
           onDeleteNote={(note) => setConfirmState({ kind: 'note', note })}
           onOpenNote={openNote}
           onNotesPageChange={notesPagination.setPage}
+          onEditProject={selected.projectSlug === 'inbox' ? undefined : () => setProjectModal({ mode: 'edit', project: selected })}
+          onDeleteProject={selectedProjectDeleteBlockedReason ? undefined : () => setConfirmState({ kind: 'project', project: selected })}
+          deleteProjectLabel={selectedProjectDeleteBlockedReason || 'Excluir projeto'}
         />
       ) : null}
       {projectModal ? (

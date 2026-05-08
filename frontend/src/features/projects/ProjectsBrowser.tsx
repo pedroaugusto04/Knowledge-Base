@@ -32,6 +32,9 @@ type ProjectsBrowserProps = {
   onDeleteNote: (note: NoteSummary) => void;
   onOpenNote: (noteId: string) => void;
   onNotesPageChange: (page: number) => void;
+  onEditProject?: () => void;
+  onDeleteProject?: () => void;
+  deleteProjectLabel?: string;
 };
 
 export function ProjectsBrowser({
@@ -51,6 +54,9 @@ export function ProjectsBrowser({
   onDeleteNote,
   onOpenNote,
   onNotesPageChange,
+  onEditProject,
+  onDeleteProject,
+  deleteProjectLabel,
 }: ProjectsBrowserProps) {
   return (
     <Panel className="spaced">
@@ -67,6 +73,26 @@ export function ProjectsBrowser({
         </div>
         <div className="project-actions">
           <Tags items={project.defaultTags} />
+          {onEditProject ? (
+            <button
+              aria-label={`Editar projeto ${project.displayName}`}
+              className="icon-button"
+              type="button"
+              onClick={onEditProject}
+            >
+              Editar projeto
+            </button>
+          ) : null}
+          <button
+            aria-label={onDeleteProject ? `Excluir projeto ${project.displayName}` : deleteProjectLabel}
+            className="icon-button"
+            disabled={!onDeleteProject}
+            title={deleteProjectLabel}
+            type="button"
+            onClick={onDeleteProject}
+          >
+            Excluir projeto
+          </button>
           <button className="icon-button" type="button" onClick={onCreateNote}>Nova nota</button>
         </div>
       </div>
