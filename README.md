@@ -12,7 +12,7 @@ O produto centraliza conhecimento operacional em uma experiencia simples de usar
 - transforma informacoes espalhadas em uma base consultavel
 - destaca prioridades, lembretes e eventos recentes
 - facilita encontrar respostas sem depender de repasses manuais
-- conecta canais e fluxos do time de forma guiada
+- captura conhecimento automaticamente via fluxos integrados como WhatsApp e GitHub Push
 
 Na pratica, ele funciona como uma memoria compartilhada para a operacao.
 
@@ -36,9 +36,21 @@ Itens que exigem acompanhamento nao ficam escondidos. O produto destaca o que es
 
 A Home resume atividade recente, projetos em movimento, prioridades e eventos relevantes. Isso ajuda liderancas e equipes a entender rapidamente onde esta o foco sem precisar montar esse panorama manualmente.
 
-### 5. Integracoes guiadas
+### 5. Fluxos de Captura Contínua: WhatsApp e GitHub Push
 
-GitHub, WhatsApp, Telegram e recursos assistidos podem ser conectados através de poucos cliques.
+O Knowledge Vault se integra naturalmente onde o time já trabalha, capturando conhecimento de forma automática e sem esforço adicional. Os fluxos do WhatsApp e GitHub Push são parte central da experiência:
+
+- **Como funciona o fluxo via WhatsApp:**
+  1. O usuário envia uma mensagem de texto ou de áudio diretamente para o contato do Knowledge Vault relatando um problema, uma decisão rápida ou o resumo de uma reunião.
+  2. O sistema recebe a mensagem, analisa o contexto e identifica automaticamente a qual projeto ela pertence.
+  3. Uma nota estruturada é gerada e salva no workspace.
+  4. A informação passa a ficar disponível imediatamente na Home e na busca para o restante do time, sem que ninguém tenha precisado preencher formulários ou abrir o sistema.
+
+- **Como funciona o fluxo via GitHub Push:**
+  1. O desenvolvedor termina uma alteração técnica e faz o envio do código (`git push`) para o repositório principal no GitHub.
+  2. O Knowledge Vault captura esse evento automaticamente em background.
+  3. O sistema analisa as mensagens de commit e o escopo das mudanças (diff), gerando uma nota técnica de atualização.
+  4. Decisões de arquitetura e correções que antes ficavam "escondidas" no código se tornam contexto acessível a todos no projeto, sem criar trabalho manual extra de documentação.
 
 ![Tela de integracoes guiadas](docs/screenshots/integrations-setup.png)
 
@@ -57,7 +69,7 @@ GitHub, WhatsApp, Telegram e recursos assistidos podem ser conectados através d
 2. As informacoes importantes passam a ser registradas em notas simples e consultaveis.
 3. Lembretes e pendencias ganham visibilidade na Home.
 4. Quando surge uma duvida, a busca encontra o contexto mais relevante em poucos segundos.
-5. As integracoes aproximam o produto dos canais operacionais ja usados pela equipe.
+5. Os fluxos naturais de comunicação no WhatsApp e envios de código (GitHub Push) alimentam o contexto automaticamente, evitando trabalho de documentação manual.
 
 ## Comece em 2 minutos
 
