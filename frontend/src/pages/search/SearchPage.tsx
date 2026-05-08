@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import type { PageContext } from '../../app/page-context';
 import { fetchNotes, runQuery } from '../../shared/api/client';
+import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import { EmptyState, PageHead, Panel } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
@@ -29,7 +30,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
   const hasQuery = Boolean(query.trim());
   const queryResult = useQuery({
     queryKey: ['search', query, projectSlug, workspaceSlug, page],
-    queryFn: () => runQuery({ query, projectSlug, workspaceSlug, limit: 10, page, pageSize: 10 }),
+    queryFn: () => runQuery({ query, projectSlug, workspaceSlug, limit: 10, page, pageSize: DEFAULT_PAGE_SIZE }),
     enabled: hasQuery,
   });
   const notesResult = useQuery({
@@ -41,13 +42,13 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
           ok: true as const,
           notes: dashboard.notes
             .filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug))
-            .slice(0, 10),
+            .slice(0, DEFAULT_PAGE_SIZE),
           pagination: {
             page: 1,
-            pageSize: 10,
+            pageSize: DEFAULT_PAGE_SIZE,
             total: dashboard.notes.filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug)).length,
-            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug)).length / 10)),
-            hasNext: dashboard.notes.filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug)).length > 10,
+            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug)).length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboard.notes.filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug)).length > DEFAULT_PAGE_SIZE,
             hasPrevious: false,
           },
         }

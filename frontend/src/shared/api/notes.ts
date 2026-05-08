@@ -1,5 +1,5 @@
 import type { NoteDetail, NoteSummary } from './models/note';
-import type { PaginatedResponse } from './models/pagination';
+import { DEFAULT_PAGE_SIZE, type PaginatedResponse } from './models/pagination';
 import { request } from './request';
 
 export async function fetchNote(id: string): Promise<NoteDetail> {
@@ -10,7 +10,7 @@ export async function fetchNote(id: string): Promise<NoteDetail> {
 export function fetchNotes(params: { page?: number; pageSize?: number; workspaceSlug?: string; projectSlug?: string; folderId?: string; rootOnly?: boolean; selectedId?: string }) {
   const search = new URLSearchParams({
     page: String(params.page || 1),
-    pageSize: String(params.pageSize || 10),
+    pageSize: String(params.pageSize || DEFAULT_PAGE_SIZE),
     workspaceSlug: params.workspaceSlug || '',
     projectSlug: params.projectSlug || '',
     folderId: params.folderId || '',

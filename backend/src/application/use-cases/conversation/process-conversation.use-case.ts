@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { readEnvironment } from '../../../adapters/environment.js';
 import { type ConversationInput, conversationStateSchema, type ConversationState } from '../../../contracts/conversation.js';
+import { DEFAULT_PAGE_SIZE } from '../../../contracts/pagination.js';
 import { CredentialRecordStatus, ConversationConfidence, ConversationPhase, IntegrationProvider, KnowledgeKind, QueryMode } from '../../../contracts/enums.js';
 import { slugify } from '../../../domain/strings.js';
 import { normalizeDate, normalizeTime, nowIso } from '../../../domain/time.js';
@@ -97,7 +98,7 @@ async function processConversationInPostgres(args: ProcessConversationArgs) {
       projectSlug: '',
       limit: 5,
       page: 1,
-      pageSize: 10,
+      pageSize: DEFAULT_PAGE_SIZE,
     }, args.userId);
     const lines = [
       result.answer.answer,

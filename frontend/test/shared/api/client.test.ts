@@ -69,14 +69,14 @@ describe('api client', () => {
       ok: true,
       answer: { answer: '', bullets: [] },
       matches: [],
-      pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
+      pagination: { page: 1, pageSize: 5, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
     }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await runQuery({ query: 'Nota1', workspaceSlug: 'workspace1', limit: 50, page: 1, pageSize: 10 });
+    await runQuery({ query: 'Nota1', workspaceSlug: 'workspace1', limit: 50, page: 1, pageSize: 5 });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/api/query?query=Nota1&mode=answer&projectSlug=&workspaceSlug=workspace1&limit=10&page=1&pageSize=10'),
+      expect.stringContaining('/api/query?query=Nota1&mode=answer&projectSlug=&workspaceSlug=workspace1&limit=10&page=1&pageSize=5'),
       expect.any(Object),
     );
   });

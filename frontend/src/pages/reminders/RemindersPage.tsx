@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { PageContext } from '../../app/page-context';
 import { formatUsDate } from '../../entities/format';
 import { fetchReminders } from '../../shared/api/client';
+import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import type { Reminder } from '../../shared/api/models/reminder';
 import { Pagination } from '../../shared/ui/pagination';
 import { PageHead, Panel } from '../../shared/ui/primitives';
@@ -18,13 +19,13 @@ export function RemindersPage({ dashboard }: PageContext) {
     initialData: dashboard.reminders
       ? {
           ok: true as const,
-          reminders: dashboard.reminders.filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug).slice(0, 10),
+          reminders: dashboard.reminders.filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug).slice(0, DEFAULT_PAGE_SIZE),
           pagination: {
             page: 1,
-            pageSize: 10,
+            pageSize: DEFAULT_PAGE_SIZE,
             total: dashboard.reminders.filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug).length,
-            totalPages: Math.max(1, Math.ceil(dashboard.reminders.filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug).length / 10)),
-            hasNext: dashboard.reminders.filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug).length > 10,
+            totalPages: Math.max(1, Math.ceil(dashboard.reminders.filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug).length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboard.reminders.filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug).length > DEFAULT_PAGE_SIZE,
             hasPrevious: false,
           },
         }

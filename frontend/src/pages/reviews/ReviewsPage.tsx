@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import type { PageContext } from '../../app/page-context';
 import { formatUsDate } from '../../entities/format';
 import { fetchReview, fetchReviews } from '../../shared/api/client';
+import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import { Badge, EmptyState, PageHead, Panel, Tags } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
@@ -20,13 +21,13 @@ export function ReviewsPage({ dashboard, selectedReviewId, openReview }: PageCon
     initialData: dashboard.reviews
       ? {
           ok: true as const,
-          reviews: dashboard.reviews.slice(0, 10),
+          reviews: dashboard.reviews.slice(0, DEFAULT_PAGE_SIZE),
           pagination: {
             page: 1,
-            pageSize: 10,
+            pageSize: DEFAULT_PAGE_SIZE,
             total: dashboard.reviews.length,
-            totalPages: Math.max(1, Math.ceil(dashboard.reviews.length / 10)),
-            hasNext: dashboard.reviews.length > 10,
+            totalPages: Math.max(1, Math.ceil(dashboard.reviews.length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboard.reviews.length > DEFAULT_PAGE_SIZE,
             hasPrevious: false,
           },
         }

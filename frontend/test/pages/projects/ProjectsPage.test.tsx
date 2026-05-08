@@ -375,7 +375,7 @@ describe('ProjectsPage', () => {
         return Response.json({
           ok: true,
           notes: [],
-          pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
+          pagination: { page: 1, pageSize: 5, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
         });
       }
       return Response.error();
@@ -415,7 +415,7 @@ describe('ProjectsPage', () => {
         return Response.json({
           ok: true,
           notes: [],
-          pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
+          pagination: { page: 1, pageSize: 5, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
         });
       }
       return Response.error();

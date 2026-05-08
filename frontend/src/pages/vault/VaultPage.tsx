@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import type { PageContext } from '../../app/page-context';
 import { formatUsDate, noteStatusLabel, noteTypeLabel, projectName } from '../../entities/format';
 import { fetchNote, fetchNotes } from '../../shared/api/client';
+import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import { Badge, EmptyState, PageHead, Tags } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
@@ -21,13 +22,13 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, openNote
     initialData: dashboard.notes
       ? {
           ok: true as const,
-          notes: dashboard.notes.filter((note) => !selectedProject || note.project === selectedProject).slice(0, 10),
+          notes: dashboard.notes.filter((note) => !selectedProject || note.project === selectedProject).slice(0, DEFAULT_PAGE_SIZE),
           pagination: {
             page: 1,
-            pageSize: 10,
+            pageSize: DEFAULT_PAGE_SIZE,
             total: dashboard.notes.filter((note) => !selectedProject || note.project === selectedProject).length,
-            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) => !selectedProject || note.project === selectedProject).length / 10)),
-            hasNext: dashboard.notes.filter((note) => !selectedProject || note.project === selectedProject).length > 10,
+            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) => !selectedProject || note.project === selectedProject).length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboard.notes.filter((note) => !selectedProject || note.project === selectedProject).length > DEFAULT_PAGE_SIZE,
             hasPrevious: false,
           },
         }

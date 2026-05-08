@@ -1,4 +1,5 @@
 import type { QueryResponse } from './models/query';
+import { DEFAULT_PAGE_SIZE } from './models/pagination';
 import { request } from './request';
 
 function normalizeLimit(limit: number | undefined) {
@@ -14,7 +15,7 @@ export function runQuery(params: { query: string; projectSlug?: string; workspac
     workspaceSlug: params.workspaceSlug || '',
     limit: String(normalizeLimit(params.limit)),
     page: String(params.page || 1),
-    pageSize: String(params.pageSize || 10),
+    pageSize: String(params.pageSize || DEFAULT_PAGE_SIZE),
   });
   return request<QueryResponse>(`/api/query?${search.toString()}`);
 }

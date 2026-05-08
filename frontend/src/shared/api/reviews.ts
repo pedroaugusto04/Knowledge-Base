@@ -1,11 +1,11 @@
-import type { PaginatedResponse } from './models/pagination';
+import { DEFAULT_PAGE_SIZE, type PaginatedResponse } from './models/pagination';
 import type { Review } from './models/review';
 import { request } from './request';
 
 export function fetchReviews(params: { page?: number; pageSize?: number; selectedId?: string }) {
   const search = new URLSearchParams({
     page: String(params.page || 1),
-    pageSize: String(params.pageSize || 10),
+    pageSize: String(params.pageSize || DEFAULT_PAGE_SIZE),
     selectedId: params.selectedId || '',
   });
   return request<PaginatedResponse<Review, 'reviews'>>(`/api/reviews?${search.toString()}`);

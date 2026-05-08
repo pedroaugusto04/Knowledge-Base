@@ -229,7 +229,7 @@ function mockFetch() {
         ok: true,
         mode: 'answer',
         query: 'deploy',
-        pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
+        pagination: { page: 1, pageSize: 5, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
         matches: [{
           id: 'note-1',
           path: '20 Inbox/note.md',

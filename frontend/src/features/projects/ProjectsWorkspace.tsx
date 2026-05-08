@@ -13,6 +13,7 @@ import {
   fetchProjects,
 } from '../../shared/api/client';
 import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
+import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import { notifyGeneralFormError } from '../../shared/forms/errors';
 import { notifySuccess } from '../../shared/ui/notifications';
 import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
@@ -51,13 +52,13 @@ export function ProjectsWorkspace({
     queryFn: () => fetchProjects({ page: projectPagination.page, selectedSlug }),
     initialData: {
       ok: true as const,
-      projects: dashboard.projects.slice(0, 10),
+      projects: dashboard.projects.slice(0, DEFAULT_PAGE_SIZE),
       pagination: {
         page: 1,
-        pageSize: 10,
+        pageSize: DEFAULT_PAGE_SIZE,
         total: dashboard.projects.length,
-        totalPages: Math.max(1, Math.ceil(dashboard.projects.length / 10)),
-        hasNext: dashboard.projects.length > 10,
+        totalPages: Math.max(1, Math.ceil(dashboard.projects.length / DEFAULT_PAGE_SIZE)),
+        hasNext: dashboard.projects.length > DEFAULT_PAGE_SIZE,
         hasPrevious: false,
       },
     },
@@ -93,13 +94,13 @@ export function ProjectsWorkspace({
     initialData: selected && dashboard.notes && !selectedFolderId
       ? {
           ok: true as const,
-          notes: dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).slice(0, 10),
+          notes: dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).slice(0, DEFAULT_PAGE_SIZE),
           pagination: {
             page: 1,
-            pageSize: 10,
+            pageSize: DEFAULT_PAGE_SIZE,
             total: dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).length,
-            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).length / 10)),
-            hasNext: dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).length > 10,
+            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).length > DEFAULT_PAGE_SIZE,
             hasPrevious: false,
           },
         }
