@@ -2,11 +2,6 @@ import crypto from 'node:crypto';
 
 import { trimText } from '../domain/strings.js';
 
-function isGithubSignatureDebugEnabled(): boolean {
-  const rawValue = String(process.env.KB_DEBUG_GITHUB_SIGNATURE || '').trim().toLowerCase();
-  return ['1', 'true', 'yes', 'on'].includes(rawValue);
-}
-
 function timingSafeEqualString(left: string, right: string): boolean {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
@@ -17,28 +12,8 @@ function timingSafeEqualString(left: string, right: string): boolean {
 export function verifyGithubSignature(secret: string, rawBody: string, signature: string): void {
   if (!secret) return;
   const expected = `sha256=${crypto.createHmac('sha256', secret).update(rawBody).digest('hex')}`;
-  const trimmedSignature = signature.trim();
-  if (isGithubSignatureDebugEnabled()) {
-    const rawBodySha256 = crypto.createHash('sha256').update(rawBody).digest('hex');
-    console.warn(JSON.stringify({
-      event: 'github.signature.debug',
-      receivedSignature: signature,
-      receivedSignatureJson: JSON.stringify(signature),
-      receivedSignatureLength: signature.length,
-      trimmedSignature,
-      trimmedSignatureLength: trimmedSignature.length,
-      expectedSignature: expected,
-      expectedSignatureLength: expected.length,
-      matchesExact: timingSafeEqualString(signature, expected),
-      matchesAfterTrim: timingSafeEqualString(trimmedSignature, expected),
-      rawBodyLength: Buffer.byteLength(rawBody, 'utf8'),
-      rawBodySha256,
-      secretLength: secret.length,
-      secretFirst4: secret.slice(0, 4),
-      secretLast4: secret.slice(-4),
-    }));
-  }
-  if (!signature || !timingSafeEqualString(signature, expected)) {
+  const normalizedSignature = signature.trim();
+  if (!normalizedSignature || !timingSafeEqualString(normalizedSignature, expected)) {
     throw new Error('invalid_github_signature');
   }
 }
