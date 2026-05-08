@@ -60,10 +60,6 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, openNote
                   <Badge value={noteStatusLabel(noteQuery.data.status)} tone={noteQuery.data.status} />
                   <span className="meta">{formatUsDate(noteQuery.data.date)}</span>
                 </div>
-                <div className="toolbar">
-                  <button className="icon-button" type="button" onClick={() => editNote(noteQuery.data.id)}>Editar nota</button>
-                  <button className="icon-button danger-button" type="button" onClick={() => deleteNote(noteQuery.data)}>Excluir nota</button>
-                </div>
                 {visibleTags.length ? <Tags items={visibleTags} /> : null}
               </header>
               <MarkdownView markdown={readerMarkdown(noteQuery.data.markdown, noteQuery.data.title, noteQuery.data.summary)} />
