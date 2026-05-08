@@ -387,6 +387,48 @@ describe('AppShell', () => {
     expect(await screen.findByRole('heading', { name: 'Configurar workspace' })).toBeInTheDocument();
   });
 
+  it('renders projects routes even when dashboard notes are omitted', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/dashboard') {
+        return Response.json({
+          ...dashboard,
+          notes: undefined,
+        });
+      }
+      if (url === '/api/projects?page=1&pageSize=5&selectedSlug=n8n-automations') {
+        return Response.json({
+          ok: true,
+          projects: dashboard.projects,
+          pagination: { page: 1, pageSize: 5, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
+        });
+      }
+      if (url === '/api/projects/n8n-automations/folders') {
+        return Response.json({ ok: true, projectSlug: 'n8n-automations', folders: [] });
+      }
+      if (url === '/api/notes?page=1&pageSize=5&workspaceSlug=&projectSlug=n8n-automations&folderId=&rootOnly=false&selectedId=') {
+        return Response.json({
+          ok: true,
+          notes: [],
+          pagination: { page: 1, pageSize: 5, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
+        });
+      }
+      if (url === '/api/integrations?workspaceSlug=default') {
+        return Response.json({
+          ok: true,
+          workspaceSlug: 'default',
+          integrations: [],
+        });
+      }
+      return new Response(null, { status: 404 });
+    }));
+
+    renderWithAppProviders(<AppShell />, { route: '/projects' });
+
+    expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeInTheDocument();
+    expect((await screen.findAllByRole('heading', { name: 'N8N Automations' })).length).toBeGreaterThan(0);
+  });
+
   it('keeps authenticated users in setup so they can finish optional integrations', async () => {
     vi.stubGlobal('fetch', mockFetch());
 

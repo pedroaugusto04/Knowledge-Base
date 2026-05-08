@@ -46,6 +46,7 @@ export function ProjectsWorkspace({
   const [selectedFolderId, setSelectedFolderId] = useState(ROOT_FOLDER_ID);
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
+  const dashboardNotes = dashboard.notes || [];
   const projectPagination = usePaginationState(selectedSlug);
   const [projectFocusSlug, setProjectFocusSlug] = useState(selectedSlug);
 
@@ -97,16 +98,16 @@ export function ProjectsWorkspace({
       rootOnly: !selectedFolderId,
     }),
     enabled: Boolean(selected?.projectSlug),
-    initialData: selected && dashboard.notes && !selectedFolderId
+    initialData: selected && !selectedFolderId
       ? {
           ok: true as const,
-          notes: dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).slice(0, DEFAULT_PAGE_SIZE),
+          notes: dashboardNotes.filter((note) => note.project === selected.projectSlug && !note.folderId).slice(0, DEFAULT_PAGE_SIZE),
           pagination: {
             page: 1,
             pageSize: DEFAULT_PAGE_SIZE,
-            total: dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).length,
-            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).length / DEFAULT_PAGE_SIZE)),
-            hasNext: dashboard.notes.filter((note) => note.project === selected.projectSlug && !note.folderId).length > DEFAULT_PAGE_SIZE,
+            total: dashboardNotes.filter((note) => note.project === selected.projectSlug && !note.folderId).length,
+            totalPages: Math.max(1, Math.ceil(dashboardNotes.filter((note) => note.project === selected.projectSlug && !note.folderId).length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboardNotes.filter((note) => note.project === selected.projectSlug && !note.folderId).length > DEFAULT_PAGE_SIZE,
             hasPrevious: false,
           },
         }
@@ -115,7 +116,7 @@ export function ProjectsWorkspace({
   const notes = notesQuery.data?.notes || [];
   const knownProjectNoteCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const note of dashboard.notes) {
+    for (const note of dashboardNotes) {
       counts.set(note.project, (counts.get(note.project) || 0) + 1);
     }
     if (selected?.projectSlug) {
@@ -125,7 +126,7 @@ export function ProjectsWorkspace({
       );
     }
     return counts;
-  }, [dashboard.notes, notesQuery.data?.pagination.total, selected?.projectSlug]);
+  }, [dashboardNotes, notesQuery.data?.pagination.total, selected?.projectSlug]);
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug;
   const { data: integrationsResponse } = useQuery({
     queryKey: ['integrations', workspaceSlug],
