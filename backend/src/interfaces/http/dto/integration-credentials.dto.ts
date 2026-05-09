@@ -93,10 +93,18 @@ export const githubRepositoriesBodySchema = z
     repositories: z.array(githubRepositoryInputSchema).max(100),
   })
   .strict()
-  .transform((body) => ({
-    workspaceSlug: body.workspaceSlug,
-    repositories: body.repositories,
-  }));
+  .transform((body) => {
+    const seen = new Set();
+    return {
+      workspaceSlug: body.workspaceSlug,
+      repositories: body.repositories.filter((item) => {
+        const id = String(item.id);
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      }),
+    };
+  });
 
 export type ResolveIntegrationCredentialBody = z.infer<typeof resolveIntegrationCredentialBodySchema>;
 export type ProviderParam = z.infer<typeof providerParamSchema>;

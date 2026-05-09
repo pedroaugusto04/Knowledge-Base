@@ -193,7 +193,7 @@ export function buildDashboardHome(
         id: 'open-findings',
         label: 'Findings abertos',
         value: openHighFindings.length,
-        meta: `${reviewsWithOpenFindings.length} reviews com pendencias`,
+        meta: `${reviewsWithOpenFindings.length} reviews com pendências`,
         tone: openHighFindings.length ? 'high' : 'active',
       },
     ],

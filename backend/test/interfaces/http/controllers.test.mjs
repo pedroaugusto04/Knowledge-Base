@@ -53,18 +53,21 @@ test('dashboard controller delegates project, workspace and note reads to use ca
   const user = { id: 'user-1', email: 'user@example.com', displayName: 'User', role: 'user' };
   const controller = new DashboardController(
     { execute: async () => dashboard },
-    { execute: async () => dashboard.projects },
+    { execute: async () => ({ items: dashboard.projects, pagination: {} }) },
     { execute: async () => dashboard.workspaces },
-    { execute: async () => dashboard.notes },
+    { execute: async () => ({ items: dashboard.notes, pagination: {} }) },
+    { execute: async () => ({ items: [], pagination: {} }) },
+    { execute: async () => ({ items: [], pagination: {} }) },
     { execute: async (_userId, id) => ({ id, title: 'Note detail' }) },
+    { execute: async (_userId, id) => ({ id, title: 'Review detail' }) },
     { execute: async (query) => ({ ok: true, query }) },
   );
 
-  assert.deepEqual(await controller.projects(user), { ok: true, projects: dashboard.projects });
+  assert.deepEqual(await controller.projects(user, {}), { ok: true, projects: dashboard.projects, pagination: {} });
   assert.deepEqual(await controller.workspaces(user), { ok: true, workspaces: dashboard.workspaces });
-  assert.deepEqual(await controller.notes(user), { ok: true, notes: dashboard.notes });
+  assert.deepEqual(await controller.notes(user, {}), { ok: true, notes: dashboard.notes, pagination: {} });
   assert.deepEqual(await controller.note({ id: 'note-1' }, user), { ok: true, note: { id: 'note-1', title: 'Note detail' } });
-  assert.deepEqual(await controller.query({ query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '' }, user), { ok: true, query: { query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '' } });
+  assert.deepEqual(await controller.query({ query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '', page: 1, pageSize: 5 }, user), { ok: true, query: { query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '', page: 1, pageSize: 5 } });
 });
 
 test('operations controller normalizes reminder dispatch and mark-sent inputs', async () => {
@@ -73,6 +76,7 @@ test('operations controller normalizes reminder dispatch and mark-sent inputs', 
   const controller = new OperationsController(
     { execute: async (body, userId) => ({ op: 'ingest', body, userId }) },
     { execute: async (body, userId) => ({ op: 'conversation', body, userId }) },
+    { execute: async (body, userId) => ({ op: 'agent-conversation', body, userId }) },
     { execute: async (mode, userId, workspaceSlug) => { calls.push(['dispatch', mode, userId, workspaceSlug]); return { mode }; } },
     { execute: async (ids, userId, workspaceSlug) => { calls.push(['mark', ids, userId, workspaceSlug]); return { ids }; } },
   );

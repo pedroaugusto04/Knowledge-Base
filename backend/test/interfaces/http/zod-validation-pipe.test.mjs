@@ -16,6 +16,8 @@ test('zod validation pipe parses successful payloads', () => {
     limit: 3,
     workspaceSlug: '',
     projectSlug: '',
+    page: 1,
+    pageSize: 5,
   });
 });
 

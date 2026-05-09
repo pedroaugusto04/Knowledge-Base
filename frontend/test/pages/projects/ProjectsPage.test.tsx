@@ -81,6 +81,7 @@ const dashboard: Dashboard = {
       title: 'Deploy antigo',
       project: 'platform',
       workspace: 'default',
+      folderId: null,
       tags: ['deploy'],
       date: '2026-04-27',
       status: 'active',
@@ -115,6 +116,8 @@ function renderProjects(options?: { selectedProject?: string; route?: string }) 
       selectedProject={selectedProject}
       openProject={openProject}
       openNote={openNote}
+      editNote={vi.fn()}
+      deleteNote={vi.fn()}
     />,
     { route: options?.route || `/projects/${selectedProject}` },
   );
@@ -329,7 +332,7 @@ describe('ProjectsPage', () => {
       return Response.json({
         ok: true,
         note: {
-          ...dashboard.notes[0],
+          ...dashboard.notes![0],
           markdown: '# Deploy antigo',
           frontmatter: {},
           links: [],
@@ -361,7 +364,7 @@ describe('ProjectsPage', () => {
         return Response.json({
           ok: true,
           note: {
-            ...dashboard.notes[0],
+            ...dashboard.notes![0],
             markdown: '# Deploy antigo',
             frontmatter: {},
             links: [],

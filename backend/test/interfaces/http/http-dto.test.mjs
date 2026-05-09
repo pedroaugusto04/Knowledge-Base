@@ -23,6 +23,8 @@ test('query dto normalizes limit and slugs', () => {
     limit: 7,
     workspaceSlug: 'my-workspace',
     projectSlug: 'n8n-automations',
+    page: 1,
+    pageSize: 5,
   });
 });
 
@@ -87,6 +89,7 @@ test('create note dto normalizes project, tags and reminder fields', () => {
     reminderDate: '2026-04-29',
     reminderTime: '09:30',
     reminderAt: '',
+    folderId: undefined,
   });
 });
 
@@ -142,5 +145,5 @@ test('integration dto accepts guided connection payloads', () => {
   assert.equal(guidedIntegrationProviderSchema.parse('ai-review'), 'ai-review');
   assert.equal(githubAppCallbackQuerySchema.parse({ state: 'state', installation_id: 123, setup_action: 'install' }).installation_id, '123');
   assert.equal(sessionParamSchema.parse({ provider: 'whatsapp', sessionId: '00000000-0000-4000-8000-000000000000' }).provider, 'whatsapp');
-  assert.deepEqual(githubRepositoriesBodySchema.parse({ workspaceSlug: 'team_1', repositories: ['acme/api', 'acme/api'] }), { workspaceSlug: 'team_1', repositories: ['acme/api'] });
+  assert.deepEqual(githubRepositoriesBodySchema.parse({ workspaceSlug: 'team_1', repositories: [{ id: '1', fullName: 'acme/api' }] }), { workspaceSlug: 'team_1', repositories: [{ id: '1', fullName: 'acme/api' }] });
 });

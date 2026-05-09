@@ -51,7 +51,7 @@ const dashboard = {
       { id: 'recent-notes', label: 'Mudancas recentes', value: 1, meta: 'notas em 7 dias', tone: 'active' },
       { id: 'active-projects', label: 'Projetos ativos', value: 1, meta: 'com movimento recente', tone: 'active' },
       { id: 'open-reminders', label: 'Lembretes abertos', value: 0, meta: '0 vencidos', tone: 'active' },
-      { id: 'open-findings', label: 'Findings abertos', value: 0, meta: '0 reviews com pendencias', tone: 'active' },
+      { id: 'open-findings', label: 'Findings abertos', value: 0, meta: '0 reviews com pendências', tone: 'active' },
     ],
     activityByDay: [
       { date: '2026-04-21', label: '21/04', count: 0 },

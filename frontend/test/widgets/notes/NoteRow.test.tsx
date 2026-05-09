@@ -25,6 +25,7 @@ describe('NoteRow', () => {
           title: 'Deploy antigo',
           project: 'platform',
           workspace: 'default',
+          folderId: null,
           tags: ['deploy'],
           date: '2026-04-27',
           status: 'active',

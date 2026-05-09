@@ -53,8 +53,8 @@ export class DashboardController {
 
   @Get('projects')
   async projects(
-    @Query(new ZodValidationPipe(projectsListQuerySchema, 'invalid_projects_query')) query: ProjectsListQuery,
     @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(projectsListQuerySchema, 'invalid_projects_query')) query: ProjectsListQuery,
   ) {
     return { ok: true, ...paginatedResponse('projects', await this.listProjectsUseCase.execute(user.id, query)) };
   }
@@ -66,8 +66,8 @@ export class DashboardController {
 
   @Get('notes')
   async notes(
-    @Query(new ZodValidationPipe(notesListQuerySchema, 'invalid_notes_query')) query: NotesListQuery,
     @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(notesListQuerySchema, 'invalid_notes_query')) query: NotesListQuery,
   ) {
     return { ok: true, ...paginatedResponse('notes', await this.listNotesUseCase.execute(user.id, query)) };
   }
@@ -81,8 +81,8 @@ export class DashboardController {
 
   @Get('reviews')
   async reviews(
-    @Query(new ZodValidationPipe(reviewsListQuerySchema, 'invalid_reviews_query')) query: ReviewsListQuery,
     @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(reviewsListQuerySchema, 'invalid_reviews_query')) query: ReviewsListQuery,
   ) {
     return { ok: true, ...paginatedResponse('reviews', await this.listReviewsUseCase.execute(user.id, query)) };
   }
@@ -96,8 +96,8 @@ export class DashboardController {
 
   @Get('reminders')
   async reminders(
-    @Query(new ZodValidationPipe(remindersListQuerySchema, 'invalid_reminders_query')) query: RemindersListQuery,
     @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(remindersListQuerySchema, 'invalid_reminders_query')) query: RemindersListQuery,
   ) {
     return { ok: true, ...paginatedResponse('reminders', await this.listRemindersUseCase.execute(user.id, query)) };
   }
