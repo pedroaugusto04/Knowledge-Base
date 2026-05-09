@@ -335,6 +335,26 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   const globalLoading = useGlobalLoading();
   const [mode, setMode] = useState<AuthMode>('login');
   const formRef = useRef<HTMLFormElement>(null);
+  const authBenefits = [
+    'Capture decisões e aprendizados no fluxo real do trabalho',
+    'Transforme eventos e conversas em histórico pesquisável',
+    'Acelere onboarding e reduza perda de contexto entre pessoas',
+  ];
+  const authSteps = [
+    'Conecte seu workspace',
+    'Capture conhecimento por integrações e uso diário',
+    'Recupere contexto por projeto, nota e busca',
+  ];
+  const authCopy = {
+    login: {
+      title: 'Entrar no seu workspace',
+      description: 'Acesse seu histórico, projetos e integrações em andamento.',
+    },
+    signup: {
+      title: 'Criar conta para começar',
+      description: 'Configure seu acesso e comece a centralizar o conhecimento.',
+    },
+  } satisfies Record<AuthMode, { title: string; description: string }>;
   const schema = useMemo(() => createAuthFormSchema(mode), [mode]);
   const {
     clearErrors,
@@ -378,38 +398,74 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
 
   return (
     <main className="auth-layout">
-      <section className="auth-panel" aria-label="Autenticacao">
-        <Link className="brand auth-brand" to={routes.home} aria-label="Ir para Home">
-          <div className="brand-mark">KV</div>
-          <div>
-            <strong>Knowledge Vault</strong>
-            <span>developer knowledge base</span>
+      <section className="auth-landing" aria-label="Entrada do Knowledge Vault">
+        <section className="auth-hero" aria-labelledby="auth-hero-title">
+          <div className="auth-hero-copy">
+            <h1 id="auth-hero-title">Informações e contexto em um só lugar.</h1>
+            <p className="auth-lead">
+              Capture continuamente decisões, conversas e sinais operacionais. Encontre depois com busca clara e recupere contexto com rapidez.
+            </p>
           </div>
-        </Link>
-        <div className="segmented-control" role="tablist" aria-label="Modo de acesso">
-          <button className={mode === 'login' ? 'active' : ''} type="button" onClick={() => setMode('login')}>
-            Entrar
-          </button>
-          <button className={mode === 'signup' ? 'active' : ''} type="button" onClick={() => setMode('signup')}>
-            Criar conta
-          </button>
-        </div>
-        <form className="auth-form" ref={formRef} noValidate onSubmit={handleSubmit((values) => mutation.mutate(values), onInvalid)}>
-          {mode === 'signup' ? (
-            <FormField name="name" label="Nome" error={errors.name?.message} required>
-              {(fieldProps) => <input autoComplete="name" {...fieldProps} {...register('name')} />}
+          <div className="auth-benefits-card">
+            <h2>Por que entrar por aqui</h2>
+            <ul className="auth-benefits-list">
+              {authBenefits.map((benefit) => (
+                <li key={benefit}>{benefit}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="auth-flow-card">
+            <div className="auth-flow-head">
+              <h2>Como funciona</h2>
+              <p>Da captura diária até a recuperação de contexto em poucos passos.</p>
+            </div>
+            <ol className="auth-steps-list">
+              {authSteps.map((step, index) => (
+                <li key={step}>
+                  <span className="auth-step-index">0{index + 1}</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+        <section className="auth-panel" aria-label="Autenticacao">
+          <Link className="brand auth-brand" to={routes.home} aria-label="Ir para Home">
+            <div className="brand-mark">KV</div>
+            <div>
+              <strong>Knowledge Vault</strong>
+              <span>developer knowledge base</span>
+            </div>
+          </Link>
+          <div className="segmented-control" role="tablist" aria-label="Modo de acesso">
+            <button className={mode === 'login' ? 'active' : ''} type="button" onClick={() => setMode('login')}>
+              Entrar
+            </button>
+            <button className={mode === 'signup' ? 'active' : ''} type="button" onClick={() => setMode('signup')}>
+              Criar conta
+            </button>
+          </div>
+          <div className="auth-panel-copy">
+            <h2>{authCopy[mode].title}</h2>
+            <p>{authCopy[mode].description}</p>
+          </div>
+          <form className="auth-form" ref={formRef} noValidate onSubmit={handleSubmit((values) => mutation.mutate(values), onInvalid)}>
+            {mode === 'signup' ? (
+              <FormField name="name" label="Nome" error={errors.name?.message} required>
+                {(fieldProps) => <input autoComplete="name" {...fieldProps} {...register('name')} />}
+              </FormField>
+            ) : null}
+            <FormField name="email" label="Email" error={errors.email?.message} required>
+              {(fieldProps) => <input autoComplete="email" type="email" {...fieldProps} {...register('email')} />}
             </FormField>
-          ) : null}
-          <FormField name="email" label="Email" error={errors.email?.message} required>
-            {(fieldProps) => <input autoComplete="email" type="email" {...fieldProps} {...register('email')} />}
-          </FormField>
-          <FormField name="password" label="Senha" error={errors.password?.message} required>
-            {(fieldProps) => <input autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type="password" {...fieldProps} {...register('password')} />}
-          </FormField>
-          <button className="icon-button auth-submit" type="submit" disabled={mutation.isPending}>
-            {mode === 'login' ? 'Entrar' : 'Criar conta'}
-          </button>
-        </form>
+            <FormField name="password" label="Senha" error={errors.password?.message} required>
+              {(fieldProps) => <input autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type="password" {...fieldProps} {...register('password')} />}
+            </FormField>
+            <button className="icon-button auth-submit" type="submit" disabled={mutation.isPending}>
+              {mode === 'login' ? 'Entrar' : 'Criar conta'}
+            </button>
+          </form>
+        </section>
       </section>
     </main>
   );

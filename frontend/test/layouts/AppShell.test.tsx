@@ -572,7 +572,21 @@ describe('AppShell', () => {
 
     renderWithAppProviders(<AppShell />);
 
+    expect(await screen.findByRole('heading', { name: 'Informações e contexto em um só lugar.' })).toBeInTheDocument();
+    expect(screen.getByText('Capture decisões e aprendizados no fluxo real do trabalho')).toBeInTheDocument();
     expect((await screen.findAllByRole('button', { name: 'Entrar' })).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: 'Criar conta' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'Entrar no seu workspace' })).toBeInTheDocument();
+    expect(screen.getByText('Acesse seu histórico, projetos e integrações em andamento.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Criar conta' }).at(0)!);
+
+    expect(await screen.findByRole('heading', { name: 'Criar conta para começar' })).toBeInTheDocument();
+    expect(screen.getByText('Configure seu acesso e comece a centralizar o conhecimento.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Entrar' }).at(0)!);
+
+    expect(await screen.findByRole('heading', { name: 'Entrar no seu workspace' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'user@example.com' } });
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'password123' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Entrar' }).at(-1)!);

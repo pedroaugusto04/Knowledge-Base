@@ -88,22 +88,23 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
 
   return (
     <main className="setup-layout">
-      <section className="setup-hero">
-        <Link className="brand auth-brand" to={routes.home} aria-label="Ir para Home">
-          <div className="brand-mark">KV</div> 
-          <div>
-            <strong>Knowledge Vault</strong>
-            <span>workspace setup wizard</span>
-          </div>
-        </Link>
-        <PageHead
-          title="Configurar workspace"
-          subtitle=""
-        />
-      </section>
+      <div className="setup-shell">
+        <section className="setup-hero">
+          <Link className="brand auth-brand" to={routes.home} aria-label="Ir para Home">
+            <div className="brand-mark">KV</div>
+            <div>
+              <strong>Knowledge Vault</strong>
+              <span>workspace setup</span>
+            </div>
+          </Link>
+          <PageHead
+            title="Configurar workspace"
+            subtitle="Crie o workspace e conecte as integrações no seu ritmo. Os passos opcionais podem ser concluídos depois."
+          />
+        </section>
 
-      <section className="setup-grid">
-        <Panel className="setup-step-card">
+        <section className="setup-grid">
+          <Panel className="setup-step-card">
           <div className="setup-step-head">
             <div>
               <div className="card-kicker">Passo 1</div>
@@ -117,7 +118,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
             </div>
           ) : (
             <form
-              className="auth-form"
+              className="auth-form setup-form"
               ref={formRef}
               noValidate
               onSubmit={handleSubmit(
@@ -138,14 +139,14 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
                   />
                 )}
               </FormField>
-              <button className="icon-button auth-submit" disabled={createWorkspaceMutation.isPending} type="submit">
+              <button className="icon-button auth-submit setup-submit" disabled={createWorkspaceMutation.isPending} type="submit">
                 Criar workspace
               </button>
             </form>
           )}
-        </Panel>
+          </Panel>
 
-        <Panel className="setup-step-card">
+          <Panel className="setup-step-card">
           <div className="setup-step-head">
             <div>
               <div className="card-kicker">Passo 2</div>
@@ -174,9 +175,9 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
           ) : (
             <p className="meta">Crie o workspace antes de iniciar a conexao com o GitHub.</p>
           )}
-        </Panel>
+          </Panel>
 
-        <Panel className="setup-step-card">
+          <Panel className="setup-step-card">
           <div className="setup-step-head">
             <div>
               <div className="card-kicker">Passo 3</div>
@@ -194,17 +195,18 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
           ) : (
             <p className="meta">Crie o workspace antes de iniciar os fluxos de mensageria.</p>
           )}
-        </Panel>
-      </section>
-
-      {workspaceReady ? (
-        <section className="setup-actions">
-          <a className="icon-button" href={withFrontendBasePath(routes.home)}>
-            Ir para o dashboard
-          </a>
-          {!activeWorkspace ? <span className="meta">Sincronizando workspace...</span> : null}
+          </Panel>
         </section>
-      ) : null}
+
+        {workspaceReady ? (
+          <section className="setup-actions">
+            <a className="icon-button" href={withFrontendBasePath(routes.home)}>
+              Ir para o dashboard
+            </a>
+            {!activeWorkspace ? <span className="meta">Sincronizando workspace...</span> : null}
+          </section>
+        ) : null}
+      </div>
     </main>
   );
 }
