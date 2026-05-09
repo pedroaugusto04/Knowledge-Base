@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { readEnvironment } from '../../../adapters/environment.js';
 import { slugify } from '../../../domain/strings.js';
 import { normalizeDate, normalizeTime } from '../../../domain/time.js';
 import { normalizedSlugList, optionalStringArraySchema } from './dto-normalizers.js';
@@ -22,7 +23,7 @@ export const createNoteBodySchema = z
     title: body.title,
     rawText: body.rawText,
     tags: normalizedSlugList(body.tags),
-    reminderDate: normalizeDate(body.reminderDate),
+    reminderDate: normalizeDate(body.reminderDate, readEnvironment().reminderTimeZone),
     reminderTime: normalizeTime(body.reminderTime),
     reminderAt: body.reminderAt,
   }))
@@ -58,7 +59,7 @@ export const updateNoteBodySchema = z
     title: body.title,
     rawText: body.rawText,
     tags: normalizedSlugList(body.tags),
-    reminderDate: normalizeDate(body.reminderDate),
+    reminderDate: normalizeDate(body.reminderDate, readEnvironment().reminderTimeZone),
     reminderTime: normalizeTime(body.reminderTime),
     reminderAt: body.reminderAt,
   }))

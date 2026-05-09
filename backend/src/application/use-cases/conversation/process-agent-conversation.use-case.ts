@@ -107,7 +107,7 @@ export class ProcessAgentConversationUseCase {
         ? candidateFolders
         : await this.contentRepository.listProjectFolders(userId, selectedProjectSlug)
       : [];
-    const nextState = buildNextState(state, messageText, decision, projects, foldersForDecision);
+    const nextState = buildNextState(state, messageText, decision, projects, foldersForDecision, environment.reminderTimeZone);
     await this.conversationStates.upsert(userId, normalizedWorkspaceSlug, key, nextState);
 
     if (!nextState.draft.rawText) {
@@ -278,13 +278,14 @@ function buildNextState(
   decision: ConversationAgentResponse,
   projects: ProjectRecord[],
   candidateFolders: ProjectFolderRecord[],
+  reminderTimeZone: string,
 ) {
   const selectedProjectSlug = sanitizeProjectSlug(decision.selectedProjectSlug, projects);
   const draft = agentConversationDraftSchema.parse({
     ...current.draft,
     ...decision.resolvedDraft,
     rawText: trimText(decision.resolvedDraft.rawText, trimText(current.draft.rawText, messageText)),
-    reminderDate: normalizeDate(decision.resolvedDraft.reminderDate || current.draft.reminderDate || ''),
+    reminderDate: normalizeDate(decision.resolvedDraft.reminderDate || current.draft.reminderDate || '', reminderTimeZone),
     reminderTime: normalizeTime(decision.resolvedDraft.reminderTime || current.draft.reminderTime || ''),
     tags: [...new Set([...(current.draft.tags || []), ...(decision.resolvedDraft.tags || [])].map((tag) => slugify(tag)).filter(Boolean))],
   });

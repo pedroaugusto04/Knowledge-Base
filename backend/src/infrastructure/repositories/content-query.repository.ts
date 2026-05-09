@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { readEnvironment } from '../../adapters/environment.js';
 import type { DueTelegramReminderView, ReminderView } from '../../application/models/reminder.models.js';
 import type { NoteRecord } from '../../application/models/repository-records.models.js';
 import type { ReviewView } from '../../application/models/review.models.js';
@@ -53,6 +54,7 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
   }
 
   async listDueTelegramReminders(now: string) {
+    const reminderTimeZone = readEnvironment().reminderTimeZone;
     const result = await this.database.getPool().query(
       `select n.user_id, n.workspace_slug, n.id as reminder_id, n.title, n.project_slug, n.path, n.status, n.metadata, w.telegram_chat_id
        from kb_notes n
@@ -70,7 +72,7 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
           reminderDate: metadata.reminderDate,
           reminderTime: metadata.reminderTime,
           reminderAt: metadata.reminderAt,
-        });
+        }, reminderTimeZone);
         if (!scheduledAt || scheduledAt > now) return null;
         return {
           userId: String(row.user_id || ''),

@@ -128,7 +128,7 @@ export function normalizeConversationTags(tags: unknown): string[] {
   return Array.isArray(tags) ? tags.map((item) => slugify(item)).filter(Boolean) : [];
 }
 
-export function buildConversationPayload(input: ConversationInput, state: ConversationState): IngestPayload {
+export function buildConversationPayload(input: ConversationInput, state: ConversationState, reminderTimeZone = 'America/Sao_Paulo'): IngestPayload {
   return ingestPayloadSchema.parse({
     source: {
       channel: SourceChannel.Whatsapp,
@@ -168,7 +168,7 @@ export function buildConversationPayload(input: ConversationInput, state: Conver
       followUpBy: '',
     },
     metadata: {
-      reminderAt: buildReminderAt(state.reminderDate, state.reminderTime),
+      reminderAt: buildReminderAt(state.reminderDate, state.reminderTime, reminderTimeZone),
     },
   });
 }

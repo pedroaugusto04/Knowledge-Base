@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { NotFoundException, Injectable } from '@nestjs/common';
 
+import { readEnvironment } from '../../../adapters/environment.js';
 import { CanonicalType, EventType, Importance, KnowledgeKind, KnowledgeStatus, SourceChannel } from '../../../contracts/enums.js';
 import { withDerivedReminderAt, type IngestPayload } from '../../../contracts/ingest.js';
 import type { CreateManualNoteInput } from '../../models/note-input.models.js';
@@ -71,7 +72,7 @@ export class CreateManualNoteUseCase {
       },
     };
 
-    return this.ingestEntryUseCase.execute(withDerivedReminderAt(payload), userId, workspace.workspaceSlug, {
+    return this.ingestEntryUseCase.execute(withDerivedReminderAt(payload, readEnvironment().reminderTimeZone), userId, workspace.workspaceSlug, {
       folderId: input.folderId,
     });
   }

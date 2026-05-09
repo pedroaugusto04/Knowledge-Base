@@ -37,14 +37,6 @@ export function formatUsDateTime(value: string | null | undefined) {
   return `${datePart} ${hours}:${minutes}`;
 }
 
-export function localDateTimeToUtcIso(date: string | null | undefined, time: string | null | undefined) {
-  if (!date || !time) return '';
-  const [year, month, day] = date.split('-').map(Number);
-  const [hours, minutes] = time.split(':').map(Number);
-  const local = new Date(year, month - 1, day, hours, minutes, 0, 0);
-  return Number.isNaN(local.getTime()) ? '' : local.toISOString();
-}
-
 export function noteTypeLabel(type: string) {
   return (
     {

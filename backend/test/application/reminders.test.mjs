@@ -74,12 +74,18 @@ function createLoggerStub() {
   };
 }
 
+function environmentProvider(reminderTimeZone = 'America/Sao_Paulo') {
+  return {
+    read: () => ({ reminderTimeZone }),
+  };
+}
+
 test('daily reminders are aggregated once per date by user and workspace', async (t) => {
   const { repositories, user } = await createStoreWithReminder(t);
-  const useCase = new BuildReminderDispatchUseCase(repositories.contentQueryRepository, repositories.reminderDispatchRepository);
+  const useCase = new BuildReminderDispatchUseCase(repositories.contentQueryRepository, repositories.reminderDispatchRepository, environmentProvider());
 
-  const first = await useCase.execute('daily', user.id, 'default');
-  const second = await useCase.execute('daily', user.id, 'default');
+  const first = await useCase.execute('daily', user.id, 'default', new Date('2099-12-31T12:00:00.000Z'));
+  const second = await useCase.execute('daily', user.id, 'default', new Date('2099-12-31T12:00:00.000Z'));
 
   assert.equal(first.ok, true);
   assert.equal(first.shouldSend, true);
@@ -99,7 +105,7 @@ test('markRemindersAsSent updates exact reminder state', async (t) => {
 test('paginated reminders expose backend reminder status for expired and sent items', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
-  const listReminders = new ListPaginatedRemindersUseCase(repositories.contentQueryRepository, repositories.reminderDispatchRepository);
+  const listReminders = new ListPaginatedRemindersUseCase(repositories.contentQueryRepository, repositories.reminderDispatchRepository, environmentProvider());
 
   const expiredReminder = await insertReminder(repositories, user.id, {
     path: '20 Inbox/n8n-automations/expired.md',
@@ -234,7 +240,7 @@ test('global due reminder read model includes only due reminders with telegram w
   assert.equal(reminders.some((item) => item.relativePath.endsWith('resolved.md')), false);
 
   const dateOnlyReminder = reminders.find((item) => item.reminderId === dateOnly.id);
-  assert.equal(dateOnlyReminder?.scheduledAt, '2026-05-05T09:00:00.000Z');
+  assert.equal(dateOnlyReminder?.scheduledAt, '2026-05-05T12:00:00.000Z');
   assert.equal(dateOnlyReminder?.telegramChatId, 'telegram-chat-1');
 });
 

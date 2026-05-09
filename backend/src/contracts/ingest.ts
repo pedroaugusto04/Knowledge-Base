@@ -103,7 +103,7 @@ export type IngestPayload = z.infer<typeof ingestPayloadSchema>;
 
 export function withDerivedReminderAt(
   payload: IngestPayload,
-  timeZone = 'UTC',
+  timeZone = 'America/Sao_Paulo',
 ): IngestPayload & { actions: IngestPayload['actions'] & { reminderAt: string } } {
   const existingReminderAt = 'reminderAt' in payload.actions ? String((payload.actions as Record<string, unknown>).reminderAt || '') : '';
   return {

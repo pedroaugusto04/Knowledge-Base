@@ -1,3 +1,5 @@
+import { readEnvironment } from '../../../adapters/environment.js';
+import { buildReminderAt } from '../../../domain/time.js';
 import { renderFrontmatter } from '../../../domain/frontmatter.js';
 import { relocateNotePath } from '../../../domain/notes.js';
 import { normalizeMultiline, trimText } from '../../../domain/strings.js';
@@ -32,7 +34,7 @@ export function buildUpdatedNote(note: NoteRecord, previousFolder: ProjectFolder
     rawText,
     reminderDate: input.reminderDate,
     reminderTime: input.reminderTime,
-    reminderAt: input.reminderAt || '',
+    reminderAt: input.reminderAt || buildReminderAt(input.reminderDate, input.reminderTime, readEnvironment().reminderTimeZone),
   };
 
   return {

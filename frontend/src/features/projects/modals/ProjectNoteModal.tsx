@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { localDateTimeToUtcIso } from '../../../entities/format';
 import { createNote, updateNote } from '../../../shared/api/client';
 import type { NoteDetail } from '../../../shared/api/models/note';
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../../shared/forms/errors';
@@ -63,7 +62,6 @@ export function ProjectNoteModal({
         tags: parseCommaSeparatedList(values.tags),
         reminderDate: values.reminderDate,
         reminderTime: values.reminderTime,
-        reminderAt: localDateTimeToUtcIso(values.reminderDate, values.reminderTime),
       };
       return globalLoading.trackPromise(mode === 'create'
         ? createNote({ ...payload, projectSlug })

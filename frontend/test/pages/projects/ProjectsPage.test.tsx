@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithAppProviders } from '../../../src/app/test-utils';
 import { ProjectsPage } from '../../../src/pages/projects/ProjectsPage';
 import type { Dashboard } from '../../../src/shared/api/models/dashboard';
-import { localDateTimeToUtcIso } from '../../../src/entities/format';
 
 function githubIntegrationsResponse(status: 'connected' | 'missing' = 'connected') {
   return {
@@ -304,7 +303,6 @@ describe('ProjectsPage', () => {
         tags: ['deploy'],
         reminderDate: '2026-04-29',
         reminderTime: '09:30',
-        reminderAt: localDateTimeToUtcIso('2026-04-29', '09:30'),
       });
       return Response.json({ ok: true, project: 'platform', noteId: 'note-2', eventPath: 'path.md' });
     });
@@ -384,7 +382,6 @@ describe('ProjectsPage', () => {
           rawText: 'confirmar deploy atualizado',
           reminderDate: '2026-04-29',
           reminderTime: '09:30',
-          reminderAt: localDateTimeToUtcIso('2026-04-29', '09:30'),
         });
         return Response.json({ ok: true, noteId: 'note-1' });
       }

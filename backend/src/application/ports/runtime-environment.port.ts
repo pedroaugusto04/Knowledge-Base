@@ -1,6 +1,7 @@
 import type { AiProvider } from '../../contracts/enums.js';
 
 export type RuntimeEnvironment = {
+  reminderTimeZone: string;
   webhookSecret: string;
   githubWebhookSecret: string;
   conversationTimeoutMs: number;

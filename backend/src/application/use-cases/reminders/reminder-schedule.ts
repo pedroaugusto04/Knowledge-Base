@@ -2,15 +2,18 @@ import { buildReminderAt, normalizeDate, normalizeTime } from '../../../domain/t
 
 export const DEFAULT_REMINDER_TIME = '09:00';
 
-export function resolveReminderScheduledAt(input: { reminderDate?: unknown; reminderTime?: unknown; reminderAt?: unknown }): string {
+export function resolveReminderScheduledAt(
+  input: { reminderDate?: unknown; reminderTime?: unknown; reminderAt?: unknown },
+  timeZone = 'America/Sao_Paulo',
+): string {
   const reminderAt = String(input.reminderAt || '').trim();
   if (reminderAt) return reminderAt;
 
-  const reminderDate = normalizeDate(String(input.reminderDate || ''), 'UTC');
+  const reminderDate = normalizeDate(String(input.reminderDate || ''), timeZone);
   if (!reminderDate) return '';
 
   const reminderTime = normalizeTime(String(input.reminderTime || '')) || DEFAULT_REMINDER_TIME;
-  return buildReminderAt(reminderDate, reminderTime, 'UTC');
+  return buildReminderAt(reminderDate, reminderTime, timeZone);
 }
 
 export function reminderDispatchKey(scheduledAt: string): string {

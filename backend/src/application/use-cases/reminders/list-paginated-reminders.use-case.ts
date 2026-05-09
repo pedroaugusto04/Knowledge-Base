@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { RuntimeEnvironmentProvider } from '../../ports/runtime-environment.port.js';
 import { buildPaginationMeta } from '../../../contracts/pagination.js';
 import { ReminderDispatchMode } from '../../../contracts/enums.js';
 import type { ListRemindersInput } from '../../models/reminder-list.models.js';
@@ -13,12 +14,14 @@ export class ListPaginatedRemindersUseCase {
   constructor(
     private readonly contentQueryRepository: ContentQueryRepository,
     private readonly reminderDispatchRepository: ReminderDispatchRepository,
+    private readonly environmentProvider: RuntimeEnvironmentProvider,
   ) {}
 
   async execute(userId: string, input: ListRemindersInput) {
+    const reminderTimeZone = this.environmentProvider.read().reminderTimeZone;
     const reminders = (await Promise.all(
       (await this.contentQueryRepository.listReminders(userId)).map(async (reminder) => {
-        const scheduledAt = resolveReminderScheduledAt(reminder);
+        const scheduledAt = resolveReminderScheduledAt(reminder, reminderTimeZone);
         const dispatchKey = reminderDispatchKey(scheduledAt);
         const sent = dispatchKey
           ? await this.reminderDispatchRepository.hasSent(

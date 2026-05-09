@@ -1,6 +1,8 @@
 import { AiProvider } from '../contracts/enums.js';
+import { normalizeTimeZone } from '../domain/time.js';
 
 export const defaultGithubAppCallbackPath = '/api/integrations/github-app/callback';
+export const defaultReminderTimeZone = 'America/Sao_Paulo';
 
 export function normalizeGithubAppCallbackPath(value: string | undefined): string {
   const trimmed = String(value || '').trim();
@@ -15,6 +17,7 @@ export function normalizeGithubAppCallbackPath(value: string | undefined): strin
 }
 
 export type RuntimeEnvironment = {
+  reminderTimeZone: string;
   webhookSecret: string;
   githubWebhookSecret: string;
   conversationTimeoutMs: number;
@@ -58,6 +61,7 @@ export type RuntimeEnvironment = {
 
 export function readEnvironment(env = process.env): RuntimeEnvironment {
   return {
+    reminderTimeZone: normalizeTimeZone(String(env.KB_REMINDER_TIMEZONE || defaultReminderTimeZone)),
     webhookSecret: String(env.KB_WEBHOOK_SECRET || '').trim(),
     githubWebhookSecret: String(env.KB_GITHUB_APP_WEBHOOK_SECRET || '').trim(),
     conversationTimeoutMs: Number(env.WPP_CONVERSATION_TIMEOUT_MS || 600_000),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatUsDate, localDateTimeToUtcIso } from '../../src/entities/format';
+import { formatUsDate } from '../../src/entities/format';
 
 describe('formatUsDate', () => {
   it('formats plain ISO dates as MM/DD/YYYY', () => {
@@ -15,9 +15,5 @@ describe('formatUsDate', () => {
 
   it('preserves non-date values when parsing fails', () => {
     expect(formatUsDate('sem-data')).toBe('sem-data');
-  });
-
-  it('serializes local reminder inputs to utc', () => {
-    expect(localDateTimeToUtcIso('2026-04-29', '09:30')).toBe(new Date(2026, 3, 29, 9, 30, 0, 0).toISOString());
   });
 });

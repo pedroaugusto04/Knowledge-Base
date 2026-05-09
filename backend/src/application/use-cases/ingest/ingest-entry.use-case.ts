@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import { readEnvironment } from '../../../adapters/environment.js';
 import { CanonicalType, KnowledgeStatus } from '../../../contracts/enums.js';
 import { withDerivedReminderAt, type IngestPayload } from '../../../contracts/ingest.js';
 import { buildNotePaths, renderEventNote } from '../../../domain/notes.js';
@@ -52,7 +53,7 @@ async function saveIngestedNote(
   workspaceSlugOverride = '',
   options: IngestExecutionOptions = {},
 ) {
-  const parsed = withDerivedReminderAt(input);
+  const parsed = withDerivedReminderAt(input, readEnvironment().reminderTimeZone);
   const workspaceSlug = slugify(workspaceSlugOverride || String(parsed.metadata.workspaceSlug || 'default')) || 'default';
   const workspace = (await contentRepository.listWorkspaces(userId)).find((item) => item.workspaceSlug === workspaceSlug);
   if (!workspace) throw new NotFoundException('workspace_not_found');

@@ -155,6 +155,7 @@ function dispatchConversationPhase(args: ProcessConversationArgs, context: Conve
 
 async function handleIdlePhase(args: ProcessConversationArgs, context: ConversationContext, environment: RuntimeEnvironment) {
   const aiExtracted = await resolveAiExtraction(args, context, environment);
+  const reminderTimeZone = environment.reminderTimeZone;
   const nextState: ConversationState = {
     ...emptyConversationState,
     rawText: aiExtracted.rawText || context.message,
@@ -163,7 +164,7 @@ async function handleIdlePhase(args: ProcessConversationArgs, context: Conversat
     canonicalType: aiExtracted.canonicalType || inferInteractiveCanonicalType(aiExtracted.kind || KnowledgeKind.Note),
     importance: aiExtracted.importance || defaultImportanceForKind(aiExtracted.kind || KnowledgeKind.Note),
     tags: normalizeConversationTags(aiExtracted.tags),
-    reminderDate: normalizeDate(aiExtracted.reminderDate || ''),
+    reminderDate: normalizeDate(aiExtracted.reminderDate || '', reminderTimeZone),
     reminderTime: normalizeTime(aiExtracted.reminderTime || ''),
     media: args.input.hasMedia ? args.input.media : emptyConversationState.media,
     updatedAt: nowIso(),
@@ -216,7 +217,7 @@ async function handleAwaitingReminderDatePhase(args: ProcessConversationArgs, co
     await persistConversationState(args, context.key, nextState);
     return { action: 'reply', replyText: confirmationPrompt(nextState), payload: null };
   }
-  const date = normalizeDate(context.message);
+  const date = normalizeDate(context.message, args.environmentProvider.read().reminderTimeZone);
   if (!date) return { action: 'reply', replyText: 'Data invalida. Use DD/MM/AAAA, YYYY-MM-DD, hoje ou amanhã.', payload: null };
   const nextState = { ...context.current, reminderDate: date, phase: ConversationPhase.AwaitingReminderTime, updatedAt: nowIso() };
   await persistConversationState(args, context.key, nextState);
@@ -242,7 +243,7 @@ async function handleAwaitingConfirmationPhase(args: ProcessConversationArgs, co
     return { action: 'reply', replyText: 'Nota descartada.', payload: null };
   }
   if (!isConfirm(context.message)) return { action: 'reply', replyText: confirmationPrompt(context.current), payload: null };
-  const payload = buildConversationPayload(args.input, context.current);
+  const payload = buildConversationPayload(args.input, context.current, args.environmentProvider.read().reminderTimeZone);
   const ingestResult = await args.ingestEntryUseCase.execute(payload, args.userId, args.workspaceSlug);
   await args.conversationStates.clear(args.userId, args.workspaceSlug, context.key);
   return { action: 'submit', replyText: 'Nota ingerida.', payload, ingestResult };
