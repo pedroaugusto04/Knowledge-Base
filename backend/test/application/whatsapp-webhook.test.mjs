@@ -6,7 +6,7 @@ import {
   HandleWhatsappWebhookUseCase,
   IngestEntryUseCase,
   ProcessAgentConversationUseCase,
-  ProcessConversationUseCase,
+  QueryKnowledgeUseCase,
 } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
@@ -68,12 +68,6 @@ class StubConversationAgentGateway {
   }
 }
 
-class StubConversationExtractionGateway {
-  async extract() {
-    return {};
-  }
-}
-
 function configureEnv() {
   process.env.KB_WEBHOOK_SECRET = 'webhook-secret';
   process.env.KB_WPP_WEBHOOK_API_KEY = 'provider-key';
@@ -130,14 +124,8 @@ async function fixture(t, sender = new CapturingWhatsappSender()) {
     new StubConversationAgentGateway(),
     repositories.credentialRepository,
   );
-  const legacyConversation = new ProcessConversationUseCase(
-    repositories.contentRepository,
+  const queryKnowledge = new QueryKnowledgeUseCase(
     repositories.contentQueryRepository,
-    repositories.conversationStateRepository,
-    ingest,
-    { read: () => ({ reminderTimeZone: 'America/Sao_Paulo', conversationTimeoutMs: 600000 }) },
-    new StubConversationExtractionGateway(),
-    repositories.credentialRepository,
   );
   const whatsapp = new HandleWhatsappWebhookUseCase(
     repositories.externalIdentityRepository,
@@ -145,7 +133,7 @@ async function fixture(t, sender = new CapturingWhatsappSender()) {
     { read: () => ({ reminderTimeZone: 'America/Sao_Paulo', webhookSecret: process.env.KB_WEBHOOK_SECRET || '', whatsappWebhookApiKey: process.env.KB_WPP_WEBHOOK_API_KEY || '', evolutionApiKey: process.env.EVOLUTION_API_KEY || '' }) },
     undefined,
     conversation,
-    legacyConversation,
+    queryKnowledge,
     sender,
   );
   return { repositories, whatsapp, sender, user };
@@ -178,13 +166,13 @@ test('linked whatsapp group processes free text and sends the first conversation
   assert.equal(result.ok, true);
   assert.equal(result.processed, true);
   assert.equal(result.action, 'confirm');
-  assert.match(result.replyText, /Sugestao de pasta/);
+  assert.match(result.message, /Sugestao de pasta/);
   assert.equal(result.replySent, true);
   assert.match(result.conversationResult.replyText, /Sugestao de pasta/);
-  assert.equal(result.message, result.replyText);
-  assert.equal(result.text, result.replyText);
-  assert.equal(result.reply, result.replyText);
-  assert.equal(result.confirmText, result.replyText);
+  assert.equal(result.replyText, undefined);
+  assert.equal(result.text, undefined);
+  assert.equal(result.reply, undefined);
+  assert.equal(result.confirmText, undefined);
   assert.equal(sender.sent.length, 1);
   assert.equal(sender.sent[0].groupJid, '120363@g.us');
   assert.match(sender.sent[0].text, /Sugestao de pasta/);
@@ -198,7 +186,7 @@ test('linked whatsapp group completes conversation and saves note on confirmatio
   const result = await whatsapp.execute(evolutionInput('sim'));
 
   assert.equal(result.action, 'submit');
-  assert.equal(result.replyText, 'Nota salva com sucesso.');
+  assert.equal(result.message, 'Nota salva com sucesso.');
   assert.equal(result.conversationResult.action, 'submit');
   const notes = await repositories.contentRepository.listNotes(user.id);
   assert.equal(notes.length, 1);
@@ -230,7 +218,7 @@ test('whatsapp knowledge command replies to query without creating capture state
   const result = await whatsapp.execute(evolutionInput('/buscar deploy webhook'));
 
   assert.equal(result.action, 'reply');
-  assert.match(result.replyText, /deploy/i);
+  assert.match(result.message, /deploy/i);
   assert.equal(result.conversationResult.action, 'reply');
   assert.match(result.conversationResult.replyText, /deploy/i);
   assert.equal(await repositories.countConversationStates(), 0);
@@ -307,7 +295,7 @@ test('whatsapp media without caption asks for text and does not save attachment'
   }));
 
   assert.equal(result.replySent, true);
-  assert.match(result.replyText, /legenda ou texto/);
+  assert.match(result.message, /legenda ou texto/);
   assert.equal((await repositories.contentRepository.listNotes(user.id)).length, 0);
   assert.equal(sender.sent.length, 1);
 });

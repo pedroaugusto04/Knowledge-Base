@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 
 import { ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
 import type { ConversationInput } from '../../../../contracts/conversation.js';
+import { DEFAULT_PAGE_SIZE } from '../../../../contracts/pagination.js';
 import { IntegrationConnectionService } from '../../../integration-connections.js';
 import type { WhatsappWebhookRequest } from '../../../models/webhook-request.models.js';
 import { ExternalIdentityRepository } from '../../../ports/integrations.repository.js';
@@ -11,18 +12,14 @@ import { WhatsappReplySender } from '../../../ports/whatsapp-reply.sender.js';
 import { buildWhatsappWebhookCommand } from '../../../utils/whatsapp-webhook-command.utils.js';
 import { parseKnowledgeCommand } from '../../../utils/conversation-flow.utils.js';
 import { normalizeHeaders } from '../../../utils/webhook.utils.js';
-import { ProcessConversationUseCase } from '../../conversation/process-conversation.use-case.js';
 import { ProcessAgentConversationUseCase } from '../../conversation/process-agent-conversation.use-case.js';
+import { QueryKnowledgeUseCase } from '../../query/query-knowledge.use-case.js';
 import { AppLogger } from '../../../../observability/logger.js';
 
 type WhatsappWebhookContext = {
   headers: Record<string, string>;
   body: Record<string, unknown>;
   externalIdentity: { provider: ExternalIdentityProvider.Whatsapp; identityType: 'jid'; externalId: string };
-};
-
-type WhatsappWebhookReplyResult = Record<string, unknown> & {
-  replyText?: unknown;
 };
 
 @Injectable()
@@ -33,7 +30,7 @@ export class HandleWhatsappWebhookUseCase {
     private readonly environmentProvider: RuntimeEnvironmentProvider,
     private readonly connections?: IntegrationConnectionService,
     private readonly processAgentConversationUseCase?: ProcessAgentConversationUseCase,
-    private readonly processConversationUseCase?: ProcessConversationUseCase,
+    private readonly queryKnowledgeUseCase?: QueryKnowledgeUseCase,
     private readonly whatsappReplySender?: WhatsappReplySender,
     private readonly logger?: AppLogger,
   ) {}
@@ -113,27 +110,29 @@ export class HandleWhatsappWebhookUseCase {
     workspaceSlug: string,
     input: ConversationInput,
   ) {
-    const isKnowledgeQuery = Boolean(parseKnowledgeCommand(input.messageText || ''));
-    const conversationUseCase = isKnowledgeQuery
-      ? this.processConversationUseCase
-      : this.processAgentConversationUseCase;
-    if (!conversationUseCase) {
-      return this.processed(context, { ok: true, resolvedUserId: userId, processed: false }, userId);
-    }
     if (!input.messageText && input.hasMedia) {
       const replyText = 'Recebi a midia, mas ainda nao baixo anexos nesta versao. Envie uma legenda ou texto para salvar como nota.';
       const sendResult = await this.sendReply(input.groupId, replyText);
-      return this.processed(context, this.withReplyAliases({
+      return this.processed(context, {
         ok: true,
         processed: true,
         action: 'reply',
-        replyText,
+        message: replyText,
         replySent: sendResult.ok,
         replyError: sendResult.ok ? undefined : sendResult.error,
-      }), userId);
+      }, userId);
     }
 
-    const conversationResult = await conversationUseCase.execute(
+    const knowledgeCommand = parseKnowledgeCommand(input.messageText || '');
+    if (knowledgeCommand) {
+      return this.handleKnowledgeQuery(context, userId, workspaceSlug, input, knowledgeCommand.query);
+    }
+
+    if (!this.processAgentConversationUseCase) {
+      return this.processed(context, { ok: true, resolvedUserId: userId, processed: false }, userId);
+    }
+
+    const conversationResult = await this.processAgentConversationUseCase.execute(
       input,
       userId,
       workspaceSlug,
@@ -160,34 +159,60 @@ export class HandleWhatsappWebhookUseCase {
       sendOk: sendResult.ok,
       sendError: sendResult.ok ? '' : sendResult.error,
     });
-    return this.processed(context, this.withReplyAliases({
+    return this.processed(context, {
       ok: true,
       processed: true,
       action: conversationResult.action,
-      replyText,
+      message: replyText,
       payload: conversationResult.payload ?? null,
       ingestResult: 'ingestResult' in conversationResult ? conversationResult.ingestResult : undefined,
       conversationResult: { ...conversationResult, replyText },
       replySent: shouldReply ? sendResult.ok : false,
       replyError: shouldReply && !sendResult.ok ? sendResult.error : undefined,
-    }), userId);
+    }, userId);
+  }
+
+  private async handleKnowledgeQuery(
+    context: WhatsappWebhookContext,
+    userId: string,
+    workspaceSlug: string,
+    input: ConversationInput,
+    query: string,
+  ) {
+    if (!this.queryKnowledgeUseCase) {
+      return this.processed(context, { ok: true, resolvedUserId: userId, processed: false }, userId);
+    }
+    const result = await this.queryKnowledgeUseCase.execute({
+      query,
+      workspaceSlug,
+      projectSlug: '',
+      limit: 5,
+      page: 1,
+      pageSize: DEFAULT_PAGE_SIZE,
+    }, userId);
+    const replyText = [
+      result.answer.answer,
+      '',
+      ...result.answer.bullets.slice(0, 4).map((item) => `- ${item}`),
+      result.matches.length ? '' : '',
+      ...result.matches.slice(0, 4).map((item) => `Fonte: ${item.path}`),
+    ].filter(Boolean).join('\n');
+    const sendResult = await this.sendReply(input.groupId, replyText);
+    return this.processed(context, {
+      ok: true,
+      processed: true,
+      action: 'reply',
+      message: replyText,
+      payload: null,
+      conversationResult: { action: 'reply', replyText, payload: null },
+      replySent: sendResult.ok,
+      replyError: sendResult.ok ? undefined : sendResult.error,
+    }, userId);
   }
 
   private async sendReply(groupJid: string, text: string) {
     if (!this.whatsappReplySender) return { ok: false as const, error: 'whatsapp_reply_sender_not_configured' };
     return this.whatsappReplySender.sendText({ groupJid, text });
-  }
-
-  private withReplyAliases<T extends WhatsappWebhookReplyResult>(result: T): T & { message: string; text: string; reply: string; confirmText: string } {
-    const replyText = normalizeReplyText(result.replyText);
-    return {
-      ...result,
-      replyText,
-      message: replyText,
-      text: replyText,
-      reply: replyText,
-      confirmText: replyText,
-    };
   }
 
   private async processed<T>(context: WhatsappWebhookContext, result: T, resolvedUserId?: string) {
