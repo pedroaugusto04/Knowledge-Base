@@ -15,6 +15,7 @@ import { normalizeHeaders } from '../../../utils/webhook.utils.js';
 import { ProcessAgentConversationUseCase } from '../../conversation/process-agent-conversation.use-case.js';
 import { QueryKnowledgeUseCase } from '../../query/query-knowledge.use-case.js';
 import { AppLogger } from '../../../../observability/logger.js';
+import { parseWhatsappEvolutionMessage } from '../../../utils/webhook.utils.js';
 
 type WhatsappWebhookContext = {
   headers: Record<string, string>;
@@ -49,6 +50,10 @@ export class HandleWhatsappWebhookUseCase {
     context.externalIdentity.externalId = command.externalId;
 
     if (command.kind === 'connect') {
+      const claimed = await this.claimMessageIdempotency(context, 'connection');
+      if (!claimed) {
+        return this.processed(context, { ok: true, processed: false, ignored: 'duplicate_message' });
+      }
       if (!this.connections) {
         return this.processed(context, { ok: true, processed: false, ignored: 'connection_service_unavailable' });
       }
@@ -65,6 +70,10 @@ export class HandleWhatsappWebhookUseCase {
     if (!identity) {
       await this.rejected(context, 'identity_not_found');
       throw new NotFoundException('identity_not_found');
+    }
+    const claimed = await this.claimMessageIdempotency(context, 'message', identity.userId);
+    if (!claimed) {
+      return this.processed(context, { ok: true, processed: false, ignored: 'duplicate_message' }, identity.userId);
     }
     await this.recordWebhookEvent(context, {
       eventType: 'message',
@@ -213,6 +222,39 @@ export class HandleWhatsappWebhookUseCase {
   private async sendReply(groupJid: string, text: string) {
     if (!this.whatsappReplySender) return { ok: false as const, error: 'whatsapp_reply_sender_not_configured' };
     return this.whatsappReplySender.sendText({ groupJid, text });
+  }
+
+  private async claimMessageIdempotency(
+    context: WhatsappWebhookContext,
+    eventType: 'message' | 'connection',
+    resolvedUserId?: string,
+  ) {
+    const idempotencyKey = this.buildMessageIdempotencyKey(context);
+    if (!idempotencyKey) return true;
+    const claimed = await this.webhookEvents.claimWebhookIdempotency({
+      provider: IntegrationProvider.Whatsapp,
+      eventType,
+      idempotencyKey,
+      resolvedUserId,
+      externalIdentity: context.externalIdentity,
+      rawHeaders: context.headers,
+      rawPayload: context.body,
+    });
+    if (!claimed) {
+      this.logger?.info('whatsapp.webhook.duplicate', {
+        externalId: context.externalIdentity.externalId,
+        eventType,
+        idempotencyKey,
+      });
+    }
+    return claimed;
+  }
+
+  private buildMessageIdempotencyKey(context: WhatsappWebhookContext) {
+    const parsedMessage = parseWhatsappEvolutionMessage(context.body);
+    if (parsedMessage.kind !== 'message') return '';
+    if (!parsedMessage.messageId) return '';
+    return `${context.externalIdentity.externalId}:${parsedMessage.messageId}`;
   }
 
   private async processed<T>(context: WhatsappWebhookContext, result: T, resolvedUserId?: string) {

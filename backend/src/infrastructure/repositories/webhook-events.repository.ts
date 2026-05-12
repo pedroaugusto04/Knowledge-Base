@@ -13,6 +13,41 @@ export class PostgresWebhookEventRepository extends WebhookEventRepository {
     super();
   }
 
+  async claimWebhookIdempotency(input: {
+    provider: string;
+    eventType: string;
+    idempotencyKey: string;
+    resolvedUserId?: string | null;
+    externalIdentity?: Record<string, unknown>;
+    rawHeaders?: Record<string, unknown>;
+    rawPayload?: unknown;
+  }) {
+    const result = await this.database.getPool().query(
+      `insert into kb_webhook_idempotency_keys (
+         provider,
+         event_type,
+         idempotency_key,
+         resolved_user_id,
+         external_identity,
+         raw_headers,
+         raw_payload
+       )
+       values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb)
+       on conflict (provider, event_type, idempotency_key) do nothing
+       returning idempotency_key`,
+      [
+        input.provider,
+        input.eventType,
+        input.idempotencyKey,
+        input.resolvedUserId || null,
+        JSON.stringify(input.externalIdentity || {}),
+        JSON.stringify(sanitizeWebhookHeaders(input.rawHeaders || {})),
+        JSON.stringify(sanitizeWebhookValue(input.rawPayload || {})),
+      ],
+    );
+    return result.rowCount > 0;
+  }
+
   async recordWebhookEvent(input: {
     provider: string;
     eventType: string;

@@ -194,6 +194,30 @@ test('linked whatsapp group completes conversation and saves note on confirmatio
   assert.equal(notes[0].sourceChannel, 'whatsapp');
 });
 
+test('whatsapp webhook is idempotent for duplicate message deliveries', async (t) => {
+  const { whatsapp, sender } = await fixture(t);
+  const input = evolutionInput('corrigi timeout no webhook', {
+    data: {
+      key: {
+        remoteJid: '120363@g.us',
+        participant: '5511999999999@s.whatsapp.net',
+        id: 'duplicate-message-id',
+        fromMe: false,
+      },
+      message: { conversation: 'corrigi timeout no webhook' },
+    },
+  });
+
+  const first = await whatsapp.execute(input);
+  const second = await whatsapp.execute(input);
+
+  assert.equal(first.processed, true);
+  assert.equal(first.replySent, true);
+  assert.equal(second.processed, false);
+  assert.equal(second.ignored, 'duplicate_message');
+  assert.equal(sender.sent.length, 1);
+});
+
 test('whatsapp knowledge command replies to query without creating capture state', async (t) => {
   const { repositories, whatsapp, user } = await fixture(t);
   await repositories.contentRepository.upsertNote(user.id, {
