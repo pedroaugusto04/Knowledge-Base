@@ -76,6 +76,28 @@ test('whatsapp parser unwraps ephemeral and view-once messages', () => {
 
   assert.equal(viewOnce.kind, 'message');
   assert.equal(viewOnce.messageText, 'mensagem em view once');
+
+  const viewOnceV2 = parseWhatsappEvolutionMessage({
+    event: 'MESSAGES_UPSERT',
+    data: {
+      key: {
+        remoteJid: '120363@g.us',
+        participant: '5511999999999@s.whatsapp.net',
+        id: 'msg-4',
+        fromMe: false,
+      },
+      message: {
+        viewOnceMessageV2: {
+          message: {
+            conversation: 'mensagem em view once v2',
+          },
+        },
+      },
+    },
+  });
+
+  assert.equal(viewOnceV2.kind, 'message');
+  assert.equal(viewOnceV2.messageText, 'mensagem em view once v2');
 });
 
 test('whatsapp parser extracts captioned media metadata and base64 payload', () => {
@@ -108,5 +130,45 @@ test('whatsapp parser extracts captioned media metadata and base64 payload', () 
     mimeType: 'image/png',
     sizeBytes: 11,
     dataBase64: Buffer.from('hello image').toString('base64'),
+  });
+});
+
+test('whatsapp parser unwraps Evolution document-with-caption media and nested base64', () => {
+  const pdfBase64 = Buffer.from('hello pdf').toString('base64');
+  const parsed = parseWhatsappEvolutionMessage({
+    event: 'MESSAGES_UPSERT',
+    data: {
+      key: {
+        remoteJid: '120363@g.us',
+        participant: '5511999999999@s.whatsapp.net',
+        id: 'msg-pdf',
+        fromMe: false,
+      },
+      message: {
+        documentWithCaptionMessage: {
+          message: {
+            documentMessage: {
+              caption: 'salvar pdf do contrato',
+              mimetype: 'application/pdf',
+              fileName: 'contrato.pdf',
+              fileLength: '9',
+            },
+          },
+        },
+      },
+      data: {
+        base64: `data:application/pdf;base64,${pdfBase64}`,
+      },
+    },
+  });
+
+  assert.equal(parsed.kind, 'message');
+  assert.equal(parsed.messageText, 'salvar pdf do contrato');
+  assert.equal(parsed.hasMedia, true);
+  assert.deepEqual(parsed.media, {
+    fileName: 'contrato.pdf',
+    mimeType: 'application/pdf',
+    sizeBytes: 9,
+    dataBase64: pdfBase64,
   });
 });

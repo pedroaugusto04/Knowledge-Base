@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { EvolutionWhatsappReplySender } from '../../dist/adapters/evolution.js';
+import { EvolutionWhatsappMediaDownloader, EvolutionWhatsappReplySender } from '../../dist/adapters/evolution.js';
 
 test('evolution whatsapp sender posts plain text without bot prefix', async () => {
   process.env.EVOLUTION_API_URL = 'https://evolution.example';
@@ -29,6 +29,48 @@ test('evolution whatsapp sender posts plain text without bot prefix', async () =
       number: '120363@g.us',
       text: 'Resposta final',
     });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('evolution whatsapp media downloader accepts nested base64 response', async () => {
+  process.env.EVOLUTION_API_URL = 'https://evolution.example';
+  process.env.EVOLUTION_API_KEY = 'evolution-key';
+  process.env.EVOLUTION_INSTANCE_NAME = 'kb-instance';
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  const fileBase64 = Buffer.from('hello pdf').toString('base64');
+
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { base64: `data:application/pdf;base64,${fileBase64}` } }),
+    };
+  };
+
+  try {
+    const downloader = new EvolutionWhatsappMediaDownloader();
+    const result = await downloader.downloadBase64({
+      body: {
+        data: {
+          key: { remoteJid: '120363@g.us', id: 'msg-pdf' },
+          message: {
+            documentMessage: {
+              fileName: 'contrato.pdf',
+              mimetype: 'application/pdf',
+            },
+          },
+        },
+      },
+    });
+
+    assert.deepEqual(result, { ok: true, dataBase64: fileBase64 });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://evolution.example/chat/getBase64FromMediaMessage/kb-instance');
+    assert.equal(JSON.parse(calls[0].options.body).message.key.id, 'msg-pdf');
   } finally {
     globalThis.fetch = originalFetch;
   }

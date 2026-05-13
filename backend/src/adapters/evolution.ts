@@ -56,7 +56,7 @@ export class EvolutionWhatsappMediaDownloader extends WhatsappMediaDownloader {
       });
       if (!response.ok) return { ok: false, error: `evolution_api_http_${response.status}` };
       const json = await response.json() as Record<string, unknown>;
-      const dataBase64 = String(json.base64 || json.dataBase64 || json.media_data_b64 || '').trim();
+      const dataBase64 = extractBase64(json);
       return dataBase64 ? { ok: true, dataBase64 } : { ok: false, error: 'evolution_media_base64_missing' };
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : String(error) };
@@ -72,4 +72,31 @@ function evolutionMessagePayload(body: Record<string, unknown>): Record<string, 
   }
   if (data && typeof data === 'object') return data as Record<string, unknown>;
   return body;
+}
+
+function objectValue(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+function base64Value(value: unknown): string {
+  const raw = typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
+  const marker = ';base64,';
+  const markerIndex = raw.indexOf(marker);
+  return markerIndex >= 0 ? raw.slice(markerIndex + marker.length).trim() : raw;
+}
+
+function extractBase64(json: Record<string, unknown>): string {
+  const data = objectValue(json.data);
+  const response = objectValue(json.response);
+  return base64Value(
+    json.base64 ||
+      json.dataBase64 ||
+      json.media_data_b64 ||
+      data?.base64 ||
+      data?.dataBase64 ||
+      data?.media_data_b64 ||
+      response?.base64 ||
+      response?.dataBase64 ||
+      response?.media_data_b64,
+  );
 }

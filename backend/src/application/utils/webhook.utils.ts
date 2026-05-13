@@ -70,6 +70,13 @@ function stringValue(value: unknown): string {
   return typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
 }
 
+function base64Value(value: unknown): string {
+  const raw = stringValue(value);
+  const marker = ';base64,';
+  const markerIndex = raw.indexOf(marker);
+  return markerIndex >= 0 ? raw.slice(markerIndex + marker.length).trim() : raw;
+}
+
 function numberValue(value: unknown): number {
   const parsed = typeof value === 'number' ? value : Number.parseInt(stringValue(value), 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
@@ -103,15 +110,25 @@ function hasWhatsappMedia(message: Record<string, unknown>): boolean {
 function mediaBase64(body: Record<string, unknown>, payload: Record<string, unknown>, media: Record<string, unknown>): string {
   const bodyMedia = objectValue(body.media);
   const payloadMedia = objectValue(payload.media);
-  return stringValue(
+  const bodyData = objectValue(body.data);
+  const payloadData = objectValue(payload.data);
+  return base64Value(
     body.media_data_b64 ||
       body.mediaDataBase64 ||
       body.dataBase64 ||
       body.base64 ||
+      bodyData?.media_data_b64 ||
+      bodyData?.mediaDataBase64 ||
+      bodyData?.dataBase64 ||
+      bodyData?.base64 ||
       payload.media_data_b64 ||
       payload.mediaDataBase64 ||
       payload.dataBase64 ||
       payload.base64 ||
+      payloadData?.media_data_b64 ||
+      payloadData?.mediaDataBase64 ||
+      payloadData?.dataBase64 ||
+      payloadData?.base64 ||
       bodyMedia?.dataBase64 ||
       bodyMedia?.base64 ||
       payloadMedia?.dataBase64 ||
@@ -150,6 +167,8 @@ export function parseWhatsappEvolutionMessage(body: Record<string, unknown>): Pa
   const rawMessage = objectValue(payload.message) || objectValue(body.message);
   const message = objectValue(objectValue(rawMessage?.ephemeralMessage)?.message)
     || objectValue(objectValue(rawMessage?.viewOnceMessage)?.message)
+    || objectValue(objectValue(rawMessage?.viewOnceMessageV2)?.message)
+    || objectValue(objectValue(rawMessage?.documentWithCaptionMessage)?.message)
     || rawMessage;
   if (!key || !message) return { kind: 'ignored', reason: 'missing_payload' };
 
