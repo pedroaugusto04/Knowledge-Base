@@ -56,7 +56,7 @@ export function buildWhatsappWebhookCommand(body: Record<string, unknown>): What
       groupId: parsedMessage.groupId,
       messageId: parsedMessage.messageId,
       hasMedia: parsedMessage.hasMedia,
-      media: {},
+      media: parsedMessage.media,
     }),
   };
 }

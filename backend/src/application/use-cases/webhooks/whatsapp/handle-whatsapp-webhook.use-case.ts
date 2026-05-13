@@ -8,6 +8,7 @@ import type { WhatsappWebhookRequest } from '../../../models/webhook-request.mod
 import { ExternalIdentityRepository } from '../../../ports/integrations.repository.js';
 import { RuntimeEnvironmentProvider } from '../../../ports/runtime-environment.port.js';
 import { WebhookEventRepository } from '../../../ports/webhook-events.repository.js';
+import { WhatsappMediaDownloader } from '../../../ports/whatsapp-media.downloader.js';
 import { WhatsappReplySender } from '../../../ports/whatsapp-reply.sender.js';
 import { buildWhatsappWebhookCommand } from '../../../utils/whatsapp-webhook-command.utils.js';
 import { parseKnowledgeCommand } from '../../../utils/conversation-flow.utils.js';
@@ -33,6 +34,7 @@ export class HandleWhatsappWebhookUseCase {
     private readonly processAgentConversationUseCase?: ProcessAgentConversationUseCase,
     private readonly queryKnowledgeUseCase?: QueryKnowledgeUseCase,
     private readonly whatsappReplySender?: WhatsappReplySender,
+    private readonly whatsappMediaDownloader?: WhatsappMediaDownloader,
     private readonly logger?: AppLogger,
   ) {}
 
@@ -119,22 +121,11 @@ export class HandleWhatsappWebhookUseCase {
     workspaceSlug: string,
     input: ConversationInput,
   ) {
-    if (!input.messageText && input.hasMedia) {
-      const replyText = 'Recebi a midia, mas ainda nao baixo anexos nesta versao. Envie uma legenda ou texto para salvar como nota.';
-      const sendResult = await this.sendReply(input.groupId, replyText);
-      return this.processed(context, {
-        ok: true,
-        processed: true,
-        action: 'reply',
-        message: replyText,
-        replySent: sendResult.ok,
-        replyError: sendResult.ok ? undefined : sendResult.error,
-      }, userId);
-    }
+    const enrichedInput = await this.withDownloadedMedia(context, input);
 
-    const knowledgeCommand = parseKnowledgeCommand(input.messageText || '');
+    const knowledgeCommand = parseKnowledgeCommand(enrichedInput.messageText || '');
     if (knowledgeCommand) {
-      return this.handleKnowledgeQuery(context, userId, workspaceSlug, input, knowledgeCommand.query);
+      return this.handleKnowledgeQuery(context, userId, workspaceSlug, enrichedInput, knowledgeCommand.query);
     }
 
     if (!this.processAgentConversationUseCase) {
@@ -142,27 +133,27 @@ export class HandleWhatsappWebhookUseCase {
     }
 
     const conversationResult = await this.processAgentConversationUseCase.execute(
-      input,
+      enrichedInput,
       userId,
       workspaceSlug,
     );
     const replyText = normalizeReplyText(conversationResult.replyText);
     this.logger?.info('whatsapp.conversation.result', {
       externalId: context.externalIdentity.externalId,
-      senderId: input.senderId,
-      groupId: input.groupId,
-      messageId: input.messageId,
-      messageText: input.messageText,
+      senderId: enrichedInput.senderId,
+      groupId: enrichedInput.groupId,
+      messageId: enrichedInput.messageId,
+      messageText: enrichedInput.messageText,
       action: conversationResult.action,
       replyText,
     });
     const shouldReply = conversationResult.action !== 'cancel';
     const sendResult = shouldReply
-      ? await this.sendReply(input.groupId, replyText)
+      ? await this.sendReply(enrichedInput.groupId, replyText)
       : { ok: false as const, error: 'reply_not_needed' };
     this.logger?.info('whatsapp.reply.dispatch', {
       externalId: context.externalIdentity.externalId,
-      groupId: input.groupId,
+      groupId: enrichedInput.groupId,
       shouldReply,
       replyText: shouldReply ? replyText : '',
       sendOk: sendResult.ok,
@@ -255,6 +246,28 @@ export class HandleWhatsappWebhookUseCase {
     if (parsedMessage.kind !== 'message') return '';
     if (!parsedMessage.messageId) return '';
     return `${context.externalIdentity.externalId}:${parsedMessage.messageId}`;
+  }
+
+  private async withDownloadedMedia(context: WhatsappWebhookContext, input: ConversationInput): Promise<ConversationInput> {
+    if (!input.hasMedia || input.media.dataBase64) return input;
+    if (!this.whatsappMediaDownloader) return input;
+    const result = await this.whatsappMediaDownloader.downloadBase64({ body: context.body });
+    if (!result.ok) {
+      this.logger?.warn('whatsapp.media.download_failed', {
+        externalId: context.externalIdentity.externalId,
+        groupId: input.groupId,
+        messageId: input.messageId,
+        error: result.error,
+      });
+      return input;
+    }
+    return {
+      ...input,
+      media: {
+        ...input.media,
+        dataBase64: result.dataBase64,
+      },
+    };
   }
 
   private async processed<T>(context: WhatsappWebhookContext, result: T, resolvedUserId?: string) {

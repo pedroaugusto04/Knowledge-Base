@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CanonicalType, ConversationConfidence, Importance, KnowledgeKind } from './enums.js';
+import { conversationMediaSchema } from './conversation.js';
 
 const agentApprovalSchema = z.enum(['none', 'folder_create', 'final_confirmation']);
 const agentActionSchema = z.enum(['ask', 'confirm', 'create_and_confirm', 'cancel', 'submit']);
@@ -39,6 +40,7 @@ export const agentConversationFolderDecisionSchema = z.object({
 
 export const agentConversationStateSchema = z.object({
   draft: agentConversationDraftSchema.default({}),
+  media: conversationMediaSchema.default({}),
   project: agentConversationProjectDecisionSchema.default({}),
   folder: agentConversationFolderDecisionSchema.default({}),
   pendingApproval: defaultApprovalSchema,

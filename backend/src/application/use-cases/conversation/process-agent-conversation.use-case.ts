@@ -74,6 +74,18 @@ export class ProcessAgentConversationUseCase {
     if (!messageText && !input.hasMedia) {
       return this.reply('ask', 'Envie o texto da nota para eu organizar o projeto e a pasta antes de salvar.', null, state);
     }
+    if (!messageText && input.hasMedia) {
+      const nextState = agentConversationStateSchema.parse({
+        ...state,
+        media: mediaFromInput(input, state),
+        lastQuestion: 'Recebi a midia. Me diga o que e ou em qual projeto devo salvar.',
+        lastUserMessage: '',
+        lastAgentAction: 'ask',
+        updatedAt: nowIso(),
+      });
+      await this.conversationStates.upsert(userId, normalizedWorkspaceSlug, key, nextState);
+      return this.reply('ask', nextState.lastQuestion, null, nextState);
+    }
     if (isCancel(messageText)) {
       await this.conversationStates.clear(userId, normalizedWorkspaceSlug, key);
       return this.reply('cancel', 'Captura cancelada. Envie uma nova nota quando quiser.', null, emptyAgentConversationState);
@@ -99,7 +111,7 @@ export class ProcessAgentConversationUseCase {
         ? candidateFolders
         : await this.contentRepository.listProjectFolders(userId, selectedProjectSlug)
       : [];
-    const nextState = buildNextState(state, messageText, decision, projects, foldersForDecision, environment.reminderTimeZone);
+    const nextState = buildNextState(state, messageText, mediaFromInput(input, state), decision, projects, foldersForDecision, environment.reminderTimeZone);
     await this.conversationStates.upsert(userId, normalizedWorkspaceSlug, key, nextState);
     this.logger?.info('conversation.agent.state.updated', {
       userId,
@@ -398,6 +410,7 @@ export class ProcessAgentConversationUseCase {
 function buildNextState(
   current: AgentConversationState,
   messageText: string,
+  media: AgentConversationState['media'],
   decision: ConversationAgentResponse,
   projects: ProjectRecord[],
   candidateFolders: ProjectFolderRecord[],
@@ -423,6 +436,7 @@ function buildNextState(
 
   return agentConversationStateSchema.parse({
     draft,
+    media,
     project: { selectedProjectSlug },
     folder: {
       selectedFolderId: folderResolution.selectedFolderId,
@@ -563,7 +577,7 @@ function buildAgentConversationPayload(input: ConversationInput, state: AgentCon
     projectSlug: state.project.selectedProjectSlug || 'inbox',
     rawText: state.draft.rawText,
     title: state.draft.title || '',
-    media: input.hasMedia ? input.media : undefined,
+    media: mediaForAttachment(state) ? state.media : undefined,
     kind: state.draft.kind,
     canonicalType: state.draft.canonicalType,
     importance: state.draft.importance,
@@ -575,7 +589,15 @@ function buildAgentConversationPayload(input: ConversationInput, state: AgentCon
   });
 }
 
+function mediaFromInput(input: ConversationInput, state: AgentConversationState) {
+  if (input.hasMedia && input.media.fileName) return input.media;
+  return state.media;
+}
+
+function mediaForAttachment(state: AgentConversationState) {
+  return Boolean(state.media.fileName && state.media.dataBase64);
+}
+
 function samePath(left: string[], right: string[]) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
 }
-

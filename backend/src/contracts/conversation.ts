@@ -2,20 +2,20 @@ import { z } from 'zod';
 
 import { CanonicalType, ConversationConfidence, ConversationMissingField, ConversationPhase, Importance, KnowledgeKind } from './enums.js';
 
+export const conversationMediaSchema = z.object({
+  fileName: z.string().default(''),
+  mimeType: z.string().default('application/octet-stream'),
+  sizeBytes: z.number().int().nonnegative().default(0),
+  dataBase64: z.string().default(''),
+});
+
 export const conversationInputSchema = z.object({
   messageText: z.string().default(''),
   senderId: z.string().min(1),
   groupId: z.string().min(1),
   messageId: z.string().default(''),
   hasMedia: z.boolean().default(false),
-  media: z
-    .object({
-      fileName: z.string().default(''),
-      mimeType: z.string().default('application/octet-stream'),
-      sizeBytes: z.number().int().nonnegative().default(0),
-      dataBase64: z.string().default(''),
-    })
-    .default({}),
+  media: conversationMediaSchema.default({}),
   agentResult: z
     .object({
       extracted: z
@@ -49,14 +49,7 @@ export const conversationStateSchema = z.object({
   tags: z.array(z.string()).default([]),
   reminderDate: z.string().default(''),
   reminderTime: z.string().default(''),
-  media: z
-    .object({
-      fileName: z.string().default(''),
-      mimeType: z.string().default('application/octet-stream'),
-      sizeBytes: z.number().int().nonnegative().default(0),
-      dataBase64: z.string().default(''),
-    })
-    .default({}),
+  media: conversationMediaSchema.default({}),
   updatedAt: z.string().default(''),
 });
 

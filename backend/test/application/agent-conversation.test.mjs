@@ -104,6 +104,19 @@ function input(messageText) {
   };
 }
 
+function mediaInput(messageText) {
+  return {
+    ...input(messageText),
+    hasMedia: true,
+    media: {
+      fileName: 'erro.png',
+      mimeType: 'image/png',
+      sizeBytes: 11,
+      dataBase64: Buffer.from('hello image').toString('base64'),
+    },
+  };
+}
+
 function decision(overrides = {}) {
   return {
     replyText: 'Precisamos confirmar alguns detalhes.',
@@ -152,6 +165,47 @@ test('agent conversation happy path suggests folder, gets approval, asks final c
   const finalFolder = folders.find((folder) => folder.fullSlugPath === 'runbooks/api');
   assert.ok(finalFolder);
   assert.equal(notes[0].folderId, finalFolder.id);
+});
+
+test('agent conversation preserves media from the first message and saves it on final confirmation', async (t) => {
+  const turns = new Map([
+    ['corrigi timeout do endpoint de webhook', decision()],
+  ]);
+  const { repositories, agentUseCase, user } = await createFixture(t, turns);
+
+  await agentUseCase.execute(mediaInput('corrigi timeout do endpoint de webhook'), user.id, 'default');
+  await agentUseCase.execute(input('sim'), user.id, 'default');
+  const saved = await agentUseCase.execute(input('sim'), user.id, 'default');
+
+  assert.equal(saved.action, 'submit');
+  assert.equal(saved.ingestResult.attachmentIds.length, 1);
+  const attachments = await repositories.contentRepository.listAttachments(user.id, saved.ingestResult.noteId);
+  assert.equal(attachments.length, 1);
+  assert.equal(attachments[0].fileName, 'erro.png');
+  assert.equal(attachments[0].mimeType, 'image/png');
+  assert.match(attachments[0].storageKey, new RegExp(`^users/${user.id}/workspaces/default/attachments/${saved.ingestResult.noteId}/erro\\.png$`));
+  assert.equal((await repositories.objectStorage.get(attachments[0].storageKey)).toString('utf8'), 'hello image');
+});
+
+test('agent conversation asks for context when the first message is only media', async (t) => {
+  const turns = new Map([
+    ['corrigi timeout do endpoint de webhook', decision()],
+  ]);
+  const { repositories, agentUseCase, user } = await createFixture(t, turns);
+
+  const first = await agentUseCase.execute(mediaInput(''), user.id, 'default');
+  assert.equal(first.action, 'ask');
+  assert.match(first.replyText, /Me diga o que e ou em qual projeto devo salvar/);
+  assert.equal(await repositories.countConversationStates(), 1);
+
+  await agentUseCase.execute(input('corrigi timeout do endpoint de webhook'), user.id, 'default');
+  await agentUseCase.execute(input('sim'), user.id, 'default');
+  const saved = await agentUseCase.execute(input('sim'), user.id, 'default');
+
+  assert.equal(saved.action, 'submit');
+  const attachments = await repositories.contentRepository.listAttachments(user.id, saved.ingestResult.noteId);
+  assert.equal(attachments.length, 1);
+  assert.equal((await repositories.objectStorage.get(attachments[0].storageKey)).toString('utf8'), 'hello image');
 });
 
 test('agent conversation asks for project when project choice is ambiguous', async (t) => {

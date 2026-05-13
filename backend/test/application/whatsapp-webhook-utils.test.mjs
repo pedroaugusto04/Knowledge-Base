@@ -77,3 +77,36 @@ test('whatsapp parser unwraps ephemeral and view-once messages', () => {
   assert.equal(viewOnce.kind, 'message');
   assert.equal(viewOnce.messageText, 'mensagem em view once');
 });
+
+test('whatsapp parser extracts captioned media metadata and base64 payload', () => {
+  const parsed = parseWhatsappEvolutionMessage({
+    event: 'MESSAGES_UPSERT',
+    data: {
+      key: {
+        remoteJid: '120363@g.us',
+        participant: '5511999999999@s.whatsapp.net',
+        id: 'msg-media',
+        fromMe: false,
+      },
+      message: {
+        imageMessage: {
+          caption: 'corrigi timeout no webhook',
+          mimetype: 'image/png',
+          fileName: 'erro.png',
+          fileLength: 11,
+        },
+      },
+      dataBase64: Buffer.from('hello image').toString('base64'),
+    },
+  });
+
+  assert.equal(parsed.kind, 'message');
+  assert.equal(parsed.messageText, 'corrigi timeout no webhook');
+  assert.equal(parsed.hasMedia, true);
+  assert.deepEqual(parsed.media, {
+    fileName: 'erro.png',
+    mimeType: 'image/png',
+    sizeBytes: 11,
+    dataBase64: Buffer.from('hello image').toString('base64'),
+  });
+});

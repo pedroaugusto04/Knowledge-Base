@@ -21,10 +21,11 @@ import {
 } from './application/ports/integrations.repository.js';
 import { WebhookEventRepository } from './application/ports/webhook-events.repository.js';
 import { TelegramMessageSender } from './application/ports/telegram-message.sender.js';
+import { WhatsappMediaDownloader } from './application/ports/whatsapp-media.downloader.js';
 import { WhatsappReplySender } from './application/ports/whatsapp-reply.sender.js';
 import { ConversationStateRepository, ReminderDispatchRepository } from './application/ports/workflow-state.repository.js';
 import { TelegramHttpMessageSender } from './adapters/telegram.js';
-import { EvolutionWhatsappReplySender } from './adapters/evolution.js';
+import { EvolutionWhatsappMediaDownloader, EvolutionWhatsappReplySender } from './adapters/evolution.js';
 import { DefaultConversationAgentGateway } from './infrastructure/ai/conversation-agent.gateway.js';
 import { DefaultConversationExtractionGateway } from './infrastructure/ai/conversation-extraction.gateway.js';
 import { DefaultReviewAnalysisGateway } from './infrastructure/ai/review-analysis.gateway.js';
@@ -125,6 +126,7 @@ import { AppLogger } from './observability/logger.js';
     HandleTelegramWebhookUseCase,
     TelegramReminderDispatchWorker,
     EvolutionWhatsappReplySender,
+    EvolutionWhatsappMediaDownloader,
     TelegramHttpMessageSender,
     DefaultConversationAgentGateway,
     DefaultConversationExtractionGateway,
@@ -157,6 +159,7 @@ import { AppLogger } from './observability/logger.js';
     { provide: ReminderDispatchRepository, useExisting: PostgresWorkflowStateRepository },
     { provide: WebhookEventRepository, useExisting: PostgresWebhookEventRepository },
     { provide: WhatsappReplySender, useExisting: EvolutionWhatsappReplySender },
+    { provide: WhatsappMediaDownloader, useExisting: EvolutionWhatsappMediaDownloader },
     { provide: TelegramMessageSender, useExisting: TelegramHttpMessageSender },
     { provide: APP_GUARD, useClass: GlobalRateLimitGuard },
   ],

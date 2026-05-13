@@ -37,6 +37,12 @@ export type ParsedWhatsappEvolutionMessage =
       messageId: string;
       messageText: string;
       hasMedia: boolean;
+      media: {
+        fileName: string;
+        mimeType: string;
+        sizeBytes: number;
+        dataBase64: string;
+      };
       fromMe: boolean;
       isGroup: boolean;
     }
@@ -64,13 +70,25 @@ function stringValue(value: unknown): string {
   return typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
 }
 
+function numberValue(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : Number.parseInt(stringValue(value), 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
 function evolutionEvent(body: Record<string, unknown>, payload: Record<string, unknown>): string {
   return stringValue(body.event || body.eventType || body.type || payload.event || payload.eventType || payload.type).toUpperCase().replace(/[.-]/g, '_');
 }
 
+const whatsappMediaTypes = [
+  { key: 'imageMessage', type: 'image', fallbackMimeType: 'image/jpeg' },
+  { key: 'videoMessage', type: 'video', fallbackMimeType: 'video/mp4' },
+  { key: 'documentMessage', type: 'document', fallbackMimeType: 'application/octet-stream' },
+  { key: 'audioMessage', type: 'audio', fallbackMimeType: 'audio/ogg' },
+  { key: 'stickerMessage', type: 'sticker', fallbackMimeType: 'image/webp' },
+] as const;
+
 function mediaCaption(message: Record<string, unknown>): string {
-  const mediaKeys = ['imageMessage', 'videoMessage', 'documentMessage', 'audioMessage', 'stickerMessage'];
-  for (const key of mediaKeys) {
+  for (const { key } of whatsappMediaTypes) {
     const media = objectValue(message[key]);
     const caption = stringValue(media?.caption);
     if (caption) return caption;
@@ -79,7 +97,48 @@ function mediaCaption(message: Record<string, unknown>): string {
 }
 
 function hasWhatsappMedia(message: Record<string, unknown>): boolean {
-  return ['imageMessage', 'videoMessage', 'documentMessage', 'audioMessage', 'stickerMessage'].some((key) => Boolean(objectValue(message[key])));
+  return whatsappMediaTypes.some(({ key }) => Boolean(objectValue(message[key])));
+}
+
+function mediaBase64(body: Record<string, unknown>, payload: Record<string, unknown>, media: Record<string, unknown>): string {
+  const bodyMedia = objectValue(body.media);
+  const payloadMedia = objectValue(payload.media);
+  return stringValue(
+    body.media_data_b64 ||
+      body.mediaDataBase64 ||
+      body.dataBase64 ||
+      body.base64 ||
+      payload.media_data_b64 ||
+      payload.mediaDataBase64 ||
+      payload.dataBase64 ||
+      payload.base64 ||
+      bodyMedia?.dataBase64 ||
+      bodyMedia?.base64 ||
+      payloadMedia?.dataBase64 ||
+      payloadMedia?.base64 ||
+      media.dataBase64 ||
+      media.base64,
+  );
+}
+
+function parseWhatsappMedia(body: Record<string, unknown>, payload: Record<string, unknown>, message: Record<string, unknown>) {
+  for (const { key, type, fallbackMimeType } of whatsappMediaTypes) {
+    const media = objectValue(message[key]);
+    if (!media) continue;
+    const mimeType = stringValue(media.mimetype || media.mimeType) || fallbackMimeType;
+    return {
+      fileName: stringValue(media.fileName || media.title || `attachment.${type}`),
+      mimeType,
+      sizeBytes: numberValue(media.fileLength || media.fileSize || media.sizeBytes),
+      dataBase64: mediaBase64(body, payload, media),
+    };
+  }
+  return {
+    fileName: '',
+    mimeType: 'application/octet-stream',
+    sizeBytes: 0,
+    dataBase64: '',
+  };
 }
 
 export function parseWhatsappEvolutionMessage(body: Record<string, unknown>): ParsedWhatsappEvolutionMessage {
@@ -107,13 +166,16 @@ export function parseWhatsappEvolutionMessage(body: Record<string, unknown>): Pa
       body.body,
   );
 
+  const media = parseWhatsappMedia(body, payload, message);
+
   return {
     kind: 'message',
     groupId,
     senderId,
     messageId,
     messageText: text,
-    hasMedia: hasWhatsappMedia(message),
+    hasMedia: Boolean(media.fileName) || hasWhatsappMedia(message),
+    media,
     fromMe: key.fromMe === true || stringValue(key.fromMe).toLowerCase() === 'true',
     isGroup: groupId.endsWith('@g.us'),
   };
