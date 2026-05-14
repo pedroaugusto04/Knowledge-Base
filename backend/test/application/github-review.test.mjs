@@ -47,6 +47,7 @@ test('github push is converted to canonical code review event', async () => {
       conversationAiModel: '',
       conversationAiApiKey: '',
       publicBaseUrl: 'https://example.com',
+      apiPublicBaseUrl: 'https://example.com/api',
       allowedOrigins: [],
       trustProxy: false,
       githubPushWebhookPath: '/n8n/webhook/kb-github-push',

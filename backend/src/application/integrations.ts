@@ -49,17 +49,18 @@ export function buildIntegrationStatuses(input: {
   const githubFlags = [...Object.values(githubEnv), repos.length > 0];
 
   const webhookEnv = {
-    KB_PUBLIC_BASE_URL: Boolean(environment.publicBaseUrl),
+    KB_API_PUBLIC_BASE_URL: Boolean(environment.apiPublicBaseUrl || environment.publicBaseUrl),
     KB_GITHUB_WEBHOOK_PATH: Boolean(environment.githubPushWebhookPath),
     KB_INGEST_WEBHOOK_PATH: Boolean(environment.ingestWebhookPath),
     KB_WPP_WEBHOOK_PATH: Boolean(environment.whatsappWebhookPath),
     KB_QUERY_WEBHOOK_PATH: Boolean(environment.queryWebhookPath),
   };
+  const apiBaseUrl = environment.apiPublicBaseUrl || environment.publicBaseUrl;
   const webhookLinks = [
-    link('GitHub push webhook', absoluteUrl(environment.publicBaseUrl, environment.githubPushWebhookPath), Boolean(environment.publicBaseUrl)),
-    link('Ingest webhook', absoluteUrl(environment.publicBaseUrl, environment.ingestWebhookPath), Boolean(environment.publicBaseUrl)),
-    link('WhatsApp webhook', absoluteUrl(environment.publicBaseUrl, environment.whatsappWebhookPath), Boolean(environment.publicBaseUrl)),
-    link('Query webhook', absoluteUrl(environment.publicBaseUrl, environment.queryWebhookPath), Boolean(environment.publicBaseUrl)),
+    link('GitHub push webhook', absoluteUrl(apiBaseUrl, environment.githubPushWebhookPath), Boolean(apiBaseUrl)),
+    link('Ingest webhook', absoluteUrl(apiBaseUrl, environment.ingestWebhookPath), Boolean(apiBaseUrl)),
+    link('WhatsApp webhook', absoluteUrl(apiBaseUrl, environment.whatsappWebhookPath), Boolean(apiBaseUrl)),
+    link('Query webhook', absoluteUrl(apiBaseUrl, environment.queryWebhookPath), Boolean(apiBaseUrl)),
   ];
 
   const evolutionTransportConfigured = Boolean(
@@ -135,7 +136,7 @@ export function buildIntegrationStatuses(input: {
           'Apontar os workflows/adapters para os paths exibidos.',
           'Usar o mesmo base URL nos provedores externos.',
         ],
-        warnings: !environment.publicBaseUrl ? ['KB_PUBLIC_BASE_URL ausente: exibindo paths relativos, nao URLs absolutas.'] : [],
+        warnings: !apiBaseUrl ? ['KB_API_PUBLIC_BASE_URL ausente: exibindo paths relativos, nao URLs absolutas.'] : [],
       },
       {
         id: IntegrationProvider.Whatsapp,

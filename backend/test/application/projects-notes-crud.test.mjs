@@ -182,10 +182,14 @@ test('deletes manual note and attachments', async (t) => {
 
 test('note list and detail expose attachment metadata without storage internals', async (t) => {
   const previousPublicBaseUrl = process.env.KB_PUBLIC_BASE_URL;
-  process.env.KB_PUBLIC_BASE_URL = 'https://kb.example.com/knowledge-base/api';
+  const previousApiPublicBaseUrl = process.env.KB_API_PUBLIC_BASE_URL;
+  process.env.KB_PUBLIC_BASE_URL = 'https://kb.example.com/knowledge-base';
+  process.env.KB_API_PUBLIC_BASE_URL = 'https://kb.example.com/knowledge-base/api';
   t.after(() => {
     if (previousPublicBaseUrl === undefined) delete process.env.KB_PUBLIC_BASE_URL;
     else process.env.KB_PUBLIC_BASE_URL = previousPublicBaseUrl;
+    if (previousApiPublicBaseUrl === undefined) delete process.env.KB_API_PUBLIC_BASE_URL;
+    else process.env.KB_API_PUBLIC_BASE_URL = previousApiPublicBaseUrl;
   });
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();

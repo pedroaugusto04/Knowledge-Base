@@ -5,18 +5,10 @@ import type { ReviewView } from '../../application/models/review.models.js';
 import { absoluteUrl } from '../../application/utils/integration-status.utils.js';
 import type { VaultNoteDetail, VaultNoteSummary } from '../../application/models/vault-note.models.js';
 
-function attachmentContentPath(noteId: string, attachmentId: string, publicBaseUrl: string): string {
+function attachmentContentPath(noteId: string, attachmentId: string): string {
   const encodedNoteId = encodeURIComponent(noteId);
   const encodedAttachmentId = encodeURIComponent(attachmentId);
-  if (!publicBaseUrl) return `/api/notes/${encodedNoteId}/attachments/${encodedAttachmentId}/content`;
-  try {
-    const pathname = new URL(publicBaseUrl).pathname.replace(/\/$/, '');
-    const apiPrefix = pathname.endsWith('/api') ? '' : '/api';
-    return `${apiPrefix}/notes/${encodedNoteId}/attachments/${encodedAttachmentId}/content`;
-  } catch {
-    const apiPrefix = publicBaseUrl.replace(/\/$/, '').endsWith('/api') ? '' : '/api';
-    return `${apiPrefix}/notes/${encodedNoteId}/attachments/${encodedAttachmentId}/content`;
-  }
+  return `/notes/${encodedNoteId}/attachments/${encodedAttachmentId}/content`;
 }
 
 export function noteSummary(record: NoteRecord): VaultNoteSummary {
@@ -38,14 +30,15 @@ export function noteSummary(record: NoteRecord): VaultNoteSummary {
 }
 
 export function noteAttachment(noteId: string, attachment: AttachmentRecord) {
-  const publicBaseUrl = readEnvironment().publicBaseUrl;
-  const attachmentPath = attachmentContentPath(noteId, attachment.id, publicBaseUrl);
+  const environment = readEnvironment();
+  const attachmentBaseUrl = environment.apiPublicBaseUrl || environment.publicBaseUrl;
+  const attachmentPath = attachmentContentPath(noteId, attachment.id);
   return {
     id: attachment.id,
     fileName: attachment.fileName,
     mimeType: attachment.mimeType,
     sizeBytes: attachment.sizeBytes,
-    url: absoluteUrl(publicBaseUrl, attachmentPath),
+    url: absoluteUrl(attachmentBaseUrl, attachmentBaseUrl ? attachmentPath : `/api${attachmentPath}`),
   };
 }
 

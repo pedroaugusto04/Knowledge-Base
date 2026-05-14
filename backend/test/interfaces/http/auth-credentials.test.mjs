@@ -15,6 +15,7 @@ function runtimeEnvironmentProvider() {
     read: () => ({
       credentialsEncryptionKey: process.env.KB_CREDENTIALS_ENCRYPTION_KEY || '',
       publicBaseUrl: process.env.KB_PUBLIC_BASE_URL || '',
+      apiPublicBaseUrl: process.env.KB_API_PUBLIC_BASE_URL || '',
       githubAppInstallUrl: process.env.KB_GITHUB_APP_INSTALL_URL || '',
       githubAppId: process.env.KB_GITHUB_APP_ID || '',
       githubAppPrivateKey: process.env.KB_GITHUB_APP_PRIVATE_KEY || '',

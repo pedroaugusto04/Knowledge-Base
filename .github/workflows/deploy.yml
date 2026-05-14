@@ -94,6 +94,7 @@ jobs:
           KB_TRUST_PROXY: ${{ vars.KB_TRUST_PROXY || 'true' }}
           KB_BODY_LIMIT: ${{ vars.KB_BODY_LIMIT || '10mb' }}
           KB_PUBLIC_BASE_URL: ${{ vars.KB_PUBLIC_BASE_URL }}
+          KB_API_PUBLIC_BASE_URL: ${{ vars.KB_API_PUBLIC_BASE_URL }}
           KB_ALLOWED_ORIGINS: ${{ vars.KB_ALLOWED_ORIGINS }}
           KB_ACCESS_TOKEN_TTL_SECONDS: ${{ vars.KB_ACCESS_TOKEN_TTL_SECONDS || '900' }}
           KB_REFRESH_TOKEN_TTL_SECONDS: ${{ vars.KB_REFRESH_TOKEN_TTL_SECONDS || '2592000' }}
@@ -145,6 +146,7 @@ jobs:
           VPS_GITHUB_REPO_TOKEN: ${{ secrets.VPS_GITHUB_REPO_TOKEN }}
           VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
           KB_PUBLIC_BASE_URL: ${{ vars.KB_PUBLIC_BASE_URL }}
+          KB_API_PUBLIC_BASE_URL: ${{ vars.KB_API_PUBLIC_BASE_URL }}
           KB_ALLOWED_ORIGINS: ${{ vars.KB_ALLOWED_ORIGINS }}
           KB_DATABASE_URL: ${{ secrets.KB_DATABASE_URL }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -165,6 +167,7 @@ jobs:
           test -n "$VPS_GITHUB_REPO_TOKEN" || { echo "Missing secret: VPS_GITHUB_REPO_TOKEN"; exit 1; }
           test -n "$VPS_APP_DIR" || { echo "Missing variable: VPS_APP_DIR"; exit 1; }
           test -n "$KB_PUBLIC_BASE_URL" || { echo "Missing variable: KB_PUBLIC_BASE_URL"; exit 1; }
+          test -n "$KB_API_PUBLIC_BASE_URL" || { echo "Missing variable: KB_API_PUBLIC_BASE_URL"; exit 1; }
           test -n "$KB_ALLOWED_ORIGINS" || { echo "Missing variable: KB_ALLOWED_ORIGINS"; exit 1; }
           test -n "$KB_DATABASE_URL" || { echo "Missing secret: KB_DATABASE_URL"; exit 1; }
           test -n "$SUPABASE_URL" || { echo "Missing variable: SUPABASE_URL"; exit 1; }

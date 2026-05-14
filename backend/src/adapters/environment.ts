@@ -32,6 +32,7 @@ export type RuntimeEnvironment = {
   githubAppId: string;
   githubAppPrivateKey: string;
   publicBaseUrl: string;
+  apiPublicBaseUrl: string;
   allowedOrigins: string[];
   trustProxy: boolean;
   githubPushWebhookPath: string;
@@ -78,6 +79,7 @@ export function readEnvironment(env = process.env): RuntimeEnvironment {
     githubAppId: String(env.KB_GITHUB_APP_ID || '').trim(),
     githubAppPrivateKey: String(env.KB_GITHUB_APP_PRIVATE_KEY || '').trim(),
     publicBaseUrl: String(env.KB_PUBLIC_BASE_URL || env.WEBHOOK_URL || '').trim().replace(/\/$/, ''),
+    apiPublicBaseUrl: String(env.KB_API_PUBLIC_BASE_URL || '').trim().replace(/\/$/, ''),
     allowedOrigins: String(env.KB_ALLOWED_ORIGINS || '')
       .split(',')
       .map((origin) => origin.trim().replace(/\/$/, ''))

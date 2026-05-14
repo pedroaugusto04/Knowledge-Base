@@ -16,6 +16,7 @@ export type RuntimeEnvironment = {
   githubAppId: string;
   githubAppPrivateKey: string;
   publicBaseUrl: string;
+  apiPublicBaseUrl: string;
   allowedOrigins: string[];
   trustProxy: boolean;
   githubPushWebhookPath: string;
