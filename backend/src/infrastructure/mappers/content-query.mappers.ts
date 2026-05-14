@@ -5,6 +5,20 @@ import type { ReviewView } from '../../application/models/review.models.js';
 import { absoluteUrl } from '../../application/utils/integration-status.utils.js';
 import type { VaultNoteDetail, VaultNoteSummary } from '../../application/models/vault-note.models.js';
 
+function attachmentContentPath(noteId: string, attachmentId: string, publicBaseUrl: string): string {
+  const encodedNoteId = encodeURIComponent(noteId);
+  const encodedAttachmentId = encodeURIComponent(attachmentId);
+  if (!publicBaseUrl) return `/api/notes/${encodedNoteId}/attachments/${encodedAttachmentId}/content`;
+  try {
+    const pathname = new URL(publicBaseUrl).pathname.replace(/\/$/, '');
+    const apiPrefix = pathname.endsWith('/api') ? '' : '/api';
+    return `${apiPrefix}/notes/${encodedNoteId}/attachments/${encodedAttachmentId}/content`;
+  } catch {
+    const apiPrefix = publicBaseUrl.replace(/\/$/, '').endsWith('/api') ? '' : '/api';
+    return `${apiPrefix}/notes/${encodedNoteId}/attachments/${encodedAttachmentId}/content`;
+  }
+}
+
 export function noteSummary(record: NoteRecord): VaultNoteSummary {
   return {
     id: record.id,
@@ -25,7 +39,7 @@ export function noteSummary(record: NoteRecord): VaultNoteSummary {
 
 export function noteAttachment(noteId: string, attachment: AttachmentRecord) {
   const publicBaseUrl = readEnvironment().publicBaseUrl;
-  const attachmentPath = `${publicBaseUrl ? '' : '/api'}/notes/${encodeURIComponent(noteId)}/attachments/${encodeURIComponent(attachment.id)}/content`;
+  const attachmentPath = attachmentContentPath(noteId, attachment.id, publicBaseUrl);
   return {
     id: attachment.id,
     fileName: attachment.fileName,
