@@ -1,6 +1,8 @@
+import { readEnvironment } from '../../adapters/environment.js';
 import type { ReminderView } from '../../application/models/reminder.models.js';
 import type { AttachmentRecord, NoteRecord } from '../../application/models/repository-records.models.js';
 import type { ReviewView } from '../../application/models/review.models.js';
+import { absoluteUrl } from '../../application/utils/integration-status.utils.js';
 import type { VaultNoteDetail, VaultNoteSummary } from '../../application/models/vault-note.models.js';
 
 export function noteSummary(record: NoteRecord): VaultNoteSummary {
@@ -22,12 +24,14 @@ export function noteSummary(record: NoteRecord): VaultNoteSummary {
 }
 
 export function noteAttachment(noteId: string, attachment: AttachmentRecord) {
+  const publicBaseUrl = readEnvironment().publicBaseUrl;
+  const attachmentPath = `${publicBaseUrl ? '' : '/api'}/notes/${encodeURIComponent(noteId)}/attachments/${encodeURIComponent(attachment.id)}/content`;
   return {
     id: attachment.id,
     fileName: attachment.fileName,
     mimeType: attachment.mimeType,
     sizeBytes: attachment.sizeBytes,
-    url: `/api/notes/${encodeURIComponent(noteId)}/attachments/${encodeURIComponent(attachment.id)}/content`,
+    url: absoluteUrl(publicBaseUrl, attachmentPath),
   };
 }
 
