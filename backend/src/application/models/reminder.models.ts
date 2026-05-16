@@ -1,3 +1,5 @@
+import type { ReminderDeliveryChannel } from '../../contracts/enums.js';
+
 export type ReminderView = {
   id: string;
   title: string;
@@ -11,10 +13,11 @@ export type ReminderView = {
   relativePath: string;
 };
 
-export type DueTelegramReminderView = {
+export type DueReminderView = {
   userId: string;
   workspaceSlug: string;
-  telegramChatId: string;
+  channel: ReminderDeliveryChannel;
+  recipientId: string;
   reminderId: string;
   title: string;
   project: string;

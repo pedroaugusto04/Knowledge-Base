@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
+import { ReminderDeliveryChannel } from '../contracts/enums.js';
 import { readEnvironment } from './environment.js';
+import { ReminderDeliveryGateway, type ReminderDeliveryResult, type ReminderSendTextInput } from '../application/ports/reminder-delivery.gateway.js';
 import { WhatsappMediaDownloader, type WhatsappMediaDownloadResult } from '../application/ports/whatsapp-media.downloader.js';
 import { WhatsappReplySender, type WhatsappSendTextResult } from '../application/ports/whatsapp-reply.sender.js';
 
@@ -32,6 +34,24 @@ export class EvolutionWhatsappReplySender extends WhatsappReplySender {
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : String(error) };
     }
+  }
+}
+
+@Injectable()
+export class EvolutionReminderDeliveryGateway extends ReminderDeliveryGateway {
+  constructor(private readonly whatsappReplySender: WhatsappReplySender) {
+    super();
+  }
+
+  async sendText(input: ReminderSendTextInput): Promise<ReminderDeliveryResult> {
+    if (input.channel !== ReminderDeliveryChannel.Whatsapp) {
+      return { ok: false, error: 'unsupported_reminder_delivery_channel' };
+    }
+
+    return this.whatsappReplySender.sendText({
+      groupJid: input.recipientId,
+      text: input.text,
+    });
   }
 }
 

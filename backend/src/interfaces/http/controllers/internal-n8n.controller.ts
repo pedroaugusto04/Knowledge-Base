@@ -58,14 +58,22 @@ export class InternalN8NController {
   @Get('reminders/dispatch')
   async remindersDispatch(@Query(new ZodValidationPipe(internalReminderDispatchQuerySchema, 'invalid_internal_reminder_dispatch_query')) query: InternalReminderDispatchQuery) {
     const tenant = await this.resolveExternalIdentity(query);
-    return this.reminderDispatch.execute(query.mode, tenant.userId, tenant.workspaceSlug);
+    const result = await this.reminderDispatch.execute(query.mode, tenant.userId, tenant.workspaceSlug);
+    return {
+      ...result,
+      provider: query.provider,
+      identityType: query.identityType,
+      externalId: query.externalId,
+      workspaceSlug: tenant.workspaceSlug,
+      mode: query.mode,
+    };
   }
 
   @Post('reminders/mark-sent')
   async remindersMarkSent(@Body(new ZodValidationPipe(internalN8nMarkSentBodySchema, 'invalid_internal_mark_reminders_payload')) body: InternalN8nMarkSentBody) {
     const tenant = await this.resolveTenant(body);
     const payload = body.payload || body;
-    return this.markReminders.execute(payload.ids, tenant.userId, tenant.workspaceSlug);
+    return this.markReminders.execute(payload.ids, tenant.userId, tenant.workspaceSlug, payload.mode, payload.dispatchKey);
   }
 
   private async resolveTenant(body: Parameters<typeof resolveExternalIdentityLookup>[0]) {

@@ -108,6 +108,11 @@ export enum ReminderDispatchMode {
   Exact = 'exact',
 }
 
+export enum ReminderDeliveryChannel {
+  Whatsapp = 'whatsapp',
+  Telegram = 'telegram',
+}
+
 export enum HomeTargetKind {
   Note = 'note',
   Project = 'project',

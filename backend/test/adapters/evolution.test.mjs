@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { EvolutionWhatsappMediaDownloader, EvolutionWhatsappReplySender } from '../../dist/adapters/evolution.js';
+import { ReminderDeliveryChannel } from '../../dist/contracts/enums.js';
+import { EvolutionReminderDeliveryGateway, EvolutionWhatsappMediaDownloader, EvolutionWhatsappReplySender } from '../../dist/adapters/evolution.js';
 
 test('evolution whatsapp sender posts plain text without bot prefix', async () => {
   process.env.EVOLUTION_API_URL = 'https://evolution.example';
@@ -32,6 +33,23 @@ test('evolution whatsapp sender posts plain text without bot prefix', async () =
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('evolution reminder delivery gateway maps unified reminder payload to whatsapp sender', async () => {
+  const gateway = new EvolutionReminderDeliveryGateway({
+    sendText: async (input) => ({ ok: input.groupJid === '120363@g.us', error: input.groupJid ? undefined : 'missing_group' }),
+  });
+
+  const result = await gateway.sendText({
+    channel: ReminderDeliveryChannel.Whatsapp,
+    recipientId: '120363@g.us',
+    text: 'Reminder text',
+    workspaceSlug: 'default',
+    userId: 'user-1',
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.error, undefined);
 });
 
 test('evolution whatsapp media downloader accepts nested base64 response', async () => {

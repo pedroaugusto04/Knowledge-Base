@@ -34,7 +34,14 @@ export class BuildReminderDispatchUseCase {
       if (!pending.length) return { ok: true, shouldSend: false, message: 'no_pending_daily_reminders' };
       const text = ['Lembretes ativos', `Data: ${now.date}`, '', ...pending.map((item) => `- [${item.project}] ${item.title} (${item.reminderDate}${item.reminderTime ? ` ${item.reminderTime}` : ''})`)].join('\n');
       await Promise.all(pending.map((item) => this.reminderDispatchRepository.markSent(userId, workspace, ReminderDispatchMode.Daily, now.date, item.id)));
-      return { ok: true, shouldSend: true, text, remindersArg: pending.map((item) => item.id).join(',') };
+      return {
+        ok: true,
+        shouldSend: true,
+        text,
+        remindersArg: pending.map((item) => item.id).join(','),
+        ids: pending.map((item) => item.id),
+        dispatchKey: now.date,
+      };
     }
     const due = reminders.filter((item) => {
       const scheduledAt = resolveReminderScheduledAt(item, reminderTimeZone);
@@ -48,6 +55,13 @@ export class BuildReminderDispatchUseCase {
     }
     if (!pending.length) return { ok: true, shouldSend: false, message: 'no_due_reminders' };
     const text = ['Lembrete do momento', `Agora: ${now.date} ${now.time}`, '', ...pending.map((item) => `- [${item.project}] ${item.title}`)].join('\n');
-    return { ok: true, shouldSend: true, text, remindersArg: pending.map((item) => item.id).join(',') };
+    return {
+      ok: true,
+      shouldSend: true,
+      text,
+      remindersArg: pending.map((item) => item.id).join(','),
+      ids: pending.map((item) => item.id),
+      dispatchKey,
+    };
   }
 }

@@ -9,8 +9,11 @@ import { AppModule } from '../../dist/app.module.js';
 import { SchemaMigrator, UserRepository } from '../../dist/application/ports/auth.repository.js';
 import { ContentQueryRepository, ContentRepository } from '../../dist/application/ports/content.repository.js';
 import { CredentialRepository, ExternalIdentityRepository } from '../../dist/application/ports/integrations.repository.js';
+import { ReminderDeliveryGateway } from '../../dist/application/ports/reminder-delivery.gateway.js';
 import { WebhookEventRepository } from '../../dist/application/ports/webhook-events.repository.js';
 import { ConversationStateRepository, ReminderDispatchRepository } from '../../dist/application/ports/workflow-state.repository.js';
+import { ReminderDeliveryChannel } from '../../dist/contracts/enums.js';
+import { EvolutionReminderDeliveryGateway } from '../../dist/adapters/evolution.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
 test('postgres repositories share state across content query and workflow ports', async (t) => {
@@ -22,7 +25,7 @@ test('postgres repositories share state across content query and workflow ports'
     title: 'Shared state',
     projectSlug: 'acme',
     workspaceSlug: 'default',
-    status: 'active',
+    status: 'pending',
     tags: ['shared'],
     occurredAt: '2026-04-28',
     sourceChannel: 'test',
@@ -47,15 +50,21 @@ test('postgres repositories share state across content query and workflow ports'
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappGroupJid: '120363@g.us',
     telegramChatId: 'telegram-chat-1',
     createdAt: '2026-04-28T00:00:00.000Z',
     updatedAt: '2026-04-28T00:00:00.000Z',
   });
-  const dueTelegramReminders = await repositories.contentQueryRepository.listDueTelegramReminders('2026-04-28T12:00:00.000Z');
+  const dueWhatsappReminders = await repositories.contentQueryRepository.listDueRemindersByChannel(ReminderDeliveryChannel.Whatsapp, '2026-04-28T12:00:00.000Z');
+  assert.equal(dueWhatsappReminders.length, 1);
+  assert.equal(dueWhatsappReminders[0].reminderId, note.id);
+  assert.equal(dueWhatsappReminders[0].recipientId, '120363@g.us');
+  assert.equal(dueWhatsappReminders[0].channel, ReminderDeliveryChannel.Whatsapp);
+
+  const dueTelegramReminders = await repositories.contentQueryRepository.listDueRemindersByChannel(ReminderDeliveryChannel.Telegram, '2026-04-28T12:00:00.000Z');
   assert.equal(dueTelegramReminders.length, 1);
-  assert.equal(dueTelegramReminders[0].reminderId, note.id);
-  assert.equal(dueTelegramReminders[0].telegramChatId, 'telegram-chat-1');
+  assert.equal(dueTelegramReminders[0].recipientId, 'telegram-chat-1');
+  assert.equal(dueTelegramReminders[0].channel, ReminderDeliveryChannel.Telegram);
 
   await repositories.conversationStateRepository.upsert(user.id, 'default', 'conversation-1', { phase: 'collecting' });
   const storedState = await repositories.conversationStateRepository.get(user.id, 'default', 'conversation-1');
@@ -84,6 +93,7 @@ test('app module resolves repository providers without KnowledgeStore wiring', a
     assert.ok(app.get(ContentQueryRepository));
     assert.ok(app.get(ConversationStateRepository));
     assert.ok(app.get(ReminderDispatchRepository));
+    assert.ok(app.get(ReminderDeliveryGateway) instanceof EvolutionReminderDeliveryGateway);
     assert.ok(app.get(WebhookEventRepository));
   } finally {
     await app.close();

@@ -6,6 +6,7 @@ import { IntegrationConnectionService } from './application/integration-connecti
 import { IntegrationCredentialService } from './application/credentials.js';
 import { ConversationAgentGateway } from './application/ports/conversation-agent.gateway.js';
 import { GithubIntegrationGateway } from './application/ports/github-integration.port.js';
+import { ReminderDeliveryGateway } from './application/ports/reminder-delivery.gateway.js';
 import { ReviewAnalysisGateway } from './application/ports/review-analysis.port.js';
 import { RuntimeEnvironmentProvider } from './application/ports/runtime-environment.port.js';
 import { ContentObjectStorageService } from './application/services/content-object-storage.service.js';
@@ -23,8 +24,8 @@ import { TelegramMessageSender } from './application/ports/telegram-message.send
 import { WhatsappMediaDownloader } from './application/ports/whatsapp-media.downloader.js';
 import { WhatsappReplySender } from './application/ports/whatsapp-reply.sender.js';
 import { ConversationStateRepository, ReminderDispatchRepository } from './application/ports/workflow-state.repository.js';
-import { TelegramHttpMessageSender } from './adapters/telegram.js';
-import { EvolutionWhatsappMediaDownloader, EvolutionWhatsappReplySender } from './adapters/evolution.js';
+import { TelegramHttpMessageSender, TelegramReminderDeliveryGateway } from './adapters/telegram.js';
+import { EvolutionReminderDeliveryGateway, EvolutionWhatsappMediaDownloader, EvolutionWhatsappReplySender } from './adapters/evolution.js';
 import { DefaultConversationAgentGateway } from './infrastructure/ai/conversation-agent.gateway.js';
 import { DefaultReviewAnalysisGateway } from './infrastructure/ai/review-analysis.gateway.js';
 import { DefaultGithubIntegrationGateway } from './infrastructure/integrations/github-integration.gateway.js';
@@ -45,6 +46,7 @@ import {
   CreateProjectFolderUseCase,
   CreateProjectUseCase,
   CreateWorkspaceUseCase,
+  DispatchDueRemindersUseCase,
   DispatchDueTelegramRemindersUseCase,
   DeleteProjectFolderUseCase,
   DeleteNoteUseCase,
@@ -70,7 +72,7 @@ import {
   ListWorkspacesUseCase,
   ListWorkspaceRepositoriesUseCase,
 } from './application/use-cases/index.js';
-import { TelegramReminderDispatchWorker } from './application/services/telegram-reminder-dispatch.worker.js';
+import { ReminderDispatchWorker } from './application/services/reminder-dispatch.worker.js';
 import { AuthController, DashboardController, GithubAppCallbackController, HealthController, InternalIntegrationsController, InternalN8NController, NotesController, OperationsController, ProjectsController, UserIntegrationsController, WebhookController, WorkspacesController } from './interfaces/http/controllers/index.js';
 import { AccessTokenAuthGuard, AuthRateLimitGuard, GlobalRateLimitGuard, InternalServiceTokenGuard, TrustedOriginGuard, WebhookRateLimitGuard } from './interfaces/http/auth.guards.js';
 import { GlobalExceptionFilter } from './observability/global-exception.filter.js';
@@ -117,15 +119,18 @@ import { AppLogger } from './observability/logger.js';
     IngestEntryUseCase,
     ProcessAgentConversationUseCase,
     BuildReminderDispatchUseCase,
+    DispatchDueRemindersUseCase,
     DispatchDueTelegramRemindersUseCase,
     MarkReminderAsSentUseCase,
     HandleGithubPushUseCase,
     HandleWhatsappWebhookUseCase,
     HandleTelegramWebhookUseCase,
-    TelegramReminderDispatchWorker,
+    ReminderDispatchWorker,
     EvolutionWhatsappReplySender,
+    EvolutionReminderDeliveryGateway,
     EvolutionWhatsappMediaDownloader,
     TelegramHttpMessageSender,
+    TelegramReminderDeliveryGateway,
     DefaultConversationAgentGateway,
     DefaultReviewAnalysisGateway,
     DefaultGithubIntegrationGateway,
@@ -157,6 +162,7 @@ import { AppLogger } from './observability/logger.js';
     { provide: WhatsappReplySender, useExisting: EvolutionWhatsappReplySender },
     { provide: WhatsappMediaDownloader, useExisting: EvolutionWhatsappMediaDownloader },
     { provide: TelegramMessageSender, useExisting: TelegramHttpMessageSender },
+    { provide: ReminderDeliveryGateway, useExisting: EvolutionReminderDeliveryGateway },
     { provide: APP_GUARD, useClass: GlobalRateLimitGuard },
   ],
 })

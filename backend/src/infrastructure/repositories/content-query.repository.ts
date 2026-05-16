@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { readEnvironment } from '../../adapters/environment.js';
-import type { DueTelegramReminderView, ReminderView } from '../../application/models/reminder.models.js';
+import { ReminderDeliveryChannel } from '../../contracts/enums.js';
+import type { DueReminderView, ReminderView } from '../../application/models/reminder.models.js';
 import type { NoteRecord } from '../../application/models/repository-records.models.js';
 import type { ReviewView } from '../../application/models/review.models.js';
 import { ContentQueryRepository } from '../../application/ports/content.repository.js';
@@ -69,15 +70,16 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
     return (await this.loadNotes(userId)).map(reminderFromNote).filter((reminder): reminder is ReminderView => Boolean(reminder));
   }
 
-  async listDueTelegramReminders(now: string) {
+  async listDueRemindersByChannel(channel: ReminderDeliveryChannel, now: string) {
     const reminderTimeZone = readEnvironment().reminderTimeZone;
+    const recipientField = channel === ReminderDeliveryChannel.Telegram ? 'w.telegram_chat_id' : 'w.whatsapp_group_jid';
     const result = await this.database.getPool().query(
-      `select n.user_id, n.workspace_slug, n.id as reminder_id, n.title, n.project_slug, n.path, n.status, n.metadata, w.telegram_chat_id
+      `select n.user_id, n.workspace_slug, n.id as reminder_id, n.title, n.project_slug, n.path, n.status, n.metadata, ${recipientField} as recipient_id
        from kb_notes n
        join kb_workspaces w on w.user_id = n.user_id and w.workspace_slug = n.workspace_slug
        where n.status = any($1::text[])
          and coalesce(n.metadata->>'reminderDate', '') <> ''
-         and coalesce(w.telegram_chat_id, '') <> ''`,
+         and coalesce(${recipientField}, '') <> ''`,
       [reminderDispatchEligibleStatuses],
     );
 
@@ -93,16 +95,17 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         return {
           userId: String(row.user_id || ''),
           workspaceSlug: String(row.workspace_slug || ''),
-          telegramChatId: String(row.telegram_chat_id || ''),
+          channel,
+          recipientId: String(row.recipient_id || ''),
           reminderId: String(row.reminder_id || ''),
           title: String(row.title || ''),
           project: String(row.project_slug || ''),
           relativePath: String(row.path || ''),
           status: String(row.status || ''),
           scheduledAt,
-        } satisfies DueTelegramReminderView;
+        } satisfies DueReminderView;
       })
-      .filter((reminder): reminder is DueTelegramReminderView => Boolean(reminder))
+      .filter((reminder): reminder is DueReminderView => Boolean(reminder))
       .sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt) || left.reminderId.localeCompare(right.reminderId));
   }
 }

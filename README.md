@@ -17,6 +17,7 @@ Transform scattered information into a searchable knowledge base by automaticall
 We simplify knowledge capture where the work already happens:
 
 - **WhatsApp:** Send texts or audio directly to the Vault. The system automatically identifies the project and generates structured notes without manual effort.
+- **WhatsApp Reminders:** Backend reminder dispatch uses the workspace `whatsappGroupJid` through Evolution API as the default delivery channel.
 - **GitHub Push:** Captures `git push` events, analyzes commits and diffs, and transforms technical updates into accessible context for everyone, not just developers.
 
 ## Why Knowledge Vault?

@@ -1,4 +1,5 @@
-import type { DueTelegramReminderView, ReminderView } from '../models/reminder.models.js';
+import type { ReminderDeliveryChannel } from '../../contracts/enums.js';
+import type { DueReminderView, ReminderView } from '../models/reminder.models.js';
 import type {
   AttachmentRecord,
   NoteRecord,
@@ -47,5 +48,5 @@ export abstract class ContentQueryRepository {
   abstract listReviews(userId: string): Promise<ReviewView[]>;
   abstract getReviewById(userId: string, id: string): Promise<ReviewView | null>;
   abstract listReminders(userId: string): Promise<ReminderView[]>;
-  abstract listDueTelegramReminders(nowIso: string): Promise<DueTelegramReminderView[]>;
+  abstract listDueRemindersByChannel(channel: ReminderDeliveryChannel, nowIso: string): Promise<DueReminderView[]>;
 }

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { paginationInputSchema } from '../../../contracts/pagination.js';
 import { queryInputSchema } from '../../../contracts/query.js';
+import { ReminderDispatchMode } from '../../../contracts/enums.js';
 
 export const queryRequestSchema = z.object({
   query: z.string().default(''),
@@ -14,9 +15,15 @@ export const queryRequestSchema = z.object({
 export const markRemindersBodySchema = z
   .object({
     ids: z.array(z.string().trim().min(1)).min(1),
+    mode: z.enum([ReminderDispatchMode.Daily, ReminderDispatchMode.Exact]).optional(),
+    dispatchKey: z.string().trim().optional(),
   })
   .strict()
-  .transform((body) => ({ ids: body.ids.map((id) => id.trim()) }));
+  .transform((body) => ({
+    ids: body.ids.map((id) => id.trim()),
+    mode: body.mode,
+    dispatchKey: body.dispatchKey || undefined,
+  }));
 
 export type QueryRequest = z.infer<typeof queryRequestSchema>;
 export type MarkRemindersBody = z.infer<typeof markRemindersBodySchema>;

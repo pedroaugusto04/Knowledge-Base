@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
+import { ReminderDeliveryChannel } from '../contracts/enums.js';
 import { readEnvironment } from './environment.js';
+import { ReminderDeliveryGateway, type ReminderDeliveryResult, type ReminderSendTextInput } from '../application/ports/reminder-delivery.gateway.js';
 import { TelegramMessageSender, type TelegramSendTextResult } from '../application/ports/telegram-message.sender.js';
 
 @Injectable()
@@ -28,5 +30,23 @@ export class TelegramHttpMessageSender extends TelegramMessageSender {
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : String(error) };
     }
+  }
+}
+
+@Injectable()
+export class TelegramReminderDeliveryGateway extends ReminderDeliveryGateway {
+  constructor(private readonly telegramMessageSender: TelegramMessageSender) {
+    super();
+  }
+
+  async sendText(input: ReminderSendTextInput): Promise<ReminderDeliveryResult> {
+    if (input.channel !== ReminderDeliveryChannel.Telegram) {
+      return { ok: false, error: 'unsupported_reminder_delivery_channel' };
+    }
+
+    return this.telegramMessageSender.sendText({
+      chatId: input.recipientId,
+      text: input.text,
+    });
   }
 }

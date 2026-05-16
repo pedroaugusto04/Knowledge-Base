@@ -1,48 +1,29 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
+import { ReminderDeliveryChannel } from '../../contracts/enums.js';
 import { AppLogger } from '../../observability/logger.js';
 import { RuntimeEnvironmentProvider } from '../ports/runtime-environment.port.js';
-import { DispatchDueTelegramRemindersUseCase } from '../use-cases/reminders/dispatch-due-telegram-reminders.use-case.js';
-
-const ONE_MINUTE_MS = 60_000;
+import { DispatchDueRemindersUseCase } from '../use-cases/reminders/dispatch-due-reminders.use-case.js';
+import { ReminderDispatchWorker } from './reminder-dispatch.worker.js';
 
 @Injectable()
-export class TelegramReminderDispatchWorker implements OnModuleInit, OnModuleDestroy {
-  private timer: NodeJS.Timeout | null = null;
-
+export class TelegramReminderDispatchWorker extends ReminderDispatchWorker {
   constructor(
-    private readonly dispatchDueTelegramReminders: DispatchDueTelegramRemindersUseCase,
-    private readonly logger: AppLogger,
-    private readonly environmentProvider: RuntimeEnvironmentProvider,
-  ) {}
-
-  onModuleInit() {
-    if (!this.shouldStart()) return;
-    void this.runOnce();
-    this.timer = setInterval(() => {
-      void this.runOnce();
-    }, ONE_MINUTE_MS);
+    private readonly telegramDispatchDueReminders: DispatchDueRemindersUseCase,
+    logger: AppLogger,
+    environmentProvider: RuntimeEnvironmentProvider,
+  ) {
+    super(telegramDispatchDueReminders, logger, environmentProvider);
   }
 
-  onModuleDestroy() {
-    if (!this.timer) return;
-    clearInterval(this.timer);
-    this.timer = null;
-  }
-
-  async runOnce() {
+  override async runOnce() {
     try {
-      return await this.dispatchDueTelegramReminders.execute();
+      return await this.telegramDispatchDueReminders.execute(ReminderDeliveryChannel.Telegram);
     } catch (error) {
-      this.logger.error('reminder.telegram_worker_failed', {
+      return {
+        ok: false,
         error: error instanceof Error ? error.message : String(error),
-      });
-      return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      };
     }
-  }
-
-  private shouldStart() {
-    if (String(process.env.KB_DISABLE_REMINDER_WORKER || '').trim().toLowerCase() === 'true') return false;
-    return Boolean(this.environmentProvider.read().databaseUrl);
   }
 }

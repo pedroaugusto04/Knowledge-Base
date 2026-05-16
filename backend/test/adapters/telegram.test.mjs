@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { ReminderDeliveryChannel } from '../../dist/contracts/enums.js';
 import { TelegramHttpMessageSender } from '../../dist/adapters/telegram.js';
+import { TelegramReminderDeliveryGateway } from '../../dist/adapters/telegram.js';
 
 test('telegram sender posts sendMessage with bot token and workspace chat id', async () => {
   process.env.KB_TELEGRAM_BOT_TOKEN = 'bot-token';
@@ -29,4 +31,21 @@ test('telegram sender posts sendMessage with bot token and workspace chat id', a
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('telegram reminder delivery gateway maps unified reminder payload to telegram sender', async () => {
+  const gateway = new TelegramReminderDeliveryGateway({
+    sendText: async (input) => ({ ok: input.chatId === 'workspace-chat-1', error: input.chatId ? undefined : 'missing_chat' }),
+  });
+
+  const result = await gateway.sendText({
+    channel: ReminderDeliveryChannel.Telegram,
+    recipientId: 'workspace-chat-1',
+    text: 'Reminder text',
+    workspaceSlug: 'default',
+    userId: 'user-1',
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.error, undefined);
 });

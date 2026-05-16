@@ -31,7 +31,11 @@ test('query dto normalizes limit and slugs', () => {
 
 test('mark-sent dto requires ids array', () => {
   assert.throws(() => markRemindersBodySchema.parse({ ids: 'one' }));
-  assert.deepEqual(markRemindersBodySchema.parse({ ids: ['one', ' two '] }), { ids: ['one', 'two'] });
+  assert.deepEqual(markRemindersBodySchema.parse({ ids: ['one', ' two '], mode: 'exact', dispatchKey: '2026-05-08T11:00' }), {
+    ids: ['one', 'two'],
+    mode: 'exact',
+    dispatchKey: '2026-05-08T11:00',
+  });
 });
 
 test('create workspace dto normalizes slug from display name', () => {

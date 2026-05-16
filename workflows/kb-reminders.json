@@ -261,7 +261,7 @@
           "options": {},
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ $json.payload || $json }}"
+          "jsonBody": "={{ ({ provider: $node[\"Parse Exact Result\"].json.provider || \"whatsapp\", identityType: $node[\"Parse Exact Result\"].json.identityType || \"jid\", externalId: $node[\"Parse Exact Result\"].json.externalId || \"\", workspaceSlug: $node[\"Parse Exact Result\"].json.workspaceSlug || \"\", payload: { ids: Array.isArray($node[\"Parse Exact Result\"].json.ids) ? $node[\"Parse Exact Result\"].json.ids : String($node[\"Parse Exact Result\"].json.remindersArg || \"\").split(\",\").map((id) => id.trim()).filter(Boolean), mode: $node[\"Parse Exact Result\"].json.mode || \"exact\", dispatchKey: $node[\"Parse Exact Result\"].json.dispatchKey || \"\" } }) }}"
         },
         "id": "kb-reminders-mark-sent",
         "name": "Mark Exact Reminders Sent",
