@@ -47,10 +47,23 @@ describe('NoteRow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Editar nota Deploy antigo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Excluir nota Deploy antigo' }));
 
+    const resolveButton = screen.getByRole('button', { name: 'Resolver nota Deploy antigo' });
+    const archiveButton = screen.getByRole('button', { name: 'Arquivar nota Deploy antigo' });
+    const editButton = screen.getByRole('button', { name: 'Editar nota Deploy antigo' });
+    const deleteButton = screen.getByRole('button', { name: 'Excluir nota Deploy antigo' });
+
     expect(screen.getByText('Evento')).toBeInTheDocument();
-    expect(screen.getByText('Ativa')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Resolver' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Arquivar' })).toBeInTheDocument();
+    expect(screen.getByText('active')).toBeInTheDocument();
+    expect(resolveButton).toBeInTheDocument();
+    expect(archiveButton).toBeInTheDocument();
+    expect(editButton).toHaveAttribute('title', 'Editar');
+    expect(deleteButton).toHaveAttribute('title', 'Excluir');
+    expect(resolveButton).toHaveAttribute('title', 'Resolver');
+    expect(archiveButton).toHaveAttribute('title', 'Arquivar');
+    expect(resolveButton.querySelector('svg')).not.toBeNull();
+    expect(archiveButton.querySelector('svg')).not.toBeNull();
+    expect(editButton.querySelector('svg')).not.toBeNull();
+    expect(deleteButton.querySelector('svg')).not.toBeNull();
     expect(screen.getByLabelText('2 anexos')).toBeInTheDocument();
     expect(screen.queryByText('event')).not.toBeInTheDocument();
     expect(screen.queryByText('manual-api')).not.toBeInTheDocument();
@@ -88,6 +101,6 @@ describe('NoteRow', () => {
       />,
     );
 
-    expect(screen.queryByLabelText(/anexo/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^\d+ anexos?$/)).not.toBeInTheDocument();
   });
 });

@@ -55,18 +55,6 @@ export function noteTypeLabel(type: string) {
   );
 }
 
-export function noteStatusLabel(status: string) {
-  return (
-    {
-      active: 'Ativa',
-      pending: 'Pendente',
-      sent: 'Enviado',
-      resolved: 'Resolvida',
-      archived: 'Arquivada',
-    }[status] || humanizeToken(status)
-  );
-}
-
 export function typeIcon(type: string) {
   return (
     {

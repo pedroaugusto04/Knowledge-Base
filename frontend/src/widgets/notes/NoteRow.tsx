@@ -1,6 +1,6 @@
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
-import { formatUsDate, noteStatusLabel, noteTypeLabel, projectName, typeIcon } from '../../entities/format';
+import { formatUsDate, noteTypeLabel, projectName, typeIcon } from '../../entities/format';
 import { Badge } from '../../shared/ui/primitives';
 import { AttachmentIndicator } from './AttachmentIndicator';
 import { QuickNoteStatusActions } from './QuickNoteStatusActions';
@@ -42,7 +42,7 @@ export function NoteRow({
       <div className="list-row-body note-row-body">
         <div className="meta-row">
           <Badge value={noteTypeLabel(note.type)} tone={note.type} />
-          <Badge value={noteStatusLabel(note.status)} tone={note.status} />
+          <Badge value={note.status} tone={note.status} />
           <span className="meta">
             {projectName(dashboard.projects, note.project)} / {formatUsDate(note.date)}
           </span>
@@ -57,6 +57,7 @@ export function NoteRow({
           <button
             aria-label={`Editar nota ${note.title}`}
             className="row-action-button"
+            title="Editar"
             type="button"
             onClick={(event) => {
               event.stopPropagation();
@@ -70,6 +71,7 @@ export function NoteRow({
           <button
             aria-label={`Excluir nota ${note.title}`}
             className="row-action-button danger"
+            title="Excluir"
             type="button"
             onClick={(event) => {
               event.stopPropagation();

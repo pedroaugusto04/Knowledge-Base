@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import type { PageContext } from '../../app/page-context';
-import { formatUsDate, noteStatusLabel, noteTypeLabel, projectName } from '../../entities/format';
+import { formatUsDate, noteTypeLabel, projectName } from '../../entities/format';
 import { fetchNotes } from '../../shared/api/client';
 import type { NoteAttachment, NoteSummary } from '../../shared/api/models/note';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
@@ -99,7 +99,7 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, setSelec
               <div className="note-meta-row">
                 <Badge value={projectName(dashboard.projects, noteQuery.data.project)} tone="project" />
                 <Badge value={noteTypeLabel(noteQuery.data.type)} tone={noteQuery.data.type} />
-                <Badge value={noteStatusLabel(noteQuery.data.status)} tone={noteQuery.data.status} />
+                <Badge value={noteQuery.data.status} tone={noteQuery.data.status} />
                 <span className="meta">{formatUsDate(noteQuery.data.date)}</span>
                 <AttachmentIndicator count={noteQuery.data.attachmentCount || 0} />
               </div>

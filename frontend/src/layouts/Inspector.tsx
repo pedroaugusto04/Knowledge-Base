@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { formatUsDate, noteStatusLabel, noteTypeLabel, projectName } from '../entities/format';
+import { formatUsDate, noteTypeLabel, projectName } from '../entities/format';
 import type { Dashboard } from '../shared/api/models/dashboard';
 import { noteDetailQueryOptions } from '../shared/api/note-query';
 
@@ -46,7 +46,7 @@ export function Inspector({
             <dt>Tipo</dt>
             <dd>{noteTypeLabel(note.type)}</dd>
             <dt>Status</dt>
-            <dd>{noteStatusLabel(note.status)}</dd>
+            <dd>{note.status}</dd>
             <dt>Data</dt>
             <dd>{formatUsDate(note.date)}</dd>
           </dl>

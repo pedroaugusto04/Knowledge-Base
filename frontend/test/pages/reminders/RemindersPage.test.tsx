@@ -90,7 +90,7 @@ describe('RemindersPage', () => {
     );
 
     expect(await screen.findByText('Deploy')).toBeInTheDocument();
-    expect(screen.getByText('Pendente')).toBeInTheDocument();
+    expect(screen.getByText('pending')).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenNthCalledWith(1, '/api/reminders?page=1&pageSize=5&workspaceSlug=default&status=', expect.any(Object));
 
     fireEvent.change(screen.getByLabelText('Filtrar por situacao'), { target: { value: 'sent' } });
@@ -99,6 +99,6 @@ describe('RemindersPage', () => {
       expect(fetchSpy).toHaveBeenNthCalledWith(2, '/api/reminders?page=1&pageSize=5&workspaceSlug=default&status=sent', expect.any(Object));
     });
     expect(await screen.findByText('Follow up')).toBeInTheDocument();
-    expect(screen.getByText('Enviado')).toBeInTheDocument();
+    expect(screen.getByText('sent')).toBeInTheDocument();
   });
 });
