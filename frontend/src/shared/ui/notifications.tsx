@@ -1,5 +1,7 @@
 import { Toaster, toast } from 'sonner';
 
+import { useTheme } from '../../app/providers/theme';
+
 const toastClassNames = {
   toast: 'kb-toast',
   title: 'kb-toast-title',
@@ -12,6 +14,8 @@ const toastClassNames = {
 };
 
 export function NotificationsProvider() {
+  const { effectiveTheme } = useTheme();
+
   return (
     <Toaster
       closeButton
@@ -19,7 +23,7 @@ export function NotificationsProvider() {
       duration={3200}
       offset={16}
       position="top-right"
-      theme="dark"
+      theme={effectiveTheme}
       toastOptions={{ classNames: toastClassNames }}
       visibleToasts={4}
     />

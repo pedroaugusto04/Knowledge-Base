@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { frontendBasePath } from './base-path';
 import { GlobalLoadingProvider } from './global-loading';
 import { queryClient } from './providers/query-client';
+import { ThemeProvider } from './providers/theme';
 import { AppShell } from '../layouts/AppShell';
 import '../shared/styles/global.css';
 import { NotificationsProvider } from '../shared/ui/notifications';
@@ -13,12 +14,14 @@ import { NotificationsProvider } from '../shared/ui/notifications';
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <GlobalLoadingProvider>
-        <BrowserRouter basename={frontendBasePath}>
-          <AppShell />
-        </BrowserRouter>
-      </GlobalLoadingProvider>
-      <NotificationsProvider />
+      <ThemeProvider>
+        <GlobalLoadingProvider>
+          <BrowserRouter basename={frontendBasePath}>
+            <AppShell />
+          </BrowserRouter>
+        </GlobalLoadingProvider>
+        <NotificationsProvider />
+      </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

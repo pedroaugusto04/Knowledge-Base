@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach } from 'vitest';
 
 import { GlobalLoadingProvider } from './global-loading';
+import { ThemeProvider } from './providers/theme';
 import { NotificationsProvider } from '../shared/ui/notifications';
 
 const testQueryClients = new Set<QueryClient>();
@@ -27,10 +28,12 @@ export function renderWithAppProviders(ui: ReactElement, { route = '/' }: { rout
 
   return render(
     <QueryClientProvider client={client}>
-      <GlobalLoadingProvider minVisibleMs={0} showDelayMs={0}>
-        <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
-      </GlobalLoadingProvider>
-      <NotificationsProvider />
+      <ThemeProvider>
+        <GlobalLoadingProvider minVisibleMs={0} showDelayMs={0}>
+          <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+        </GlobalLoadingProvider>
+        <NotificationsProvider />
+      </ThemeProvider>
     </QueryClientProvider>,
   );
 }

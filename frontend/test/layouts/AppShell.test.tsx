@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithAppProviders } from '../../src/app/test-utils';
+import { THEME_STORAGE_KEY } from '../../src/app/providers/theme';
 import { AppShell } from '../../src/layouts/AppShell';
 
 const notificationSpies = vi.hoisted(() => ({
@@ -251,14 +252,77 @@ function mockFetch() {
   });
 }
 
+function stubMatchMedia(initialMatches: boolean) {
+  let matches = initialMatches;
+  const listeners = new Set<(event: MediaQueryListEvent) => void>();
+  const mediaQueryList = {
+    get matches() {
+      return matches;
+    },
+    media: '(prefers-color-scheme: dark)',
+    onchange: null,
+    addEventListener: vi.fn((_event: string, listener: (event: MediaQueryListEvent) => void) => {
+      listeners.add(listener);
+    }),
+    removeEventListener: vi.fn((_event: string, listener: (event: MediaQueryListEvent) => void) => {
+      listeners.delete(listener);
+    }),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  } satisfies MediaQueryList;
+
+  const matchMedia = vi.fn().mockImplementation(() => mediaQueryList);
+  vi.stubGlobal('matchMedia', matchMedia);
+
+  return {
+    matchMedia,
+    setMatches(nextMatches: boolean) {
+      matches = nextMatches;
+      const event = { matches: nextMatches, media: mediaQueryList.media } as MediaQueryListEvent;
+      for (const listener of listeners) listener(event);
+    },
+  };
+}
+
+function stubLocalStorage() {
+  const store = new Map<string, string>();
+  const localStorageMock = {
+    getItem: vi.fn((key: string) => store.get(key) ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store.set(key, value);
+    }),
+    removeItem: vi.fn((key: string) => {
+      store.delete(key);
+    }),
+    clear: vi.fn(() => {
+      store.clear();
+    }),
+  };
+
+  vi.stubGlobal('localStorage', localStorageMock);
+  return localStorageMock;
+}
+
+beforeEach(() => {
+  stubLocalStorage();
+});
+
 afterEach(() => {
   cleanup();
+  const storage = globalThis.localStorage;
+  if (storage && typeof storage.clear === 'function') {
+    storage.clear();
+  }
+  delete document.documentElement.dataset.theme;
+  document.documentElement.style.colorScheme = '';
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
 describe('AppShell', () => {
   it('shows the global loading overlay during the initial blocking dashboard bootstrap', async () => {
+    stubLocalStorage();
     const deferred = (() => {
       let resolve!: (value: Response) => void;
       const promise = new Promise<Response>((resolver) => {
@@ -289,6 +353,7 @@ describe('AppShell', () => {
   });
 
   it('renders dashboard data from the API and navigates with real routes', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', mockFetch());
 
     renderWithAppProviders(<AppShell />);
@@ -315,7 +380,77 @@ describe('AppShell', () => {
     expect(screen.queryByText('- none')).not.toBeInTheDocument();
   });
 
+  it('uses the system dark preference when there is no saved theme', async () => {
+    const storage = stubLocalStorage();
+    stubMatchMedia(true);
+    vi.stubGlobal('fetch', mockFetch());
+
+    renderWithAppProviders(<AppShell />);
+
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(document.documentElement.style.colorScheme).toBe('dark');
+    expect(storage.getItem(THEME_STORAGE_KEY)).toBeNull();
+  });
+
+  it('uses the system light preference when there is no saved theme', async () => {
+    const storage = stubLocalStorage();
+    stubMatchMedia(false);
+    vi.stubGlobal('fetch', mockFetch());
+
+    renderWithAppProviders(<AppShell />);
+
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(storage.getItem(THEME_STORAGE_KEY)).toBeNull();
+  });
+
+  it('renders the theme toggle immediately before the sair button', async () => {
+    stubLocalStorage();
+    stubMatchMedia(true);
+    vi.stubGlobal('fetch', mockFetch());
+
+    renderWithAppProviders(<AppShell />);
+
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+
+    const topbarMeta = document.querySelector('.topbar-meta');
+    expect(topbarMeta).not.toBeNull();
+
+    const buttons = topbarMeta ? Array.from(topbarMeta.querySelectorAll('button')) : [];
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]).toHaveAttribute('aria-label', 'Ativar modo claro');
+    expect(buttons[1]).toHaveTextContent('sair');
+  });
+
+  it('persists the selected theme and reapplies it on a new render', async () => {
+    const storage = stubLocalStorage();
+    stubMatchMedia(true);
+    vi.stubGlobal('fetch', mockFetch());
+
+    const firstRender = renderWithAppProviders(<AppShell />);
+
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ativar modo claro' }));
+
+    expect(storage.getItem(THEME_STORAGE_KEY)).toBe('light');
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(screen.getByRole('button', { name: 'Ativar modo escuro' })).toBeInTheDocument();
+
+    firstRender.unmount();
+
+    renderWithAppProviders(<AppShell />);
+
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+    expect(storage.getItem(THEME_STORAGE_KEY)).toBe('light');
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(screen.getByRole('button', { name: 'Ativar modo escuro' })).toBeInTheDocument();
+  });
+
   it('blocks note navigation with the global loading overlay until the note detail is ready', async () => {
+    stubLocalStorage();
     const deferred = (() => {
       let resolve!: (value: Response) => void;
       const promise = new Promise<Response>((resolver) => {
@@ -369,6 +504,7 @@ describe('AppShell', () => {
   });
 
   it('opens a note directly from a route parameter', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', mockFetch());
 
     renderWithAppProviders(<AppShell />, { route: '/vault/note-1' });
@@ -380,6 +516,7 @@ describe('AppShell', () => {
   });
 
   it('shows only the search results list without the old answer panel', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', mockFetch());
 
     renderWithAppProviders(<AppShell />, { route: '/search?q=deploy' });
@@ -391,6 +528,7 @@ describe('AppShell', () => {
   });
 
   it('switches to the projects menu when selecting a project from another section', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', mockFetch());
 
     renderWithAppProviders(<AppShell />, { route: '/search?q=deploy' });
@@ -404,6 +542,7 @@ describe('AppShell', () => {
   });
 
   it('navigates to home when clicking the brand section', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', mockFetch());
 
     renderWithAppProviders(<AppShell />, { route: '/vault/note-1' });
@@ -415,6 +554,7 @@ describe('AppShell', () => {
   });
 
   it('opens and closes the mobile navigation drawer without breaking routing', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', mockFetch());
 
     renderWithAppProviders(<AppShell />);
@@ -440,6 +580,7 @@ describe('AppShell', () => {
   });
 
   it('renders integration status from the settings route', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', mockFetch());
 
     renderWithAppProviders(<AppShell />, { route: '/settings/integrations' });
@@ -460,6 +601,7 @@ describe('AppShell', () => {
   });
 
   it('redirects authenticated users without workspace to the setup wizard', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/dashboard') {
@@ -480,6 +622,7 @@ describe('AppShell', () => {
   });
 
   it('renders projects routes even when dashboard notes are omitted', async () => {
+    stubLocalStorage();
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/dashboard') {
