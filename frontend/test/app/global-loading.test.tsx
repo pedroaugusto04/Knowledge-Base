@@ -33,6 +33,23 @@ function renderWithLoadingProvider(ui: ReactNode) {
   );
 }
 
+function renderWithDelayedLoadingProvider(ui: ReactNode) {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: Infinity },
+      mutations: { gcTime: Infinity },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={client}>
+      <GlobalLoadingProvider minVisibleMs={0} showDelayMs={120}>
+        {ui}
+      </GlobalLoadingProvider>
+    </QueryClientProvider>,
+  );
+}
+
 function ManualLoadingHarness({ promise }: { promise: Promise<string> }) {
   const globalLoading = useGlobalLoading();
 
@@ -44,6 +61,21 @@ function ManualLoadingHarness({ promise }: { promise: Promise<string> }) {
       }}
     >
       Executar
+    </button>
+  );
+}
+
+function ImmediateLoadingHarness() {
+  const globalLoading = useGlobalLoading();
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        globalLoading.startImmediate();
+      }}
+    >
+      Executar imediato
     </button>
   );
 }
@@ -126,5 +158,14 @@ describe('GlobalLoadingProvider', () => {
       expect(screen.getByText('updated')).toBeInTheDocument();
     });
     expect(document.querySelector('.global-loading-overlay')).toBeNull();
+  });
+
+  it('shows the overlay immediately for blocking loads even when the default delay is enabled', () => {
+    renderWithDelayedLoadingProvider(<ImmediateLoadingHarness />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Executar imediato' }));
+
+    expect(document.querySelector('.global-loading-overlay')).not.toBeNull();
+    expect(screen.getByText('Carregando')).toHaveClass('sr-only');
   });
 });

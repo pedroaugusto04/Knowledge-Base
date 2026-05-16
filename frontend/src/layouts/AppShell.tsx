@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
@@ -74,17 +74,17 @@ export function AppShell() {
   const activeRouteNote = routeNoteQuery.data || cachedRouteNote;
   const shouldBlockNoteRoute = Boolean(routeNoteId) && routeNoteQuery.isLoading && !activeRouteNote;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (dashboardQuery.isLoading && !dashboardQuery.data) {
-      globalLoading.start();
+      globalLoading.startImmediate();
       return () => globalLoading.stop();
     }
     return undefined;
   }, [dashboardQuery.data, dashboardQuery.isLoading, globalLoading]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (shouldBlockNoteRoute) {
-      globalLoading.start();
+      globalLoading.startImmediate();
       return () => globalLoading.stop();
     }
     return undefined;

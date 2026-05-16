@@ -5,6 +5,7 @@ import { GlobalLoadingOverlay } from '../shared/ui/GlobalLoadingOverlay';
 type GlobalLoadingContextValue = {
   isActive: boolean;
   start: () => void;
+  startImmediate: () => void;
   stop: () => void;
   trackPromise: <T>(promise: Promise<T>) => Promise<T>;
 };
@@ -51,11 +52,20 @@ export function GlobalLoadingProvider({
     setVisible(true);
   }, [clearHideTimeout, clearShowTimeout]);
 
-  const start = useCallback(() => {
+  const begin = useCallback((immediate: boolean) => {
     activeCountRef.current += 1;
     clearHideTimeout();
 
-    if (visibleRef.current || showTimeoutRef.current !== null) {
+    if (visibleRef.current) {
+      return;
+    }
+
+    if (immediate) {
+      commitVisible();
+      return;
+    }
+
+    if (showTimeoutRef.current !== null) {
       return;
     }
 
@@ -71,6 +81,14 @@ export function GlobalLoadingProvider({
       }
     }, showDelayMs);
   }, [clearHideTimeout, commitVisible, showDelayMs]);
+
+  const start = useCallback(() => {
+    begin(false);
+  }, [begin]);
+
+  const startImmediate = useCallback(() => {
+    begin(true);
+  }, [begin]);
 
   const stop = useCallback(() => {
     activeCountRef.current = Math.max(0, activeCountRef.current - 1);
@@ -127,9 +145,10 @@ export function GlobalLoadingProvider({
   const value = useMemo<GlobalLoadingContextValue>(() => ({
     isActive: visible,
     start,
+    startImmediate,
     stop,
     trackPromise,
-  }), [start, stop, trackPromise, visible]);
+  }), [start, startImmediate, stop, trackPromise, visible]);
 
   return (
     <GlobalLoadingContext.Provider value={value}>
