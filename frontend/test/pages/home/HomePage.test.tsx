@@ -135,7 +135,8 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
     expect(screen.getByText('Mudancas recentes')).toBeInTheDocument();
     expect(screen.getByText('Prioridade 1')).toBeInTheDocument();
-    expect(screen.getAllByText('expired').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Expired').length).toBeGreaterThan(0);
+    expect(screen.getByText('Aberta')).toBeInTheDocument();
     expect(screen.getAllByText(/N8N Automations \/ 04\/27\/2026 09:30/i).length).toBeGreaterThan(0);
     expect(screen.queryByText('Prioridade 6')).not.toBeInTheDocument();
     expect(screen.getAllByTestId('chart')).toHaveLength(4);
