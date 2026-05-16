@@ -6,10 +6,20 @@ import { useSearchParams } from 'react-router-dom';
 import type { PageContext } from '../../app/page-context';
 import { fetchNotes, runQuery } from '../../shared/api/client';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
+import { type NoteStatus } from '../../shared/api/models/note-status';
 import { EmptyState, PageHead, Panel } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
 import { NoteRow } from '../../widgets/notes/NoteRow';
+
+const statusOptions: Array<{ value: '' | NoteStatus; label: string }> = [
+  { value: '', label: 'Todos' },
+  { value: 'active', label: 'Active' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'archived', label: 'Archived' },
+];
 
 export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageContext) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,30 +35,47 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
     }, { replace: true });
   };
   const [projectSlug, setProjectSlug] = useState('');
+  const [status, setStatus] = useState<'' | NoteStatus>('');
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug || '';
-  const { page, setPage } = usePaginationState(`${query}:${projectSlug}:${workspaceSlug}`);
+  const { page, setPage } = usePaginationState(`${query}:${projectSlug}:${workspaceSlug}:${status}`);
   const hasQuery = Boolean(query.trim());
   const queryResult = useQuery({
-    queryKey: ['search', query, projectSlug, workspaceSlug, page],
-    queryFn: () => runQuery({ query, projectSlug, workspaceSlug, limit: 10, page, pageSize: DEFAULT_PAGE_SIZE }),
+    queryKey: ['search', query, projectSlug, workspaceSlug, status, page],
+    queryFn: () => runQuery({ query, projectSlug, workspaceSlug, status, limit: 10, page, pageSize: DEFAULT_PAGE_SIZE }),
     enabled: hasQuery,
   });
   const notesResult = useQuery({
-    queryKey: ['search-notes', projectSlug, workspaceSlug, page],
-    queryFn: () => fetchNotes({ page, workspaceSlug, projectSlug }),
+    queryKey: ['search-notes', projectSlug, workspaceSlug, status, page],
+    queryFn: () => fetchNotes({ page, workspaceSlug, projectSlug, status }),
     enabled: !hasQuery,
     initialData: !hasQuery && dashboard.notes
       ? {
           ok: true as const,
           notes: dashboard.notes
-            .filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug))
+            .filter((note) =>
+              (!workspaceSlug || note.workspace === workspaceSlug)
+              && (!projectSlug || note.project === projectSlug)
+              && (!status || note.status === status),
+            )
             .slice(0, DEFAULT_PAGE_SIZE),
           pagination: {
             page: 1,
             pageSize: DEFAULT_PAGE_SIZE,
-            total: dashboard.notes.filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug)).length,
-            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug)).length / DEFAULT_PAGE_SIZE)),
-            hasNext: dashboard.notes.filter((note) => (!workspaceSlug || note.workspace === workspaceSlug) && (!projectSlug || note.project === projectSlug)).length > DEFAULT_PAGE_SIZE,
+            total: dashboard.notes.filter((note) =>
+              (!workspaceSlug || note.workspace === workspaceSlug)
+              && (!projectSlug || note.project === projectSlug)
+              && (!status || note.status === status),
+            ).length,
+            totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) =>
+              (!workspaceSlug || note.workspace === workspaceSlug)
+              && (!projectSlug || note.project === projectSlug)
+              && (!status || note.status === status),
+            ).length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboard.notes.filter((note) =>
+              (!workspaceSlug || note.workspace === workspaceSlug)
+              && (!projectSlug || note.project === projectSlug)
+              && (!status || note.status === status),
+            ).length > DEFAULT_PAGE_SIZE,
             hasPrevious: false,
           },
         }
@@ -69,6 +96,13 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
             {dashboard.projects.map((project) => (
               <option value={project.projectSlug} key={project.projectSlug}>
                 {project.displayName}
+              </option>
+            ))}
+          </select>
+          <select aria-label="Filtrar por status" value={status} onChange={(event) => setStatus(event.target.value as '' | NoteStatus)}>
+            {statusOptions.map((option) => (
+              <option key={option.value || 'all'} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>

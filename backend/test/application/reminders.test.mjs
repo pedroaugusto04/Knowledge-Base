@@ -222,6 +222,16 @@ test('global due reminder read model includes only due reminders with telegram w
       reminderAt: '2026-05-05T09:00:00.000Z',
     },
   });
+  await insertReminder(repositories, user.id, {
+    path: '20 Inbox/n8n-automations/archived.md',
+    title: 'Archived',
+    status: 'archived',
+    metadata: {
+      reminderDate: '2026-05-05',
+      reminderTime: '09:00',
+      reminderAt: '2026-05-05T09:00:00.000Z',
+    },
+  });
   const otherUserDue = await insertReminder(repositories, otherUser.id, {
     path: '20 Inbox/n8n-automations/other-user.md',
     title: 'Other user',
@@ -238,10 +248,67 @@ test('global due reminder read model includes only due reminders with telegram w
   assert.equal(reminders.some((item) => item.relativePath.endsWith('future.md')), false);
   assert.equal(reminders.some((item) => item.relativePath.endsWith('no-chat.md')), false);
   assert.equal(reminders.some((item) => item.relativePath.endsWith('resolved.md')), false);
+  assert.equal(reminders.some((item) => item.relativePath.endsWith('archived.md')), false);
 
   const dateOnlyReminder = reminders.find((item) => item.reminderId === dateOnly.id);
   assert.equal(dateOnlyReminder?.scheduledAt, '2026-05-05T12:00:00.000Z');
   assert.equal(dateOnlyReminder?.telegramChatId, 'telegram-chat-1');
+});
+
+test('daily reminder dispatch ignores resolved and archived reminders even when overdue', async (t) => {
+  const repositories = await createPostgresTestRepositories(t);
+  const user = await repositories.createTestUser();
+  await repositories.contentRepository.upsertWorkspace(user.id, {
+    workspaceSlug: 'default',
+    displayName: 'Default',
+    whatsappGroupJid: '',
+    telegramChatId: 'telegram-chat-1',
+    createdAt: '2026-05-05T00:00:00.000Z',
+    updatedAt: '2026-05-05T00:00:00.000Z',
+  });
+  await insertReminder(repositories, user.id, {
+    path: '20 Inbox/n8n-automations/pending.md',
+    title: 'Pending reminder',
+    status: 'pending',
+    metadata: {
+      reminderDate: '2026-05-04',
+      reminderTime: '09:00',
+      reminderAt: '2026-05-04T09:00:00.000Z',
+    },
+  });
+  await insertReminder(repositories, user.id, {
+    path: '20 Inbox/n8n-automations/resolved-overdue.md',
+    title: 'Resolved overdue',
+    status: 'resolved',
+    metadata: {
+      reminderDate: '2026-05-04',
+      reminderTime: '09:00',
+      reminderAt: '2026-05-04T09:00:00.000Z',
+    },
+  });
+  await insertReminder(repositories, user.id, {
+    path: '20 Inbox/n8n-automations/archived-overdue.md',
+    title: 'Archived overdue',
+    status: 'archived',
+    metadata: {
+      reminderDate: '2026-05-04',
+      reminderTime: '09:00',
+      reminderAt: '2026-05-04T09:00:00.000Z',
+    },
+  });
+
+  const useCase = new BuildReminderDispatchUseCase(
+    repositories.contentQueryRepository,
+    repositories.reminderDispatchRepository,
+    environmentProvider(),
+  );
+  const result = await useCase.execute('daily', user.id, 'default', new Date('2026-05-05T12:00:00.000Z'));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.shouldSend, true);
+  assert.match(result.text, /Pending reminder/);
+  assert.doesNotMatch(result.text, /Resolved overdue/);
+  assert.doesNotMatch(result.text, /Archived overdue/);
 });
 
 test('direct telegram dispatch sends a due reminder and marks it as sent', async (t) => {

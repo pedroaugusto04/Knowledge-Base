@@ -7,6 +7,7 @@ export const queryRequestSchema = z.object({
   query: z.string().default(''),
   workspaceSlug: z.string().default(''),
   projectSlug: z.string().default(''),
+  status: z.string().default(''),
   limit: z.coerce.number().default(5),
 }).merge(paginationInputSchema).pipe(queryInputSchema);
 

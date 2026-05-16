@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { paginationInputSchema } from '../../../contracts/pagination.js';
+import { noteStatusValues } from '../../../domain/note-status.js';
 import { slugify } from '../../../domain/strings.js';
+
+const notesListStatusValues = ['', ...noteStatusValues] as const;
 
 export const noteIdParamSchema = z.object({
   id: z.string().trim().min(1),
@@ -21,6 +24,7 @@ export const notesListQuerySchema = paginationInputSchema.extend({
   workspaceSlug: z.string().default(''),
   projectSlug: z.string().default(''),
   folderId: z.string().default(''),
+  status: z.enum(notesListStatusValues).default(''),
   rootOnly: z
     .union([z.boolean(), z.string()])
     .optional()
@@ -32,6 +36,7 @@ export const notesListQuerySchema = paginationInputSchema.extend({
   workspaceSlug: slugify(input.workspaceSlug),
   projectSlug: slugify(input.projectSlug),
   folderId: input.folderId.trim(),
+  status: input.status.trim().toLowerCase(),
   selectedId: input.selectedId.trim(),
 }));
 

@@ -355,6 +355,10 @@ export class PostgresContentRepository extends ContentRepository {
       values.push(input.projectSlug);
       clauses.push(`project_slug = $${values.length}`);
     }
+    if (input.status) {
+      values.push(input.status);
+      clauses.push(`lower(status) = $${values.length}`);
+    }
     if (input.folderId) {
       values.push(input.folderId);
       clauses.push(`folder_id = $${values.length}`);

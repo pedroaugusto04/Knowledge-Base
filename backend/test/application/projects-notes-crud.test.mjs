@@ -276,6 +276,60 @@ test('note list and detail expose attachment metadata without storage internals'
   assert.equal(Object.hasOwn(detail.attachments[0], 'dataBase64'), false);
 });
 
+test('note pagination filters by note status', async (t) => {
+  const repositories = await createPostgresTestRepositories(t);
+  const user = await repositories.createTestUser();
+  await seedProject(repositories, user.id);
+
+  await repositories.contentRepository.upsertNote(user.id, {
+    path: '20 Inbox/platform/2026/04/active.md',
+    type: 'event',
+    title: 'Nota ativa',
+    projectSlug: 'platform',
+    workspaceSlug: 'default',
+    folderId: null,
+    status: 'active',
+    tags: [],
+    occurredAt: '2026-04-30T10:00:00.000Z',
+    sourceChannel: 'external',
+    summary: 'ativa',
+    markdown: '# Nota ativa',
+    frontmatter: {},
+    metadata: {},
+    origin: 'postgres',
+    source: 'manual-api',
+    links: [],
+  });
+  await repositories.contentRepository.upsertNote(user.id, {
+    path: '20 Inbox/platform/2026/04/resolved.md',
+    type: 'event',
+    title: 'Nota resolvida',
+    projectSlug: 'platform',
+    workspaceSlug: 'default',
+    folderId: null,
+    status: 'resolved',
+    tags: [],
+    occurredAt: '2026-04-29T10:00:00.000Z',
+    sourceChannel: 'external',
+    summary: 'resolvida',
+    markdown: '# Nota resolvida',
+    frontmatter: {},
+    metadata: {},
+    origin: 'postgres',
+    source: 'manual-api',
+    links: [],
+  });
+
+  const page = await repositories.contentRepository.listNotesPage(user.id, {
+    page: 1,
+    pageSize: 10,
+    projectSlug: 'platform',
+    status: 'resolved',
+  });
+
+  assert.deepEqual(page.items.map((item) => item.title), ['Nota resolvida']);
+});
+
 test('note attachment content use case returns bytes and blocks unrelated attachments', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();

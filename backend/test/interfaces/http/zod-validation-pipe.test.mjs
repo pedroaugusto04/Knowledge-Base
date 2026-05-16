@@ -16,6 +16,7 @@ test('zod validation pipe parses successful payloads', () => {
     limit: 3,
     workspaceSlug: '',
     projectSlug: '',
+    status: '',
     page: 1,
     pageSize: 5,
   });
@@ -28,6 +29,7 @@ test('zod validation pipe returns normalized defaults', () => {
 
   assert.equal(parsed.limit, 5);
   assert.equal(parsed.workspaceSlug, '');
+  assert.equal(parsed.status, '');
 });
 
 test('zod validation pipe throws bad request with stable code', () => {

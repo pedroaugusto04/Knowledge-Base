@@ -7,6 +7,7 @@ export type ListNotesInput = {
   workspaceSlug?: string;
   projectSlug?: string;
   folderId?: string;
+  status?: string;
   rootOnly?: boolean;
   selectedId?: string;
 };

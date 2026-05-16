@@ -217,7 +217,7 @@ function mockFetch() {
     if (url === '/api/projects/n8n-automations/folders') {
       return Response.json({ ok: true, projectSlug: 'n8n-automations', folders: [] });
     }
-    if (url === '/api/notes?page=1&pageSize=5&workspaceSlug=&projectSlug=n8n-automations&folderId=&rootOnly=false&selectedId=') {
+    if (url === '/api/notes?page=1&pageSize=5&workspaceSlug=&projectSlug=n8n-automations&folderId=&status=&rootOnly=false&selectedId=') {
       return Response.json({
         ok: true,
         notes: dashboard.notes,
@@ -498,7 +498,7 @@ describe('AppShell', () => {
       if (url === '/api/projects/n8n-automations/folders') {
         return Response.json({ ok: true, projectSlug: 'n8n-automations', folders: [] });
       }
-      if (url === '/api/notes?page=1&pageSize=5&workspaceSlug=&projectSlug=n8n-automations&folderId=&rootOnly=false&selectedId=') {
+      if (url === '/api/notes?page=1&pageSize=5&workspaceSlug=&projectSlug=n8n-automations&folderId=&status=&rootOnly=false&selectedId=') {
         return Response.json({
           ok: true,
           notes: [],

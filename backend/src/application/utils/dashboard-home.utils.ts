@@ -8,6 +8,7 @@ import type { VaultNoteSummary } from '../models/vault-note.models.js';
 
 const HOME_WINDOW_DAYS = 7;
 const OPEN_REMINDER_STATUSES = new Set<string>([KnowledgeStatus.Pending]);
+const ACTIVE_NOTE_STATUS = KnowledgeStatus.Active;
 const INTERESTING_TYPES = [CanonicalType.Incident, CanonicalType.Decision, CanonicalType.Followup, CanonicalType.Event];
 
 function normalizeDateInput(value: string) {
@@ -42,6 +43,10 @@ function isHigh(severity: string) {
 
 function isOpenReminder(status: string) {
   return OPEN_REMINDER_STATUSES.has(status.toLowerCase());
+}
+
+function isActiveNoteStatus(status: string | null | undefined) {
+  return String(status || '').trim().toLowerCase() === ACTIVE_NOTE_STATUS;
 }
 
 function projectLabel(projects: Project[], slug: string) {
@@ -91,9 +96,10 @@ export function buildDashboardHome(
   const recentNotes = notes.filter((note) => isWithinWindow(note.date, start, end, zone));
   const openReminders = reminders.filter((reminder) => isOpenReminder(reminder.status));
   const overdueReminders = openReminders.filter((reminder) => reminder.isOverdue);
-  const openHighFindings = reviews.flatMap((review) => review.findings.filter((finding) => isHigh(finding.severity)).map((finding) => ({ review, finding })));
-  const reviewsWithOpenFindings = reviews.filter((review) => review.findings.length > 0);
-  const recentIncidentsAndFollowups = recentNotes.filter((note) => ['incident', 'followup'].includes(note.type) && note.status.toLowerCase() === KnowledgeStatus.Active);
+  const activeReviews = reviews.filter((review) => isActiveNoteStatus(findNoteByPath(notes, review.generatedNotePath)?.status));
+  const openHighFindings = activeReviews.flatMap((review) => review.findings.filter((finding) => isHigh(finding.severity)).map((finding) => ({ review, finding })));
+  const reviewsWithOpenFindings = activeReviews.filter((review) => review.findings.length > 0);
+  const recentIncidentsAndFollowups = recentNotes.filter((note) => ['incident', 'followup'].includes(note.type) && isActiveNoteStatus(note.status));
 
   const dayKeys = Array.from({ length: HOME_WINDOW_DAYS }, (_, index) => shiftDateKey(start, index));
   const countByDay = new Map(dayKeys.map((key) => [key, 0]));
@@ -155,7 +161,7 @@ export function buildDashboardHome(
   ];
 
   const recentInterestingEvents = recentNotes
-    .filter((note) => INTERESTING_TYPES.includes(note.type as CanonicalType) && note.status.toLowerCase() === KnowledgeStatus.Active)
+    .filter((note) => INTERESTING_TYPES.includes(note.type as CanonicalType) && isActiveNoteStatus(note.status))
     .sort((left, right) => {
       const typePriority = INTERESTING_TYPES.indexOf(left.type as CanonicalType) - INTERESTING_TYPES.indexOf(right.type as CanonicalType);
       return typePriority || (parseTimestamp(right.date) || 0) - (parseTimestamp(left.date) || 0) || left.title.localeCompare(right.title);

@@ -67,7 +67,7 @@ test('dashboard controller delegates project, workspace and note reads to use ca
   assert.deepEqual(await controller.workspaces(user), { ok: true, workspaces: dashboard.workspaces });
   assert.deepEqual(await controller.notes(user, {}), { ok: true, notes: dashboard.notes, pagination: {} });
   assert.deepEqual(await controller.note({ id: 'note-1' }, user), { ok: true, note: { id: 'note-1', title: 'Note detail' } });
-  assert.deepEqual(await controller.query({ query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '', page: 1, pageSize: 5 }, user), { ok: true, query: { query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '', page: 1, pageSize: 5 } });
+  assert.deepEqual(await controller.query({ query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '', status: '', page: 1, pageSize: 5 }, user), { ok: true, query: { query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '', status: '', page: 1, pageSize: 5 } });
 });
 
 test('operations controller normalizes reminder dispatch and mark-sent inputs', async () => {

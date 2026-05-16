@@ -186,6 +186,7 @@ export class HandleWhatsappWebhookUseCase {
       query,
       workspaceSlug,
       projectSlug: '',
+      status: '',
       limit: 5,
       page: 1,
       pageSize: DEFAULT_PAGE_SIZE,

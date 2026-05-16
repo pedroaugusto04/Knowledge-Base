@@ -16,10 +16,14 @@ export function scoreKnowledgeNote(note: VaultNoteSummary, tokens: string[]): nu
   return tokens.reduce((total, token) => total + (haystack.includes(token) ? 5 : 0), 0);
 }
 
-export function rankKnowledgeMatches(notes: VaultNoteSummary[], query: Pick<QueryInput, 'query' | 'projectSlug' | 'workspaceSlug' | 'limit'>) {
+export function rankKnowledgeMatches(notes: VaultNoteSummary[], query: Pick<QueryInput, 'query' | 'projectSlug' | 'workspaceSlug' | 'status' | 'limit'>) {
   const tokens = tokenizeQuery(query.query);
   return notes
-    .filter((note) => (!query.projectSlug || note.project === query.projectSlug) && (!query.workspaceSlug || note.workspace === query.workspaceSlug))
+    .filter((note) =>
+      (!query.projectSlug || note.project === query.projectSlug)
+      && (!query.workspaceSlug || note.workspace === query.workspaceSlug)
+      && (!('status' in query) || !query.status || note.status.toLowerCase() === query.status),
+    )
     .map((note) => {
       const score = scoreKnowledgeNote(note, tokens);
       return {

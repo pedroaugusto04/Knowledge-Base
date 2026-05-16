@@ -5,9 +5,9 @@ import type { DueTelegramReminderView, ReminderView } from '../../application/mo
 import type { NoteRecord } from '../../application/models/repository-records.models.js';
 import type { ReviewView } from '../../application/models/review.models.js';
 import { ContentQueryRepository } from '../../application/ports/content.repository.js';
-import { KnowledgeStatus } from '../../contracts/enums.js';
 import { ContentObjectStorageService } from '../../application/services/content-object-storage.service.js';
 import { resolveReminderScheduledAt } from '../../application/use-cases/reminders/reminder-schedule.js';
+import { reminderDispatchEligibleStatuses } from '../../domain/note-status.js';
 import { noteDetail, noteSummary, reminderFromNote, reviewFromNote } from '../mappers/content-query.mappers.js';
 import { noteFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
@@ -78,7 +78,7 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
        where n.status = any($1::text[])
          and coalesce(n.metadata->>'reminderDate', '') <> ''
          and coalesce(w.telegram_chat_id, '') <> ''`,
-      [[KnowledgeStatus.Pending]],
+      [reminderDispatchEligibleStatuses],
     );
 
     return result.rows

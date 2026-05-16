@@ -23,6 +23,7 @@ test('query dto normalizes limit and slugs', () => {
     limit: 7,
     workspaceSlug: 'my-workspace',
     projectSlug: 'n8n-automations',
+    status: '',
     page: 1,
     pageSize: 5,
   });
@@ -86,6 +87,7 @@ test('create note dto normalizes project, tags and keeps reminder date as transp
     reminderDate: '29/04/2026',
     reminderTime: '09:30',
     reminderAt: '',
+    status: undefined,
     folderId: undefined,
   });
 });

@@ -85,10 +85,10 @@ describe('api client', () => {
     }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await runQuery({ query: 'Nota1', workspaceSlug: 'workspace1', limit: 50, page: 1, pageSize: 5 });
+    await runQuery({ query: 'Nota1', workspaceSlug: 'workspace1', status: 'resolved', limit: 50, page: 1, pageSize: 5 });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/api/query?query=Nota1&projectSlug=&workspaceSlug=workspace1&limit=10&page=1&pageSize=5'),
+      expect.stringContaining('/api/query?query=Nota1&projectSlug=&workspaceSlug=workspace1&status=resolved&limit=10&page=1&pageSize=5'),
       expect.any(Object),
     );
   });

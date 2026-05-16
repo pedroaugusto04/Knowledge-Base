@@ -17,12 +17,20 @@ export const reminderNoteStatusValues = [
   KnowledgeStatus.Archived,
 ] as const;
 
+export const reminderDispatchEligibleStatuses = [
+  KnowledgeStatus.Pending,
+] as const;
+
 export function hasReminder(input: { reminderDate?: string; reminderAt?: string } | null | undefined) {
   return Boolean(String(input?.reminderDate || '').trim() || String(input?.reminderAt || '').trim());
 }
 
 export function isTerminalNoteStatus(status: string | null | undefined) {
   return status === KnowledgeStatus.Resolved || status === KnowledgeStatus.Archived;
+}
+
+export function isReminderDispatchEligibleStatus(status: string | null | undefined) {
+  return String(status || '').trim().toLowerCase() === KnowledgeStatus.Pending;
 }
 
 export function normalizeManualNoteStatus(input: {

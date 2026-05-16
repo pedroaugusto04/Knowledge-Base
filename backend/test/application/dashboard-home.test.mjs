@@ -24,6 +24,9 @@ const projects = [
 
 test('builds dashboard home metrics and keeps dashboard arrays independent', () => {
   const notes = [
+    { ...baseNote, id: 'review-note-1', path: '30 Reviews/review.md', title: 'Review ativa', summary: 'Review ativa', type: 'knowledge' },
+    { ...baseNote, id: 'review-note-2', path: '30 Reviews/review-resolved.md', title: 'Review resolvida', summary: 'Review resolvida', type: 'knowledge', status: 'resolved' },
+    { ...baseNote, id: 'review-note-3', path: '30 Reviews/review-archived.md', title: 'Review arquivada', summary: 'Review arquivada', type: 'knowledge', status: 'archived' },
     { ...baseNote, id: 'incident-1', path: '20 Inbox/incident.md', type: 'incident', title: 'Incidente aberto', summary: 'Investigar incidente.' },
     { ...baseNote, id: 'followup-1', path: '20 Inbox/followup.md', type: 'followup', title: 'Follow-up aberto', date: '2026-04-26' },
     { ...baseNote, id: 'decision-1', path: '20 Inbox/decision.md', type: 'decision', title: 'Decisao recente', project: 'beta', date: '2026-04-25' },
@@ -47,6 +50,38 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       findings: [
         { severity: 'high', file: 'src/app.ts', line: 10, summary: 'Finding high', recommendation: 'Corrigir' },
         { severity: 'medium', file: 'src/app.ts', line: 12, summary: 'Finding medium', recommendation: 'Revisar' },
+      ],
+    },
+    {
+      id: 'review-2',
+      title: 'Review resolvida com high',
+      repo: 'acme/alpha',
+      project: 'alpha',
+      branch: 'main',
+      date: '2026-04-27',
+      status: 'open',
+      summary: 'Review summary',
+      impact: 'Alto',
+      changedFiles: ['src/closed.ts'],
+      generatedNotePath: '30 Reviews/review-resolved.md',
+      findings: [
+        { severity: 'high', file: 'src/closed.ts', line: 9, summary: 'Finding resolvido', recommendation: 'Ignorar' },
+      ],
+    },
+    {
+      id: 'review-3',
+      title: 'Review arquivada com high',
+      repo: 'acme/alpha',
+      project: 'alpha',
+      branch: 'main',
+      date: '2026-04-27',
+      status: 'open',
+      summary: 'Review summary',
+      impact: 'Alto',
+      changedFiles: ['src/archived.ts'],
+      generatedNotePath: '30 Reviews/review-archived.md',
+      findings: [
+        { severity: 'high', file: 'src/archived.ts', line: 11, summary: 'Finding arquivado', recommendation: 'Ignorar' },
       ],
     },
   ];
@@ -95,6 +130,7 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
   assert.equal(home.metrics.find((metric) => metric.id === 'open-reminders')?.value, 2);
   assert.equal(home.metrics.find((metric) => metric.id === 'open-reminders')?.meta, '1 vencidos');
   assert.equal(home.metrics.find((metric) => metric.id === 'open-findings')?.value, 1);
+  assert.equal(home.metrics.find((metric) => metric.id === 'open-findings')?.meta, '1 reviews com pendências');
   assert.equal(home.activityByDay.length, 7);
   assert.deepEqual(home.activityByProject.map((project) => project.project), ['alpha', 'beta']);
   assert.equal(home.priorities.length, 5);
