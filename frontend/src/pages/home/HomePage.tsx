@@ -31,6 +31,9 @@ export function HomePage({ dashboard, openNote, openProject }: PageContext) {
   }
 
   function priorityLabel(priority: HomePriority) {
+    if (priority.type === 'finding' && priority.severity) {
+      return priority.severity;
+    }
     if (priority.status) return priority.status;
     return priority.type;
   }

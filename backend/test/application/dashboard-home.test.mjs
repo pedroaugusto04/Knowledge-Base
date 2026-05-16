@@ -45,8 +45,8 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       changedFiles: ['src/app.ts'],
       generatedNotePath: '30 Reviews/review.md',
       findings: [
-        { severity: 'high', file: 'src/app.ts', line: 10, summary: 'Finding high', recommendation: 'Corrigir', status: 'open' },
-        { severity: 'medium', file: 'src/app.ts', line: 12, summary: 'Finding medium', recommendation: 'Revisar', status: 'open' },
+        { severity: 'high', file: 'src/app.ts', line: 10, summary: 'Finding high', recommendation: 'Corrigir' },
+        { severity: 'medium', file: 'src/app.ts', line: 12, summary: 'Finding medium', recommendation: 'Revisar' },
       ],
     },
   ];

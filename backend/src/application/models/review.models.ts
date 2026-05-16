@@ -4,7 +4,6 @@ export type ReviewFindingView = {
   line: number;
   summary: string;
   recommendation: string;
-  status: string;
 };
 
 export type ReviewView = {

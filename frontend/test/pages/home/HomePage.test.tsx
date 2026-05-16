@@ -79,7 +79,8 @@ const dashboard: Dashboard = {
       project: 'n8n-automations',
       date: '2026-04-27',
       description: 'Resolver item aberto',
-      status: index === 0 ? 'resolved' : 'pending',
+      severity: index === 0 ? 'high' : undefined,
+      status: index === 0 ? undefined : 'pending',
       isOverdue: index === 0 ? false : true,
       reminderDate: index === 0 ? undefined : '2026-04-27',
       reminderTime: index === 0 ? undefined : '09:30',
@@ -137,7 +138,7 @@ describe('HomePage', () => {
     expect(screen.getByText('Mudancas recentes')).toBeInTheDocument();
     expect(screen.getByText('Prioridade 1')).toBeInTheDocument();
     expect(screen.getAllByText('pending').length).toBeGreaterThan(0);
-    expect(screen.getByText('resolved')).toBeInTheDocument();
+    expect(screen.getByText('high')).toBeInTheDocument();
     expect(screen.getAllByText(/N8N Automations \/ 04\/27\/2026 09:30/i).length).toBeGreaterThan(0);
     expect(screen.queryByText('Prioridade 6')).not.toBeInTheDocument();
     expect(screen.getAllByTestId('chart')).toHaveLength(4);
@@ -159,6 +160,24 @@ describe('HomePage', () => {
     renderHome({ priorities: [] });
 
     expect(screen.getByText('Nenhuma prioridade aberta nesta janela.')).toBeInTheDocument();
+  });
+
+  it('shows finding severity instead of the raw open status on dashboard priorities', () => {
+    renderHome({
+      priorities: [{
+        id: 'finding-open',
+        type: HomePriorityType.Finding,
+        title: 'Review aberta',
+        project: 'n8n-automations',
+        date: '2026-04-27',
+        description: 'Finding critico',
+        severity: 'high',
+        target: { kind: HomeTargetKind.Note, id: 'review-1', path: 'reviews/review.md' },
+      }],
+    });
+
+    expect(screen.getByText('high')).toBeInTheDocument();
+    expect(screen.queryByText('open')).not.toBeInTheDocument();
   });
 
   it('prompts users to connect integrations when GitHub repositories are not selected', () => {

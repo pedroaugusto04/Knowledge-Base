@@ -7,7 +7,6 @@ import type { ReviewView } from '../models/review.models.js';
 import type { VaultNoteSummary } from '../models/vault-note.models.js';
 
 const HOME_WINDOW_DAYS = 7;
-const OPEN_STATUSES = new Set<string>([KnowledgeStatus.Active, 'open']);
 const OPEN_REMINDER_STATUSES = new Set<string>([KnowledgeStatus.Pending]);
 const INTERESTING_TYPES = [CanonicalType.Incident, CanonicalType.Decision, CanonicalType.Followup, CanonicalType.Event];
 
@@ -35,10 +34,6 @@ function dateKey(value: string, timeZone: string) {
 function formatDayLabel(key: string) {
   const [, month, day] = key.match(/\d{4}-(\d{2})-(\d{2})/) || [];
   return month && day ? `${day}/${month}` : key;
-}
-
-function isOpen(status: string) {
-  return OPEN_STATUSES.has(status.toLowerCase());
 }
 
 function isHigh(severity: string) {
@@ -96,9 +91,9 @@ export function buildDashboardHome(
   const recentNotes = notes.filter((note) => isWithinWindow(note.date, start, end, zone));
   const openReminders = reminders.filter((reminder) => isOpenReminder(reminder.status));
   const overdueReminders = openReminders.filter((reminder) => reminder.isOverdue);
-  const openHighFindings = reviews.flatMap((review) => review.findings.filter((finding) => isOpen(finding.status) && isHigh(finding.severity)).map((finding) => ({ review, finding })));
-  const reviewsWithOpenFindings = reviews.filter((review) => review.findings.some((finding) => isOpen(finding.status)));
-  const recentIncidentsAndFollowups = recentNotes.filter((note) => ['incident', 'followup'].includes(note.type) && isOpen(note.status));
+  const openHighFindings = reviews.flatMap((review) => review.findings.filter((finding) => isHigh(finding.severity)).map((finding) => ({ review, finding })));
+  const reviewsWithOpenFindings = reviews.filter((review) => review.findings.length > 0);
+  const recentIncidentsAndFollowups = recentNotes.filter((note) => ['incident', 'followup'].includes(note.type) && note.status.toLowerCase() === KnowledgeStatus.Active);
 
   const dayKeys = Array.from({ length: HOME_WINDOW_DAYS }, (_, index) => shiftDateKey(start, index));
   const countByDay = new Map(dayKeys.map((key) => [key, 0]));
@@ -141,7 +136,6 @@ export function buildDashboardHome(
       date: review.date,
       description: finding.file ? `${finding.summary} (${finding.file})` : finding.summary,
       severity: finding.severity,
-      status: finding.status,
       target: { kind: HomeTargetKind.Note, id: review.id, path: review.generatedNotePath },
       rank: 2,
       timestamp: parseTimestamp(review.date) || Number.MAX_SAFE_INTEGER,
@@ -161,7 +155,7 @@ export function buildDashboardHome(
   ];
 
   const recentInterestingEvents = recentNotes
-    .filter((note) => INTERESTING_TYPES.includes(note.type as CanonicalType) && isOpen(note.status))
+    .filter((note) => INTERESTING_TYPES.includes(note.type as CanonicalType) && note.status.toLowerCase() === KnowledgeStatus.Active)
     .sort((left, right) => {
       const typePriority = INTERESTING_TYPES.indexOf(left.type as CanonicalType) - INTERESTING_TYPES.indexOf(right.type as CanonicalType);
       return typePriority || (parseTimestamp(right.date) || 0) - (parseTimestamp(left.date) || 0) || left.title.localeCompare(right.title);

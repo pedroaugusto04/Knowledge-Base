@@ -78,7 +78,6 @@ export function reviewFromNote(record: NoteRecord): ReviewView | null {
         line: Number(finding.line || 0),
         summary: String(finding.summary || ''),
         recommendation: String(finding.recommendation || ''),
-        status: String(finding.status || 'open'),
       };
     }),
   };

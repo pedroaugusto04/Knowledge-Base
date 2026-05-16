@@ -155,6 +155,7 @@ p { color: var(--muted); line-height: 1.6; }
 .reminder-row-body h3 { margin-top: 2px; }
 .row-actions { display: flex; align-items: center; gap: 6px; }
 .row-actions, .list-row > .file-icon { align-self: start; margin-top: 2px; }
+.quick-note-status-actions { display: flex; align-items: center; gap: 6px; }
 .row-action-button {
   display: grid;
   place-items: center;
