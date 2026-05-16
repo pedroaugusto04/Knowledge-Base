@@ -22,3 +22,15 @@ export function getCachedNoteDetail(queryClient: QueryClient, noteId: string) {
 export function ensureNoteDetail(queryClient: QueryClient, noteId: string) {
   return queryClient.ensureQueryData(noteDetailQueryOptions(noteId));
 }
+
+export async function invalidateNoteRelatedQueries(queryClient: QueryClient, noteId = '') {
+  await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  await queryClient.invalidateQueries({ queryKey: ['notes'] });
+  await queryClient.invalidateQueries({ queryKey: ['reminders'] });
+  await queryClient.invalidateQueries({ queryKey: ['search'] });
+  await queryClient.invalidateQueries({ queryKey: ['search-notes'] });
+  await queryClient.invalidateQueries({ queryKey: ['project-folders'] });
+  if (noteId) {
+    await queryClient.invalidateQueries({ queryKey: noteDetailQueryKey(noteId) });
+  }
+}

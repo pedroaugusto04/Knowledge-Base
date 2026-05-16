@@ -38,7 +38,7 @@ const dashboard = {
       workspace: 'default',
       tags: ['deploy'],
       date: '2026-04-27',
-      status: 'open',
+      status: 'active',
       summary: 'Revisar deploy.',
       source: 'test',
     },
@@ -71,7 +71,7 @@ const dashboard = {
         project: 'n8n-automations',
         date: '2026-04-27',
         summary: 'Revisar deploy.',
-        status: 'open',
+        status: 'active',
         target: { kind: 'note', id: 'note-1', path: '20 Inbox/note.md' },
       },
     ],
@@ -238,7 +238,7 @@ function mockFetch() {
           workspace: 'default',
           tags: ['deploy'],
           date: '2026-04-27',
-          status: 'open',
+          status: 'active',
           summary: 'Revisar deploy.',
           source: 'test',
           projectSlug: 'n8n-automations',
@@ -299,7 +299,7 @@ describe('AppShell', () => {
     expect((await screen.findAllByRole('heading', { name: 'Deploy rollout' })).length).toBeGreaterThan(0);
     expect((await screen.findAllByText('N8N Automations')).length).toBeGreaterThan(0);
     expect((await screen.findAllByText('Evento')).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText('Aberta')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Ativa')).length).toBeGreaterThan(0);
     expect(await screen.findByText('deploy')).toBeInTheDocument();
     expect(screen.getAllByText('Revisar deploy.').length).toBeGreaterThan(0);
     const noteReader = document.querySelector('.note-reader');
@@ -375,7 +375,7 @@ describe('AppShell', () => {
 
     expect((await screen.findAllByRole('heading', { name: 'Deploy rollout' })).length).toBeGreaterThan(0);
     expect((await screen.findAllByText('Evento')).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText('Aberta')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Ativa')).length).toBeGreaterThan(0);
     expect(screen.queryByText('20 Inbox/note.md')).not.toBeInTheDocument();
   });
 

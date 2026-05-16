@@ -15,8 +15,5 @@ export function defaultImportance(kind: IngestPayload['classification']['kind'])
 }
 
 export function defaultStatus(canonicalType: IngestPayload['classification']['canonicalType']): IngestPayload['classification']['status'] {
-  if (canonicalType === CanonicalType.Incident || canonicalType === CanonicalType.Followup) {
-    return KnowledgeStatus.Open;
-  }
   return KnowledgeStatus.Active;
 }

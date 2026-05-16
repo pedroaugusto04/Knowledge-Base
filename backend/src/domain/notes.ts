@@ -212,7 +212,7 @@ export function renderFollowupNote(project: Project, payload: IngestPayload, rel
     workspace: project.workspaceSlug,
     project: project.projectSlug,
     importance: payload.classification.importance,
-    status: 'open',
+    status: 'active',
     tags: [...payload.classification.tags, 'followup'],
     occurred_at: payload.event.occurredAt,
     follow_up_by: payload.actions.followUpBy,

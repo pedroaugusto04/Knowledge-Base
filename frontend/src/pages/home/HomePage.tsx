@@ -24,7 +24,7 @@ export function HomePage({ dashboard, openNote, openProject }: PageContext) {
   }
 
   function priorityTone(priority: HomePriority) {
-    if (priority.type === 'reminder') return priority.status || priority.type;
+    if (priority.type === 'reminder') return priority.isOverdue ? 'high' : (priority.status || priority.type);
     if (priority.severity) return priority.severity;
     if (priority.type === 'incident') return 'medium';
     return priority.status || priority.type;

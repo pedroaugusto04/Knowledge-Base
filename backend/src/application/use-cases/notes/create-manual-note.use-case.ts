@@ -4,6 +4,7 @@ import { NotFoundException, Injectable } from '@nestjs/common';
 
 import { CanonicalType, EventType, Importance, KnowledgeKind, KnowledgeStatus, SourceChannel } from '../../../contracts/enums.js';
 import { withDerivedReminderAt, type IngestPayload } from '../../../contracts/ingest.js';
+import { hasReminder, normalizeManualNoteStatus } from '../../../domain/note-status.js';
 import { normalizeDate, normalizeTime } from '../../../domain/time.js';
 import type { CreateManualNoteInput } from '../../models/note-input.models.js';
 import { ContentRepository } from '../../ports/content.repository.js';
@@ -30,6 +31,13 @@ export class CreateManualNoteUseCase {
     const reminderTimeZone = this.environmentProvider.read().reminderTimeZone;
     const reminderDate = normalizeDate(input.reminderDate, reminderTimeZone);
     const reminderTime = normalizeTime(input.reminderTime);
+    const reminderAt = input.reminderAt || '';
+    const status = normalizeManualNoteStatus({
+      requestedStatus: input.status,
+      currentStatus: KnowledgeStatus.Active,
+      hadReminder: false,
+      hasReminder: hasReminder({ reminderDate, reminderAt }),
+    });
     const occurredAt = new Date().toISOString();
     const payload: IngestPayload = {
       source: {
@@ -60,14 +68,14 @@ export class CreateManualNoteUseCase {
         kind: KnowledgeKind.Note,
         canonicalType: CanonicalType.Event,
         importance: Importance.Low,
-        status: KnowledgeStatus.Active,
+        status,
         tags: input.tags,
         decisionFlag: false,
       },
       actions: {
         reminderDate,
         reminderTime,
-        reminderAt: input.reminderAt || '',
+        reminderAt,
         followUpBy: '',
       },
       metadata: {

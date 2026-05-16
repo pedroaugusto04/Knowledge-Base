@@ -8,7 +8,7 @@ import type { PageContext } from '../app/page-context';
 import { navItems, routes, type View } from '../app/routing/routes';
 import { ApiClientError, deleteNote, fetchDashboard, fetchNote, fetchProjectFolders, login, logout, signup } from '../shared/api/client';
 import type { NoteSummary } from '../shared/api/models/note';
-import { ensureNoteDetail, getCachedNoteDetail, noteDetailQueryOptions } from '../shared/api/note-query';
+import { ensureNoteDetail, getCachedNoteDetail, invalidateNoteRelatedQueries, noteDetailQueryOptions } from '../shared/api/note-query';
 import { HomePage } from '../pages/home/HomePage';
 import { IntegrationsPage } from '../pages/integrations/IntegrationsPage';
 import { ProjectsPage } from '../pages/projects/ProjectsPage';
@@ -344,11 +344,7 @@ export function AppShell() {
 }
 
 async function refreshDashboard(queryClient: ReturnType<typeof useQueryClient>) {
-  await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-  await queryClient.invalidateQueries({ queryKey: ['notes'] });
-  await queryClient.invalidateQueries({ queryKey: ['search'] });
-  await queryClient.invalidateQueries({ queryKey: ['search-notes'] });
-  await queryClient.invalidateQueries({ queryKey: ['project-folders'] });
+  await invalidateNoteRelatedQueries(queryClient);
 }
 
 function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {

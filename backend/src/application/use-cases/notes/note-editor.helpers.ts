@@ -1,3 +1,4 @@
+import { normalizeManualNoteStatus } from '../../../domain/note-status.js';
 import { buildReminderAt } from '../../../domain/time.js';
 import { renderFrontmatter } from '../../../domain/frontmatter.js';
 import { relocateNotePath } from '../../../domain/notes.js';
@@ -24,13 +25,20 @@ export function buildUpdatedNote(
   const title = trimText(input.title, note.title || input.rawText);
   const rawText = normalizeMultiline(input.rawText);
   const tags = [...new Set(input.tags.map((tag) => tag.trim()).filter(Boolean))];
+  const reminderAt = input.reminderAt || buildReminderAt(input.reminderDate, input.reminderTime, reminderTimeZone);
+  const nextStatus = normalizeManualNoteStatus({
+    requestedStatus: input.status,
+    currentStatus: note.status,
+    hadReminder: Boolean(String(note.metadata.reminderDate || '').trim() || String(note.metadata.reminderAt || '').trim()),
+    hasReminder: Boolean(input.reminderDate || reminderAt),
+  });
   const structuredNote = parseStructuredNoteMarkdown(note.markdown, note.title);
   const frontmatter = {
     ...note.frontmatter,
     type: note.type,
     workspace: note.workspaceSlug,
     project: note.projectSlug,
-    status: note.status,
+    status: nextStatus,
     tags,
     occurred_at: note.occurredAt,
   };
@@ -39,7 +47,7 @@ export function buildUpdatedNote(
     rawText,
     reminderDate: input.reminderDate,
     reminderTime: input.reminderTime,
-    reminderAt: input.reminderAt || buildReminderAt(input.reminderDate, input.reminderTime, reminderTimeZone),
+    reminderAt,
   };
 
   return {
@@ -50,7 +58,7 @@ export function buildUpdatedNote(
     projectSlug: note.projectSlug,
     workspaceSlug: note.workspaceSlug,
     folderId: nextFolder?.id || null,
-    status: note.status,
+    status: nextStatus,
     tags,
     occurredAt: note.occurredAt,
     sourceChannel: note.sourceChannel,

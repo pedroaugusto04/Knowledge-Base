@@ -1,4 +1,5 @@
 import type { NoteDetail, NoteSummary } from './models/note';
+import type { QuickNoteStatus } from './models/note-status';
 import { DEFAULT_PAGE_SIZE, type PaginatedResponse } from './models/pagination';
 import { request } from './request';
 
@@ -26,6 +27,7 @@ export type CreateNoteParams = {
   title?: string;
   rawText: string;
   tags?: string[];
+  status?: QuickNoteStatus;
   reminderDate?: string;
   reminderTime?: string;
   reminderAt?: string;
@@ -51,6 +53,7 @@ export type UpdateNoteParams = {
   title?: string;
   rawText: string;
   tags?: string[];
+  status?: QuickNoteStatus;
   reminderDate?: string;
   reminderTime?: string;
   reminderAt?: string;

@@ -35,10 +35,11 @@ export enum Importance {
 }
 
 export enum KnowledgeStatus {
-  Open = 'open',
   Active = 'active',
   Resolved = 'resolved',
   Archived = 'archived',
+  Pending = 'pending',
+  Sent = 'sent',
 }
 
 export enum ReviewFindingSeverity {

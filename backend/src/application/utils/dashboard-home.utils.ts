@@ -1,5 +1,5 @@
 import { CanonicalType, HomePriorityType, HomeTargetKind, KnowledgeStatus } from '../../contracts/enums.js';
-import { formatDateInTimeZone, formatTimeInTimeZone, normalizeTimeZone } from '../../domain/time.js';
+import { formatDateInTimeZone, normalizeTimeZone } from '../../domain/time.js';
 import type { Project } from '../../domain/projects.js';
 import type { DashboardHomeSummary, HomePriority } from '../models/dashboard-home.models.js';
 import type { ReminderView } from '../models/reminder.models.js';
@@ -7,7 +7,8 @@ import type { ReviewView } from '../models/review.models.js';
 import type { VaultNoteSummary } from '../models/vault-note.models.js';
 
 const HOME_WINDOW_DAYS = 7;
-const OPEN_STATUSES = new Set([KnowledgeStatus.Open, KnowledgeStatus.Active, 'pending', 'todo']);
+const OPEN_STATUSES = new Set<string>([KnowledgeStatus.Active, 'open']);
+const OPEN_REMINDER_STATUSES = new Set<string>([KnowledgeStatus.Pending]);
 const INTERESTING_TYPES = [CanonicalType.Incident, CanonicalType.Decision, CanonicalType.Followup, CanonicalType.Event];
 
 function normalizeDateInput(value: string) {
@@ -42,6 +43,10 @@ function isOpen(status: string) {
 
 function isHigh(severity: string) {
   return ['high', 'critical'].includes(severity.toLowerCase());
+}
+
+function isOpenReminder(status: string) {
+  return OPEN_REMINDER_STATUSES.has(status.toLowerCase());
 }
 
 function projectLabel(projects: Project[], slug: string) {
@@ -88,18 +93,9 @@ export function buildDashboardHome(
 ): DashboardHomeSummary {
   const zone = normalizeTimeZone(timeZone);
   const { start, end } = recentWindow(now, HOME_WINDOW_DAYS, zone);
-  const todayDate = formatDateInTimeZone(now, zone);
-  const currentTime = formatTimeInTimeZone(now, zone);
   const recentNotes = notes.filter((note) => isWithinWindow(note.date, start, end, zone));
-  const openReminders = reminders.filter((reminder) => isOpen(reminder.status));
-  const overdueReminders = openReminders.filter((reminder) => {
-    if (reminder.reminderAt) {
-      const timestamp = parseTimestamp(reminder.reminderAt);
-      return Boolean(timestamp && timestamp < now.getTime());
-    }
-    if (reminder.reminderDate < todayDate) return true;
-    return reminder.reminderDate === todayDate && Boolean(reminder.reminderTime && reminder.reminderTime < currentTime);
-  });
+  const openReminders = reminders.filter((reminder) => isOpenReminder(reminder.status));
+  const overdueReminders = openReminders.filter((reminder) => reminder.isOverdue);
   const openHighFindings = reviews.flatMap((review) => review.findings.filter((finding) => isOpen(finding.status) && isHigh(finding.severity)).map((finding) => ({ review, finding })));
   const reviewsWithOpenFindings = reviews.filter((review) => review.findings.some((finding) => isOpen(finding.status)));
   const recentIncidentsAndFollowups = recentNotes.filter((note) => ['incident', 'followup'].includes(note.type) && isOpen(note.status));
@@ -120,17 +116,16 @@ export function buildDashboardHome(
     ...openReminders.map((reminder) => {
       const timestamp = parseTimestamp(reminder.reminderAt);
       const relatedNote = findNoteByPath(notes, reminder.relativePath);
-      const overdue = reminder.reminderAt
-        ? Boolean(timestamp && timestamp < now.getTime())
-        : reminder.reminderDate < todayDate || (reminder.reminderDate === todayDate && Boolean(reminder.reminderTime && reminder.reminderTime < currentTime));
+      const overdue = reminder.isOverdue;
       return {
         id: `reminder:${reminder.id}`,
         type: HomePriorityType.Reminder,
         title: reminder.title,
         project: reminder.project,
         date: reminder.reminderAt || reminder.reminderDate,
-        description: overdue ? 'Lembrete vencido' : 'Lembrete aberto',
+        description: overdue ? 'Lembrete pendente e vencido' : reminder.status === KnowledgeStatus.Sent ? 'Lembrete enviado' : 'Lembrete pendente',
         status: reminder.status,
+        isOverdue: overdue,
         reminderDate: reminder.reminderDate,
         reminderTime: reminder.reminderTime,
         target: relatedNote ? noteTarget(relatedNote) : { kind: HomeTargetKind.Note, path: reminder.relativePath },

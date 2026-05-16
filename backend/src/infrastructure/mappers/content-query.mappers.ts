@@ -93,6 +93,7 @@ export function reminderFromNote(record: NoteRecord): ReminderView | null {
     project: record.projectSlug,
     workspace: record.workspaceSlug,
     status: record.status,
+    isOverdue: false,
     reminderDate,
     reminderTime: String(record.metadata.reminderTime || ''),
     reminderAt: String(record.metadata.reminderAt || ''),

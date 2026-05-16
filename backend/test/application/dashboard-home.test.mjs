@@ -8,7 +8,7 @@ const projects = [
   { projectSlug: 'beta', displayName: 'Beta', repositories: [{ id: '2', workspaceSlug: 'default', externalId: '2', fullName: 'acme/beta', htmlUrl: null, description: null, defaultBranch: null, createdAt: '', updatedAt: '' }], workspaceSlug: 'default', defaultTags: [], enabled: true },
 ];
 
-const baseNote = {
+  const baseNote = {
   id: 'note-base',
   path: '20 Inbox/base.md',
   type: 'event',
@@ -17,7 +17,7 @@ const baseNote = {
   workspace: 'default',
   tags: [],
   date: '2026-04-27',
-  status: 'open',
+  status: 'active',
   summary: 'Base summary',
   source: 'test',
 };
@@ -28,7 +28,7 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
     { ...baseNote, id: 'followup-1', path: '20 Inbox/followup.md', type: 'followup', title: 'Follow-up aberto', date: '2026-04-26' },
     { ...baseNote, id: 'decision-1', path: '20 Inbox/decision.md', type: 'decision', title: 'Decisao recente', project: 'beta', date: '2026-04-25' },
     { ...baseNote, id: 'event-1', path: '20 Inbox/event.md', type: 'event', title: 'Evento recente', project: 'beta', date: '2026-04-24' },
-    { ...baseNote, id: 'closed-1', path: '20 Inbox/closed.md', type: 'incident', title: 'Incidente fechado', date: '2026-04-24', status: 'closed' },
+    { ...baseNote, id: 'closed-1', path: '20 Inbox/closed.md', type: 'incident', title: 'Incidente fechado', date: '2026-04-24', status: 'resolved' },
     { ...baseNote, id: 'old-1', path: '20 Inbox/old.md', type: 'event', title: 'Evento antigo', date: '2026-04-01' },
   ];
   const reviews = [
@@ -56,7 +56,8 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       title: 'Cobrar rollback',
       project: 'alpha',
       workspace: 'default',
-      status: 'open',
+      status: 'pending',
+      isOverdue: true,
       reminderDate: '2026-04-26',
       reminderTime: '09:00',
       reminderAt: '2026-04-26T12:00:00.000Z',
@@ -67,7 +68,8 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       title: 'Validar deploy',
       project: 'beta',
       workspace: 'default',
-      status: 'active',
+      status: 'pending',
+      isOverdue: false,
       reminderDate: '2026-04-27',
       reminderTime: '16:00',
       reminderAt: '2026-04-27T19:00:00.000Z',
@@ -78,7 +80,8 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
       title: 'Feito',
       project: 'beta',
       workspace: 'default',
-      status: 'done',
+      status: 'sent',
+      isOverdue: false,
       reminderDate: '2026-04-25',
       reminderTime: '09:00',
       reminderAt: '2026-04-25T12:00:00.000Z',
@@ -125,7 +128,8 @@ test('dashboard home normalizes reminder statuses with the same model used by re
       title: 'Reminder active',
       project: 'n8n-automations',
       workspace: 'default',
-      status: 'open',
+      status: 'pending',
+      isOverdue: false,
       reminderDate: '2099-12-31',
       reminderTime: '09:00',
       reminderAt: '2099-12-31T09:00:00.000Z',
@@ -136,7 +140,8 @@ test('dashboard home normalizes reminder statuses with the same model used by re
       title: 'Reminder sent',
       project: 'n8n-automations',
       workspace: 'default',
-      status: 'active',
+      status: 'sent',
+      isOverdue: false,
       reminderDate: '2026-05-08',
       reminderTime: '11:00',
       reminderAt: '2026-05-08T11:00:00.000Z',
@@ -152,20 +157,9 @@ test('dashboard home normalizes reminder statuses with the same model used by re
     listReviews: async () => [],
     listReminders: async () => rawReminders,
   };
-  const reminderDispatchRepository = {
-    hasSent: async (inputUserId, workspaceSlug, mode, dispatchKey, reminderId) => {
-      assert.equal(inputUserId, userId);
-      assert.equal(workspaceSlug, 'default');
-      assert.equal(mode, 'exact');
-      if (reminderId === 'active-reminder') assert.equal(dispatchKey, '2099-12-31T09:00');
-      if (reminderId === 'sent-reminder') assert.equal(dispatchKey, '2026-05-08T11:00');
-      return reminderId === 'sent-reminder';
-    },
-  };
   const useCase = new BuildDashboardUseCase(
     contentRepository,
     contentQueryRepository,
-    reminderDispatchRepository,
   );
   const dashboard = await useCase.execute(userId);
   const statuses = dashboard.home.priorities
@@ -174,6 +168,6 @@ test('dashboard home normalizes reminder statuses with the same model used by re
 
   assert.equal(dashboard.home.metrics.find((metric) => metric.id === 'open-reminders')?.value, 1);
   assert.deepEqual(statuses, [
-    { id: 'reminder:active-reminder', status: 'active' },
+    { id: 'reminder:active-reminder', status: 'pending' },
   ]);
 });

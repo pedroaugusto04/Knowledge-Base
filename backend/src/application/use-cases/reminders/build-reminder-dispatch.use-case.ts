@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { ReminderDispatchMode } from '../../../contracts/enums.js';
+import { KnowledgeStatus, ReminderDispatchMode } from '../../../contracts/enums.js';
 import { slugify } from '../../../domain/strings.js';
 import { currentDateTimeInTimeZone } from '../../../domain/time.js';
 import { ContentQueryRepository } from '../../ports/content.repository.js';
@@ -20,7 +20,7 @@ export class BuildReminderDispatchUseCase {
     const workspace = slugify(workspaceSlug) || 'default';
     const reminderTimeZone = this.environmentProvider.read().reminderTimeZone;
     const reminders = (await this.contentQueryRepository.listReminders(userId)).filter(
-      (reminder) => reminder.workspace === workspace && (reminder.status === 'open' || reminder.status === 'active'),
+      (reminder) => reminder.workspace === workspace && reminder.status === KnowledgeStatus.Pending,
     );
     const now = currentDateTimeInTimeZone(mode === ReminderDispatchMode.Daily ? reminderTimeZone : 'UTC', nowDate);
     const nowMinuteKey = `${now.date}T${now.time}`;

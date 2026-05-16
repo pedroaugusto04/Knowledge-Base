@@ -13,6 +13,7 @@ import { Badge, EmptyState, PageHead, Tags } from '../../shared/ui/primitives';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
 import { MarkdownView } from '../../widgets/markdown/MarkdownView';
 import { AttachmentIndicator } from '../../widgets/notes/AttachmentIndicator';
+import { QuickNoteStatusActions } from '../../widgets/notes/QuickNoteStatusActions';
 
 type NavigationNote = Pick<NoteSummary, 'id' | 'title'>;
 
@@ -86,6 +87,7 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, setSelec
               <div className="note-reader-top">
                 <h1 className="note-title">{noteQuery.data.title}</h1>
                 <div className="note-reader-actions" aria-label="Navegacao entre notas">
+                  <QuickNoteStatusActions note={noteQuery.data} />
                   <button className="icon-button" disabled={!previousNote} type="button" onClick={() => previousNote && openNote(previousNote.id)}>
                     Anterior
                   </button>

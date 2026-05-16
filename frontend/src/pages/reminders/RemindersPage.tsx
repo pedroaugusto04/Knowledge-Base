@@ -11,7 +11,7 @@ import { PageHead, Panel } from '../../shared/ui/primitives';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
 import { ReminderRow } from '../../widgets/reminders/ReminderRow';
 
-export function RemindersPage({ dashboard }: PageContext) {
+export function RemindersPage({ dashboard, openNote }: PageContext) {
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug || '';
   const [status, setStatus] = useState('');
   const { page, setPage } = usePaginationState(`${workspaceSlug}:${status}`);
@@ -62,16 +62,15 @@ export function RemindersPage({ dashboard }: PageContext) {
         title={(
           <div className="page-head-title-row">
             <h1>Lembretes</h1>
-            <label className="sr-only" htmlFor="reminders-page-status-select">Filtrar por situação</label>
+            <label className="sr-only" htmlFor="reminders-page-status-select">Filtrar por situacao</label>
             <select
               id="reminders-page-status-select"
               className="page-head-select"
               value={status}
               onChange={(event) => setStatus(event.target.value)}
             >
-              <option value="">Todas as situações</option>
-              <option value="active">Ativos</option>
-              <option value="expired">Vencidos</option>
+              <option value="">Todas as situacoes</option>
+              <option value="pending">Pendentes</option>
               <option value="sent">Enviados</option>
               <option value="resolved">Resolvidos</option>
               <option value="archived">Arquivados</option>
@@ -86,7 +85,7 @@ export function RemindersPage({ dashboard }: PageContext) {
             <h2>{date === 'sem-data' ? date : formatUsDate(date)}</h2>
             <div className="list">
               {reminders.map((reminder) => (
-                <ReminderRow key={reminder.id} reminder={reminder} dashboard={dashboard} onOpenPath={() => undefined} />
+                <ReminderRow key={reminder.id} reminder={reminder} dashboard={dashboard} onOpenPath={() => openNote(reminder.id)} />
               ))}
             </div>
           </Panel>

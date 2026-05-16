@@ -34,6 +34,7 @@ export type HomePriority = {
   description: string;
   severity?: string;
   status?: string;
+  isOverdue?: boolean;
   reminderDate?: string;
   reminderTime?: string;
   target: HomeNavigationTarget;

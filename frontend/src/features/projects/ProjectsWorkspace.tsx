@@ -12,7 +12,7 @@ import {
 } from '../../shared/api/client';
 import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
-import { ensureNoteDetail } from '../../shared/api/note-query';
+import { ensureNoteDetail, invalidateNoteRelatedQueries } from '../../shared/api/note-query';
 import { notifyGeneralFormError } from '../../shared/forms/errors';
 import { notifySuccess } from '../../shared/ui/notifications';
 import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
@@ -269,8 +269,6 @@ export function ProjectsWorkspace({
 }
 
 async function refreshDashboard(queryClient: ReturnType<typeof useQueryClient>) {
-  await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  await invalidateNoteRelatedQueries(queryClient);
   await queryClient.invalidateQueries({ queryKey: ['projects'] });
-  await queryClient.invalidateQueries({ queryKey: ['project-folders'] });
-  await queryClient.invalidateQueries({ queryKey: ['notes'] });
 }

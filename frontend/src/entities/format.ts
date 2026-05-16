@@ -30,7 +30,7 @@ export function formatUsDateTime(value: string | null | undefined) {
   if (!value) return '';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  
+
   const datePart = buildUsDate(parsed);
   const hours = String(parsed.getHours()).padStart(2, '0');
   const minutes = String(parsed.getMinutes()).padStart(2, '0');
@@ -43,7 +43,7 @@ export function noteTypeLabel(type: string) {
       note: 'Nota',
       event: 'Evento',
       knowledge: 'Conhecimento',
-      decision: 'Decisão',
+      decision: 'Decisao',
       incident: 'Incidente',
       bug: 'Bug',
       review: 'Review',
@@ -58,13 +58,11 @@ export function noteTypeLabel(type: string) {
 export function noteStatusLabel(status: string) {
   return (
     {
-      open: 'Aberta',
       active: 'Ativa',
+      pending: 'Pendente',
+      sent: 'Enviado',
       resolved: 'Resolvida',
       archived: 'Arquivada',
-      closed: 'Fechada',
-      pending: 'Pendente',
-      done: 'Concluída',
     }[status] || humanizeToken(status)
   );
 }

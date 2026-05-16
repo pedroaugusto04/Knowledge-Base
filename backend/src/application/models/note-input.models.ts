@@ -4,6 +4,7 @@ export type CreateManualNoteInput = {
   title: string;
   rawText: string;
   tags: string[];
+  status?: string;
   reminderDate: string;
   reminderTime: string;
   reminderAt?: string;
@@ -15,6 +16,7 @@ export type UpdateNoteInput = {
   title: string;
   rawText: string;
   tags: string[];
+  status?: string;
   reminderDate: string;
   reminderTime: string;
   reminderAt?: string;

@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { renderWithAppProviders } from '../../../src/app/test-utils';
 import { NoteRow } from '../../../src/widgets/notes/NoteRow';
 
 afterEach(() => {
@@ -13,7 +14,7 @@ describe('NoteRow', () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
 
-    render(
+    renderWithAppProviders(
       <NoteRow
         dashboard={{
           workspaces: [],
@@ -48,6 +49,8 @@ describe('NoteRow', () => {
 
     expect(screen.getByText('Evento')).toBeInTheDocument();
     expect(screen.getByText('Ativa')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resolver' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Arquivar' })).toBeInTheDocument();
     expect(screen.getByLabelText('2 anexos')).toBeInTheDocument();
     expect(screen.queryByText('event')).not.toBeInTheDocument();
     expect(screen.queryByText('manual-api')).not.toBeInTheDocument();
@@ -57,7 +60,7 @@ describe('NoteRow', () => {
   });
 
   it('hides the attachment indicator when a note has no attachments', () => {
-    render(
+    renderWithAppProviders(
       <NoteRow
         dashboard={{
           workspaces: [],

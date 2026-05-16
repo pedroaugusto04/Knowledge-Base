@@ -1,8 +1,13 @@
 import { z } from 'zod';
 
+import { KnowledgeStatus } from '../../../contracts/enums.js';
+import { noteStatusValues } from '../../../domain/note-status.js';
 import { slugify } from '../../../domain/strings.js';
 import { normalizeTime } from '../../../domain/time.js';
 import { normalizedSlugList, optionalStringArraySchema } from './dto-normalizers.js';
+
+const noteStatusSchema = z.enum(noteStatusValues).optional();
+const editableNoteStatusSchema = z.enum([KnowledgeStatus.Resolved, KnowledgeStatus.Archived]).optional();
 
 export const createNoteBodySchema = z
   .object({
@@ -11,6 +16,7 @@ export const createNoteBodySchema = z
     title: z.string().trim().max(160, 'Use no maximo 160 caracteres.').optional().default(''),
     rawText: z.string().trim().min(1, 'Informe o texto da nota.').max(20000, 'Use no maximo 20000 caracteres.'),
     tags: optionalStringArraySchema(60, 'Use no maximo 60 caracteres.'),
+    status: noteStatusSchema,
     reminderDate: z.string().trim().optional().default(''),
     reminderTime: z.string().trim().optional().default(''),
     reminderAt: z.string().trim().optional().default(''),
@@ -22,6 +28,7 @@ export const createNoteBodySchema = z
     title: body.title,
     rawText: body.rawText,
     tags: normalizedSlugList(body.tags),
+    status: body.status,
     reminderDate: body.reminderDate.trim(),
     reminderTime: normalizeTime(body.reminderTime),
     reminderAt: body.reminderAt,
@@ -53,6 +60,7 @@ export const updateNoteBodySchema = z
     title: z.string().trim().max(160, 'Use no maximo 160 caracteres.').optional().default(''),
     rawText: z.string().trim().min(1, 'Informe o texto da nota.').max(20000, 'Use no maximo 20000 caracteres.'),
     tags: optionalStringArraySchema(60, 'Use no maximo 60 caracteres.'),
+    status: editableNoteStatusSchema,
     reminderDate: z.string().trim().optional().default(''),
     reminderTime: z.string().trim().optional().default(''),
     reminderAt: z.string().trim().optional().default(''),
@@ -63,6 +71,7 @@ export const updateNoteBodySchema = z
     title: body.title,
     rawText: body.rawText,
     tags: normalizedSlugList(body.tags),
+    status: body.status,
     reminderDate: body.reminderDate.trim(),
     reminderTime: normalizeTime(body.reminderTime),
     reminderAt: body.reminderAt,

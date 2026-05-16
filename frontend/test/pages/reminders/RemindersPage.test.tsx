@@ -44,7 +44,8 @@ describe('RemindersPage', () => {
               title: 'Deploy',
               project: 'n8n-automations',
               workspace: 'default',
-              status: 'expired',
+              status: 'pending',
+              isOverdue: true,
               reminderDate: '2026-05-07',
               reminderTime: '09:00',
               reminderAt: '2026-05-07T09:00:00.000Z',
@@ -64,6 +65,7 @@ describe('RemindersPage', () => {
               project: 'n8n-automations',
               workspace: 'default',
               status: 'sent',
+              isOverdue: false,
               reminderDate: '2026-05-08',
               reminderTime: '10:00',
               reminderAt: '2026-05-08T10:00:00.000Z',
@@ -88,15 +90,15 @@ describe('RemindersPage', () => {
     );
 
     expect(await screen.findByText('Deploy')).toBeInTheDocument();
-    expect(screen.getByText('expired')).toBeInTheDocument();
+    expect(screen.getByText('Pendente')).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenNthCalledWith(1, '/api/reminders?page=1&pageSize=5&workspaceSlug=default&status=', expect.any(Object));
 
-    fireEvent.change(screen.getByLabelText('Filtrar por situação'), { target: { value: 'sent' } });
+    fireEvent.change(screen.getByLabelText('Filtrar por situacao'), { target: { value: 'sent' } });
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenNthCalledWith(2, '/api/reminders?page=1&pageSize=5&workspaceSlug=default&status=sent', expect.any(Object));
     });
     expect(await screen.findByText('Follow up')).toBeInTheDocument();
-    expect(screen.getByText('sent')).toBeInTheDocument();
+    expect(screen.getByText('Enviado')).toBeInTheDocument();
   });
 });

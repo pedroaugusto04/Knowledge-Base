@@ -3,6 +3,7 @@ import type { NoteSummary } from '../../shared/api/models/note';
 import { formatUsDate, noteStatusLabel, noteTypeLabel, projectName, typeIcon } from '../../entities/format';
 import { Badge } from '../../shared/ui/primitives';
 import { AttachmentIndicator } from './AttachmentIndicator';
+import { QuickNoteStatusActions } from './QuickNoteStatusActions';
 
 function PencilIcon() {
   return (
@@ -51,6 +52,7 @@ export function NoteRow({
         <p>{note.summary}</p>
       </div>
       <div className="row-actions">
+        <QuickNoteStatusActions note={note} compact />
         {onEdit ? (
           <button
             aria-label={`Editar nota ${note.title}`}

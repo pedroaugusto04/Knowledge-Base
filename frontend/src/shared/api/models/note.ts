@@ -1,3 +1,5 @@
+import type { NoteStatus } from './note-status';
+
 export type NoteSummary = {
   id: string;
   path: string;
@@ -8,10 +10,11 @@ export type NoteSummary = {
   folderId: string | null;
   tags: string[];
   date: string;
-  status: string;
+  status: NoteStatus;
   summary: string;
   source: string;
   attachmentCount: number;
+  isOverdue?: boolean;
 };
 
 export type NoteAttachment = {

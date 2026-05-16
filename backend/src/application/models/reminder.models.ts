@@ -4,6 +4,7 @@ export type ReminderView = {
   project: string;
   workspace: string;
   status: string;
+  isOverdue: boolean;
   reminderDate: string;
   reminderTime: string;
   reminderAt: string;

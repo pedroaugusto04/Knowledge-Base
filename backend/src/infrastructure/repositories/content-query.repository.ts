@@ -78,7 +78,7 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
        where n.status = any($1::text[])
          and coalesce(n.metadata->>'reminderDate', '') <> ''
          and coalesce(w.telegram_chat_id, '') <> ''`,
-      [[KnowledgeStatus.Open, KnowledgeStatus.Active]],
+      [[KnowledgeStatus.Pending]],
     );
 
     return result.rows

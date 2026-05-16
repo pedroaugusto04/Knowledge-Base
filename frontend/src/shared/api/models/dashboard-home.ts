@@ -1,3 +1,5 @@
+import type { NoteStatus } from './note-status';
+
 export type HomeMetric = {
   id: string;
   label: string;
@@ -33,7 +35,8 @@ export type HomePriority = {
   date: string;
   description: string;
   severity?: string;
-  status?: string;
+  status?: NoteStatus;
+  isOverdue?: boolean;
   reminderDate?: string;
   reminderTime?: string;
   target: HomeNavigationTarget;
@@ -46,7 +49,7 @@ export type HomeInterestingEvent = {
   project: string;
   date: string;
   summary: string;
-  status: string;
+  status: NoteStatus;
   target: HomeNavigationTarget;
 };
 
