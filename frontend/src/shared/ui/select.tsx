@@ -54,6 +54,15 @@ export function Select({
   const listboxId = `${resolvedId}-listbox`;
   const rootRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const widestOption = useMemo(
+    () => options.reduce<SelectOption | null>((widest, option) => {
+      if (!widest) return option;
+      const widestScore = widest.label.length + (widest.depth || 0);
+      const optionScore = option.label.length + (option.depth || 0);
+      return optionScore > widestScore ? option : widest;
+    }, null),
+    [options],
+  );
   const selectedOption = useMemo(
     () => options.find((option) => option.value === value) || options.find((option) => !option.disabled) || null,
     [options, value],
@@ -147,6 +156,15 @@ export function Select({
 
   return (
     <div className={['kb-select', className].filter(Boolean).join(' ')} data-field={dataField} ref={rootRef}>
+      <span aria-hidden="true" className="kb-select-sizer">
+        <span
+          className="kb-select-sizer-text"
+          style={widestOption?.depth ? { paddingLeft: `${widestOption.depth * 16}px` } : undefined}
+        >
+          {widestOption?.label || ''}
+        </span>
+        <span className="kb-select-chevron-space" />
+      </span>
       <button
         aria-describedby={ariaDescribedBy}
         aria-controls={isOpen ? listboxId : undefined}

@@ -155,8 +155,28 @@ select:not([multiple]) {
 }
 .kb-select {
   position: relative;
+  display: grid;
+  max-width: 100%;
+  min-width: max-content;
   width: 100%;
-  min-width: 0;
+}
+.kb-select-sizer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 10px 12px 10px 14px;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.kb-select-sizer-text {
+  display: block;
+}
+.kb-select-chevron-space {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
 }
 .kb-select-trigger {
   display: flex;
@@ -170,6 +190,8 @@ select:not([multiple]) {
   background: var(--input-bg);
   color: var(--text);
   padding: 10px 12px 10px 14px;
+  inset: 0;
+  position: absolute;
   text-align: left;
   box-shadow: none;
 }
@@ -342,6 +364,7 @@ select:not([multiple]) {
 .page-head-select {
   min-width: min(280px, 100%);
 }
+.page-head-select .kb-select-sizer,
 .page-head-select .kb-select-trigger { min-height: 40px; padding: 0 14px 0 12px; }
 h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 7px; font-size: clamp(27px, 3vw, 40px); line-height: 1.04; }
@@ -492,6 +515,7 @@ p { color: var(--muted); line-height: 1.6; }
 .search-box { display: grid; gap: 12px; margin-bottom: 14px; }
 .search-box input, .search-box select { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg); color: var(--text); padding: 0 12px; }
 .search-box select { padding-right: 42px; }
+.search-box .kb-select-sizer,
 .search-box .kb-select-trigger { min-height: 48px; padding: 0 14px 0 12px; }
 .vault-project-picker .filters { grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -980,6 +1004,7 @@ p { color: var(--muted); line-height: 1.6; }
 .setup-form .form-field select {
   min-height: 44px;
 }
+.setup-form .form-field .kb-select-sizer,
 .setup-form .form-field .kb-select-trigger {
   min-height: 44px;
 }
