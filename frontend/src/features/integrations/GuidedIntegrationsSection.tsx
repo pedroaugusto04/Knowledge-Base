@@ -73,7 +73,10 @@ function buildChatComposeUrl(connection: IntegrationConnectionResponse): string 
 function IntegrationLogo({ integration }: { integration: UserIntegration }) {
   const logo = integrationLogos[integrationId(integration)];
   if (!logo) return <div className="integration-logo-fallback">{integration.name.slice(0, 2).toUpperCase()}</div>;
-  return <img alt={`${logo.label} logo`} className="integration-logo" src={logo.src} />;
+  const logoClassName = integration.provider === 'github-app'
+    ? 'integration-logo integration-logo-github-app'
+    : 'integration-logo';
+  return <img alt={`${logo.label} logo`} className={logoClassName} src={logo.src} />;
 }
 
 function IntegrationSteps({ integration }: { integration: UserIntegration }) {

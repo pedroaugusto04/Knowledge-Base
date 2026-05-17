@@ -58,6 +58,7 @@
   --info-border: rgba(83, 199, 222, 0.34);
   --shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
   --shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.34);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='m2.5 4.5 3.5 3.5 3.5-3.5' stroke='%238da0ae' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
@@ -121,6 +122,7 @@
   --info-border: rgba(15, 143, 174, 0.28);
   --shadow: 0 10px 24px rgba(31, 62, 79, 0.12);
   --shadow-strong: 0 18px 40px rgba(31, 62, 79, 0.16);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='m2.5 4.5 3.5 3.5 3.5-3.5' stroke='%23587180' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 * { box-sizing: border-box; }
@@ -140,6 +142,16 @@ textarea { font: inherit; }
 button, a, select, summary, label, .clickable, .nav-item, .tree-item, .workspace-pill, .filter-chip, .icon-button, .integration-info-button, .modal-close { cursor: pointer; }
 button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 input[type="search"] { cursor: text; }
+select:not([multiple]) {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: var(--select-chevron);
+  background-position: right 16px center;
+  background-repeat: no-repeat;
+  background-size: 12px;
+  padding-right: 42px;
+}
 
 .app-shell { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
 .sidebar { background: var(--glass-panel); border-color: var(--line-soft); backdrop-filter: blur(14px); }
@@ -220,7 +232,7 @@ input[type="search"] { cursor: text; }
   border-radius: 8px;
   background: var(--input-bg);
   color: var(--text);
-  padding: 0 12px;
+  padding: 0 42px 0 12px;
 }
 h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 7px; font-size: clamp(27px, 3vw, 40px); line-height: 1.04; }
@@ -370,6 +382,7 @@ p { color: var(--muted); line-height: 1.6; }
 .section-spaced { margin-top: 18px; }
 .search-box { display: grid; gap: 12px; margin-bottom: 14px; }
 .search-box input, .search-box select { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg); color: var(--text); padding: 0 12px; }
+.search-box select { padding-right: 42px; }
 .vault-project-picker .filters { grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .form-field { display: grid; gap: 6px; color: var(--muted); font-family: var(--mono); font-size: 12px; }
@@ -377,6 +390,7 @@ p { color: var(--muted); line-height: 1.6; }
 .form-field-label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .form-field-meta { color: var(--muted); font-size: 11px; white-space: nowrap; }
 .form-field input, .form-field textarea, .form-field select { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg); color: var(--text); padding: 10px 12px; }
+.form-field select { padding-right: 42px; }
 .form-field input[aria-invalid="true"], .form-field textarea[aria-invalid="true"], .form-field select[aria-invalid="true"] { border-color: rgba(255, 122, 122, 0.62); box-shadow: 0 0 0 1px rgba(255, 122, 122, 0.12); }
 .form-field textarea { min-height: 140px; resize: vertical; font-family: var(--mono); line-height: 1.5; }
 .form-error { margin: 0; color: var(--danger-text-soft); font-family: var(--mono); font-size: 12px; line-height: 1.5; }
@@ -585,6 +599,11 @@ p { color: var(--muted); line-height: 1.6; }
 .integration-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .integration-logo, .integration-logo-fallback { width: 44px; height: 44px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--surface-6); }
 .integration-logo { padding: 9px; object-fit: contain; }
+.integration-logo-github-app {
+  padding: 8px;
+  background: #0f1419;
+  border-color: rgba(15, 20, 25, 0.18);
+}
 .integration-logo-fallback { display: grid; place-items: center; color: var(--cyan); font-family: var(--mono); font-size: 13px; }
 .integration-info-button, .modal-close { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--line-soft); border-radius: 7px; color: var(--muted); background: var(--surface-5); }
 .integration-info-button { position: absolute; top: 14px; right: 14px; font-family: var(--mono); font-weight: 700; }
