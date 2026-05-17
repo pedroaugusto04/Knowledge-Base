@@ -850,6 +850,11 @@ p { color: var(--muted); line-height: 1.6; }
 .setup-inline-banner.success { border-color: var(--success-border-soft); }
 .setup-inline-banner.error { border-color: var(--danger-border); }
 
+:root[data-theme="light"] .global-loading-spinner {
+  background: none;
+  box-shadow: none;
+}
+
 @keyframes global-loading-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
