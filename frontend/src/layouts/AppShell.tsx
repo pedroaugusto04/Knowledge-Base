@@ -26,7 +26,7 @@ import { notifySuccess } from '../shared/ui/notifications';
 import { useGlobalLoading } from '../app/global-loading';
 import { useTheme } from '../app/providers/theme';
 import { createAuthFormSchema, type AuthFormValues, type AuthMode } from './app-shell-auth.forms';
-import { Inspector } from './Inspector';
+
 
 function activeView(pathname: string): View {
   if (pathname.startsWith('/projects')) return 'projects';
@@ -323,13 +323,6 @@ export function AppShell() {
           </Routes>
         </section>
       </main>
-      <aside className="inspector" aria-label="Contexto da nota">
-        <Inspector
-          dashboard={dashboard}
-          selectedProject={pageContext.selectedProject}
-          selectedNoteId={pageContext.selectedNoteId}
-        />
-      </aside>
       {noteModal ? (
         <ProjectNoteModal
           folders={noteModalFolders}

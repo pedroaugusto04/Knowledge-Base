@@ -141,10 +141,9 @@ button, a, select, summary, label, .clickable, .nav-item, .tree-item, .workspace
 button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 input[type="search"] { cursor: text; }
 
-.app-shell { display: grid; grid-template-columns: 280px minmax(0, 1fr) 320px; min-height: 100vh; }
-.sidebar, .inspector { background: var(--glass-panel); border-color: var(--line-soft); backdrop-filter: blur(14px); }
+.app-shell { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+.sidebar { background: var(--glass-panel); border-color: var(--line-soft); backdrop-filter: blur(14px); }
 .sidebar { border-right: 1px solid var(--border-strong); padding: 18px 14px; overflow: auto; }
-.inspector { border-left: 1px solid var(--border-strong); padding: 18px; overflow: auto; }
 .mobile-nav-backdrop, .mobile-nav-toggle { display: none; }
 .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 20px; cursor: pointer}
 .brand { color: inherit; text-decoration: none; }
@@ -515,11 +514,7 @@ p { color: var(--muted); line-height: 1.6; }
   opacity: 0.45;
   background: var(--surface-4);
 }
-.inspector h2 { font-size: 15px; }
-.inspector-block { padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
-.inspector dl { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 7px 10px; margin: 0; font-size: 13px; }
-.inspector dt { color: var(--faint); }
-.inspector dd { margin: 0; min-width: 0; color: var(--text); word-break: break-word; }
+
 .empty-state { padding: 24px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); background: var(--surface-4); }
 .compact-grid, .compact-links { display: grid; gap: 10px; }
 .home-layout { display: grid; gap: 18px; }
@@ -889,7 +884,7 @@ p { color: var(--muted); line-height: 1.6; }
 
 @media (max-width: 1180px) {
   .app-shell { grid-template-columns: 240px minmax(0, 1fr); }
-  .inspector { display: none; }
+
   .grid.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .auth-layout { padding: 24px; }
   .auth-landing {
