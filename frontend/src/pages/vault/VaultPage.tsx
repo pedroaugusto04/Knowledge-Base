@@ -106,7 +106,12 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, setSelec
               {visibleTags.length ? <Tags items={visibleTags} /> : null}
             </header>
             <NoteAttachments attachments={noteQuery.data.attachments} />
-            <MarkdownView markdown={readerMarkdown(noteQuery.data.markdown, noteQuery.data.title, noteQuery.data.summary)} />
+            <NoteBody
+              markdown={noteQuery.data.markdown}
+              rawText={noteQuery.data.editor?.rawText || ''}
+              summary={noteQuery.data.summary}
+              title={noteQuery.data.title}
+            />
           </>
         ) : (
           <EmptyState>{selectedProjectDetails ? `Abra uma nota para iniciar a leitura detalhada.` : 'Selecione um projeto e abra uma nota para iniciar a leitura detalhada.'}</EmptyState>
@@ -162,7 +167,32 @@ function lastNavigationNote(notes: NoteSummary[] | undefined): NavigationNote | 
   return toNavigationNote(notes?.at(-1));
 }
 
-function readerMarkdown(markdown: string, title: string, summary: string) {
+function NoteBody({ markdown, rawText, summary, title }: { markdown: string; rawText: string; summary: string; title: string }) {
+  const extraMarkdown = readerExtraSections(markdown, title);
+  const hasExtra = Boolean(extraMarkdown);
+  const hasSummary = Boolean(summary) && normalizeReaderText(summary) !== normalizeReaderText(rawText);
+  const showLabel = hasExtra || hasSummary;
+
+  return (
+    <div className="note-body">
+      {rawText ? (
+        <section className="note-body-section">
+          {showLabel ? <h2 className="note-body-label">Texto original</h2> : null}
+          <MarkdownView markdown={rawText} />
+        </section>
+      ) : null}
+      {hasSummary ? (
+        <section className="note-body-section note-ai-summary">
+          <h2 className="note-body-label">Resumo por IA</h2>
+          <MarkdownView markdown={summary} />
+        </section>
+      ) : null}
+      {extraMarkdown ? <MarkdownView markdown={extraMarkdown} /> : null}
+    </div>
+  );
+}
+
+function readerExtraSections(markdown: string, title: string) {
   const withoutFrontmatter = markdown.replace(/\r\n/g, '\n').replace(/^---\n[\s\S]*?\n---\n?/, '');
   const lines = withoutFrontmatter.split('\n');
   const sections: string[][] = [];
@@ -178,20 +208,21 @@ function readerMarkdown(markdown: string, title: string, summary: string) {
   if (current.length) sections.push(current);
 
   return sections
-    .map((section, index) => cleanReaderSection(section, { isFirst: index === 0, title, summary }))
+    .map((section, index) => cleanExtraSection(section, { isFirst: index === 0, title }))
     .flat()
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
-function cleanReaderSection(section: string[], { isFirst, title, summary }: { isFirst: boolean; title: string; summary: string }) {
+function cleanExtraSection(section: string[], { isFirst, title }: { isFirst: boolean; title: string }) {
   const heading = section[0]?.startsWith('## ') ? section[0].slice(3).trim() : '';
   const content = heading ? section.slice(1) : section;
   const normalizedHeading = normalizeReaderText(heading);
   const meaningfulContent = content.filter((line) => line.trim());
 
-  if (normalizedHeading === 'resumo' && sameText(meaningfulContent.join('\n'), summary)) return [];
+  if (normalizedHeading === 'texto original') return [];
+  if (normalizedHeading === 'resumo') return [];
   if (normalizedHeading === 'impacto' && sameText(meaningfulContent.join('\n'), 'No impact registered.')) return [];
   if (normalizedHeading === 'riscos' && listHasOnlyNone(meaningfulContent)) return [];
   if (normalizedHeading === 'proximos passos' && listHasOnlyNone(meaningfulContent)) return [];
@@ -199,7 +230,6 @@ function cleanReaderSection(section: string[], { isFirst, title, summary }: { is
   const cleanedContent = content.filter((line) => !line.startsWith('Projeto: [['));
   const withoutDuplicateTitle = isFirst ? dropDuplicateTitle(cleanedContent, title) : cleanedContent;
   if (!withoutDuplicateTitle.some((line) => line.trim())) return [];
-  if (normalizedHeading === 'texto original') return withoutDuplicateTitle;
 
   return heading ? [`## ${heading}`, ...withoutDuplicateTitle] : withoutDuplicateTitle;
 }
