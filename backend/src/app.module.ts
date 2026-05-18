@@ -4,7 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthService } from './application/auth.js';
 import { IntegrationConnectionService } from './application/integration-connections.js';
 import { IntegrationCredentialService } from './application/credentials.js';
-import { ConversationAgentGateway } from './application/ports/conversation-agent.gateway.js';
+import { ConversationAgentGateway } from './application/ports/conversation-agent.gateway.js'; 
 import { GithubIntegrationGateway } from './application/ports/github-integration.port.js';
 import { ReminderDeliveryGateway } from './application/ports/reminder-delivery.gateway.js';
 import { ReviewAnalysisGateway } from './application/ports/review-analysis.port.js';
