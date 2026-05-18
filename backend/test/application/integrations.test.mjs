@@ -29,7 +29,7 @@ const baseWorkspaces = [
   {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '120363@g.us',
+    whatsappChatJid: '120363@g.us',
     telegramChatId: '123',
     githubRepos: ['acme/repo'],
     projectSlugs: ['n8n-automations'],

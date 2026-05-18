@@ -99,7 +99,7 @@ test('create note dto normalizes project, tags and keeps reminder date as transp
 test('agent conversation dto accepts valid payloads', () => {
   const parsed = agentConversationBodySchema.parse({
     senderId: 'sender-1',
-    groupId: 'group-1',
+    chatId: 'group-1',
     messageText: 'deploy pronto',
   });
 

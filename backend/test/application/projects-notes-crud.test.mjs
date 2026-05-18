@@ -51,7 +51,7 @@ async function seedProject(repositories, userId) {
   await repositories.contentRepository.upsertWorkspace(userId, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     githubRepos: ['acme/api'],
     projectSlugs: ['inbox', 'platform'],

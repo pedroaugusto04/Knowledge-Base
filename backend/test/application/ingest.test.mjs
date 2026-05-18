@@ -60,7 +60,7 @@ test('ingest persists one event note with derived reminder, attachment and works
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     githubRepos: [],
     projectSlugs: ['inbox'],
@@ -118,7 +118,7 @@ test('manual note creation uses ingest and derives optional reminder from the no
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     githubRepos: [],
     projectSlugs: ['inbox', 'acme-api'],

@@ -10,7 +10,7 @@ export const conversationMediaSchema = z.object({
 export const conversationInputSchema = z.object({
   messageText: z.string().default(''),
   senderId: z.string().min(1),
-  groupId: z.string().min(1),
+  chatId: z.string().min(1),
   messageId: z.string().default(''),
   hasMedia: z.boolean().default(false),
   media: conversationMediaSchema.default({}),

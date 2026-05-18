@@ -4,5 +4,5 @@ export type WhatsappSendTextResult = {
 };
 
 export abstract class WhatsappReplySender {
-  abstract sendText(input: { groupJid: string; text: string }): Promise<WhatsappSendTextResult>;
+  abstract sendText(input: { chatJid: string; text: string }): Promise<WhatsappSendTextResult>;
 }

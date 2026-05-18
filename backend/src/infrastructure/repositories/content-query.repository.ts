@@ -72,7 +72,7 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
 
   async listDueRemindersByChannel(channel: ReminderDeliveryChannel, now: string) {
     const reminderTimeZone = readEnvironment().reminderTimeZone;
-    const recipientField = channel === ReminderDeliveryChannel.Telegram ? 'w.telegram_chat_id' : 'w.whatsapp_group_jid';
+    const recipientField = channel === ReminderDeliveryChannel.Telegram ? 'w.telegram_chat_id' : 'w.whatsapp_chat_jid';
     const result = await this.database.getPool().query(
       `select n.user_id, n.workspace_slug, n.id as reminder_id, n.title, n.project_slug, n.path, n.status, n.summary, n.metadata, ${recipientField} as recipient_id
        from kb_notes n

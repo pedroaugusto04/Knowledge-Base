@@ -59,7 +59,7 @@ export class HandleWhatsappWebhookUseCase {
       if (!this.connections) {
         return this.processed(context, { ok: true, processed: false, ignored: 'connection_service_unavailable' });
       }
-      const result = await this.connections.completeWhatsappFromWebhook({ code: command.code, groupJid: command.externalId });
+      const result = await this.connections.completeWhatsappFromWebhook({ code: command.code, chatJid: command.externalId });
       await this.recordWebhookEvent(context, {
         eventType: 'connection',
         status: WebhookEventStatus.Processed,
@@ -141,7 +141,7 @@ export class HandleWhatsappWebhookUseCase {
     this.logger?.info('whatsapp.conversation.result', {
       externalId: context.externalIdentity.externalId,
       senderId: enrichedInput.senderId,
-      groupId: enrichedInput.groupId,
+      chatId: enrichedInput.chatId,
       messageId: enrichedInput.messageId,
       messageText: enrichedInput.messageText,
       action: conversationResult.action,
@@ -149,11 +149,11 @@ export class HandleWhatsappWebhookUseCase {
     });
     const shouldReply = conversationResult.action !== 'cancel';
     const sendResult = shouldReply
-      ? await this.sendReply(enrichedInput.groupId, replyText)
+      ? await this.sendReply(enrichedInput.chatId, replyText)
       : { ok: false as const, error: 'reply_not_needed' };
     this.logger?.info('whatsapp.reply.dispatch', {
       externalId: context.externalIdentity.externalId,
-      groupId: enrichedInput.groupId,
+      chatId: enrichedInput.chatId,
       shouldReply,
       replyText: shouldReply ? replyText : '',
       sendOk: sendResult.ok,
@@ -198,7 +198,7 @@ export class HandleWhatsappWebhookUseCase {
       result.matches.length ? '' : '',
       ...result.matches.slice(0, 4).map((item) => `Fonte: ${item.path}`),
     ].filter(Boolean).join('\n');
-    const sendResult = await this.sendReply(input.groupId, replyText);
+    const sendResult = await this.sendReply(input.chatId, replyText);
     return this.processed(context, {
       ok: true,
       processed: true,
@@ -211,9 +211,9 @@ export class HandleWhatsappWebhookUseCase {
     }, userId);
   }
 
-  private async sendReply(groupJid: string, text: string) {
+  private async sendReply(chatJid: string, text: string) {
     if (!this.whatsappReplySender) return { ok: false as const, error: 'whatsapp_reply_sender_not_configured' };
-    return this.whatsappReplySender.sendText({ groupJid, text });
+    return this.whatsappReplySender.sendText({ chatJid, text });
   }
 
   private async claimMessageIdempotency(
@@ -256,7 +256,7 @@ export class HandleWhatsappWebhookUseCase {
     if (!result.ok) {
       this.logger?.warn('whatsapp.media.download_failed', {
         externalId: context.externalIdentity.externalId,
-        groupId: input.groupId,
+        chatId: input.chatId,
         messageId: input.messageId,
         error: result.error,
       });

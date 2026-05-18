@@ -65,7 +65,7 @@ export class ProcessAgentConversationUseCase {
     const normalizedWorkspaceSlug = slugify(workspaceSlug) || 'default';
     await this.assertAgentEnabled(userId, normalizedWorkspaceSlug);
 
-    const key = `agent:${input.groupId}:${input.senderId}`;
+    const key = `agent:${input.chatId}:${input.senderId}`;
     const state = await this.loadState(userId, normalizedWorkspaceSlug, key);
     const messageText = String(input.messageText || '').trim();
     this.logger?.info('conversation.agent.turn.start', {

@@ -32,7 +32,7 @@ export function extractWhatsappExternalId(body: Record<string, unknown>): string
 export type ParsedWhatsappEvolutionMessage =
   | {
       kind: 'message';
-      groupId: string;
+      chatId: string;
       senderId: string;
       messageId: string;
       messageText: string;
@@ -172,8 +172,8 @@ export function parseWhatsappEvolutionMessage(body: Record<string, unknown>): Pa
     || rawMessage;
   if (!key || !message) return { kind: 'ignored', reason: 'missing_payload' };
 
-  const groupId = stringValue(key.remoteJid || payload.remoteJid || payload.chatId || body.remoteJid || body.chatId);
-  const senderId = stringValue(key.participant || payload.participant || body.participant || groupId);
+  const chatId = stringValue(key.remoteJid || payload.remoteJid || payload.chatId || body.remoteJid || body.chatId);
+  const senderId = stringValue(key.participant || payload.participant || body.participant || chatId);
   const messageId = stringValue(key.id || payload.messageId || body.messageId);
   const text = stringValue(
     message.conversation ||
@@ -189,13 +189,13 @@ export function parseWhatsappEvolutionMessage(body: Record<string, unknown>): Pa
 
   return {
     kind: 'message',
-    groupId,
+    chatId,
     senderId,
     messageId,
     messageText: text,
     hasMedia: Boolean(media.fileName) || hasWhatsappMedia(message),
     media,
     fromMe: key.fromMe === true || stringValue(key.fromMe).toLowerCase() === 'true',
-    isGroup: groupId.endsWith('@g.us'),
+    isGroup: chatId.endsWith('@g.us'),
   };
 }

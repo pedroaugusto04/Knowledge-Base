@@ -37,7 +37,7 @@ export function buildIntegrationStatuses(input: {
   const workspace = workspaces[0];
   const workspaceSlug = workspace?.workspaceSlug || 'default';
   const repos = workspaceRepos(workspace, projects);
-  const workspaceWhatsappGroup = Boolean(workspace?.whatsappGroupJid);
+  const workspaceWhatsappChat = Boolean(workspace?.whatsappChatJid);
   const workspaceTelegramChat = Boolean(workspace?.telegramChatId);
 
   const githubEnv = {
@@ -75,7 +75,7 @@ export function buildIntegrationStatuses(input: {
     EVOLUTION_API_KEY: secretConfigured(environment.evolutionApiKey),
     EVOLUTION_API_PUBLIC_URL: Boolean(environment.evolutionApiPublicUrl),
   };
-  const whatsappGroup = workspaceWhatsappGroup;
+  const whatsappChat = workspaceWhatsappChat;
 
   const telegramEnv = {
     KB_TELEGRAM_BOT_TOKEN: secretConfigured(environment.telegramBotToken),
@@ -141,8 +141,8 @@ export function buildIntegrationStatuses(input: {
       {
         id: IntegrationProvider.Whatsapp,
         name: 'WhatsApp',
-        description: 'Transporte Evolution API global com grupo vinculado por workspace para capturar notas do usuario correto.',
-        status: statusFromFlags([evolutionTransportConfigured, whatsappGroup]),
+        description: 'Transporte Evolution API global com chat vinculado por workspace para capturar notas do usuario correto.',
+        status: statusFromFlags([evolutionTransportConfigured, whatsappChat]),
         requiredEnv: Object.keys(whatsappEnv),
         configuredEnv: configuredEnv(whatsappEnv),
         missingEnv: missingEnv(whatsappEnv),
@@ -151,12 +151,12 @@ export function buildIntegrationStatuses(input: {
         ].filter(Boolean) as IntegrationLink[],
         checklist: [
           'Configurar a Evolution API global do servidor.',
-          'Conectar o grupo do workspace pelo fluxo guiado para persistir o JID.',
+          'Conectar a conversa do workspace pelo fluxo guiado para persistir o JID.',
           'Configurar o webhook do provedor para o path de WhatsApp.',
         ],
         warnings: [
           !evolutionTransportConfigured ? 'Evolution API incompleta: faltam URL, instance name, API key ou public URL.' : '',
-          !whatsappGroup ? 'Nenhum grupo WhatsApp conectado para este workspace.' : '',
+          !whatsappChat ? 'Nenhum chat WhatsApp conectado para este workspace.' : '',
         ].filter(Boolean),
       },
       {

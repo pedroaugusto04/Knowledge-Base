@@ -118,7 +118,7 @@ test('new users start with an empty scoped dashboard and cannot see another user
   await repositories.contentRepository.upsertWorkspace(userA.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     githubRepos: [],
     projectSlugs: ['inbox'],
@@ -191,7 +191,7 @@ test('github push resolves project by explicit repository mapping', async (t) =>
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     githubRepos: ['acme/api'],
     projectSlugs: ['inbox', 'platform'],

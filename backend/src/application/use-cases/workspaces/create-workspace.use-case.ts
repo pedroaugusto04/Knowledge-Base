@@ -22,7 +22,7 @@ export class CreateWorkspaceUseCase {
     const workspace = await this.contentRepository.upsertWorkspace(userId, {
       workspaceSlug,
       displayName: input.displayName,
-      whatsappGroupJid: '',
+      whatsappChatJid: '',
       telegramChatId: '',
       createdAt: now,
       updatedAt: now,

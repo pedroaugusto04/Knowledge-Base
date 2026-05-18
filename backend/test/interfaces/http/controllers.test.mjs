@@ -82,8 +82,8 @@ test('operations controller normalizes reminder dispatch and mark-sent inputs', 
 
   assert.deepEqual(await controller.ingest({ source: { correlationId: 'corr-1' } }, user), { op: 'ingest', body: { source: { correlationId: 'corr-1' } }, userId: 'user-1' });
   assert.deepEqual(
-    await controller.processAgentConversation({ senderId: 'sender-1', groupId: 'group-1', messageText: 'deploy' }, user, { workspaceSlug: 'default' }),
-    { op: 'agent-conversation', body: { senderId: 'sender-1', groupId: 'group-1', messageText: 'deploy' }, userId: 'user-1' },
+    await controller.processAgentConversation({ senderId: 'sender-1', chatId: 'group-1', messageText: 'deploy' }, user, { workspaceSlug: 'default' }),
+    { op: 'agent-conversation', body: { senderId: 'sender-1', chatId: 'group-1', messageText: 'deploy' }, userId: 'user-1' },
   );
   assert.deepEqual(await controller.remindersDispatch(user, { workspaceSlug: 'default', mode: 'exact' }), { mode: 'exact' });
   assert.deepEqual(await controller.remindersDispatch(user, { workspaceSlug: 'default', mode: 'daily' }), { mode: 'daily' });

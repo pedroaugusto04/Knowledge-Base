@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { extractWhatsappExternalId, parseWhatsappEvolutionMessage } from '../../dist/application/utils/webhook.utils.js';
+import { buildWhatsappWebhookCommand } from '../../dist/application/utils/whatsapp-webhook-command.utils.js';
 
 test('whatsapp parser accepts payload with data array', () => {
   const parsed = parseWhatsappEvolutionMessage({
@@ -22,12 +23,40 @@ test('whatsapp parser accepts payload with data array', () => {
   });
 
   assert.equal(parsed.kind, 'message');
-  assert.equal(parsed.groupId, '120363@g.us');
+  assert.equal(parsed.chatId, '120363@g.us');
   assert.equal(parsed.messageText, 'salve um lembrete para me enviar 17:44 de hoje');
   assert.equal(extractWhatsappExternalId({
     event: 'MESSAGES_UPSERT',
     data: [{ key: { remoteJid: '120363@g.us' } }],
   }), '120363@g.us');
+});
+
+test('whatsapp command parser accepts private chats as external identities', () => {
+  const body = {
+    event: 'MESSAGES_UPSERT',
+    data: {
+      key: {
+        remoteJid: '5511999999999@s.whatsapp.net',
+        id: 'private-msg-1',
+        fromMe: false,
+      },
+      message: {
+        conversation: 'corrigi timeout no webhook',
+      },
+    },
+  };
+
+  const parsed = parseWhatsappEvolutionMessage(body);
+  assert.equal(parsed.kind, 'message');
+  assert.equal(parsed.chatId, '5511999999999@s.whatsapp.net');
+  assert.equal(parsed.senderId, '5511999999999@s.whatsapp.net');
+  assert.equal(parsed.isGroup, false);
+  assert.equal(extractWhatsappExternalId(body), '5511999999999@s.whatsapp.net');
+
+  const command = buildWhatsappWebhookCommand(body);
+  assert.equal(command.kind, 'conversation');
+  assert.equal(command.externalId, '5511999999999@s.whatsapp.net');
+  assert.equal(command.input.chatId, '5511999999999@s.whatsapp.net');
 });
 
 test('whatsapp parser unwraps ephemeral and view-once messages', () => {

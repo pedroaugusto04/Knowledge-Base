@@ -89,7 +89,7 @@ export function workspaceFromRow(row: Row): WorkspaceRecord {
   return {
     workspaceSlug: String(row.workspace_slug),
     displayName: String(row.display_name || row.workspace_slug),
-    whatsappGroupJid: String(row.whatsapp_group_jid || ''),
+    whatsappChatJid: String(row.whatsapp_chat_jid || ''),
     telegramChatId: String(row.telegram_chat_id || ''),
     createdAt: nowIso(row.created_at),
     updatedAt: nowIso(row.updated_at),

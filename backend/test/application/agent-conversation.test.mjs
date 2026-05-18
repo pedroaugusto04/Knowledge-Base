@@ -27,7 +27,7 @@ async function createFixture(t, turns) {
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     createdAt: '2026-05-06T00:00:00.000Z',
     updatedAt: '2026-05-06T00:00:00.000Z',
@@ -85,7 +85,7 @@ function input(messageText) {
   return {
     messageText,
     senderId: '5511999999999@s.whatsapp.net',
-    groupId: 'group@g.us',
+    chatId: 'group@g.us',
     messageId: `msg-${Math.random()}`,
     hasMedia: false,
     media: {},

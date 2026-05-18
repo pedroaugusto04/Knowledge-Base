@@ -87,7 +87,7 @@ async function fixture(t) {
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     createdAt: '2026-04-27T00:00:00.000Z',
     updatedAt: '2026-04-27T00:00:00.000Z',
@@ -276,7 +276,7 @@ test('github connection normalizes app settings URLs to the installation flow', 
   assert.ok(url.searchParams.get('state'));
 });
 
-test('whatsapp connection command binds the group even when authored by the connected number and normal unknown messages stay rejected', async (t) => {
+test('whatsapp connection command binds the chat even when authored by the connected number and normal unknown messages stay rejected', async (t) => {
   const { repositories, user, connections, whatsapp } = await fixture(t);
   const setup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'whatsapp' });
 
@@ -291,7 +291,7 @@ test('whatsapp connection command binds the group even when authored by the conn
   const identity = await repositories.externalIdentityRepository.findExternalIdentity('whatsapp', 'jid', '120363@g.us');
   assert.equal(identity.userId, user.id);
   const workspaces = await repositories.contentRepository.listWorkspaces(user.id);
-  assert.equal(workspaces[0].whatsappGroupJid, '120363@g.us');
+  assert.equal(workspaces[0].whatsappChatJid, '120363@g.us');
 
   await assert.rejects(
     () => whatsapp.execute({
@@ -299,6 +299,83 @@ test('whatsapp connection command binds the group even when authored by the conn
       body: { data: { key: { remoteJid: 'unknown@g.us' }, message: { conversation: 'mensagem normal' } } },
     }),
     /identity_not_found/,
+  );
+});
+
+test('whatsapp connection command binds a private chat jid to the workspace', async (t) => {
+  const { repositories, user, connections, whatsapp } = await fixture(t);
+  const setup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'whatsapp' });
+
+  assert.deepEqual(setup.steps, [
+    'Envie a mensagem no chat do WhatsApp.',
+    'Mantenha esta janela aberta ate a conversa aparecer como conectada.',
+  ]);
+
+  const result = await whatsapp.execute(whatsappInput(setup.verificationCode, {
+    data: {
+      key: { remoteJid: '5511999999999@s.whatsapp.net', id: 'private-connect-msg', fromMe: false },
+      message: { conversation: `/kb conectar ${setup.verificationCode}` },
+    },
+  }));
+  assert.equal(result.resolvedUserId, user.id);
+
+  const identity = await repositories.externalIdentityRepository.findExternalIdentity('whatsapp', 'jid', '5511999999999@s.whatsapp.net');
+  assert.equal(identity.userId, user.id);
+  assert.equal(identity.workspaceSlug, 'default');
+  const credential = await repositories.credentialRepository.findCredential(user.id, 'default', 'whatsapp');
+  assert.equal(credential.publicMetadata.label, 'Chat WhatsApp');
+  assert.equal(credential.publicMetadata.connectedAccount, '5511999999999@s.whatsapp.net');
+  const workspaces = await repositories.contentRepository.listWorkspaces(user.id);
+  assert.equal(workspaces[0].whatsappChatJid, '5511999999999@s.whatsapp.net');
+});
+
+test('whatsapp connection rejects an already-bound private chat jid for another workspace or user', async (t) => {
+  const { repositories, user, connections, whatsapp } = await fixture(t);
+  const setup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'whatsapp' });
+  await whatsapp.execute(whatsappInput(setup.verificationCode, {
+    data: {
+      key: { remoteJid: '5511999999999@s.whatsapp.net', id: 'private-connect-owner', fromMe: false },
+      message: { conversation: `/kb conectar ${setup.verificationCode}` },
+    },
+  }));
+
+  await repositories.contentRepository.upsertWorkspace(user.id, {
+    workspaceSlug: 'second',
+    displayName: 'Second',
+    whatsappChatJid: '',
+    telegramChatId: '',
+    createdAt: '2026-04-27T00:00:00.000Z',
+    updatedAt: '2026-04-27T00:00:00.000Z',
+  });
+  const sameUserSetup = await connections.connect({ userId: user.id, workspaceSlug: 'second', provider: 'whatsapp' });
+  await assert.rejects(
+    () => whatsapp.execute(whatsappInput(sameUserSetup.verificationCode, {
+      data: {
+        key: { remoteJid: '5511999999999@s.whatsapp.net', id: 'private-connect-same-user-other-workspace', fromMe: false },
+        message: { conversation: `/kb conectar ${sameUserSetup.verificationCode}` },
+      },
+    })),
+    /external_identity_already_bound/,
+  );
+
+  const otherUser = await repositories.userRepository.createUser({ email: 'other-whatsapp@example.com', displayName: 'Other', passwordHash: 'hash', role: 'user' });
+  await repositories.contentRepository.upsertWorkspace(otherUser.id, {
+    workspaceSlug: 'default',
+    displayName: 'Default',
+    whatsappChatJid: '',
+    telegramChatId: '',
+    createdAt: '2026-04-27T00:00:00.000Z',
+    updatedAt: '2026-04-27T00:00:00.000Z',
+  });
+  const otherUserSetup = await connections.connect({ userId: otherUser.id, workspaceSlug: 'default', provider: 'whatsapp' });
+  await assert.rejects(
+    () => whatsapp.execute(whatsappInput(otherUserSetup.verificationCode, {
+      data: {
+        key: { remoteJid: '5511999999999@s.whatsapp.net', id: 'private-connect-other-user', fromMe: false },
+        message: { conversation: `/kb conectar ${otherUserSetup.verificationCode}` },
+      },
+    })),
+    /external_identity_already_bound/,
   );
 });
 
@@ -391,7 +468,7 @@ test('guided integrations reject missing workspace and github callback keeps bro
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'product-team',
     displayName: 'Product Team',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     createdAt: '2026-04-27T00:00:00.000Z',
     updatedAt: '2026-04-27T00:00:00.000Z',

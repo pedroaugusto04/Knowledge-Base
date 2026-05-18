@@ -50,7 +50,7 @@ test('postgres repositories share state across content query and workflow ports'
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '120363@g.us',
+    whatsappChatJid: '120363@g.us',
     telegramChatId: 'telegram-chat-1',
     createdAt: '2026-04-28T00:00:00.000Z',
     updatedAt: '2026-04-28T00:00:00.000Z',

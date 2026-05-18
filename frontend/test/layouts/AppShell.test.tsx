@@ -107,12 +107,12 @@ function mockFetch() {
           {
             provider: 'whatsapp',
             name: 'WhatsApp',
-            description: 'Grupo autorizado para captura e conversa.',
+            description: 'Chat autorizado para captura e conversa.',
             status: 'missing',
             workspaceSlug: 'default',
             publicMetadata: {},
             primaryAction: { type: 'connect', label: 'Conectar WhatsApp' },
-            steps: ['Inicie a conexao.', 'Envie o codigo no grupo do WhatsApp.'],
+            steps: ['Inicie a conexao.', 'Envie o codigo no chat do WhatsApp.'],
             lastError: null,
             connectedAccount: null,
             updatedAt: null,
@@ -177,7 +177,7 @@ function mockFetch() {
         session: { id: '11111111-1111-4111-8111-111111111111', provider: 'whatsapp', status: 'pending', workspaceSlug: 'default', expiresAt: '2026-04-27T10:10:00.000Z', consumedAt: null },
         verificationCode: 'ABC123',
         instruction: '/kb conectar ABC123',
-        steps: ['Envie a mensagem no grupo.'],
+        steps: ['Envie a mensagem no chat.'],
       });
     }
     if (url === '/api/integrations/whatsapp/sessions/11111111-1111-4111-8111-111111111111') {

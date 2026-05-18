@@ -37,7 +37,7 @@ export function buildConversationIngestPayload(payload: ConversationPayloadInput
       channel: payload.sourceChannel || SourceChannel.Whatsapp,
       system: payload.sourceSystem || 'evolution-api',
       actor: payload.input.senderId,
-      conversationId: payload.input.groupId,
+      conversationId: payload.input.chatId,
       correlationId: `${payload.correlationPrefix}:${payload.input.messageId || Date.now().toString()}`,
     },
     event: {

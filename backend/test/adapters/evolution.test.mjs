@@ -18,7 +18,7 @@ test('evolution whatsapp sender posts plain text without bot prefix', async () =
 
   try {
     const sender = new EvolutionWhatsappReplySender();
-    const result = await sender.sendText({ groupJid: '120363@g.us', text: 'Resposta final' });
+    const result = await sender.sendText({ chatJid: '120363@g.us', text: 'Resposta final' });
 
     assert.equal(result.ok, true);
     assert.equal(calls.length, 1);
@@ -37,7 +37,7 @@ test('evolution whatsapp sender posts plain text without bot prefix', async () =
 
 test('evolution reminder delivery gateway maps unified reminder payload to whatsapp sender', async () => {
   const gateway = new EvolutionReminderDeliveryGateway({
-    sendText: async (input) => ({ ok: input.groupJid === '120363@g.us', error: input.groupJid ? undefined : 'missing_group' }),
+    sendText: async (input) => ({ ok: input.chatJid === '120363@g.us', error: input.chatJid ? undefined : 'missing_chat' }),
   });
 
   const result = await gateway.sendText({

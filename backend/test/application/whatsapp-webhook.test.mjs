@@ -87,14 +87,15 @@ function configureEnv() {
   process.env.KB_CONVERSATION_AI_PROVIDER = 'none';
 }
 
-async function fixture(t, sender = new CapturingWhatsappSender(), mediaDownloader) {
+async function fixture(t, sender = new CapturingWhatsappSender(), mediaDownloader, options = {}) {
   configureEnv();
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
+  const whatsappJid = options.whatsappJid || '120363@g.us';
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '120363@g.us',
+    whatsappChatJid: whatsappJid,
     telegramChatId: '',
     githubRepos: [],
     projectSlugs: ['inbox', 'n8n-automations'],
@@ -114,7 +115,7 @@ async function fixture(t, sender = new CapturingWhatsappSender(), mediaDownloade
     workspaceSlug: 'default',
     provider: 'whatsapp',
     identityType: 'jid',
-    externalId: '120363@g.us',
+    externalId: whatsappJid,
     publicMetadata: {},
   });
   await repositories.credentialRepository.upsertCredential({
@@ -151,14 +152,14 @@ async function fixture(t, sender = new CapturingWhatsappSender(), mediaDownloade
   return { repositories, whatsapp, sender, user, mediaDownloader };
 }
 
-function evolutionInput(message, overrides = {}) {
+function evolutionInput(message, overrides = {}, remoteJid = '120363@g.us') {
   return {
     headers: { apikey: 'provider-key' },
     body: {
       event: 'MESSAGES_UPSERT',
       data: {
         key: {
-          remoteJid: '120363@g.us',
+          remoteJid,
           participant: '5511999999999@s.whatsapp.net',
           id: `msg-${Math.random()}`,
           fromMe: false,
@@ -170,7 +171,44 @@ function evolutionInput(message, overrides = {}) {
   };
 }
 
-test('linked whatsapp group processes free text and sends the first conversation reply', async (t) => {
+async function linkWhatsappWorkspace(repositories, userId, workspaceSlug, whatsappJid) {
+  await repositories.contentRepository.upsertWorkspace(userId, {
+    workspaceSlug,
+    displayName: workspaceSlug === 'default' ? 'Default' : workspaceSlug,
+    whatsappChatJid: whatsappJid,
+    telegramChatId: '',
+    githubRepos: [],
+    projectSlugs: ['inbox', 'n8n-automations'],
+    createdAt: '2026-04-27T00:00:00.000Z',
+    updatedAt: '2026-04-27T00:00:00.000Z',
+  });
+  await repositories.contentRepository.upsertProject(userId, {
+    projectSlug: 'n8n-automations',
+    displayName: 'N8N Automations',
+    repositories: [],
+    workspaceSlug,
+    defaultTags: [],
+    enabled: true,
+  });
+  await repositories.externalIdentityRepository.upsertExternalIdentity({
+    userId,
+    workspaceSlug,
+    provider: 'whatsapp',
+    identityType: 'jid',
+    externalId: whatsappJid,
+    publicMetadata: {},
+  });
+  await repositories.credentialRepository.upsertCredential({
+    userId,
+    workspaceSlug,
+    provider: 'ai-conversation',
+    status: 'connected',
+    encryptedConfig: {},
+    publicMetadata: {},
+  });
+}
+
+test('linked whatsapp chat processes free text and sends the first conversation reply', async (t) => {
   const { whatsapp, sender } = await fixture(t);
 
   const result = await whatsapp.execute(evolutionInput('corrigi timeout no webhook'));
@@ -187,11 +225,71 @@ test('linked whatsapp group processes free text and sends the first conversation
   assert.equal(result.reply, undefined);
   assert.equal(result.confirmText, undefined);
   assert.equal(sender.sent.length, 1);
-  assert.equal(sender.sent[0].groupJid, '120363@g.us');
+  assert.equal(sender.sent[0].chatJid, '120363@g.us');
   assert.match(sender.sent[0].text, /Confirme o salvamento da nota/);
 });
 
-test('linked whatsapp group completes conversation and saves note on confirmation', async (t) => {
+test('linked whatsapp private chat processes free text and replies to the private jid', async (t) => {
+  const privateJid = '5511999999999@s.whatsapp.net';
+  const { whatsapp, sender } = await fixture(t, new CapturingWhatsappSender(), undefined, { whatsappJid: privateJid });
+
+  const result = await whatsapp.execute(evolutionInput('corrigi timeout no webhook', {
+    data: {
+      key: { remoteJid: privateJid, id: 'private-message', fromMe: false },
+      message: { conversation: 'corrigi timeout no webhook' },
+    },
+  }));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.processed, true);
+  assert.equal(result.replySent, true);
+  assert.equal(sender.sent.length, 1);
+  assert.equal(sender.sent[0].chatJid, privateJid);
+  assert.match(sender.sent[0].text, /Confirme o salvamento da nota/);
+});
+
+test('linked whatsapp private chats keep users and workspaces isolated', async (t) => {
+  const privateJidA = '551100000001@s.whatsapp.net';
+  const privateJidB = '551100000002@s.whatsapp.net';
+  const { repositories, whatsapp, sender, user } = await fixture(t, new CapturingWhatsappSender(), undefined, { whatsappJid: privateJidA });
+  const otherUser = await repositories.createTestUser({ email: 'other-private@example.com', displayName: 'Other User' });
+  await linkWhatsappWorkspace(repositories, otherUser.id, 'default', privateJidB);
+
+  await whatsapp.execute(evolutionInput('corrigi timeout no webhook', {
+    data: {
+      key: { remoteJid: privateJidA, id: 'private-a-draft', fromMe: false },
+      message: { conversation: 'corrigi timeout no webhook' },
+    },
+  }));
+  await whatsapp.execute(evolutionInput('corrigi timeout no webhook', {
+    data: {
+      key: { remoteJid: privateJidB, id: 'private-b-draft', fromMe: false },
+      message: { conversation: 'corrigi timeout no webhook' },
+    },
+  }));
+  await whatsapp.execute(evolutionInput('sim', {
+    data: {
+      key: { remoteJid: privateJidA, id: 'private-a-confirm', fromMe: false },
+      message: { conversation: 'sim' },
+    },
+  }));
+  await whatsapp.execute(evolutionInput('sim', {
+    data: {
+      key: { remoteJid: privateJidB, id: 'private-b-confirm', fromMe: false },
+      message: { conversation: 'sim' },
+    },
+  }));
+
+  const ownerNotes = await repositories.contentRepository.listNotes(user.id);
+  const otherNotes = await repositories.contentRepository.listNotes(otherUser.id);
+  assert.equal(ownerNotes.length, 1);
+  assert.equal(ownerNotes[0].workspaceSlug, 'default');
+  assert.equal(otherNotes.length, 1);
+  assert.equal(otherNotes[0].workspaceSlug, 'default');
+  assert.deepEqual(sender.sent.map((item) => item.chatJid), [privateJidA, privateJidB, privateJidA, privateJidB]);
+});
+
+test('linked whatsapp chat completes conversation and saves note on confirmation', async (t) => {
   const { repositories, whatsapp, user } = await fixture(t);
 
   await whatsapp.execute(evolutionInput('corrigi timeout no webhook'));
@@ -230,7 +328,7 @@ test('whatsapp webhook is idempotent for duplicate message deliveries', async (t
   assert.equal(sender.sent.length, 1);
 });
 
-test('linked whatsapp group saves captioned media as a Supabase-backed attachment after confirmation', async (t) => {
+test('linked whatsapp chat saves captioned media as a Supabase-backed attachment after confirmation', async (t) => {
   const { repositories, whatsapp, user } = await fixture(t);
 
   await whatsapp.execute(evolutionInput('', {
@@ -260,7 +358,7 @@ test('linked whatsapp group saves captioned media as a Supabase-backed attachmen
   assert.equal((await repositories.objectStorage.get(attachments[0].storageKey)).toString('utf8'), 'hello image');
 });
 
-test('linked whatsapp group normalizes attachment storage keys for accented filenames', async (t) => {
+test('linked whatsapp chat normalizes attachment storage keys for accented filenames', async (t) => {
   const { repositories, whatsapp, user } = await fixture(t);
 
   await whatsapp.execute(evolutionInput('', {
@@ -381,7 +479,7 @@ test('whatsapp webhook processes self-authored messages without bot prefix', asy
   assert.match(sender.sent[0].text, /Confirme o salvamento da nota/);
 });
 
-test('unknown whatsapp group is still rejected', async (t) => {
+test('unknown whatsapp chat is still rejected', async (t) => {
   const { whatsapp } = await fixture(t);
 
   await assert.rejects(

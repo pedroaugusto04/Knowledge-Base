@@ -47,7 +47,7 @@ export type StoredIntegration = {
 
 const providerLabels: Record<GuidedIntegrationProvider, { name: string; description: string }> = {
   [IntegrationProvider.GithubApp]: { name: 'GitHub App', description: 'Instalacao vinculada ao usuario para reviews de push e selecao de repositorios.' },
-  [IntegrationProvider.Whatsapp]: { name: 'WhatsApp', description: 'Grupo autorizado para captura e conversa pelo transporte gerenciado.' },
+  [IntegrationProvider.Whatsapp]: { name: 'WhatsApp', description: 'Chat autorizado para captura e conversa pelo transporte gerenciado.' },
   [IntegrationProvider.Telegram]: { name: 'Telegram', description: 'Chat vinculado ao bot gerenciado para notificacoes e comandos.' },
   [IntegrationProvider.AiReview]: { name: 'IA de Review', description: 'Analise de pushes com provider e modelo configurados pelo servidor.' },
   [IntegrationProvider.AiConversation]: { name: 'IA de Conversa', description: 'Extracao assistida das mensagens de conversa com configuracao gerenciada.' },
@@ -136,7 +136,7 @@ function externalIdentityProviderForIntegration(provider: GuidedIntegrationProvi
 }
 
 function defaultSteps(provider: GuidedIntegrationProvider): string[] {
-  if (provider === IntegrationProvider.Whatsapp) return ['Inicie a conexao.', 'Envie o codigo no grupo do WhatsApp.'];
+  if (provider === IntegrationProvider.Whatsapp) return ['Inicie a conexao.', 'Envie o codigo no chat do WhatsApp.'];
   if (provider === IntegrationProvider.Telegram) return ['Inicie a conexao.', 'Envie o codigo no chat do Telegram.'];
   if (provider === IntegrationProvider.GithubApp) return ['Instale ou autorize o GitHub App.', 'Selecione os repositorios depois da conexao.'];
   return ['Ative o recurso.', 'A configuracao gerenciada do servidor sera usada automaticamente.'];
@@ -274,7 +274,7 @@ export class IntegrationCredentialService {
     if (!workspace) return;
     await this.contentRepository.upsertWorkspace(userId, {
       ...workspace,
-      whatsappGroupJid: provider === IntegrationProvider.Whatsapp ? '' : workspace.whatsappGroupJid,
+      whatsappChatJid: provider === IntegrationProvider.Whatsapp ? '' : workspace.whatsappChatJid,
       telegramChatId: provider === IntegrationProvider.Telegram ? '' : workspace.telegramChatId,
       updatedAt: new Date().toISOString(),
     });

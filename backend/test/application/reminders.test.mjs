@@ -14,7 +14,7 @@ async function createStoreWithReminder(t) {
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '120363-default@g.us',
+    whatsappChatJid: '120363-default@g.us',
     telegramChatId: 'telegram-chat-1',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -228,7 +228,7 @@ test('global due reminder read model filters reminders by requested channel reci
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '120363-default@g.us',
+    whatsappChatJid: '120363-default@g.us',
     telegramChatId: 'telegram-chat-1',
     createdAt: now,
     updatedAt: now,
@@ -236,7 +236,7 @@ test('global due reminder read model filters reminders by requested channel reci
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'no-chat',
     displayName: 'No Chat',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     createdAt: now,
     updatedAt: now,
@@ -244,7 +244,7 @@ test('global due reminder read model filters reminders by requested channel reci
   await repositories.contentRepository.upsertWorkspace(otherUser.id, {
     workspaceSlug: 'default',
     displayName: 'Other',
-    whatsappGroupJid: '120363-other@g.us',
+    whatsappChatJid: '120363-other@g.us',
     telegramChatId: 'telegram-chat-2',
     createdAt: now,
     updatedAt: now,
@@ -336,7 +336,7 @@ test('daily reminder dispatch ignores resolved and archived reminders even when 
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: 'telegram-chat-1',
     createdAt: '2026-05-05T00:00:00.000Z',
     updatedAt: '2026-05-05T00:00:00.000Z',
@@ -462,7 +462,7 @@ test('default reminder dispatch applies 09:00 fallback when reminder has only da
   await repositories.contentRepository.upsertWorkspace(user.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '120363-default@g.us',
+    whatsappChatJid: '120363-default@g.us',
     telegramChatId: 'telegram-chat-1',
     createdAt: '2026-05-05T00:00:00.000Z',
     updatedAt: '2026-05-05T00:00:00.000Z',

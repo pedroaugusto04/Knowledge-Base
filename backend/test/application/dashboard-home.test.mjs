@@ -147,7 +147,7 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
 test('dashboard home normalizes reminder statuses with the same model used by reminders page', async (t) => {
   const userId = 'user-1';
   const now = '2026-05-08T12:00:00.000Z';
-  const workspaces = [{ workspaceSlug: 'default', displayName: 'Default', whatsappGroupJid: '', telegramChatId: '', createdAt: now, updatedAt: now }];
+  const workspaces = [{ workspaceSlug: 'default', displayName: 'Default', whatsappChatJid: '', telegramChatId: '', createdAt: now, updatedAt: now }];
   const projectList = [{
     projectSlug: 'n8n-automations',
     displayName: 'N8N Automations',

@@ -47,8 +47,8 @@ type CodeBasedConnectionSpec = {
   externalProvider: ExternalIdentityProvider.Whatsapp | ExternalIdentityProvider.Telegram;
   identityType: 'jid' | 'chat_id';
   label: string;
-  externalIdKey: 'groupJid' | 'chatId';
-  workspaceBinding: 'whatsappGroupJid' | 'telegramChatId';
+  externalIdKey: 'chatJid' | 'chatId';
+  workspaceBinding: 'whatsappChatJid' | 'telegramChatId';
 };
 
 function sha256(value: string): string {
@@ -273,17 +273,17 @@ export class IntegrationConnectionService {
     }
   }
 
-  async completeWhatsappFromWebhook(input: { code: string; groupJid: string }) {
+  async completeWhatsappFromWebhook(input: { code: string; chatJid: string }) {
     return this.completeCodeBasedConnection({
       code: input.code,
-      externalId: input.groupJid,
+      externalId: input.chatJid,
       spec: {
         provider: IntegrationProvider.Whatsapp,
         externalProvider: ExternalIdentityProvider.Whatsapp,
         identityType: 'jid',
-        label: 'Grupo WhatsApp',
-        externalIdKey: 'groupJid',
-        workspaceBinding: 'whatsappGroupJid',
+        label: 'Chat WhatsApp',
+        externalIdKey: 'chatJid',
+        workspaceBinding: 'whatsappChatJid',
       },
     });
   }
@@ -327,7 +327,7 @@ export class IntegrationConnectionService {
     await this.content.upsertWorkspace(input.userId, {
       workspaceSlug,
       displayName: workspace.displayName,
-      whatsappGroupJid: workspace.whatsappGroupJid,
+      whatsappChatJid: workspace.whatsappChatJid,
       telegramChatId: workspace.telegramChatId,
       createdAt: workspace.createdAt,
       updatedAt: now,
@@ -393,7 +393,7 @@ export class IntegrationConnectionService {
       workspaceSlug,
       provider: IntegrationProvider.Whatsapp,
       label: 'Conectar WhatsApp',
-      steps: ['Envie a mensagem no grupo do WhatsApp.', 'Mantenha esta janela aberta ate o grupo aparecer como conectado.'],
+      steps: ['Envie a mensagem no chat do WhatsApp.', 'Mantenha esta janela aberta ate a conversa aparecer como conectada.'],
     });
   }
 
@@ -502,7 +502,7 @@ export class IntegrationConnectionService {
     const externalId = normalizeTrimmedValue(input.externalId);
     if (!externalId) throw new UnauthorizedException('missing_external_identity');
     const session = await this.requireCodeSession(input.spec.provider, input.code);
-    await this.assertExternalIdentityAvailable(input.spec.externalProvider, input.spec.identityType, externalId, session.userId);
+    await this.assertExternalIdentityAvailable(input.spec.externalProvider, input.spec.identityType, externalId, session.userId, session.workspaceSlug);
     const credential = await this.upsertConnectedCredential({
       userId: session.userId,
       workspaceSlug: session.workspaceSlug,
@@ -541,9 +541,11 @@ export class IntegrationConnectionService {
     return session;
   }
 
-  private async assertExternalIdentityAvailable(provider: string, identityType: string, externalId: string, userId: string) {
+  private async assertExternalIdentityAvailable(provider: string, identityType: string, externalId: string, userId: string, workspaceSlug?: string) {
     const existing = await this.externalIdentities.findExternalIdentity(provider, identityType, externalId);
-    if (existing && existing.userId !== userId) throw new ConflictException('external_identity_already_bound');
+    if (existing && (existing.userId !== userId || (workspaceSlug && existing.workspaceSlug !== workspaceSlug))) {
+      throw new ConflictException('external_identity_already_bound');
+    }
   }
 
   private async upsertConnectedCredential(input: {
@@ -599,7 +601,7 @@ export class IntegrationConnectionService {
   private async upsertWorkspaceBinding(
     userId: string,
     workspaceSlug: string,
-    field: 'whatsappGroupJid' | 'telegramChatId',
+    field: 'whatsappChatJid' | 'telegramChatId',
     value: string,
   ) {
     const now = new Date().toISOString();

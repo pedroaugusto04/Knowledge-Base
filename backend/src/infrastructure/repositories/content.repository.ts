@@ -77,12 +77,12 @@ export class PostgresContentRepository extends ContentRepository {
 
   async upsertWorkspace(userId: string, input: SaveWorkspaceInput) {
     const result = await this.database.getPool().query(
-      `insert into kb_workspaces (id, user_id, workspace_slug, display_name, whatsapp_group_jid, telegram_chat_id)
+      `insert into kb_workspaces (id, user_id, workspace_slug, display_name, whatsapp_chat_jid, telegram_chat_id)
        values ($1, $2, $3, $4, $5, $6)
        on conflict (user_id, workspace_slug)
        do update set
          display_name = excluded.display_name,
-         whatsapp_group_jid = excluded.whatsapp_group_jid,
+         whatsapp_chat_jid = excluded.whatsapp_chat_jid,
          telegram_chat_id = excluded.telegram_chat_id,
          updated_at = now()
        returning *`,
@@ -91,7 +91,7 @@ export class PostgresContentRepository extends ContentRepository {
         userId,
         input.workspaceSlug,
         input.displayName,
-        input.whatsappGroupJid,
+        input.whatsappChatJid,
         input.telegramChatId,
       ],
     );

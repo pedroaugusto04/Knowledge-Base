@@ -89,7 +89,7 @@ async function fixture(t) {
     await repositories.contentRepository.upsertWorkspace(admin.id, {
       workspaceSlug: 'default',
       displayName: 'Default',
-      whatsappGroupJid: '',
+      whatsappChatJid: '',
       telegramChatId: '',
       githubRepos: [],
       projectSlugs: ['inbox'],
@@ -241,7 +241,7 @@ test('guided credentials are encrypted, never returned, and resolved internally 
     login.user,
     request,
   );
-  const saved = await connections.completeWhatsappFromWebhook({ code: setup.verificationCode, groupJid: '120363@g.us' });
+  const saved = await connections.completeWhatsappFromWebhook({ code: setup.verificationCode, chatJid: '120363@g.us' });
 
   assert.equal(saved.session.status, 'connected');
 
@@ -253,7 +253,7 @@ test('guided credentials are encrypted, never returned, and resolved internally 
     { provider: 'whatsapp' },
     { workspaceSlug: 'default', userId: login.user.id },
   );
-  assert.deepEqual(resolvedByUser.config, { groupJid: '120363@g.us' });
+  assert.deepEqual(resolvedByUser.config, { chatJid: '120363@g.us' });
 
   const resolvedByIdentity = await internalController.resolve(
     { provider: 'whatsapp' },
@@ -271,7 +271,7 @@ test('guided credentials are encrypted, never returned, and resolved internally 
   const revokedIdentity = await repositories.externalIdentityRepository.findExternalIdentity('whatsapp', 'jid', '120363@g.us');
   assert.equal(revokedIdentity, null);
   const revokedWorkspace = await repositories.contentRepository.listWorkspaces(login.user.id);
-  assert.equal(revokedWorkspace[0].whatsappGroupJid, '');
+  assert.equal(revokedWorkspace[0].whatsappChatJid, '');
 });
 
 test('telegram can reconnect after revoke because revoke clears the previous binding state', async (t) => {
@@ -335,7 +335,7 @@ test('guided connection rejects identity hijacking', async (t) => {
     firstLogin.user,
     firstRequest,
   );
-  await first.connections.completeWhatsappFromWebhook({ code: firstSetup.verificationCode, groupJid: '120363@g.us' });
+  await first.connections.completeWhatsappFromWebhook({ code: firstSetup.verificationCode, chatJid: '120363@g.us' });
 
   const secondRepositories = first.repositories;
   const secondAuth = new AuthService(secondRepositories.userRepository, secondRepositories.schemaMigrator);
@@ -366,7 +366,7 @@ test('guided connection rejects identity hijacking', async (t) => {
   await secondRepositories.contentRepository.upsertWorkspace(secondUser.id, {
     workspaceSlug: 'default',
     displayName: 'Default',
-    whatsappGroupJid: '',
+    whatsappChatJid: '',
     telegramChatId: '',
     githubRepos: [],
     projectSlugs: ['inbox'],
@@ -384,7 +384,7 @@ test('guided connection rejects identity hijacking', async (t) => {
   );
 
   await assert.rejects(
-    () => secondConnections.completeWhatsappFromWebhook({ code: secondSetup.verificationCode, groupJid: '120363@g.us' }),
+    () => secondConnections.completeWhatsappFromWebhook({ code: secondSetup.verificationCode, chatJid: '120363@g.us' }),
     /external_identity_already_bound/,
   );
 });

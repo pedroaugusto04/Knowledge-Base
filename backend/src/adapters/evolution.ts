@@ -8,7 +8,7 @@ import { WhatsappReplySender, type WhatsappSendTextResult } from '../application
 
 @Injectable()
 export class EvolutionWhatsappReplySender extends WhatsappReplySender {
-  async sendText(input: { groupJid: string; text: string }): Promise<WhatsappSendTextResult> {
+  async sendText(input: { chatJid: string; text: string }): Promise<WhatsappSendTextResult> {
     const environment = readEnvironment();
     if (!environment.evolutionApiUrl || !environment.evolutionApiKey || !environment.evolutionInstanceName) {
       return { ok: false, error: 'evolution_api_not_configured' };
@@ -25,7 +25,7 @@ export class EvolutionWhatsappReplySender extends WhatsappReplySender {
           apikey: environment.evolutionApiKey,
         },
         body: JSON.stringify({
-          number: input.groupJid,
+          number: input.chatJid,
           text: normalizedText,
         }),
       });
@@ -49,7 +49,7 @@ export class EvolutionReminderDeliveryGateway extends ReminderDeliveryGateway {
     }
 
     return this.whatsappReplySender.sendText({
-      groupJid: input.recipientId,
+      chatJid: input.recipientId,
       text: input.text,
     });
   }
