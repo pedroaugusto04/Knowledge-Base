@@ -44,13 +44,13 @@ describe('NoteRow', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar nota Deploy antigo' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Excluir nota Deploy antigo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit note Deploy antigo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete note Deploy antigo' }));
 
     const resolveButton = screen.getByRole('button', { name: 'Resolver nota Deploy antigo' });
     const archiveButton = screen.getByRole('button', { name: 'Arquivar nota Deploy antigo' });
-    const editButton = screen.getByRole('button', { name: 'Editar nota Deploy antigo' });
-    const deleteButton = screen.getByRole('button', { name: 'Excluir nota Deploy antigo' });
+    const editButton = screen.getByRole('button', { name: 'Edit note Deploy antigo' });
+    const deleteButton = screen.getByRole('button', { name: 'Delete note Deploy antigo' });
 
     expect(screen.getByText('Evento')).toBeInTheDocument();
     expect(screen.getByText('active')).toBeInTheDocument();

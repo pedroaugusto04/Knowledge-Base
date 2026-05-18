@@ -79,13 +79,13 @@ export class ProcessAgentConversationUseCase {
     });
 
     if (!messageText && !input.hasMedia) {
-      return this.reply('ask', 'Envie o texto da nota para eu organizar o projeto e a pasta antes de salvar.', null, state);
+      return this.reply('ask', 'Send the note text so I can organize the project and folder before saving.', null, state);
     }
     if (!messageText && input.hasMedia) {
       const nextState = agentConversationStateSchema.parse({
         ...state,
         media: mediaFromInput(input, state),
-        lastQuestion: 'Recebi a midia. Me diga o que e em qual projeto devo salvar.',
+        lastQuestion: 'I received the media. Tell me what it is and which project I should save it to.',
         lastUserMessage: '',
         lastAgentAction: 'ask',
         updatedAt: nowIso(),
@@ -95,7 +95,7 @@ export class ProcessAgentConversationUseCase {
     }
     if (isCancel(messageText)) {
       await this.conversationStates.clear(userId, normalizedWorkspaceSlug, key);
-      return this.reply('cancel', 'Captura cancelada. Envie uma nova nota quando quiser.', null, emptyAgentConversationState);
+      return this.reply('cancel', 'Capture canceled. Send a new note whenever you want.', null, emptyAgentConversationState);
     }
     if (state.pendingApproval === 'final_confirmation') {
       return this.handleFinalConfirmation(input, userId, normalizedWorkspaceSlug, key, state);
@@ -132,7 +132,7 @@ export class ProcessAgentConversationUseCase {
     });
 
     if (!nextState.draft.rawText) {
-      return this.reply('ask', 'Nao consegui entender a nota ainda. Reenvie a mensagem com mais informações.', null, nextState);
+      return this.reply('ask', 'I could not understand the note yet. Please resend the message with more information.', null, nextState);
     }
     if (!nextState.project.selectedProjectSlug) {
       return this.reply('ask', buildProjectPrompt(decision.replyText, projects), null, nextState);
@@ -148,7 +148,7 @@ export class ProcessAgentConversationUseCase {
       return this.reply('confirm', finalState.lastQuestion, null, finalState);
     }
 
-    return this.reply('ask', decision.replyText || 'Preciso de mais um detalhe antes de salvar.', null, nextState);
+    return this.reply('ask', decision.replyText || 'I need one more detail before saving.', null, nextState);
   }
 
   private async assertAgentEnabled(userId: string, workspaceSlug: string) {
@@ -247,7 +247,7 @@ export class ProcessAgentConversationUseCase {
     });
     if (intent === 'reject' || intent === 'cancel') {
       await this.conversationStates.clear(userId, workspaceSlug, key);
-      return this.reply('cancel', 'Nota descartada. Nenhum registro foi criado.', null, emptyAgentConversationState);
+      return this.reply('cancel', 'Note discarded. No record was created.', null, emptyAgentConversationState);
     }
     if (intent !== 'approve') {
       if (approval.turn) {
@@ -270,7 +270,7 @@ export class ProcessAgentConversationUseCase {
         );
         await this.conversationStates.upsert(userId, workspaceSlug, key, nextState);
         if (!nextState.draft.rawText) {
-          return this.reply('ask', 'Nao consegui entender a nota ainda. Reenvie a mensagem com mais informações.', null, nextState);
+          return this.reply('ask', 'I could not understand the note yet. Please resend the message with more information.', null, nextState);
         }
         if (!nextState.project.selectedProjectSlug) {
           return this.reply('ask', buildProjectPrompt(approval.turn.decision.replyText, approval.turn.projects), null, nextState);
@@ -285,7 +285,7 @@ export class ProcessAgentConversationUseCase {
           await this.conversationStates.upsert(userId, workspaceSlug, key, finalState);
           return this.reply('confirm', finalState.lastQuestion, null, finalState);
         }
-        return this.reply('ask', approval.turn.decision.replyText || 'Preciso de mais um detalhe antes de salvar.', null, nextState);
+        return this.reply('ask', approval.turn.decision.replyText || 'I need one more detail before saving.', null, nextState);
       }
       return this.reply('confirm', buildFinalConfirmationPrompt(state), null, state);
     }
@@ -305,7 +305,7 @@ export class ProcessAgentConversationUseCase {
     });
     return this.reply(
       'submit',
-      'Nota salva com sucesso.',
+      'Note saved successfully.',
       payload,
       emptyAgentConversationState,
       ingestResult,
@@ -460,27 +460,27 @@ function serializeFolderTreeNode(folder: Awaited<ReturnType<typeof buildProjectF
 
 function buildProjectPrompt(replyText: string, projects: ProjectRecord[]) {
   const options = ['inbox', ...projects.map((project) => `${project.projectSlug} (${project.displayName})`)];
-  return `${replyText || 'Qual projeto devo usar para esta nota?'}\n\nProjetos disponiveis: ${options.join(', ')}`;
+  return `${replyText || 'Which project should I use for this note?'}\n\nAvailable projects: ${options.join(', ')}`;
 }
 
 function buildFinalConfirmationPrompt(state: AgentConversationState) {
   const folderText = state.folder.placeInRoot
-    ? 'raiz do projeto'
+    ? 'project root'
     : state.folder.selectedFolderId
-      ? 'pasta existente selecionada'
+      ? 'selected existing folder'
       : state.folder.suggestedFolderPath.length
-        ? `${state.folder.suggestedFolderPath.join(' / ')} (nova, sera criada ao salvar)`
-        : 'raiz do projeto';
+        ? `${state.folder.suggestedFolderPath.join(' / ')} (new, will be created when saved)`
+        : 'project root';
   return [
-    'Confirme o salvamento da nota:',
-    `Texto: ${state.draft.rawText}`,
-    `Projeto: ${state.project.selectedProjectSlug || 'inbox'}`,
-    `Pasta: ${folderText}`,
-    `Tipo: ${state.draft.kind}`,
-    `Lembrete: ${state.draft.reminderDate ? `${state.draft.reminderDate}${state.draft.reminderTime ? ` ${state.draft.reminderTime}` : ''}` : 'sem lembrete'}`,
+    'Confirm note saving:',
+    `Text: ${state.draft.rawText}`,
+    `Project: ${state.project.selectedProjectSlug || 'inbox'}`,
+    `Folder: ${folderText}`,
+    `Type: ${state.draft.kind}`,
+    `Reminder: ${state.draft.reminderDate ? `${state.draft.reminderDate}${state.draft.reminderTime ? ` ${state.draft.reminderTime}` : ''}` : 'no reminder'}`,
     state.draft.tags.length ? `Tags: ${state.draft.tags.join(', ')}` : '',
     '',
-    'Responda "sim" para salvar ou "nao" para descartar.',
+    'Reply "yes" to save or "no" to discard.',
   ].filter(Boolean).join('\n');
 }
 

@@ -66,8 +66,8 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
       : undefined,
   });
   const grouped = (remindersQuery.data?.reminders || []).reduce<Record<string, Reminder[]>>((acc, reminder) => {
-    acc[reminder.reminderDate || 'sem-data'] ||= [];
-    acc[reminder.reminderDate || 'sem-data'].push(reminder);
+    acc[reminder.reminderDate || 'no-date'] ||= [];
+    acc[reminder.reminderDate || 'no-date'].push(reminder);
     return acc;
   }, {});
 
@@ -76,18 +76,18 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
       <PageHead
         title={(
           <div className="page-head-title-row">
-            <h1>Lembretes</h1>
-            <label className="sr-only" htmlFor="reminders-page-status-select">Filtrar por situacao</label>
+            <h1>Reminders</h1>
+            <label className="sr-only" htmlFor="reminders-page-status-select">Filter by status</label>
             <Select
-              ariaLabel="Filtrar por situacao"
+              ariaLabel="Filter by status"
               className="page-head-select"
               id="reminders-page-status-select"
               options={[
-                { value: '', label: 'Todas as situacoes' },
-                { value: 'pending', label: 'Pendentes' },
-                { value: 'sent', label: 'Enviados' },
-                { value: 'resolved', label: 'Resolvidos' },
-                { value: 'archived', label: 'Arquivados' },
+                { value: '', label: 'All statuses' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'sent', label: 'Sent' },
+                { value: 'resolved', label: 'Resolved' },
+                { value: 'archived', label: 'Archived' },
               ]}
               value={status}
               onChange={setStatus}
@@ -99,7 +99,7 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
       <div className="grid">
         {Object.entries(grouped).map(([date, reminders]) => (
           <Panel key={date}>
-            <h2>{date === 'sem-data' ? date : formatUsDate(date)}</h2>
+            <h2>{date === 'no-date' ? 'No date' : formatUsDate(date)}</h2>
             <div className="list">
               {reminders.map((reminder) => (
                 <ReminderRow key={reminder.id} reminder={reminder} dashboard={dashboard} onOpenPath={() => openNote(reminder.id)} />

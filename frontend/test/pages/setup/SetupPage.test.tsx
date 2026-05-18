@@ -81,7 +81,7 @@ describe('SetupPage', () => {
           ok: false,
           error: {
             code: 'workspace_unavailable',
-            message: 'Nao foi possivel criar agora.',
+            message: 'Could not create it right now.',
             details: {},
           },
           requestId: 'req-workspace',
@@ -99,7 +99,7 @@ describe('SetupPage', () => {
     await waitFor(() => expect(screen.getByLabelText('Slug do workspace')).toHaveValue('acme-team'));
     fireEvent.click(screen.getByRole('button', { name: 'Criar workspace' }));
 
-    await waitFor(() => expect(notificationSpies.notifyError).toHaveBeenCalledWith('Nao foi possivel criar agora.'));
+    await waitFor(() => expect(notificationSpies.notifyError).toHaveBeenCalledWith('Could not create it right now.'));
   });
 
   it('emits a success toast after creating a workspace', async () => {
@@ -133,7 +133,7 @@ describe('SetupPage', () => {
     await waitFor(() => expect(screen.getByLabelText('Slug do workspace')).toHaveValue('acme-team'));
     fireEvent.click(screen.getByRole('button', { name: 'Criar workspace' }));
 
-    await waitFor(() => expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Workspace criado com sucesso.'));
+    await waitFor(() => expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Workspace created successfully.'));
     const createWorkspaceCall = fetchMock.mock.calls.find(([input]) => String(input) === '/api/workspaces');
     expect(createWorkspaceCall).toBeDefined();
     const requestInit = createWorkspaceCall?.[1];

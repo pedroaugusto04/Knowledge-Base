@@ -23,7 +23,7 @@ export class GithubRepositoryResolutionService {
       if (input.missingCredentialError === 'not_found') throw new NotFoundException('credential_not_found');
       throw new BadRequestException({
         code: 'github_connection_required',
-        details: { fieldErrors: { repositoryIds: 'Conecte o GitHub antes de vincular repositórios ao projeto.' } },
+        details: { fieldErrors: { repositoryIds: 'Connect GitHub before linking repositories to the project.' } },
       });
     }
 
@@ -59,7 +59,7 @@ export class GithubRepositoryResolutionService {
     if (missingRepositoryId) {
       throw new BadRequestException({
         code: 'invalid_project_repository_selection',
-        details: { fieldErrors: { repositoryIds: 'Selecione apenas repositorios acessiveis no GitHub vinculado.' } },
+        details: { fieldErrors: { repositoryIds: 'Select only repositories accessible through the linked GitHub account.' } },
       });
     }
 

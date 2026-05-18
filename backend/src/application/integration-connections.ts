@@ -380,10 +380,10 @@ export class IntegrationConnectionService {
       session: publicSession(session),
       primaryAction: {
         type: 'external_redirect',
-        label: 'Conectar GitHub',
+        label: 'Connect GitHub',
         url: appendQuery(normalizeGithubAppInstallUrl(environment.githubAppInstallUrl), { state }),
       },
-      steps: ['Instale o GitHub App nos repositorios desejados.', 'Aguarde o retorno para concluir o vinculo.'],
+      steps: ['Install the GitHub App in the desired repositories.', 'Wait for the callback to finish the link.'],
     };
   }
 
@@ -392,8 +392,8 @@ export class IntegrationConnectionService {
       userId,
       workspaceSlug,
       provider: IntegrationProvider.Whatsapp,
-      label: 'Conectar WhatsApp',
-      steps: ['Envie a mensagem no chat do WhatsApp.', 'Mantenha esta janela aberta ate a conversa aparecer como conectada.'],
+      label: 'Connect WhatsApp',
+      steps: ['Send the message in the WhatsApp chat.', 'Keep this window open until the conversation appears as connected.'],
     });
   }
 
@@ -404,8 +404,8 @@ export class IntegrationConnectionService {
       userId,
       workspaceSlug,
       provider: IntegrationProvider.Telegram,
-      label: 'Conectar Telegram',
-      steps: ['Envie a mensagem no chat do Telegram.', 'Mantenha esta janela aberta ate o chat aparecer como conectado.'],
+      label: 'Connect Telegram',
+      steps: ['Send the message in the Telegram chat.', 'Keep this window open until the chat appears as connected.'],
     });
   }
 
@@ -424,7 +424,7 @@ export class IntegrationConnectionService {
       status: CredentialRecordStatus.Connected,
       encryptedConfig: encryptConfig({ enabled: true }, this.environmentProvider),
       publicMetadata: {
-        label: review ? 'IA de Review' : 'IA de Conversa',
+        label: review ? 'Review AI' : 'Conversation AI',
         connectedAccount: runtimeProvider,
       },
     });

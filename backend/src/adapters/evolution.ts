@@ -14,7 +14,7 @@ export class EvolutionWhatsappReplySender extends WhatsappReplySender {
       return { ok: false, error: 'evolution_api_not_configured' };
     }
 
-    const normalizedText = String(input.text || '').trim() || 'Nao consegui montar a resposta. Tente novamente.';
+    const normalizedText = String(input.text || '').trim() || 'I could not build the reply. Please try again.';
     const baseUrl = environment.evolutionApiUrl.replace(/\/+$/, '');
     const url = `${baseUrl}/message/sendText/${encodeURIComponent(environment.evolutionInstanceName)}`;
     try {

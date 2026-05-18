@@ -14,11 +14,11 @@ function githubIntegrationsResponse(status: 'connected' | 'missing' = 'connected
       {
         provider: 'github-app',
         name: 'GitHub App',
-        description: 'Dados de instalacao do GitHub App.',
+        description: 'GitHub App installation data.',
         status,
         workspaceSlug: 'default',
         publicMetadata: {},
-        primaryAction: { type: status === 'connected' ? 'revoke' : 'connect', label: status === 'connected' ? 'Revogar' : 'Conectar GitHub' },
+        primaryAction: { type: status === 'connected' ? 'revoke' : 'connect', label: status === 'connected' ? 'Revoke' : 'Connect GitHub' },
         steps: [],
         lastError: null,
         connectedAccount: status === 'connected' ? 'acme' : null,
@@ -124,7 +124,7 @@ describe('ProjectsPage', () => {
   it('allows selecting another project from the header select', () => {
     const { openProject } = renderProjects();
 
-    fireEvent.click(screen.getByLabelText('Selecionar projeto'));
+    fireEvent.click(screen.getByLabelText('Select project'));
     fireEvent.click(screen.getByRole('option', { name: 'Empty' }));
 
     expect(openProject).toHaveBeenCalledWith('empty');
@@ -133,87 +133,87 @@ describe('ProjectsPage', () => {
   it('closes the new project modal immediately when nothing changed', () => {
     renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
-    const modal = screen.getByRole('dialog', { name: 'Novo projeto' });
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    const modal = screen.getByRole('dialog', { name: 'New project' });
 
-    fireEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(within(modal).getByRole('button', { name: 'Cancel' }));
 
-    expect(screen.queryByRole('dialog', { name: 'Novo projeto' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('dialog', { name: 'Descartar alterações?' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'New project' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Discard changes?' })).not.toBeInTheDocument();
   });
 
   it('asks for confirmation before discarding project changes and closes after confirmation', () => {
     renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
-    const modal = screen.getByRole('dialog', { name: 'Novo projeto' });
-    fireEvent.change(within(modal).getByLabelText('Nome'), { target: { value: 'Billing API' } });
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    const modal = screen.getByRole('dialog', { name: 'New project' });
+    fireEvent.change(within(modal).getByLabelText('Name'), { target: { value: 'Billing API' } });
 
     fireEvent.click(within(modal).getByRole('button', { name: 'Fechar detalhes' }));
 
-    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Fechar sem salvar' }));
+    expect(screen.getByRole('dialog', { name: 'Discard changes?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close without saving' }));
 
-    expect(screen.queryByRole('dialog', { name: 'Novo projeto' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'New project' })).not.toBeInTheDocument();
   });
 
   it('keeps project modal values when discard is canceled', () => {
     renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
-    const modal = screen.getByRole('dialog', { name: 'Novo projeto' });
-    const nameInput = within(modal).getByLabelText('Nome');
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    const modal = screen.getByRole('dialog', { name: 'New project' });
+    const nameInput = within(modal).getByLabelText('Name');
     fireEvent.change(nameInput, { target: { value: 'Billing API' } });
 
     fireEvent.click(screen.getByRole('presentation'));
 
-    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
+    expect(screen.getByRole('dialog', { name: 'Discard changes?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
 
-    expect(screen.getByRole('dialog', { name: 'Novo projeto' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'New project' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Billing API')).toBeInTheDocument();
   });
 
   it('closes the new note modal immediately when nothing changed', () => {
     renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
-    const modal = screen.getByRole('dialog', { name: 'Nova nota' });
+    fireEvent.click(screen.getByRole('button', { name: 'New note' }));
+    const modal = screen.getByRole('dialog', { name: 'New note' });
 
-    fireEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(within(modal).getByRole('button', { name: 'Cancel' }));
 
-    expect(screen.queryByRole('dialog', { name: 'Nova nota' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('dialog', { name: 'Descartar alterações?' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'New note' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Discard changes?' })).not.toBeInTheDocument();
   });
 
   it('asks for confirmation before discarding note changes and closes after confirmation', () => {
     renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
-    const modal = screen.getByRole('dialog', { name: 'Nova nota' });
-    fireEvent.change(within(modal).getByLabelText('Texto'), { target: { value: 'confirmar deploy' } });
+    fireEvent.click(screen.getByRole('button', { name: 'New note' }));
+    const modal = screen.getByRole('dialog', { name: 'New note' });
+    fireEvent.change(within(modal).getByLabelText('Text'), { target: { value: 'confirmar deploy' } });
 
     fireEvent.click(within(modal).getByRole('button', { name: 'Fechar detalhes' }));
 
-    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Fechar sem salvar' }));
+    expect(screen.getByRole('dialog', { name: 'Discard changes?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close without saving' }));
 
-    expect(screen.queryByRole('dialog', { name: 'Nova nota' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'New note' })).not.toBeInTheDocument();
   });
 
   it('keeps note modal values when discard is canceled', () => {
     renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
-    const modal = screen.getByRole('dialog', { name: 'Nova nota' });
-    fireEvent.change(within(modal).getByLabelText('Texto'), { target: { value: 'confirmar deploy' } });
+    fireEvent.click(screen.getByRole('button', { name: 'New note' }));
+    const modal = screen.getByRole('dialog', { name: 'New note' });
+    fireEvent.change(within(modal).getByLabelText('Text'), { target: { value: 'confirmar deploy' } });
 
     fireEvent.click(screen.getByRole('presentation'));
 
-    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
+    expect(screen.getByRole('dialog', { name: 'Discard changes?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
 
-    expect(screen.getByRole('dialog', { name: 'Nova nota' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'New note' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('confirmar deploy')).toBeInTheDocument();
   });
 

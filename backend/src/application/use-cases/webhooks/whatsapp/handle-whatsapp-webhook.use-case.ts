@@ -325,5 +325,5 @@ export class HandleWhatsappWebhookUseCase {
 }
 
 function normalizeReplyText(value: unknown) {
-  return String(value || '').trim() || 'Nao consegui montar a resposta. Tente novamente.';
+  return String(value || '').trim() || 'I could not build the reply. Please try again.';
 }

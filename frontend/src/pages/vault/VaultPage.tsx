@@ -79,20 +79,20 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, setSelec
 
   return (
     <>
-      <PageHead title="Detalhe da Nota" subtitle={selectedProjectDetails?.displayName || ''} />
+      <PageHead title="Note details" subtitle={selectedProjectDetails?.displayName || ''} />
       <article className="note-reader vault-reader">
         {noteQuery.data ? (
           <>
             <header className="note-reader-head">
               <div className="note-reader-top">
                 <h1 className="note-title">{noteQuery.data.title}</h1>
-                <div className="note-reader-actions" aria-label="Navegacao entre notas">
+                <div className="note-reader-actions" aria-label="Navigation between notes">
                   <QuickNoteStatusActions note={noteQuery.data} />
                   <button className="icon-button" disabled={!previousNote} type="button" onClick={() => previousNote && openNote(previousNote.id)}>
-                    Anterior
+                    Previous
                   </button>
                   <button className="icon-button" disabled={!nextNote} type="button" onClick={() => nextNote && openNote(nextNote.id)}>
-                    Próxima
+                    Next
                   </button>
                 </div>
               </div>
@@ -114,7 +114,7 @@ export function VaultPage({ dashboard, selectedProject, selectedNoteId, setSelec
             />
           </>
         ) : (
-          <EmptyState>{selectedProjectDetails ? `Abra uma nota para iniciar a leitura detalhada.` : 'Selecione um projeto e abra uma nota para iniciar a leitura detalhada.'}</EmptyState>
+          <EmptyState>{selectedProjectDetails ? 'Open a note to start reading details.' : 'Select a project and open a note to start reading details.'}</EmptyState>
         )}
       </article>
     </>
@@ -128,7 +128,7 @@ function NoteAttachments({ attachments }: { attachments?: NoteAttachment[] }) {
   const files = attachments.filter((attachment) => !attachment.mimeType.startsWith('image/'));
 
   return (
-    <section className="note-attachments" aria-label="Anexos">
+    <section className="note-attachments" aria-label="Attachments">
       {images.length ? (
         <div className="note-attachment-images">
           {images.map((attachment) => (
@@ -177,13 +177,13 @@ function NoteBody({ markdown, rawText, summary, title }: { markdown: string; raw
     <div className="note-body">
       {rawText ? (
         <section className="note-body-section">
-          {showLabel ? <h2 className="note-body-label">Texto original</h2> : null}
+          {showLabel ? <h2 className="note-body-label">Original text</h2> : null}
           <MarkdownView markdown={rawText} />
         </section>
       ) : null}
       {hasSummary ? (
         <section className="note-body-section note-ai-summary">
-          <h2 className="note-body-label">Resumo por IA</h2>
+          <h2 className="note-body-label">AI summary</h2>
           <MarkdownView markdown={summary} />
         </section>
       ) : null}
@@ -221,13 +221,13 @@ function cleanExtraSection(section: string[], { isFirst, title }: { isFirst: boo
   const normalizedHeading = normalizeReaderText(heading);
   const meaningfulContent = content.filter((line) => line.trim());
 
-  if (normalizedHeading === 'texto original') return [];
-  if (normalizedHeading === 'resumo') return [];
-  if (normalizedHeading === 'impacto' && sameText(meaningfulContent.join('\n'), 'No impact registered.')) return [];
-  if (normalizedHeading === 'riscos' && listHasOnlyNone(meaningfulContent)) return [];
-  if (normalizedHeading === 'proximos passos' && listHasOnlyNone(meaningfulContent)) return [];
+  if (normalizedHeading === 'texto original' || normalizedHeading === 'original text') return [];
+  if (normalizedHeading === 'resumo' || normalizedHeading === 'summary') return [];
+  if ((normalizedHeading === 'impacto' || normalizedHeading === 'impact') && sameText(meaningfulContent.join('\n'), 'No impact registered.')) return [];
+  if ((normalizedHeading === 'riscos' || normalizedHeading === 'risks') && listHasOnlyNone(meaningfulContent)) return [];
+  if ((normalizedHeading === 'proximos passos' || normalizedHeading === 'next steps') && listHasOnlyNone(meaningfulContent)) return [];
 
-  const cleanedContent = content.filter((line) => !line.startsWith('Projeto: [['));
+  const cleanedContent = content.filter((line) => !line.startsWith('Projeto: [[') && !line.startsWith('Project: [['));
   const withoutDuplicateTitle = isFirst ? dropDuplicateTitle(cleanedContent, title) : cleanedContent;
   if (!withoutDuplicateTitle.some((line) => line.trim())) return [];
 

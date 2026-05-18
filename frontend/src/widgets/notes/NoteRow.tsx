@@ -55,9 +55,9 @@ export function NoteRow({
         <QuickNoteStatusActions note={note} compact />
         {onEdit ? (
           <button
-            aria-label={`Editar nota ${note.title}`}
+            aria-label={`Edit note ${note.title}`}
             className="row-action-button"
-            title="Editar"
+            title="Edit"
             type="button"
             onClick={(event) => {
               event.stopPropagation();
@@ -69,9 +69,9 @@ export function NoteRow({
         ) : null}
         {onDelete ? (
           <button
-            aria-label={`Excluir nota ${note.title}`}
+            aria-label={`Delete note ${note.title}`}
             className="row-action-button danger"
-            title="Excluir"
+            title="Delete"
             type="button"
             onClick={(event) => {
               event.stopPropagation();

@@ -70,7 +70,7 @@ export function AppShell() {
   const activeWorkspace = dashboard?.workspaces[0] || null;
   const isSetupRoute = location.pathname.startsWith(routes.setup);
   const activeNavItem = navItems.find((item) => item.view === view);
-  const topbarTitle = view === 'note' ? 'Detalhe da Nota' : activeNavItem?.label || 'Home';
+  const topbarTitle = view === 'note' ? 'Note details' : activeNavItem?.label || 'Home';
   const routeNoteQuery = useQuery(noteDetailQueryOptions(routeNoteId));
   const cachedRouteNote = getCachedNoteDetail(queryClient, routeNoteId);
   const activeRouteNote = routeNoteQuery.data || cachedRouteNote;
@@ -108,7 +108,7 @@ export function AppShell() {
   const loadNoteMutation = useMutation({
     mutationFn: (id: string) => globalLoading.trackPromise(fetchNote(id)),
     onSuccess: (note) => setNoteModal({ mode: 'edit', note }),
-    onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel carregar a nota para edicao.'),
+    onError: (error) => notifyGeneralFormError(error, 'Could not load the note for editing.'),
   });
   const deleteNoteMutation = useMutation({
     mutationFn: (id: string) => globalLoading.trackPromise(deleteNote(id)),
@@ -118,10 +118,10 @@ export function AppShell() {
       if (routeNoteId === noteId) {
         navigate(routes.vault);
       }
-      notifySuccess('Nota excluida com sucesso.');
+      notifySuccess('Note deleted successfully.');
       await refreshDashboard(queryClient);
     },
-    onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel excluir a nota.'),
+    onError: (error) => notifyGeneralFormError(error, 'Could not delete the note.'),
   });
 
   useEffect(() => {
@@ -166,7 +166,7 @@ export function AppShell() {
           setSelectedNoteId(id);
           navigate(routes.note(id));
         }).catch((error) => {
-          notifyGeneralFormError(error, 'Nao foi possivel abrir a nota.');
+          notifyGeneralFormError(error, 'Could not open the note.');
         });
       },
       editNote: (noteId: string) => {
@@ -189,22 +189,22 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <button
-        aria-label="Fechar navegacao"
+        aria-label="Close navigation"
         aria-hidden={!isMobileNavOpen}
         className={`mobile-nav-backdrop ${isMobileNavOpen ? 'visible' : ''}`}
         onClick={() => setIsMobileNavOpen(false)}
         tabIndex={isMobileNavOpen ? 0 : -1}
         type="button"
       />
-      <aside className={`sidebar ${isMobileNavOpen ? 'open' : ''}`} aria-label="Navegacao do vault" id="app-sidebar">
-        <Link className="brand" to={routes.home} aria-label="Ir para Home">
+      <aside className={`sidebar ${isMobileNavOpen ? 'open' : ''}`} aria-label="Vault navigation" id="app-sidebar">
+        <Link className="brand" to={routes.home} aria-label="Go to Home">
           <div className="brand-mark">KV</div>
           <div>
             <strong>Knowledge Vault</strong>
             <span>developer knowledge base</span>
           </div>
         </Link>
-        <nav className="main-nav" aria-label="Secoes principais">
+        <nav className="main-nav" aria-label="Main sections">
           {navItems.map((item) => (
             <NavLink
               className={({ isActive }) => `nav-item ${isActive || view === item.view ? 'active' : ''}`}
@@ -219,7 +219,7 @@ export function AppShell() {
         </nav>
         <section className="sidebar-section">
           <div className="section-label">Workspace</div>
-          <div className="workspace-pill workspace-pill-static" aria-label={`Workspace atual: ${activeWorkspace.workspaceSlug}`} role="status">
+          <div className="workspace-pill workspace-pill-static" aria-label={`Current workspace: ${activeWorkspace.workspaceSlug}`} role="status">
             <span className="status-dot" />
             <span className="workspace-pill-copy">
               <strong>{activeWorkspace.displayName}</strong>
@@ -228,7 +228,7 @@ export function AppShell() {
           </div>
         </section>
         <section className="sidebar-section">
-          <div className="section-label">Projetos</div>
+          <div className="section-label">Projects</div>
           <div className="tree">
             {dashboard.projects.map((project) => (
               <button
@@ -269,7 +269,7 @@ export function AppShell() {
           </div>
           <label className="command-bar">
             <span>&gt;_</span>
-            <input type="search" placeholder="Buscar notas, paths ou tags" onKeyDown={(event) => { 
+            <input type="search" placeholder="Search notes, paths, or tags" onKeyDown={(event) => { 
               if (event.key === 'Enter') {
                 const q = event.currentTarget.value.trim();
                 navigate(q ? `${routes.search}?q=${encodeURIComponent(q)}` : routes.search); 
@@ -278,10 +278,10 @@ export function AppShell() {
           </label>
           <div className="topbar-meta">
             <button
-              aria-label={effectiveTheme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              aria-label={effectiveTheme === 'dark' ? 'Enable light mode' : 'Enable dark mode'}
               className="topbar-link theme-toggle"
               onClick={toggleTheme}
-              title={effectiveTheme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              title={effectiveTheme === 'dark' ? 'Enable light mode' : 'Enable dark mode'}
               type="button"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
@@ -305,7 +305,7 @@ export function AppShell() {
                 });
               }}
             >
-              sair
+              sign out
             </button>
           </div>
         </header>
@@ -331,7 +331,7 @@ export function AppShell() {
           onClose={() => setNoteModal(null)}
           onSaved={async (noteId, mode) => {
             setNoteModal(null);
-            notifySuccess(mode === 'create' ? 'Nota criada com sucesso.' : 'Nota atualizada com sucesso.');
+            notifySuccess(mode === 'create' ? 'Note created successfully.' : 'Note updated successfully.');
             await refreshDashboard(queryClient);
             if (mode === 'create' && noteId) {
               pageContext.openNote(noteId);
@@ -344,12 +344,12 @@ export function AppShell() {
       {confirmState?.kind === 'note' ? (
         <ConfirmationModal
           busy={deleteNoteMutation.isPending}
-          cancelLabel="Cancelar"
-          confirmLabel="Confirmar exclusão"
-          description={`A exclusao da nota ${confirmState.note.title} tambem remove o lembrete vinculado, quando existir.`}
+          cancelLabel="Cancel"
+          confirmLabel="Confirm deletion"
+          description={`Deleting note ${confirmState.note.title} also removes its linked reminder, when present.`}
           onCancel={() => setConfirmState(null)}
           onConfirm={() => deleteNoteMutation.mutate(confirmState.note.id)}
-          title="Excluir nota"
+          title="Delete note"
         />
       ) : null}
     </div>
@@ -365,23 +365,23 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [mode, setMode] = useState<AuthMode>('login');
   const formRef = useRef<HTMLFormElement>(null);
   const authBenefits = [
-    'Capture decisões e aprendizados no fluxo real do trabalho',
-    'Transforme eventos e conversas em histórico pesquisável',
-    'Acelere onboarding e reduza perda de contexto entre pessoas',
+    'Capture decisions and learnings in the real flow of work',
+    'Turn events and conversations into searchable history',
+    'Speed up onboarding and reduce context loss across people',
   ];
   const authSteps = [
-    'Conecte seu workspace',
-    'Capture conhecimento por integrações e uso diário',
-    'Recupere contexto por projeto, nota e busca',
+    'Connect your workspace',
+    'Capture knowledge through integrations and daily usage',
+    'Recover context by project, note, and search',
   ];
   const authCopy = {
     login: {
-      title: 'Entrar no seu workspace',
-      description: 'Acesse seu histórico, projetos e integrações em andamento.',
+      title: 'Sign in to your workspace',
+      description: 'Access your history, projects, and active integrations.',
     },
     signup: {
-      title: 'Criar conta para começar',
-      description: 'Configure seu acesso e comece a centralizar o conhecimento.',
+      title: 'Create an account to get started',
+      description: 'Set up your access and start centralizing knowledge.',
     },
   } satisfies Record<AuthMode, { title: string; description: string }>;
   const schema = useMemo(() => createAuthFormSchema(mode), [mode]);
@@ -411,7 +411,7 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
         window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNames));
         return;
       }
-      notifyGeneralFormError(error, 'Nao foi possivel autenticar com esses dados.');
+      notifyGeneralFormError(error, 'Could not authenticate with these details.');
     },
   });
 
@@ -427,16 +427,16 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
 
   return (
     <main className="auth-layout">
-      <section className="auth-landing" aria-label="Entrada do Knowledge Vault">
+      <section className="auth-landing" aria-label="Knowledge Vault entry">
         <section className="auth-hero" aria-labelledby="auth-hero-title">
           <div className="auth-hero-copy">
-            <h1 id="auth-hero-title">Informações e contexto em um só lugar.</h1>
+            <h1 id="auth-hero-title">Information and context in one place.</h1>
             <p className="auth-lead">
-              Capture continuamente decisões, conversas e sinais operacionais. Encontre depois com busca clara e recupere contexto com rapidez.
+              Continuously capture decisions, conversations, and operational signals. Find them later with clear search and recover context quickly.
             </p>
           </div>
           <div className="auth-benefits-card">
-            <h2>Por que entrar por aqui</h2>
+            <h2>Why start here</h2>
             <ul className="auth-benefits-list">
               {authBenefits.map((benefit) => (
                 <li key={benefit}>{benefit}</li>
@@ -445,8 +445,8 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
           </div>
           <div className="auth-flow-card">
             <div className="auth-flow-head">
-              <h2>Como funciona</h2>
-              <p>Da captura diária até a recuperação de contexto em poucos passos.</p>
+              <h2>How it works</h2>
+              <p>From daily capture to context recovery in a few steps.</p>
             </div>
             <ol className="auth-steps-list">
               {authSteps.map((step, index) => (
@@ -458,20 +458,20 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
             </ol>
           </div>
         </section>
-        <section className="auth-panel" aria-label="Autenticacao">
-          <Link className="brand auth-brand" to={routes.home} aria-label="Ir para Home">
+        <section className="auth-panel" aria-label="Authentication">
+          <Link className="brand auth-brand" to={routes.home} aria-label="Go to Home">
             <div className="brand-mark">KV</div>
             <div>
               <strong>Knowledge Vault</strong>
               <span>developer knowledge base</span>
             </div>
           </Link>
-          <div className="segmented-control" role="tablist" aria-label="Modo de acesso">
+          <div className="segmented-control" role="tablist" aria-label="Access mode">
             <button className={mode === 'login' ? 'active' : ''} type="button" onClick={() => setMode('login')}>
-              Entrar
+              Sign in
             </button>
             <button className={mode === 'signup' ? 'active' : ''} type="button" onClick={() => setMode('signup')}>
-              Criar conta
+              Create account
             </button>
           </div>
           <div className="auth-panel-copy">
@@ -480,18 +480,18 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
           </div>
           <form className="auth-form" ref={formRef} noValidate onSubmit={handleSubmit((values) => mutation.mutate(values), onInvalid)}>
             {mode === 'signup' ? (
-              <FormField name="name" label="Nome" error={errors.name?.message} required>
+              <FormField name="name" label="Name" error={errors.name?.message} required>
                 {(fieldProps) => <input autoComplete="name" {...fieldProps} {...register('name')} />}
               </FormField>
             ) : null}
             <FormField name="email" label="Email" error={errors.email?.message} required>
               {(fieldProps) => <input autoComplete="email" type="email" {...fieldProps} {...register('email')} />}
             </FormField>
-            <FormField name="password" label="Senha" error={errors.password?.message} required>
+            <FormField name="password" label="Password" error={errors.password?.message} required>
               {(fieldProps) => <input autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type="password" {...fieldProps} {...register('password')} />}
             </FormField>
             <button className="icon-button auth-submit" type="submit" disabled={mutation.isPending}>
-              {mode === 'login' ? 'Entrar' : 'Criar conta'}
+              {mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
           </form>
         </section>

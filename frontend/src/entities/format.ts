@@ -40,15 +40,15 @@ export function formatUsDateTime(value: string | null | undefined) {
 export function noteTypeLabel(type: string) {
   return (
     {
-      note: 'Nota',
-      event: 'Evento',
-      knowledge: 'Conhecimento',
-      decision: 'Decisao',
-      incident: 'Incidente',
+      note: 'Note',
+      event: 'Event',
+      knowledge: 'Knowledge',
+      decision: 'Decision',
+      incident: 'Incident',
       bug: 'Bug',
       review: 'Review',
-      reminder: 'Lembrete',
-      article: 'Artigo',
+      reminder: 'Reminder',
+      article: 'Article',
       asset: 'Asset',
       followup: 'Follow-up',
     }[type] || humanizeToken(type)

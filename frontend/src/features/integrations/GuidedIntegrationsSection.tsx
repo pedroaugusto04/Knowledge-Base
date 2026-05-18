@@ -24,13 +24,13 @@ import { Badge, EmptyState, InlineMessage, Panel } from '../../shared/ui/primiti
 import { useGlobalLoading } from '../../app/global-loading';
 
 const statusLabel: Record<DisplayStatus | string, string> = {
-  connected: 'conectado',
-  missing: 'pendente',
-  revoked: 'revogado',
-  pending: 'aguardando',
-  expired: 'expirado',
-  error: 'erro',
-  disabled: 'desativado',
+  connected: 'connected',
+  missing: 'pending',
+  revoked: 'revoked',
+  pending: 'waiting',
+  expired: 'expired',
+  error: 'error',
+  disabled: 'disabled',
 };
 
 const statusTone: Record<DisplayStatus | string, string> = {
@@ -80,7 +80,7 @@ function IntegrationLogo({ integration }: { integration: UserIntegration }) {
 }
 
 function IntegrationSteps({ integration }: { integration: UserIntegration }) {
-  const steps = integration.steps?.length ? integration.steps : ['Inicie a conexao para liberar esta integracao.'];
+  const steps = integration.steps?.length ? integration.steps : ['Start the connection to enable this integration.'];
   return (
     <ol className="integration-steps">
       {steps.map((step) => <li key={step}>{step}</li>)}
@@ -115,19 +115,19 @@ function CodeConnectionModal({ connection, onClose, workspaceSlug }: { connectio
           <div>
             <div className="card-kicker">{connection.provider}</div>
             <div className="integration-modal-title">
-              <h2 id="connection-title">Conectar {providerLabel}</h2>
+              <h2 id="connection-title">Connect {providerLabel}</h2>
               {currentSession ? <Badge value={statusLabel[currentSession.status] || currentSession.status} tone={statusTone[currentSession.status] || 'medium'} /> : null}
             </div>
           </div>
-          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={onClose}>x</button>
+          <button aria-label="Close details" className="modal-close" type="button" onClick={onClose}>x</button>
         </div>
 
-        <div className="connection-code" aria-label="Codigo de conexao">{connection.verificationCode}</div>
-        <p>Envie <strong>{connection.instruction}</strong> no chat autorizado.</p>
+        <div className="connection-code" aria-label="Connection code">{connection.verificationCode}</div>
+        <p>Send <strong>{connection.instruction}</strong> in the authorized chat.</p>
         <div className="integration-actions">
           {composeUrl ? (
             <button className="icon-button" type="button" onClick={() => openExternalIntegration(composeUrl)}>
-              {connection.provider === 'telegram' ? 'Abrir Telegram com mensagem' : 'Abrir WhatsApp com mensagem'}
+              {connection.provider === 'telegram' ? 'Open Telegram with message' : 'Open WhatsApp with message'}
             </button>
           ) : null}
           {connection.instruction ? (
@@ -138,11 +138,11 @@ function CodeConnectionModal({ connection, onClose, workspaceSlug }: { connectio
                 void navigator.clipboard?.writeText(connection.instruction || '');
               }}
             >
-              Copiar comando
+              Copy command
             </button>
           ) : null}
         </div>
-        {currentSession?.connectedAccount ? <p className="meta">Conectado em {currentSession.connectedAccount}</p> : null}
+        {currentSession?.connectedAccount ? <p className="meta">Connected as {currentSession.connectedAccount}</p> : null}
         {currentSession?.lastError ? <InlineMessage tone="error">{currentSession.lastError}</InlineMessage> : null}
       </section>
     </div>
@@ -186,7 +186,7 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['integrations', workspaceSlug] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      notifySuccess('Repositorios salvos com sucesso.');
+      notifySuccess('Repositories saved successfully.');
       closeGuard.resetCloseGuard();
       onSaved?.();
       onClose();
@@ -197,7 +197,7 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
         window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNames));
         return;
       }
-      notifyGeneralFormError(error, 'Nao foi possivel salvar os repositorios selecionados.');
+      notifyGeneralFormError(error, 'Could not save the selected repositories.');
     },
   });
 
@@ -214,13 +214,13 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
         <div className="modal-head">
           <div>
             <div className="card-kicker">github-app</div>
-            <h2 id="github-repositories-title">Selecionar repositorios</h2>
+            <h2 id="github-repositories-title">Select repositories</h2>
           </div>
-          <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
+          <button aria-label="Close details" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
         </div>
 
-        {repositoriesQuery.isLoading ? <p className="meta">Carregando repositorios...</p> : null}
-        {repositoriesQuery.isError ? <InlineMessage tone="error">{getErrorMessage(repositoriesQuery.error, 'Nao foi possivel carregar os repositorios.')}</InlineMessage> : null}
+        {repositoriesQuery.isLoading ? <p className="meta">Loading repositories...</p> : null}
+        {repositoriesQuery.isError ? <InlineMessage tone="error">{getErrorMessage(repositoriesQuery.error, 'Could not load repositories.')}</InlineMessage> : null}
         <form
           className="auth-form"
           ref={formRef}
@@ -230,7 +230,7 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
             (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
           )}
         >
-          <div className="repository-picker" data-field="repositories" aria-label="Lista de repositorios GitHub">
+          <div className="repository-picker" data-field="repositories" aria-label="GitHub repository list">
             {repositories.map((repository) => (
               <label className="repository-option" key={repository.id}>
                 <input
@@ -243,15 +243,15 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
                 />
                 <span>
                   <strong>{repository.fullName}</strong>
-                  <small>{repository.private ? 'Privado' : 'Publico'}</small>
+                  <small>{repository.private ? 'Private' : 'Public'}</small>
                 </span>
               </label>
             ))}
           </div>
           {errors.repositories?.message ? <p className="form-error" role="alert">{errors.repositories.message}</p> : null}
           <div className="integration-card-foot">
-            <span className="meta">{selected.length} selecionados</span>
-            <FormActions disabled={saveMutation.isPending} onCancel={closeGuard.requestClose} submitLabel="Salvar" />
+            <span className="meta">{selected.length} selected</span>
+            <FormActions disabled={saveMutation.isPending} onCancel={closeGuard.requestClose} submitLabel="Save" />
           </div>
         </form>
       </section>
@@ -294,23 +294,23 @@ function IntegrationCard({
         return;
       }
       if (result.session) onCodeConnection(result);
-      if (!result.primaryAction?.url && !result.session) notifySuccess(`${integration.name} atualizado com sucesso.`);
+      if (!result.primaryAction?.url && !result.session) notifySuccess(`${integration.name} updated successfully.`);
       queryClient.invalidateQueries({ queryKey: ['integrations', workspaceSlug] });
     },
   });
   const revokeMutation = useMutation({
     mutationFn: () => globalLoading.trackPromise(revokeIntegration(integration.provider, workspaceSlug)),
     onSuccess: () => {
-      notifySuccess(`${integration.name} revogado com sucesso.`);
+      notifySuccess(`${integration.name} revoked successfully.`);
       queryClient.invalidateQueries({ queryKey: ['integrations', workspaceSlug] });
     },
   });
   const connected = integration.status === 'connected';
-  const actionLabel = connected ? integration.primaryAction?.label || 'Revogar' : integration.primaryAction?.label || 'Conectar';
+  const actionLabel = connected ? integration.primaryAction?.label || 'Revoke' : integration.primaryAction?.label || 'Connect';
   const actionError = connectMutation.isError
-    ? getErrorMessage(connectMutation.error, 'Nao foi possivel ativar esta integracao.')
+    ? getErrorMessage(connectMutation.error, 'Could not activate this integration.')
     : revokeMutation.isError
-      ? getErrorMessage(revokeMutation.error, 'Nao foi possivel revogar esta integracao.')
+      ? getErrorMessage(revokeMutation.error, 'Could not revoke this integration.')
       : '';
 
   return (
@@ -331,7 +331,7 @@ function IntegrationCard({
       <div className="integration-card-foot">
         <Badge value={statusLabel[integration.status] || integration.status} tone={statusTone[integration.status] || 'medium'} />
         <div className="integration-actions">
-          {integration.provider === 'github-app' && connected ? <button className="filter-chip" type="button" onClick={onGithubRepositories}>Repositorios</button> : null}
+          {integration.provider === 'github-app' && connected ? <button className="filter-chip" type="button" onClick={onGithubRepositories}>Repositories</button> : null}
           <button
             className={connected ? 'filter-chip' : 'icon-button'}
             disabled={connectMutation.isPending || revokeMutation.isPending}
@@ -349,7 +349,7 @@ function IntegrationCard({
 export function IntegrationCallbackNotice({ status }: { status: 'connected' | 'error' }) {
   return (
     <InlineMessage tone={status === 'connected' ? 'success' : 'error'}>
-      {status === 'connected' ? 'GitHub conectado. Selecione os repositorios do workspace.' : 'Não foi possível concluir a conexão com o GitHub.'}
+      {status === 'connected' ? 'GitHub connected. Select the workspace repositories.' : 'Could not complete the GitHub connection.'}
     </InlineMessage>
   );
 }
@@ -399,9 +399,9 @@ export function GuidedIntegrationsSection({
     }
   }, [defaultOpenGithubRepositories, integrations]);
 
-  if (!workspaceSlug) return <EmptyState>Crie um workspace para continuar.</EmptyState>;
-  if (integrationsQuery.isLoading) return <EmptyState>Carregando integrações...</EmptyState>;
-  if (!integrationsQuery.data) return <InlineMessage tone="error">{getErrorMessage(integrationsQuery.error, 'Nao foi possivel carregar o status das integrações.')}</InlineMessage>;
+  if (!workspaceSlug) return <EmptyState>Create a workspace to continue.</EmptyState>;
+  if (integrationsQuery.isLoading) return <EmptyState>Loading integrations...</EmptyState>;
+  if (!integrationsQuery.data) return <InlineMessage tone="error">{getErrorMessage(integrationsQuery.error, 'Could not load integration status.')}</InlineMessage>;
 
   return (
     <>

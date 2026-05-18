@@ -38,7 +38,7 @@ describe('FormField', () => {
 
   it('keeps the error accessibility contract intact', () => {
     render(
-      <FormField error="Informe o texto da nota." label="Texto" name="rawText" required>
+      <FormField error="Enter the note text." label="Text" name="rawText" required>
         {(fieldProps) => <textarea {...fieldProps} />}
       </FormField>,
     );
@@ -49,6 +49,6 @@ describe('FormField', () => {
     expect(textarea).toHaveAttribute('aria-invalid', 'true');
     expect(textarea).toHaveAttribute('aria-describedby', 'rawText-error');
     expect(error).toHaveAttribute('id', 'rawText-error');
-    expect(error).toHaveTextContent('Informe o texto da nota.');
+    expect(error).toHaveTextContent('Enter the note text.');
   });
 });

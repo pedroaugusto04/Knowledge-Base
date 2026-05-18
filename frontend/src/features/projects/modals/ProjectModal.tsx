@@ -71,14 +71,14 @@ export function ProjectModal({
         window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNames));
         return;
       }
-      notifyGeneralFormError(error, mode === 'create' ? 'Nao foi possivel criar o projeto.' : 'Nao foi possivel atualizar o projeto.');
+      notifyGeneralFormError(error, mode === 'create' ? 'Could not create the project.' : 'Could not update the project.');
     },
   });
   const hasRepositoryOptions = workspaceRepositories.length > 0;
-  const repositoryHint = 'Selecione um ou mais repositórios vinculados ao workspace.';
+  const repositoryHint = 'Select one or more repositories linked to the workspace.';
   const repositoryPlaceholder = !githubConnected
-    ? 'Conecte o GitHub em Integrações para listar e selecionar repositórios.'
-    : 'Nenhum repositório disponível neste workspace. Verifique a seleção em Integrations > GitHub.';
+    ? 'Connect GitHub in Integrations to list and select repositories.'
+    : 'No repositories available in this workspace. Check the selection in Integrations > GitHub.';
 
   return (
     <>
@@ -86,8 +86,8 @@ export function ProjectModal({
         <section aria-labelledby="project-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
           <div className="modal-head">
             <div>
-              <h2 id="project-modal-title">{mode === 'create' ? 'Novo projeto' : 'Editar projeto'}</h2>
-              <p>Cadastre o vinculo explicito com um repositorio GitHub.</p>
+              <h2 id="project-modal-title">{mode === 'create' ? 'New project' : 'Edit project'}</h2>
+              <p>Define the explicit link to a GitHub repository.</p>
             </div>
             <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
           </div>
@@ -101,7 +101,7 @@ export function ProjectModal({
             )}
           >
             <div className="form-grid">
-              <FormField name="displayName" label="Nome" error={errors.displayName?.message} required>
+              <FormField name="displayName" label="Name" error={errors.displayName?.message} required>
                 {(fieldProps) => <input {...fieldProps} {...register('displayName')} />}
               </FormField>
               {mode === 'create' ? (
@@ -114,7 +114,7 @@ export function ProjectModal({
                 </FormField>
               )}
             </div>
-            <FormField name="repositoryIds" label="Repositorios GitHub" error={errors.repositoryIds?.message} optional>
+            <FormField name="repositoryIds" label="GitHub repositories" error={errors.repositoryIds?.message} optional>
               {(fieldProps) => (
                 hasRepositoryOptions ? (
                   <Controller
@@ -123,7 +123,7 @@ export function ProjectModal({
                     render={({ field }) => (
                       <div
                         {...fieldProps}
-                        aria-label="Repositorios GitHub"
+                        aria-label="GitHub repositories"
                         className="repository-picker"
                       >
                         {workspaceRepositories.map((repository) => {
@@ -146,7 +146,7 @@ export function ProjectModal({
                               />
                               <span>
                                 <strong>{repository.fullName}</strong>
-                                <small>{repository.private ? 'Privado' : 'Publico'}</small>
+                                <small>{repository.private ? 'Private' : 'Public'}</small>
                               </span>
                             </label>
                           );
@@ -170,7 +170,7 @@ export function ProjectModal({
                 {(fieldProps) => <input {...fieldProps} {...register('defaultTags')} />}
               </FormField>
             </div>
-            <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar projeto' : 'Salvar projeto'} />
+            <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Create project' : 'Save project'} />
           </form>
         </section>
       </div>

@@ -9,7 +9,7 @@ export function IntegrationsPage({ workspaceSlug }: { workspaceSlug: string }) {
   return (
     <>
       <PageHead
-        title="Integrações"
+        title="Integrations"
         subtitle=""
       />
       {callback.integration === 'github-app'

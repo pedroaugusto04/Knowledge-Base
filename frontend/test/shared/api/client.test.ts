@@ -69,12 +69,12 @@ describe('api client', () => {
       requestId: 'req-409',
     });
 
-    expect(getErrorMessage(error, 'Nao foi possivel concluir a operacao.')).toBe('Workspace ja existe.');
+    expect(getErrorMessage(error, 'Could not complete the operation.')).toBe('Workspace already exists.');
   });
 
   it('uses the fallback for unknown errors', () => {
-    expect(getErrorMessage(new Error('boom'), 'Nao foi possivel concluir a operacao.')).toBe('Nao foi possivel concluir a operacao.');
-    expect(getErrorMessage('boom', 'Nao foi possivel concluir a operacao.')).toBe('Nao foi possivel concluir a operacao.');
+    expect(getErrorMessage(new Error('boom'), 'Could not complete the operation.')).toBe('Could not complete the operation.');
+    expect(getErrorMessage('boom', 'Could not complete the operation.')).toBe('Could not complete the operation.');
   });
 
   it('clamps query limit to the backend maximum', async () => {

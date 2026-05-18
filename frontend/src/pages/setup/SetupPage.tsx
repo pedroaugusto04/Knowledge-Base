@@ -57,7 +57,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
     mutationFn: (values: WorkspaceFormValues) => globalLoading.trackPromise(createWorkspace(values)),
     onSuccess: (result) => {
       setCreatedWorkspaceSlug(result.workspace.workspaceSlug);
-      notifySuccess('Workspace criado com sucesso.');
+      notifySuccess('Workspace created successfully.');
       queryClient.setQueryData<Dashboard>(['dashboard'], (current) => current
         ? {
             ...current,
@@ -74,7 +74,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
         window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNames));
         return;
       }
-      notifyGeneralFormError(error, 'Nao foi possivel criar o workspace.');
+      notifyGeneralFormError(error, 'Could not create the workspace.');
     },
   });
 
@@ -98,8 +98,8 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
             </div>
           </Link>
           <PageHead
-            title="Configurar workspace"
-            subtitle="Crie o workspace e conecte as integrações no seu ritmo. Os passos opcionais podem ser concluídos depois."
+            title="Set up workspace"
+            subtitle="Create the workspace and connect integrations at your own pace. Optional steps can be completed later."
           />
         </section>
 
@@ -107,14 +107,14 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
           <Panel className="setup-step-card">
           <div className="setup-step-head">
             <div>
-              <div className="card-kicker">Passo 1</div>
-              <h2>Criar workspace</h2>
+              <div className="card-kicker">Step 1</div>
+              <h2>Create workspace</h2>
             </div>
-            <StepState complete={workspaceReady} pendingLabel="obrigatorio" doneLabel="concluido" />
+            <StepState complete={workspaceReady} pendingLabel="required" doneLabel="done" />
           </div>
           {activeWorkspace ? (
             <div className="setup-step-body">
-              <p>Workspace atual: <strong>{activeWorkspace.displayName}</strong> ({activeWorkspace.workspaceSlug})</p>
+              <p>Current workspace: <strong>{activeWorkspace.displayName}</strong> ({activeWorkspace.workspaceSlug})</p>
             </div>
           ) : (
             <form
@@ -126,10 +126,10 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
                 (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
               )}
             >
-              <FormField name="displayName" label="Nome do workspace" error={errors.displayName?.message} required>
+              <FormField name="displayName" label="Workspace name" error={errors.displayName?.message} required>
                 {(fieldProps) => <input {...fieldProps} {...register('displayName')} />}
               </FormField>
-              <FormField name="workspaceSlug" label="Slug do workspace" error={errors.workspaceSlug?.message} required>
+              <FormField name="workspaceSlug" label="Workspace slug" error={errors.workspaceSlug?.message} required>
                 {(fieldProps) => (
                   <input
                     {...fieldProps}
@@ -140,7 +140,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
                 )}
               </FormField>
               <button className="icon-button auth-submit setup-submit" disabled={createWorkspaceMutation.isPending} type="submit">
-                Criar workspace
+                Create workspace
               </button>
             </form>
           )}
@@ -149,10 +149,10 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
           <Panel className="setup-step-card">
           <div className="setup-step-head">
             <div>
-              <div className="card-kicker">Passo 2</div>
-              <h2>Conectar GitHub</h2>
+              <div className="card-kicker">Step 2</div>
+              <h2>Connect GitHub</h2>
             </div>
-            <StepState complete={githubConnected && githubReposSelected} pendingLabel="opcional" doneLabel="concluido" />
+            <StepState complete={githubConnected && githubReposSelected} pendingLabel="optional" doneLabel="done" />
           </div>
           {workspaceReady ? (
             <>
@@ -173,17 +173,17 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
               />
             </>
           ) : (
-            <p className="meta">Crie o workspace antes de iniciar a conexao com o GitHub.</p>
+            <p className="meta">Create the workspace before starting the GitHub connection.</p>
           )}
           </Panel>
 
           <Panel className="setup-step-card">
           <div className="setup-step-head">
             <div>
-              <div className="card-kicker">Passo 3</div>
-              <h2>Conectar WhatsApp ou Telegram</h2>
+              <div className="card-kicker">Step 3</div>
+              <h2>Connect WhatsApp or Telegram</h2>
             </div>
-            <StepState complete={chatConnected} pendingLabel="opcional" doneLabel="concluido" />
+            <StepState complete={chatConnected} pendingLabel="optional" doneLabel="done" />
           </div>
           {workspaceReady ? (
             <GuidedIntegrationsSection
@@ -193,7 +193,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
               onLoaded={setChatIntegrations}
             />
           ) : (
-            <p className="meta">Crie o workspace antes de iniciar os fluxos de mensageria.</p>
+            <p className="meta">Create the workspace before starting the messaging flows.</p>
           )}
           </Panel>
         </section>
@@ -201,9 +201,9 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
         {workspaceReady ? (
           <section className="setup-actions">
             <a className="icon-button" href={withFrontendBasePath(routes.home)}>
-              Ir para o dashboard
+              Go to dashboard
             </a>
-            {!activeWorkspace ? <span className="meta">Sincronizando workspace...</span> : null}
+            {!activeWorkspace ? <span className="meta">Syncing workspace...</span> : null}
           </section>
         ) : null}
       </div>

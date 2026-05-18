@@ -75,34 +75,34 @@ export function ProjectsBrowser({
           <Tags items={project.defaultTags} />
           {onEditProject ? (
             <button
-              aria-label={`Editar projeto ${project.displayName}`}
+              aria-label={`Edit project ${project.displayName}`}
               className="icon-button"
               type="button"
               onClick={onEditProject}
             >
-              Editar projeto
+              Edit project
             </button>
           ) : null}
           <button
-            aria-label={onDeleteProject ? `Excluir projeto ${project.displayName}` : deleteProjectLabel}
+            aria-label={onDeleteProject ? `Delete project ${project.displayName}` : deleteProjectLabel}
             className="icon-button"
             disabled={!onDeleteProject}
             title={deleteProjectLabel}
             type="button"
             onClick={onDeleteProject}
           >
-            Excluir projeto
+            Delete project
           </button>
-          <button className="icon-button" type="button" onClick={onCreateNote}>Nova nota</button>
+          <button className="icon-button" type="button" onClick={onCreateNote}>New note</button>
         </div>
       </div>
       <div className="project-browser">
         <aside className="folder-browser">
           <div className="folder-browser-head">
             <div className="folder-browser-head-top">
-              <strong>Pastas</strong>
+              <strong>Folders</strong>
               <div className="folder-browser-actions">
-                <button aria-label="Nova pasta" className="row-action-button" title="Nova pasta" type="button" onClick={onCreateFolder}>
+                <button aria-label="New folder" className="row-action-button" title="New folder" type="button" onClick={onCreateFolder}>
                   <svg aria-hidden="true" viewBox="0 0 16 16">
                     <path d="M8 3v10" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.2" />
                     <path d="M3 8h10" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.2" />
@@ -117,7 +117,7 @@ export function ProjectsBrowser({
                 ) : null}
               </div>
             </div>
-            <span className="meta">{selectedFolder ? selectedFolder.displayName : 'Raiz'}</span>
+            <span className="meta">{selectedFolder ? selectedFolder.displayName : 'Root'}</span>
           </div>
           <FolderTree
             folders={folderTree}
@@ -127,8 +127,8 @@ export function ProjectsBrowser({
         </aside>
         <div className="folder-notes">
           <div className="folder-notes-head">
-            <h3>{selectedFolder ? selectedFolder.displayName : 'Raiz'}</h3>
-            <p className="meta">{selectedFolder ? selectedFolder.fullSlugPath : 'Notas sem pasta dentro do projeto.'}</p>
+            <h3>{selectedFolder ? selectedFolder.displayName : 'Root'}</h3>
+            <p className="meta">{selectedFolder ? selectedFolder.fullSlugPath : 'Notes without a folder inside the project.'}</p>
           </div>
           {notes.length > 0 ? (
             <div className="timeline">
@@ -145,7 +145,7 @@ export function ProjectsBrowser({
               ))}
             </div>
           ) : (
-            <EmptyState>Sem notas nesta pasta.</EmptyState>
+            <EmptyState>No notes in this folder.</EmptyState>
           )}
           {notesPagination ? <Pagination pagination={notesPagination} onPageChange={onNotesPageChange} /> : null}
         </div>

@@ -89,9 +89,9 @@ export function ProjectsWorkspace({
   });
   const notes = notesQuery.data?.notes || [];
   const selectedProjectDeleteBlockedReason = selected?.projectSlug === 'inbox'
-    ? 'Inbox nao pode ser alterado.'
+    ? 'Inbox cannot be changed.'
     : dashboardNotes.some((note) => note.project === selected?.projectSlug)
-      ? 'Exclua ou mova as notas do projeto antes de remover.'
+      ? 'Delete or move the project notes before removing it.'
       : '';
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug;
   const { data: integrationsResponse } = useQuery({
@@ -111,37 +111,37 @@ export function ProjectsWorkspace({
   const loadNoteMutation = useMutation({
     mutationFn: (id: string) => globalLoading.trackPromise(ensureNoteDetail(queryClient, id)),
     onSuccess: (note) => setNoteModal({ mode: 'edit', note }),
-    onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel carregar a nota para edicao.'),
+    onError: (error) => notifyGeneralFormError(error, 'Could not load the note for editing.'),
   });
   const deleteProjectMutation = useMutation({
     mutationFn: (projectSlug: string) => globalLoading.trackPromise(deleteProject(projectSlug)),
     onSuccess: async (_, projectSlug) => {
       const nextProjectSlug = dashboard.projects.filter((project) => project.projectSlug !== projectSlug)[0]?.projectSlug || 'inbox';
       setConfirmState(null);
-      notifySuccess('Projeto excluido com sucesso.');
+      notifySuccess('Project deleted successfully.');
       openProject(nextProjectSlug);
       await refreshDashboard(queryClient);
     },
-    onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel excluir o projeto.'),
+    onError: (error) => notifyGeneralFormError(error, 'Could not delete the project.'),
   });
   const deleteFolderMutation = useMutation({
     mutationFn: ({ projectSlug, folderId }: { projectSlug: string; folderId: string }) => globalLoading.trackPromise(deleteProjectFolder(projectSlug, folderId)),
     onSuccess: async () => {
       setConfirmState(null);
       setSelectedFolderId(ROOT_FOLDER_ID);
-      notifySuccess('Pasta excluida com sucesso.');
+      notifySuccess('Folder deleted successfully.');
       await refreshDashboard(queryClient);
     },
-    onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel excluir a pasta.'),
+    onError: (error) => notifyGeneralFormError(error, 'Could not delete the folder.'),
   });
   const deleteNoteMutation = useMutation({
     mutationFn: (id: string) => globalLoading.trackPromise(deleteNote(id)),
     onSuccess: async () => {
       setConfirmState(null);
-      notifySuccess('Nota excluida com sucesso.');
+      notifySuccess('Note deleted successfully.');
       await refreshDashboard(queryClient);
     },
-    onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel excluir a nota.'),
+    onError: (error) => notifyGeneralFormError(error, 'Could not delete the note.'),
   });
 
   return (
@@ -149,10 +149,10 @@ export function ProjectsWorkspace({
       <PageHead
         title={(
           <div className="page-head-title-row">
-            <h1>Projetos</h1>
-            <label className="sr-only" htmlFor="projects-page-project-select">Selecionar projeto</label>
+            <h1>Projects</h1>
+            <label className="sr-only" htmlFor="projects-page-project-select">Select project</label>
             <Select
-              ariaLabel="Selecionar projeto"
+              ariaLabel="Select project"
               className="page-head-select"
               id="projects-page-project-select"
               options={dashboard.projects.map((project) => ({
@@ -165,7 +165,7 @@ export function ProjectsWorkspace({
           </div>
         )}
         subtitle=""
-        action={<button className="icon-button" type="button" onClick={() => setProjectModal({ mode: 'create' })}>Novo projeto</button>}
+        action={<button className="icon-button" type="button" onClick={() => setProjectModal({ mode: 'create' })}>New project</button>}
       />
       {selected ? (
         <ProjectsBrowser
@@ -187,7 +187,7 @@ export function ProjectsWorkspace({
           onNotesPageChange={notesPagination.setPage}
           onEditProject={selected.projectSlug === 'inbox' ? undefined : () => setProjectModal({ mode: 'edit', project: selected })}
           onDeleteProject={selectedProjectDeleteBlockedReason ? undefined : () => setConfirmState({ kind: 'project', project: selected })}
-          deleteProjectLabel={selectedProjectDeleteBlockedReason || 'Excluir projeto'}
+          deleteProjectLabel={selectedProjectDeleteBlockedReason || 'Delete project'}
         />
       ) : null}
       {projectModal ? (
@@ -199,7 +199,7 @@ export function ProjectsWorkspace({
           onClose={() => setProjectModal(null)}
           onSaved={async (projectSlug, mode) => {
             setProjectModal(null);
-            notifySuccess(mode === 'create' ? 'Projeto criado com sucesso.' : 'Projeto atualizado com sucesso.');
+            notifySuccess(mode === 'create' ? 'Project created successfully.' : 'Project updated successfully.');
             openProject(projectSlug);
             await refreshDashboard(queryClient);
           }}
@@ -215,7 +215,7 @@ export function ProjectsWorkspace({
           onSaved={async (folderId, mode) => {
             setFolderModal(null);
             setSelectedFolderId(folderId || ROOT_FOLDER_ID);
-            notifySuccess(mode === 'create' ? 'Pasta criada com sucesso.' : 'Pasta atualizada com sucesso.');
+            notifySuccess(mode === 'create' ? 'Folder created successfully.' : 'Folder updated successfully.');
             await refreshDashboard(queryClient);
           }}
           projectSlug={folderModal.projectSlug}
@@ -229,7 +229,7 @@ export function ProjectsWorkspace({
           onClose={() => setNoteModal(null)}
           onSaved={async (noteId, mode) => {
             setNoteModal(null);
-            notifySuccess(mode === 'create' ? 'Nota criada com sucesso.' : 'Nota atualizada com sucesso.');
+            notifySuccess(mode === 'create' ? 'Note created successfully.' : 'Note updated successfully.');
             await refreshDashboard(queryClient);
             if (mode === 'create' && noteId) {
               openNote(noteId);
@@ -242,13 +242,13 @@ export function ProjectsWorkspace({
       {confirmState ? (
         <ConfirmationModal
           busy={deleteProjectMutation.isPending || deleteFolderMutation.isPending || deleteNoteMutation.isPending}
-          cancelLabel="Cancelar"
-          confirmLabel="Confirmar exclusão"
+          cancelLabel="Cancel"
+          confirmLabel="Confirm deletion"
           description={confirmState.kind === 'project'
-            ? `A exclusao do projeto ${confirmState.project.displayName} e definitiva.`
+            ? `Deleting project ${confirmState.project.displayName} is permanent.`
             : confirmState.kind === 'folder'
-              ? `A pasta ${confirmState.folder.displayName} so sera removida se estiver vazia.`
-              : `A exclusao da nota ${confirmState.note.title} tambem remove o lembrete vinculado, quando existir.`}
+              ? `Folder ${confirmState.folder.displayName} will only be removed if it is empty.`
+              : `Deleting note ${confirmState.note.title} also removes its linked reminder, when present.`}
           onCancel={() => setConfirmState(null)}
           onConfirm={() => {
             if (confirmState.kind === 'project') {
@@ -261,7 +261,7 @@ export function ProjectsWorkspace({
             }
             deleteNoteMutation.mutate(confirmState.note.id);
           }}
-          title={confirmState.kind === 'project' ? 'Excluir projeto' : confirmState.kind === 'folder' ? 'Excluir pasta' : 'Excluir nota'}
+          title={confirmState.kind === 'project' ? 'Delete project' : confirmState.kind === 'folder' ? 'Delete folder' : 'Delete note'}
         />
       ) : null}
     </>

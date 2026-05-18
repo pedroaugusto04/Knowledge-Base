@@ -52,10 +52,10 @@ export function QuickNoteStatusActions({
       });
     },
     onSuccess: async (_result, status) => {
-      notifySuccess(status === 'resolved' ? 'Nota resolvida.' : 'Nota arquivada.');
+      notifySuccess(status === 'resolved' ? 'Note resolved.' : 'Note archived.');
       await invalidateNoteRelatedQueries(queryClient, note.id);
     },
-    onError: (error) => notifyGeneralFormError(error, 'Nao foi possivel atualizar o status da nota.'),
+    onError: (error) => notifyGeneralFormError(error, 'Could not update the note status.'),
   });
 
   if (note.status === 'resolved' || note.status === 'archived') return null;
@@ -63,10 +63,10 @@ export function QuickNoteStatusActions({
   return (
     <div className={`quick-note-status-actions${compact ? ' compact' : ''}`}>
       <button
-        aria-label={`Resolver nota ${note.title}`}
+        aria-label={`Resolve note ${note.title}`}
         className="row-action-button"
         type="button"
-        title="Resolver"
+        title="Resolve"
         disabled={mutation.isPending}
         onClick={(event) => {
           event.stopPropagation();
@@ -76,10 +76,10 @@ export function QuickNoteStatusActions({
         <ResolveIcon />
       </button>
       <button
-        aria-label={`Arquivar nota ${note.title}`}
+        aria-label={`Archive note ${note.title}`}
         className="row-action-button"
         type="button"
-        title="Arquivar"
+        title="Archive"
         disabled={mutation.isPending}
         onClick={(event) => {
           event.stopPropagation();

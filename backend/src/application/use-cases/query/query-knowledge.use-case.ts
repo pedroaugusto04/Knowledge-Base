@@ -21,10 +21,10 @@ export class QueryKnowledgeUseCase {
       pagination,
       answer: matches.length
         ? {
-            answer: `Encontrei ${matches.length} nota(s) relevante(s) para "${input.query}".`,
+            answer: `I found ${matches.length} relevant note(s) for "${input.query}".`,
             bullets: matches.map((match) => `${match.title}: ${match.snippet}`),
           }
-        : { answer: `Nao encontrei notas relevantes para: ${input.query}`, bullets: [] },
+        : { answer: `I did not find relevant notes for: ${input.query}`, bullets: [] },
     };
   }
 }

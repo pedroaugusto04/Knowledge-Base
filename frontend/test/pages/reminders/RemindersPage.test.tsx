@@ -94,7 +94,7 @@ describe('RemindersPage', () => {
     expect(fetchSpy).toHaveBeenNthCalledWith(1, '/api/reminders?page=1&pageSize=5&workspaceSlug=default&status=', expect.any(Object));
 
     fireEvent.click(screen.getByLabelText('Filtrar por situacao'));
-    fireEvent.click(screen.getByRole('option', { name: 'Enviados' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Sent' }));
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenNthCalledWith(2, '/api/reminders?page=1&pageSize=5&workspaceSlug=default&status=sent', expect.any(Object));

@@ -92,14 +92,14 @@ export class DispatchDueRemindersUseCase {
 
   private buildMessage(reminder: DueReminderView) {
     return [
-      'Lembrete',
-      `Projeto: ${reminder.project || '-'}`,
-      `Nota: ${reminder.title}`,
+      'Reminder',
+      `Project: ${reminder.project || '-'}`,
+      `Note: ${reminder.title}`,
       '',
-      'Texto da nota:',
+      'Note text:',
       reminder.noteText,
       '',
-      `Agendado para: ${formatReminderScheduledAtLabel(reminder.scheduledAt)}`,
+      `Scheduled for: ${formatReminderScheduledAtLabel(reminder.scheduledAt)}`,
     ].join('\n');
   }
 }

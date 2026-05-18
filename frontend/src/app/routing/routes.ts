@@ -14,8 +14,8 @@ export type View = 'home' | 'projects' | 'note' | 'search' | 'reminders' | 'inte
 
 export const navItems: Array<{ view: View; label: string; path: string }> = [
   { view: 'home', label: 'Home', path: routes.home },
-  { view: 'projects', label: 'Projetos', path: routes.projects },
-  { view: 'search', label: 'Busca', path: routes.search },
-  { view: 'reminders', label: 'Lembretes', path: routes.reminders },
-  { view: 'integrations', label: 'Integrações', path: routes.integrations },
+  { view: 'projects', label: 'Projects', path: routes.projects },
+  { view: 'search', label: 'Search', path: routes.search },
+  { view: 'reminders', label: 'Reminders', path: routes.reminders },
+  { view: 'integrations', label: 'Integrations', path: routes.integrations },
 ];

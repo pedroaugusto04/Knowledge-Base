@@ -93,8 +93,8 @@ export async function generateReviewAnalysis(
   promptPayload: unknown,
 ): Promise<ReviewAnalysis> {
   const fallback: ReviewAnalysis = {
-    summary: 'Push recebido sem análise de IA configurada.',
-    impact: 'Nenhum impacto adicional foi resumido.',
+    summary: 'Push received without configured AI analysis.',
+    impact: 'No additional impact was summarized.',
     risks: [],
     nextSteps: [],
     reviewFindings: [],
@@ -108,7 +108,7 @@ export async function generateReviewAnalysis(
       'You are a senior software engineer performing code review.',
       'Return strict JSON with keys summary, impact, risks, nextSteps, reviewFindings.',
       'reviewFindings must be an array of { severity, file, summary, recommendation }.',
-      'Write the content in Brazilian Portuguese.',
+      'Write the content in English.',
     ].join(' '),
     JSON.stringify(promptPayload),
   );
@@ -140,7 +140,7 @@ export async function decideConversationAgentTurn(
   payload: ConversationAgentTurnPayload,
 ): Promise<ConversationAgentDecision | null> {
   const systemPrompt = [
-    'You orchestrate a multi-turn note capture flow in Brazilian Portuguese.',
+    'You orchestrate a multi-turn note capture flow in English.',
     'Your job is to move the conversation forward with autonomy, while keeping a final human confirmation before any persistence.',
     'You are specialized in saving notes, reminders, decisions, incidents, runbooks, and documentation in the right project and folder.',
     'Return strict JSON with keys replyText, resolvedDraft, selectedProjectSlug, selectedFolderId, suggestedFolderPath, placeInRoot, pendingApproval, approvalIntent, confidence, action.',

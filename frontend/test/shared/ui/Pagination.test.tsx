@@ -13,7 +13,7 @@ describe('Pagination', () => {
       />,
     );
 
-    expect(screen.queryByLabelText('Paginação')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Pagination')).not.toBeInTheDocument();
   });
 
   it('exibe os controles quando existe mais de uma pagina', () => {
@@ -24,8 +24,8 @@ describe('Pagination', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Paginação')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Página anterior' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Próxima página' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Pagination')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeInTheDocument();
   });
 });

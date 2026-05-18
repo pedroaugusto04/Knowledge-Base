@@ -57,10 +57,10 @@ const dashboard: Dashboard = {
   home: {
     windowDays: 7,
     metrics: [
-      { id: 'recent-notes', label: 'Mudancas recentes', value: 6, meta: 'notas em 7 dias', tone: 'active' },
-      { id: 'active-projects', label: 'Projetos ativos', value: 1, meta: 'com movimento recente', tone: 'active' },
-      { id: 'open-reminders', label: 'Lembretes abertos', value: 2, meta: '1 vencidos', tone: 'high' },
-      { id: 'open-findings', label: 'Findings abertos', value: 1, meta: '1 reviews com pendências', tone: 'high' },
+      { id: 'recent-notes', label: 'Recent changes', value: 6, meta: 'notes in 7 days', tone: 'active' },
+      { id: 'active-projects', label: 'Active projects', value: 1, meta: 'with recent movement', tone: 'active' },
+      { id: 'open-reminders', label: 'Open reminders', value: 2, meta: '1 overdue', tone: 'high' },
+      { id: 'open-findings', label: 'Open findings', value: 1, meta: '1 reviews with pending findings', tone: 'high' },
     ],
     activityByDay: [
       { date: '2026-04-21', label: '21/04', count: 0 },
@@ -135,7 +135,7 @@ describe('HomePage', () => {
     renderHome();
 
     expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
-    expect(screen.getByText('Mudancas recentes')).toBeInTheDocument();
+    expect(screen.getByText('Recent changes')).toBeInTheDocument();
     expect(screen.getByText('Prioridade 1')).toBeInTheDocument();
     expect(screen.getAllByText('pending').length).toBeGreaterThan(0);
     expect(screen.getByText('high')).toBeInTheDocument();
@@ -159,7 +159,7 @@ describe('HomePage', () => {
   it('renders an empty state when there are no priorities', () => {
     renderHome({ priorities: [] });
 
-    expect(screen.getByText('Nenhuma prioridade aberta nesta janela.')).toBeInTheDocument();
+    expect(screen.getByText('No open priorities in this window.')).toBeInTheDocument();
   });
 
   it('shows finding severity instead of the raw open status on dashboard priorities', () => {
@@ -186,7 +186,7 @@ describe('HomePage', () => {
       projects: dashboard.projects.map(p => ({ ...p, repositories: [] })),
     });
 
-    expect(screen.getByText('Finalize as integrações do workspace')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Conectar integrações' })).toHaveAttribute('href', '/settings/integrations');
+    expect(screen.getByText('Finish setting up workspace integrations')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Connect integrations' })).toHaveAttribute('href', '/settings/integrations');
   });
 });

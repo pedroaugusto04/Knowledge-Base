@@ -73,7 +73,7 @@ export function ProjectFolderModal({
         window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNames));
         return;
       }
-      notifyGeneralFormError(error, mode === 'create' ? 'Nao foi possivel criar a pasta.' : 'Nao foi possivel atualizar a pasta.');
+      notifyGeneralFormError(error, mode === 'create' ? 'Could not create the folder.' : 'Could not update the folder.');
     },
   });
 
@@ -83,7 +83,7 @@ export function ProjectFolderModal({
         <section aria-labelledby="folder-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
           <div className="modal-head">
             <div>
-              <h2 id="folder-modal-title">{mode === 'create' ? 'Nova pasta' : 'Editar pasta'}</h2>
+              <h2 id="folder-modal-title">{mode === 'create' ? 'New folder' : 'Edit folder'}</h2>
               <p>{projectSlug}</p>
             </div>
             <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
@@ -97,10 +97,10 @@ export function ProjectFolderModal({
               (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
             )}
           >
-            <FormField name="displayName" label="Nome" error={errors.displayName?.message} required>
+            <FormField name="displayName" label="Name" error={errors.displayName?.message} required>
               {(fieldProps) => <input {...fieldProps} {...register('displayName')} />}
             </FormField>
-            <FormField name="parentFolderId" label="Pasta pai" error={errors.parentFolderId?.message} optional>
+            <FormField name="parentFolderId" label="Parent folder" error={errors.parentFolderId?.message} optional>
               {(fieldProps) => (
                 <Controller
                   control={control}
@@ -113,7 +113,7 @@ export function ProjectFolderModal({
                       dataField={fieldProps['data-field']}
                       id={fieldProps.id}
                       options={[
-                        { value: '', label: 'Raiz' },
+                        { value: '', label: 'Root' },
                         ...parentOptions.map((option) => ({
                           value: option.id,
                           label: option.displayName,
@@ -129,7 +129,7 @@ export function ProjectFolderModal({
                 />
               )}
             </FormField>
-            <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar pasta' : 'Salvar pasta'} />
+            <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Create folder' : 'Save folder'} />
           </form>
         </section>
       </div>

@@ -10,7 +10,7 @@ export const repositoryIdsSchema = z
   .array(
     z.union([z.string(), z.number()])
       .transform((value) => String(value).trim())
-      .pipe(z.string().min(1, 'Selecione um repositorio valido do GitHub.')),
+      .pipe(z.string().min(1, 'Select a valid GitHub repository.')),
   )
   .optional()
   .default([]);

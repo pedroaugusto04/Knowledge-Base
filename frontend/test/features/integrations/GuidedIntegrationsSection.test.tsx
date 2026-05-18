@@ -69,7 +69,7 @@ describe('GuidedIntegrationsSection', () => {
       />,
     );
 
-    expect(await screen.findByRole('dialog', { name: 'Selecionar repositorios' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Select repositories' })).toBeInTheDocument();
     expect(notificationSpies.notifySuccess).not.toHaveBeenCalled();
   });
 
@@ -112,12 +112,12 @@ describe('GuidedIntegrationsSection', () => {
 
     renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
-    const modal = await screen.findByRole('dialog', { name: 'Selecionar repositorios' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositories' }));
+    const modal = await screen.findByRole('dialog', { name: 'Select repositories' });
     fireEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
 
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Selecionar repositorios' })).not.toBeInTheDocument());
-    expect(screen.queryByRole('dialog', { name: 'Descartar alterações?' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Select repositories' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('dialog', { name: 'Discard changes?' })).not.toBeInTheDocument();
   });
 
   it('asks for confirmation before discarding repository selection changes and closes after confirmation', async () => {
@@ -159,15 +159,15 @@ describe('GuidedIntegrationsSection', () => {
 
     renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
-    const modal = await screen.findByRole('dialog', { name: 'Selecionar repositorios' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositories' }));
+    const modal = await screen.findByRole('dialog', { name: 'Select repositories' });
     fireEvent.click(await within(modal).findByRole('checkbox'));
     fireEvent.click(within(modal).getByRole('button', { name: 'Fechar detalhes' }));
 
-    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Fechar sem salvar' }));
+    expect(screen.getByRole('dialog', { name: 'Discard changes?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close without saving' }));
 
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Selecionar repositorios' })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Select repositories' })).not.toBeInTheDocument());
   });
 
   it('keeps repository selection changes when discard is canceled', async () => {
@@ -209,15 +209,15 @@ describe('GuidedIntegrationsSection', () => {
 
     renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
-    const modal = await screen.findByRole('dialog', { name: 'Selecionar repositorios' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositories' }));
+    const modal = await screen.findByRole('dialog', { name: 'Select repositories' });
     fireEvent.click(await within(modal).findByRole('checkbox'));
     fireEvent.click(screen.getByRole('presentation'));
 
-    expect(screen.getByRole('dialog', { name: 'Descartar alterações?' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
+    expect(screen.getByRole('dialog', { name: 'Discard changes?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
 
-    expect(screen.getByRole('dialog', { name: 'Selecionar repositorios' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Select repositories' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox')).toBeChecked();
   });
 
@@ -236,7 +236,7 @@ describe('GuidedIntegrationsSection', () => {
               status: 'missing',
               workspaceSlug: 'default',
               publicMetadata: {},
-              primaryAction: { type: 'connect', label: 'Conectar WhatsApp' },
+              primaryAction: { type: 'connect', label: 'Connect WhatsApp' },
               steps: ['Inicie a conexao.'],
               lastError: null,
               connectedAccount: null,
@@ -251,7 +251,7 @@ describe('GuidedIntegrationsSection', () => {
           ok: false,
           error: {
             code: 'pairing_unavailable',
-            message: 'Nao foi possivel iniciar o pareamento.',
+            message: 'Could not start pairing.',
             details: {},
           },
           requestId: 'req-pairing',
@@ -265,9 +265,9 @@ describe('GuidedIntegrationsSection', () => {
 
     renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['whatsapp']} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Conectar WhatsApp' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Connect WhatsApp' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Nao foi possivel iniciar o pareamento.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not start pairing.');
   });
 
   it('shows inline query errors for the GitHub repositories modal', async () => {
@@ -300,7 +300,7 @@ describe('GuidedIntegrationsSection', () => {
           ok: false,
           error: {
             code: 'github_unavailable',
-            message: 'Nao foi possivel carregar os repositorios agora.',
+            message: 'Could not load repositories right now.',
             details: {},
           },
           requestId: 'req-github-repos',
@@ -314,9 +314,9 @@ describe('GuidedIntegrationsSection', () => {
 
     renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositories' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Nao foi possivel carregar os repositorios agora.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load repositories right now.');
   });
 
   it('emits a success toast after saving GitHub repositories', async () => {
@@ -361,13 +361,13 @@ describe('GuidedIntegrationsSection', () => {
 
     renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositories' }));
     fireEvent.click(await screen.findByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Repositorios salvos com sucesso.'));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Selecionar repositorios' })).not.toBeInTheDocument());
-    expect(screen.queryByRole('dialog', { name: 'Descartar alterações?' })).not.toBeInTheDocument();
+    await waitFor(() => expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Repositories saved successfully.'));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Select repositories' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('dialog', { name: 'Discard changes?' })).not.toBeInTheDocument();
   });
 
   it('shows backend field errors inline when saving GitHub repositories fails', async () => {
@@ -423,10 +423,10 @@ describe('GuidedIntegrationsSection', () => {
 
     renderWithAppProviders(<GuidedIntegrationsSection returnToPath="/setup" workspaceSlug="default" providers={['github-app']} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Repositorios' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Repositories' }));
     const checkbox = await screen.findByRole('checkbox');
     fireEvent.click(checkbox);
-    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Selecione repositorios validos.');
     await waitFor(() => expect(checkbox).toHaveFocus());

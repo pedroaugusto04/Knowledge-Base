@@ -16,9 +16,9 @@ export function Pagination({
   const pages = visiblePages(pagination.page, pagination.totalPages, compact ? 3 : 5);
 
   return (
-    <footer className={`pagination-bar ${compact ? 'pagination-bar-compact' : ''}`} aria-label="Paginação">
+    <footer className={`pagination-bar ${compact ? 'pagination-bar-compact' : ''}`} aria-label="Pagination">
       <span className="badge pagination-summary">
-        {start}-{end} de {pagination.total}
+        {start}-{end} of {pagination.total}
       </span>
       <div className="pagination-controls">
         <button
@@ -26,9 +26,9 @@ export function Pagination({
           type="button"
           disabled={!pagination.hasPrevious}
           onClick={() => onPageChange(pagination.page - 1)}
-          aria-label="Página anterior"
+          aria-label="Previous page"
         >
-          {compact ? '‹' : 'Anterior'}
+          {compact ? '‹' : 'Previous'}
         </button>
         <div className="pagination-numbers">
           {pages.map((page) => (
@@ -48,9 +48,9 @@ export function Pagination({
           type="button"
           disabled={!pagination.hasNext}
           onClick={() => onPageChange(pagination.page + 1)}
-          aria-label="Próxima página"
+          aria-label="Next page"
         >
-          {compact ? '›' : 'Próxima'}
+          {compact ? '›' : 'Next'}
         </button>
       </div>
     </footer>

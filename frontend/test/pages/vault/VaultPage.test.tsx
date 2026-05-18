@@ -67,10 +67,10 @@ describe('VaultPage', () => {
     renderVaultPage({ notes: [note], selectedNoteId: note.id });
 
     expect(await screen.findByRole('heading', { name: note.title })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled();
-    expect(screen.queryByRole('button', { name: `Editar nota ${note.title}` })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: `Excluir nota ${note.title}` })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: `Edit note ${note.title}` })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: `Delete note ${note.title}` })).not.toBeInTheDocument();
   });
 
   it('disables the previous button on the first note in the project', async () => {
@@ -84,8 +84,8 @@ describe('VaultPage', () => {
     renderVaultPage({ notes, selectedNoteId: notes[0].id });
 
     expect(await screen.findByRole('heading', { name: notes[0].title })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Próxima' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
   });
 
   it('disables the next button on the last note in the project', async () => {
@@ -99,8 +99,8 @@ describe('VaultPage', () => {
     renderVaultPage({ notes, selectedNoteId: notes[1].id });
 
     expect(await screen.findByRole('heading', { name: notes[1].title })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Anterior' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
   it('opens the adjacent note inside the same page', async () => {
@@ -116,8 +116,8 @@ describe('VaultPage', () => {
     renderVaultPage({ notes, openNote, selectedNoteId: notes[1].id });
 
     expect(await screen.findByRole('heading', { name: notes[1].title })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Anterior' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Próxima' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     expect(openNote).toHaveBeenNthCalledWith(1, notes[0].id);
     expect(openNote).toHaveBeenNthCalledWith(2, notes[2].id);
@@ -146,7 +146,7 @@ describe('VaultPage', () => {
       expect(apiSpies.fetchNotes).toHaveBeenNthCalledWith(2, { page: 2, projectSlug: 'platform' });
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Próxima' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     expect(openNote).toHaveBeenCalledWith(pageTwo[0].id);
   });

@@ -45,7 +45,7 @@ export function FormField({
     <div className="form-field" data-field={name}>
       <div className="form-field-label-row">
         <label className="form-field-label" htmlFor={id}>{label}</label>
-        {isOptional ? <span className="form-field-meta">opcional</span> : null}
+        {isOptional ? <span className="form-field-meta">optional</span> : null}
       </div>
       {children({
         id,
@@ -63,7 +63,7 @@ export function FormField({
 }
 
 export function FormActions({
-  cancelLabel = 'Cancelar',
+  cancelLabel = 'Cancel',
   submitLabel,
   disabled,
   onCancel,

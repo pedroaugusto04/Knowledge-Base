@@ -12,9 +12,9 @@ export function ProjectFolderActionsMenu({
   return (
     <>
       <button
-        aria-label={`Editar pasta ${folderName}`}
+        aria-label={`Edit folder ${folderName}`}
         className="row-action-button"
-        title={`Editar pasta ${folderName}`}
+        title={`Edit folder ${folderName}`}
         type="button"
         onClick={onRename}
       >
@@ -24,9 +24,9 @@ export function ProjectFolderActionsMenu({
         </svg>
       </button>
       <button
-        aria-label={`Excluir pasta ${folderName}`}
+        aria-label={`Delete folder ${folderName}`}
         className="row-action-button danger"
-        title={`Excluir pasta ${folderName}`}
+        title={`Delete folder ${folderName}`}
         type="button"
         onClick={onDelete}
       >

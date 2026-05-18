@@ -48,10 +48,10 @@ const dashboard = {
   home: {
     windowDays: 7,
     metrics: [
-      { id: 'recent-notes', label: 'Mudancas recentes', value: 1, meta: 'notas em 7 dias', tone: 'active' },
-      { id: 'active-projects', label: 'Projetos ativos', value: 1, meta: 'com movimento recente', tone: 'active' },
-      { id: 'open-reminders', label: 'Lembretes abertos', value: 0, meta: '0 vencidos', tone: 'active' },
-      { id: 'open-findings', label: 'Findings abertos', value: 0, meta: '0 reviews com pendências', tone: 'active' },
+      { id: 'recent-notes', label: 'Recent changes', value: 1, meta: 'notes in 7 days', tone: 'active' },
+      { id: 'active-projects', label: 'Active projects', value: 1, meta: 'with recent movement', tone: 'active' },
+      { id: 'open-reminders', label: 'Open reminders', value: 0, meta: '0 overdue', tone: 'active' },
+      { id: 'open-findings', label: 'Open findings', value: 0, meta: '0 reviews with pending findings', tone: 'active' },
     ],
     activityByDay: [
       { date: '2026-04-21', label: '21/04', count: 0 },
@@ -198,16 +198,16 @@ function mockFetch() {
             'project: "n8n-automations"\n' +
             '---\n\n' +
             '# Deploy rollout\n' +
-            'Projeto: [[10 Projects/n8n-automations|N8N Automations]]\n\n' +
-            '## Texto original\n\n' +
+            'Project: [[10 Projects/n8n-automations|N8N Automations]]\n\n' +
+            '## Original text\n\n' +
             'Revisar deploy.\n\n' +
-            '## Resumo\n\n' +
+            '## Summary\n\n' +
             'Revisar deploy.\n\n' +
-            '## Impacto\n\n' +
+            '## Impact\n\n' +
             'No impact registered.\n\n' +
-            '## Riscos\n\n' +
+            '## Risks\n\n' +
             '- none\n\n' +
-            '## Proximos passos\n\n' +
+            '## Next steps\n\n' +
             '- none',
           frontmatter: {},
           links: [],
@@ -375,7 +375,7 @@ describe('AppShell', () => {
     expect(screen.queryByText(/source_system/)).not.toBeInTheDocument();
     expect(screen.queryByText(/manual-api/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Projeto: \[\[/)).not.toBeInTheDocument();
-    expect(screen.queryByText('Texto original')).not.toBeInTheDocument();
+    expect(screen.queryByText('Original text')).not.toBeInTheDocument();
     expect(screen.queryByText('No impact registered.')).not.toBeInTheDocument();
     expect(screen.queryByText('- none')).not.toBeInTheDocument();
   });
@@ -585,7 +585,7 @@ describe('AppShell', () => {
 
     renderWithAppProviders(<AppShell />, { route: '/settings/integrations' });
 
-    expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Integrations' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'GitHub App' })).toBeInTheDocument();
     expect(screen.getByAltText('GitHub logo')).toBeInTheDocument();
     expect(screen.getByAltText('WhatsApp logo')).toBeInTheDocument();
@@ -725,7 +725,7 @@ describe('AppShell', () => {
 
     renderWithAppProviders(<AppShell />, { route: '/settings/integrations' });
 
-    expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Integrations' })).toBeInTheDocument();
     fireEvent.click(await screen.findByRole('button', { name: 'Conectar GitHub' }));
 
     await waitFor(() => {
@@ -784,16 +784,16 @@ describe('AppShell', () => {
 
     renderWithAppProviders(<AppShell />);
 
-    expect(await screen.findByRole('heading', { name: 'Informações e contexto em um só lugar.' })).toBeInTheDocument();
-    expect(screen.getByText('Capture decisões e aprendizados no fluxo real do trabalho')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Information and context in one place.' })).toBeInTheDocument();
+    expect(screen.getByText('Capture decisions and learnings in the real flow of work')).toBeInTheDocument();
     expect((await screen.findAllByRole('button', { name: 'Entrar' })).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: 'Criar conta' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: 'Entrar no seu workspace' })).toBeInTheDocument();
-    expect(screen.getByText('Acesse seu histórico, projetos e integrações em andamento.')).toBeInTheDocument();
+    expect(screen.getByText('Access your history, projects, and active integrations.')).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Criar conta' }).at(0)!);
 
-    expect(await screen.findByRole('heading', { name: 'Criar conta para começar' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Create an account to get started' })).toBeInTheDocument();
     expect(screen.getByText('Configure seu acesso e comece a centralizar o conhecimento.')).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Entrar' }).at(0)!);
@@ -960,7 +960,7 @@ describe('AppShell', () => {
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'email-invalido' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Entrar' }).at(-1)!);
 
-    expect(await screen.findByText('Informe um email valido.')).toBeInTheDocument();
+    expect(await screen.findByText('Enter a valid email.')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByLabelText('Email')).toHaveFocus());
     expect(fetchMock.mock.calls.filter(([input]) => String(input) === '/api/auth/login')).toHaveLength(0);
   });

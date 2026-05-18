@@ -46,11 +46,11 @@ export type StoredIntegration = {
 };
 
 const providerLabels: Record<GuidedIntegrationProvider, { name: string; description: string }> = {
-  [IntegrationProvider.GithubApp]: { name: 'GitHub App', description: 'Instalacao vinculada ao usuario para reviews de push e selecao de repositorios.' },
-  [IntegrationProvider.Whatsapp]: { name: 'WhatsApp', description: 'Chat autorizado para captura e conversa pelo transporte gerenciado.' },
-  [IntegrationProvider.Telegram]: { name: 'Telegram', description: 'Chat vinculado ao bot gerenciado para notificacoes e comandos.' },
-  [IntegrationProvider.AiReview]: { name: 'IA de Review', description: 'Analise de pushes com provider e modelo configurados pelo servidor.' },
-  [IntegrationProvider.AiConversation]: { name: 'IA de Conversa', description: 'Extracao assistida das mensagens de conversa com configuracao gerenciada.' },
+  [IntegrationProvider.GithubApp]: { name: 'GitHub App', description: 'User-linked installation for push reviews and repository selection.' },
+  [IntegrationProvider.Whatsapp]: { name: 'WhatsApp', description: 'Authorized chat for capture and conversation through the managed transport.' },
+  [IntegrationProvider.Telegram]: { name: 'Telegram', description: 'Chat linked to the managed bot for notifications and commands.' },
+  [IntegrationProvider.AiReview]: { name: 'Review AI', description: 'Push analysis with a server-managed provider and model.' },
+  [IntegrationProvider.AiConversation]: { name: 'Conversation AI', description: 'Assisted extraction from chat messages with managed configuration.' },
 };
 
 function isGuidedProvider(value: string): value is GuidedIntegrationProvider {
@@ -86,7 +86,7 @@ export function decryptConfig(encrypted: unknown, environmentProvider: RuntimeEn
 
 function publicCredential(record: IntegrationCredentialRecord | null, provider: GuidedIntegrationProvider, workspaceSlug: string): StoredIntegration {
   const label = providerLabels[provider];
-  const connectAction = { type: 'connect' as const, label: provider === IntegrationProvider.GithubApp ? 'Conectar GitHub' : provider.startsWith('ai-') ? 'Ativar' : `Conectar ${label.name}` };
+  const connectAction = { type: 'connect' as const, label: provider === IntegrationProvider.GithubApp ? 'Connect GitHub' : provider.startsWith('ai-') ? 'Enable' : `Connect ${label.name}` };
   if (!record) {
     return {
       provider,
@@ -112,8 +112,8 @@ function publicCredential(record: IntegrationCredentialRecord | null, provider: 
     status: connected ? StoredIntegrationStatus.Connected : StoredIntegrationStatus.Revoked,
     workspaceSlug,
     publicMetadata: record.publicMetadata,
-    primaryAction: connected ? { type: 'revoke', label: provider.startsWith('ai-') ? 'Desativar' : 'Revogar' } : connectAction,
-    steps: connected ? connectedSteps(provider) : ['Credencial revogada.', provider.startsWith('ai-') ? 'Ative novamente para reabilitar.' : 'Conecte novamente para reativar.'],
+    primaryAction: connected ? { type: 'revoke', label: provider.startsWith('ai-') ? 'Disable' : 'Revoke' } : connectAction,
+    steps: connected ? connectedSteps(provider) : ['Credential revoked.', provider.startsWith('ai-') ? 'Enable it again to restore access.' : 'Connect again to reactivate it.'],
     lastError: typeof record.publicMetadata.lastError === 'string' ? record.publicMetadata.lastError : null,
     connectedAccount: typeof record.publicMetadata.connectedAccount === 'string' ? record.publicMetadata.connectedAccount : null,
     updatedAt: record.updatedAt,
@@ -136,17 +136,17 @@ function externalIdentityProviderForIntegration(provider: GuidedIntegrationProvi
 }
 
 function defaultSteps(provider: GuidedIntegrationProvider): string[] {
-  if (provider === IntegrationProvider.Whatsapp) return ['Inicie a conexao.', 'Envie o codigo no chat do WhatsApp.'];
-  if (provider === IntegrationProvider.Telegram) return ['Inicie a conexao.', 'Envie o codigo no chat do Telegram.'];
-  if (provider === IntegrationProvider.GithubApp) return ['Instale ou autorize o GitHub App.', 'Selecione os repositorios depois da conexao.'];
-  return ['Ative o recurso.', 'A configuracao gerenciada do servidor sera usada automaticamente.'];
+  if (provider === IntegrationProvider.Whatsapp) return ['Start the connection.', 'Send the code in the WhatsApp chat.'];
+  if (provider === IntegrationProvider.Telegram) return ['Start the connection.', 'Send the code in the Telegram chat.'];
+  if (provider === IntegrationProvider.GithubApp) return ['Install or authorize the GitHub App.', 'Select the repositories after connection.'];
+  return ['Enable the feature.', 'The server-managed configuration will be used automatically.'];
 }
 
 function connectedSteps(provider: GuidedIntegrationProvider): string[] {
-  if (provider === IntegrationProvider.GithubApp) return ['GitHub App conectado.', 'Selecione os repositorios do workspace.'];
-  if (provider === IntegrationProvider.Telegram) return ['Chat do Telegram conectado.'];
-  if (provider.startsWith('ai-')) return ['Recurso ativo para este workspace.'];
-  return ['Integracao conectada.'];
+  if (provider === IntegrationProvider.GithubApp) return ['GitHub App connected.', 'Select the workspace repositories.'];
+  if (provider === IntegrationProvider.Telegram) return ['Telegram chat connected.'];
+  if (provider.startsWith('ai-')) return ['Feature active for this workspace.'];
+  return ['Integration connected.'];
 }
 
 function aiEnvStatus(provider: string, environmentProvider: RuntimeEnvironmentProvider) {
@@ -228,10 +228,10 @@ export class IntegrationCredentialService {
       configured: status.configured,
       missing: status.missing,
       message: !active
-        ? 'Recurso desativado neste workspace.'
+        ? 'Feature disabled in this workspace.'
         : status.configured
-          ? 'Configuracao gerenciada pronta.'
-          : 'Configuracao gerenciada incompleta.',
+          ? 'Managed configuration is ready.'
+          : 'Managed configuration is incomplete.',
     };
   }
 

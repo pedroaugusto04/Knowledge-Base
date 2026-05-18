@@ -13,8 +13,8 @@ function SelectHarness() {
         ariaLabel="Filtrar por status"
         options={[
           { value: '', label: 'Todos' },
-          { value: 'pending', label: 'Pendentes' },
-          { value: 'resolved', label: 'Resolvidos' },
+          { value: 'pending', label: 'Pending' },
+          { value: 'resolved', label: 'Resolved' },
         ]}
         value={value}
         onChange={setValue}
@@ -34,9 +34,9 @@ describe('Select', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Filtrar por status' }));
 
-    fireEvent.click(screen.getByRole('option', { name: 'Pendentes' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Pending' }));
 
-    expect(screen.queryByRole('option', { name: 'Pendentes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Pending' })).not.toBeInTheDocument();
     expect(screen.getByTestId('current-value')).toHaveTextContent('pending');
   });
 

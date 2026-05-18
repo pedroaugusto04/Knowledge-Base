@@ -11,11 +11,11 @@ const editableNoteStatusSchema = z.enum([KnowledgeStatus.Resolved, KnowledgeStat
 
 export const createNoteBodySchema = z
   .object({
-    projectSlug: z.string().trim().min(1, 'Informe o projeto.'),
+    projectSlug: z.string().trim().min(1, 'Enter the project.'),
     folderId: z.string().trim().optional().default(''),
-    title: z.string().trim().max(160, 'Use no maximo 160 caracteres.').optional().default(''),
-    rawText: z.string().trim().min(1, 'Informe o texto da nota.').max(20000, 'Use no maximo 20000 caracteres.'),
-    tags: optionalStringArraySchema(60, 'Use no maximo 60 caracteres.'),
+    title: z.string().trim().max(160, 'Use at most 160 characters.').optional().default(''),
+    rawText: z.string().trim().min(1, 'Enter the note text.').max(20000, 'Use at most 20000 characters.'),
+    tags: optionalStringArraySchema(60, 'Use at most 60 characters.'),
     status: noteStatusSchema,
     reminderDate: z.string().trim().optional().default(''),
     reminderTime: z.string().trim().optional().default(''),
@@ -38,7 +38,7 @@ export const createNoteBodySchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['reminderTime'],
-        message: 'Informe a data do lembrete antes da hora.',
+        message: 'Enter the reminder date before the time.',
       });
     }
   });
@@ -57,9 +57,9 @@ export const noteAttachmentContentParamSchema = z.object({
 export const updateNoteBodySchema = z
   .object({
     folderId: z.string().trim().optional().default(''),
-    title: z.string().trim().max(160, 'Use no maximo 160 caracteres.').optional().default(''),
-    rawText: z.string().trim().min(1, 'Informe o texto da nota.').max(20000, 'Use no maximo 20000 caracteres.'),
-    tags: optionalStringArraySchema(60, 'Use no maximo 60 caracteres.'),
+    title: z.string().trim().max(160, 'Use at most 160 characters.').optional().default(''),
+    rawText: z.string().trim().min(1, 'Enter the note text.').max(20000, 'Use at most 20000 characters.'),
+    tags: optionalStringArraySchema(60, 'Use at most 60 characters.'),
     status: editableNoteStatusSchema,
     reminderDate: z.string().trim().optional().default(''),
     reminderTime: z.string().trim().optional().default(''),
@@ -81,7 +81,7 @@ export const updateNoteBodySchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['reminderTime'],
-        message: 'Informe a data do lembrete antes da hora.',
+        message: 'Enter the reminder date before the time.',
       });
     }
   });

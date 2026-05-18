@@ -7,7 +7,7 @@ export function GlobalLoadingOverlay() {
       role="status"
     >
       <div aria-hidden="true" className="global-loading-spinner" />
-      <span className="sr-only">Carregando</span>
+      <span className="sr-only">Loading</span>
     </div>
   );
 }

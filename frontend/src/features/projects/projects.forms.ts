@@ -1,19 +1,19 @@
 import { z } from 'zod';
 
-const optionalSlugSchema = z.string().trim().max(80, 'Use no maximo 80 caracteres.').refine((value) => !value || /^[a-z0-9._-]+$/.test(value), 'Use apenas letras minusculas, numeros, ponto, hifen ou underline.');
-const optionalRepoSchema = z.string().trim().max(180, 'Use no maximo 180 caracteres.').refine((value) => !value || /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value), 'Use o formato owner/repositorio.');
+const optionalSlugSchema = z.string().trim().max(80, 'Use at most 80 characters.').refine((value) => !value || /^[a-z0-9._-]+$/.test(value), 'Use only lowercase letters, numbers, dots, hyphens, or underscores.');
+const optionalRepoSchema = z.string().trim().max(180, 'Use at most 180 characters.').refine((value) => !value || /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value), 'Use the owner/repository format.');
 
 export const projectFormSchema = z.object({
-  displayName: z.string().trim().min(1, 'Informe o nome do projeto.').max(120, 'Use no maximo 120 caracteres.'),
+  displayName: z.string().trim().min(1, 'Enter the project name.').max(120, 'Use at most 120 characters.'),
   projectSlug: optionalSlugSchema,
-  repositoryIds: z.array(z.string().trim().min(1, 'Selecione um repositorio valido do GitHub.')),
-  defaultTags: z.string().max(500, 'Use no maximo 500 caracteres.'),
+  repositoryIds: z.array(z.string().trim().min(1, 'Select a valid GitHub repository.')),
+  defaultTags: z.string().max(500, 'Use at most 500 characters.'),
 });
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
 export const folderFormSchema = z.object({
-  displayName: z.string().trim().min(1, 'Informe o nome da pasta.').max(120, 'Use no maximo 120 caracteres.'),
+  displayName: z.string().trim().min(1, 'Enter the folder name.').max(120, 'Use at most 120 characters.'),
   parentFolderId: z.string(),
 });
 
@@ -21,9 +21,9 @@ export type FolderFormValues = z.infer<typeof folderFormSchema>;
 
 export const noteFormSchema = z.object({
   folderId: z.string(),
-  title: z.string().trim().max(160, 'Use no maximo 160 caracteres.'),
-  rawText: z.string().trim().min(1, 'Informe o texto da nota.').max(20000, 'Use no maximo 20000 caracteres.'),
-  tags: z.string().max(500, 'Use no maximo 500 caracteres.'),
+  title: z.string().trim().max(160, 'Use at most 160 characters.'),
+  rawText: z.string().trim().min(1, 'Enter the note text.').max(20000, 'Use at most 20000 characters.'),
+  tags: z.string().max(500, 'Use at most 500 characters.'),
   reminderDate: z.string(),
   reminderTime: z.string(),
 }).superRefine((values, ctx) => {
@@ -31,7 +31,7 @@ export const noteFormSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['reminderTime'],
-      message: 'Informe a data do lembrete antes da hora.',
+      message: 'Enter the reminder date before the time.',
     });
   }
 });

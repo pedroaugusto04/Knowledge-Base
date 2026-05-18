@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 
 export const discardChangesConfirmationCopy = {
-  cancelLabel: 'Continuar editando',
-  confirmLabel: 'Fechar sem salvar',
-  description: 'Você tem alterações não salvas. Tem certeza que deseja fechar este modal e perder os dados informados?',
-  title: 'Descartar alterações?',
+  cancelLabel: 'Keep editing',
+  confirmLabel: 'Close without saving',
+  description: 'You have unsaved changes. Are you sure you want to close this modal and lose the entered data?',
+  title: 'Discard changes?',
 } as const;
 
 export function useModalCloseGuard({ isDirty, onClose }: { isDirty: boolean; onClose: () => void }) {

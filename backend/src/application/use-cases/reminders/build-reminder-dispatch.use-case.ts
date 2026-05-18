@@ -33,12 +33,12 @@ export class BuildReminderDispatchUseCase {
       }
       if (!pending.length) return { ok: true, shouldSend: false, message: 'no_pending_daily_reminders' };
       const text = [
-        'Lembretes ativos',
-        `Data: ${now.date}`,
+        'Active reminders',
+        `Date: ${now.date}`,
         '',
         ...pending.flatMap((item, index) => [
           `- [${item.project}] ${item.title} (${item.reminderDate}${item.reminderTime ? ` ${item.reminderTime}` : ''})`,
-          `Texto: ${item.noteText}`,
+          `Text: ${item.noteText}`,
           ...(index === pending.length - 1 ? [] : ['']),
         ]),
       ].join('\n');
@@ -64,12 +64,12 @@ export class BuildReminderDispatchUseCase {
     }
     if (!pending.length) return { ok: true, shouldSend: false, message: 'no_due_reminders' };
     const text = [
-      'Lembrete do momento',
-      `Agora: ${now.date} ${now.time}`,
+      'Reminder due now',
+      `Now: ${now.date} ${now.time}`,
       '',
       ...pending.flatMap((item, index) => [
         `- [${item.project}] ${item.title}`,
-        `Texto: ${item.noteText}`,
+        `Text: ${item.noteText}`,
         ...(index === pending.length - 1 ? [] : ['']),
       ]),
     ].join('\n');

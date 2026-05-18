@@ -50,7 +50,7 @@ function isActiveNoteStatus(status: string | null | undefined) {
 }
 
 function projectLabel(projects: Project[], slug: string) {
-  return projects.find((project) => project.projectSlug === slug)?.displayName || slug || 'Sem projeto';
+  return projects.find((project) => project.projectSlug === slug)?.displayName || slug || 'No project';
 }
 
 function shiftDateKey(dateKey: string, days: number) {
@@ -124,7 +124,7 @@ export function buildDashboardHome(
         title: reminder.title,
         project: reminder.project,
         date: reminder.reminderAt || reminder.reminderDate,
-        description: overdue ? 'Lembrete pendente e vencido' : reminder.status === KnowledgeStatus.Sent ? 'Lembrete enviado' : 'Lembrete pendente',
+        description: overdue ? 'Pending and overdue reminder' : reminder.status === KnowledgeStatus.Sent ? 'Reminder sent' : 'Pending reminder',
         status: reminder.status,
         isOverdue: overdue,
         reminderDate: reminder.reminderDate,
@@ -181,14 +181,14 @@ export function buildDashboardHome(
   return {
     windowDays: HOME_WINDOW_DAYS,
     metrics: [
-      { id: 'recent-notes', label: 'Mudancas recentes', value: recentNotes.length, meta: `notas em ${HOME_WINDOW_DAYS} dias`, tone: 'active' },
-      { id: 'active-projects', label: 'Projetos ativos', value: countByProject.size, meta: 'com movimento recente', tone: 'active' },
-      { id: 'open-reminders', label: 'Lembretes abertos', value: openReminders.length, meta: `${overdueReminders.length} vencidos`, tone: overdueReminders.length ? 'high' : 'active' },
+      { id: 'recent-notes', label: 'Recent changes', value: recentNotes.length, meta: `notes in ${HOME_WINDOW_DAYS} days`, tone: 'active' },
+      { id: 'active-projects', label: 'Active projects', value: countByProject.size, meta: 'with recent movement', tone: 'active' },
+      { id: 'open-reminders', label: 'Open reminders', value: openReminders.length, meta: `${overdueReminders.length} overdue`, tone: overdueReminders.length ? 'high' : 'active' },
       {
         id: 'open-findings',
-        label: 'Findings abertos',
+        label: 'Open findings',
         value: openHighFindings.length,
-        meta: `${reviewsWithOpenFindings.length} reviews com pendências`,
+        meta: `${reviewsWithOpenFindings.length} reviews with pending findings`,
         tone: openHighFindings.length ? 'high' : 'active',
       },
     ],

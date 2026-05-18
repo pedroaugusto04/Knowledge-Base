@@ -41,7 +41,7 @@ export function ProjectCard({
         <div className="card-actions">
           {onEdit ? (
             <button
-              aria-label={`Editar projeto ${project.displayName}`}
+              aria-label={`Edit project ${project.displayName}`}
               className="row-action-button"
               type="button"
               onClick={(event) => {
@@ -54,7 +54,7 @@ export function ProjectCard({
           ) : null}
           {onDelete ? (
             <button
-              aria-label={deleteLabel || `Excluir projeto ${project.displayName}`}
+              aria-label={deleteLabel || `Delete project ${project.displayName}`}
               className="row-action-button danger"
               disabled={deleteDisabled}
               title={deleteDisabled ? deleteLabel : undefined}

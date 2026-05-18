@@ -128,9 +128,9 @@ test('builds dashboard home metrics and keeps dashboard arrays independent', () 
 
   assert.equal(home.windowDays, 7);
   assert.equal(home.metrics.find((metric) => metric.id === 'open-reminders')?.value, 2);
-  assert.equal(home.metrics.find((metric) => metric.id === 'open-reminders')?.meta, '1 vencidos');
+  assert.equal(home.metrics.find((metric) => metric.id === 'open-reminders')?.meta, '1 overdue');
   assert.equal(home.metrics.find((metric) => metric.id === 'open-findings')?.value, 1);
-  assert.equal(home.metrics.find((metric) => metric.id === 'open-findings')?.meta, '1 reviews com pendências');
+  assert.equal(home.metrics.find((metric) => metric.id === 'open-findings')?.meta, '1 reviews with pending findings');
   assert.equal(home.activityByDay.length, 7);
   assert.deepEqual(home.activityByProject.map((project) => project.project), ['alpha', 'beta']);
   assert.equal(home.priorities.length, 5);

@@ -79,7 +79,7 @@ export function ProjectNoteModal({
         window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNames));
         return;
       }
-      notifyGeneralFormError(error, mode === 'create' ? 'Nao foi possivel criar a nota.' : 'Nao foi possivel atualizar a nota.');
+      notifyGeneralFormError(error, mode === 'create' ? 'Could not create the note.' : 'Could not update the note.');
     },
   });
 
@@ -89,7 +89,7 @@ export function ProjectNoteModal({
         <section aria-labelledby="note-modal-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
           <div className="modal-head">
             <div>
-              <h2 id="note-modal-title">{mode === 'create' ? 'Nova nota' : 'Editar nota'}</h2>
+              <h2 id="note-modal-title">{mode === 'create' ? 'New note' : 'Edit note'}</h2>
               <p>{projectSlug}</p>
             </div>
             <button aria-label="Fechar detalhes" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
@@ -103,7 +103,7 @@ export function ProjectNoteModal({
               (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
             )}
           >
-            <FormField name="folderId" label="Pasta" error={errors.folderId?.message} optional>
+            <FormField name="folderId" label="Folder" error={errors.folderId?.message} optional>
               {(fieldProps) => (
                 <Controller
                   control={control}
@@ -116,7 +116,7 @@ export function ProjectNoteModal({
                       dataField={fieldProps['data-field']}
                       id={fieldProps.id}
                       options={[
-                        { value: '', label: 'Raiz' },
+                        { value: '', label: 'Root' },
                         ...folders.map((folder) => ({
                           value: folder.id,
                           label: folder.displayName,
@@ -132,24 +132,24 @@ export function ProjectNoteModal({
                 />
               )}
             </FormField>
-            <FormField name="title" label="Titulo" error={errors.title?.message} optional>
+            <FormField name="title" label="Title" error={errors.title?.message} optional>
               {(fieldProps) => <input {...fieldProps} {...register('title')} />}
             </FormField>
-            <FormField name="rawText" label="Texto" error={errors.rawText?.message} required>
+            <FormField name="rawText" label="Text" error={errors.rawText?.message} required>
               {(fieldProps) => <textarea {...fieldProps} {...register('rawText')} />}
             </FormField>
             <FormField name="tags" label="Tags" error={errors.tags?.message} optional>
               {(fieldProps) => <input {...fieldProps} {...register('tags')} />}
             </FormField>
             <div className="form-grid">
-              <FormField name="reminderDate" label="Data do lembrete" error={errors.reminderDate?.message} optional>
+              <FormField name="reminderDate" label="Reminder date" error={errors.reminderDate?.message} optional>
                 {(fieldProps) => <input type="date" {...fieldProps} {...register('reminderDate')} />}
               </FormField>
-              <FormField name="reminderTime" label="Hora do lembrete" error={errors.reminderTime?.message} optional>
+              <FormField name="reminderTime" label="Reminder time" error={errors.reminderTime?.message} optional>
                 {(fieldProps) => <input type="time" {...fieldProps} {...register('reminderTime')} />}
               </FormField>
             </div>
-            <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Criar nota' : 'Salvar nota'} />
+            <FormActions disabled={mutation.isPending} onCancel={closeGuard.requestClose} submitLabel={mode === 'create' ? 'Create note' : 'Save note'} />
           </form>
         </section>
       </div>

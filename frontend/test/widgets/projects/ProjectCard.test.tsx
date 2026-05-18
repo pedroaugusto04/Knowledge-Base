@@ -27,8 +27,8 @@ describe('ProjectCard', () => {
     );
 
     fireEvent.click(screen.getByText('N8N Automations'));
-    fireEvent.click(screen.getByRole('button', { name: 'Editar projeto N8N Automations' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Excluir projeto N8N Automations' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit project N8N Automations' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete project N8N Automations' }));
 
     expect(screen.getByText('acme/repo')).toBeInTheDocument();
     expect(onOpen).toHaveBeenCalledWith('n8n-automations');
