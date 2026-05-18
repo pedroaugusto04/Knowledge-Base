@@ -784,11 +784,13 @@ describe('AppShell', () => {
 
     renderWithAppProviders(<AppShell />);
 
-    expect(await screen.findByRole('heading', { name: 'Your technical memory, always searchable.' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Knowledge Vault helps you capture technical context.' })).toBeInTheDocument();
     expect(screen.getByText('Personal knowledge base for technical work')).toBeInTheDocument();
+    expect(screen.getByText('Keep notes, chats, GitHub activity, decisions, and reminders connected to the projects that need them next.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Save project memory where work already happens.' })).toBeInTheDocument();
     expect(screen.getByText('Search "retry policy"')).toBeInTheDocument();
     expect(screen.getByText('Capture')).toBeInTheDocument();
-    expect(screen.getByText('Connect your workspace and core integrations.')).toBeInTheDocument();
+    expect(screen.getByText('follow up on webhook backfill')).toBeInTheDocument();
     expect((await screen.findAllByRole('button', { name: 'Sign in' })).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: 'Create account' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: 'Sign in to your workspace' })).toBeInTheDocument();

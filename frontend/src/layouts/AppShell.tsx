@@ -27,6 +27,7 @@ import { useGlobalLoading } from '../app/global-loading';
 import { useTheme } from '../app/providers/theme';
 import { createAuthFormSchema, type AuthFormValues, type AuthMode } from './app-shell-auth.forms';
 import { authCopy, authLandingContent } from './auth-landing.content';
+import { useTypewriterWord } from './use-typewriter-word';
 
 
 function activeView(pathname: string): View {
@@ -364,6 +365,7 @@ async function refreshDashboard(queryClient: ReturnType<typeof useQueryClient>) 
 function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   const globalLoading = useGlobalLoading();
   const [mode, setMode] = useState<AuthMode>('login');
+  const typewriterWord = useTypewriterWord(authLandingContent.typewriterWords);
   const formRef = useRef<HTMLFormElement>(null);
   const schema = useMemo(() => createAuthFormSchema(mode), [mode]);
   const {
@@ -413,56 +415,36 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
           <div className="auth-hero-main">
             <div className="auth-hero-copy">
               <p className="auth-eyebrow">{authLandingContent.eyebrow}</p>
-              <h1 id="auth-hero-title">{authLandingContent.title}</h1>
+              <h1 id="auth-hero-title" aria-label={authLandingContent.title.accessible}>
+                <span>{authLandingContent.title.prefix}</span>
+                <span className="auth-typewriter-word" aria-hidden="true">
+                  {typewriterWord}
+                  <span className="auth-typewriter-cursor" />
+                </span>
+                <span>{authLandingContent.title.suffix}</span>
+              </h1>
               <p className="auth-lead">{authLandingContent.lead}</p>
             </div>
-            <div className="auth-product-preview" aria-label="Product preview">
-              <div className="auth-preview-search">
-                <span />
-                <strong>{authLandingContent.preview.search}</strong>
-              </div>
-              <div className="auth-preview-list">
-                {authLandingContent.preview.items.map((item) => (
-                  <article className="auth-preview-item" key={item.title}>
-                    <div>
-                      <span>{item.label}</span>
-                      <strong>{item.title}</strong>
-                    </div>
-                    <p>{item.meta}</p>
-                  </article>
-                ))}
-              </div>
-              <div className="auth-preview-context">
-                <strong>{authLandingContent.preview.context}</strong>
-                <div>
-                  {authLandingContent.preview.projectFacts.map((fact) => (
-                    <span key={fact}>{fact}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
-          <div className="auth-pillars" aria-label="Knowledge base workflow">
-            {authLandingContent.pillars.map((pillar) => (
-              <article className="auth-pillar" key={pillar.title}>
-                <span>{pillar.title}</span>
-                <p>{pillar.description}</p>
+          <div className="auth-story-list" aria-label="Knowledge base workflow">
+            {authLandingContent.storyCards.map((card) => (
+              <article className="auth-story-card" key={card.title}>
+                <div className="auth-story-copy">
+                  <span>{card.title}</span>
+                  <h2>{card.heading}</h2>
+                  <p>{card.description}</p>
+                </div>
+                <div className="auth-story-detail">
+                  <span>{card.detailLabel}</span>
+                  <strong>{card.detail}</strong>
+                  <div>
+                    {card.tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
               </article>
             ))}
-          </div>
-          <div className="auth-flow-card">
-            <div className="auth-flow-head">
-              <h2>How it works</h2>
-              <p>From daily capture to context recovery in a few focused steps.</p>
-            </div>
-            <ol className="auth-steps-list">
-              {authLandingContent.steps.map((step, index) => (
-                <li key={step}>
-                  <span className="auth-step-index">0{index + 1}</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
           </div>
         </section>
         <section className="auth-panel" aria-label="Authentication">

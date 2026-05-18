@@ -1,52 +1,45 @@
 export const authLandingContent = {
   eyebrow: 'Personal knowledge base for technical work',
-  title: 'Your technical memory, always searchable.',
-  lead: 'Capture decisions, bugs, automations, conversations, and project context as you work. Recover the exact thread when you need to debug, review, or continue.',
-  preview: {
-    search: 'Search "retry policy"',
-    context: 'Project context',
-    items: [
-      {
-        label: 'Decision',
-        title: 'Queue retries capped at 5 attempts',
-        meta: 'payments-api · captured from GitHub review',
-      },
-      {
-        label: 'Reminder',
-        title: 'Follow up on webhook backfill',
-        meta: 'tomorrow · linked to incident notes',
-      },
-      {
-        label: 'Bug',
-        title: 'OAuth callback fails after stale session',
-        meta: 'auth-service · reproduced from chat',
-      },
-    ],
-    projectFacts: ['open findings', 'recent notes', 'active reminders'],
+  title: {
+    prefix: 'Knowledge Vault helps you',
+    suffix: 'technical context.',
+    accessible: 'Knowledge Vault helps you capture technical context.',
   },
-  pillars: [
+  typewriterWords: ['capture', 'organize', 'recover', 'act on'],
+  lead: 'Keep notes, chats, GitHub activity, decisions, and reminders connected to the projects that need them next.',
+  storyCards: [
     {
       title: 'Capture',
-      description: 'Save WhatsApp, Telegram, manual notes, and GitHub events without breaking your flow.',
+      heading: 'Save project memory where work already happens.',
+      description: 'Turn chats, manual notes, bugs, and repository events into structured records without breaking your flow.',
+      detailLabel: 'Sources',
+      detail: 'WhatsApp, Telegram, GitHub, manual notes',
+      tags: ['chat', 'reviews', 'bugs'],
     },
     {
       title: 'Organize',
-      description: 'Keep projects, tags, folders, and status aligned around the way you already work.',
+      heading: 'Keep context attached to the right workspace.',
+      description: 'Group notes by project, status, tags, and folders so implementation details stay easy to scan.',
+      detailLabel: 'Project view',
+      detail: 'folders, tags, active findings',
+      tags: ['projects', 'status', 'folders'],
     },
     {
       title: 'Recover',
-      description: 'Search recent context, priorities, decisions, and implementation details by project.',
+      heading: 'Find the decision, phrase, or follow-up later.',
+      description: 'Search the fragment you remember and reopen the exact note, review context, or reminder behind it.',
+      detailLabel: 'Search',
+      detail: 'Search "retry policy"',
+      tags: ['decisions', 'snippets', 'history'],
     },
     {
       title: 'Act',
-      description: 'Turn findings into reminders, reviews, and follow-ups that stay connected to source context.',
+      heading: 'Turn knowledge into the next clear action.',
+      description: 'Keep reminders and review findings linked to source context so resumed work starts with signal.',
+      detailLabel: 'Next step',
+      detail: 'follow up on webhook backfill',
+      tags: ['reminders', 'reviews', 'handoffs'],
     },
-  ],
-  steps: [
-    'Connect your workspace and core integrations.',
-    'Capture knowledge from notes, chats, repos, and daily work.',
-    'Search by project, status, tag, or the phrase you remember.',
-    'Return to the decision, reminder, or review when work resumes.',
   ],
 } as const;
 
