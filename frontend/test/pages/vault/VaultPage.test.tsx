@@ -215,7 +215,7 @@ describe('VaultPage', () => {
       markdown: [
         '# TCC reminder',
         '',
-        'Project: [[10 Projects/tcc-latex|pedroaugusto04/TCC-Latex]]',
+        'Project: pedroaugusto04/TCC-Latex',
         '',
         '## Original text',
         '',
@@ -250,7 +250,7 @@ describe('VaultPage', () => {
 
     expect(await screen.findByRole('heading', { name: note.title })).toBeInTheDocument();
     expect(screen.getAllByText('lembrar de chamar banca para o TCC amanha nesse horario')).toHaveLength(1);
-    expect(screen.queryByText('Project: [[10 Projects/tcc-latex|pedroaugusto04/TCC-Latex]]')).not.toBeInTheDocument();
+    expect(screen.queryByText('Project: pedroaugusto04/TCC-Latex')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'AI summary' })).not.toBeInTheDocument();
   });
 });

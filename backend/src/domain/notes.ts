@@ -134,7 +134,7 @@ export function renderEventNote(project: Project, payload: IngestPayload, paths:
     frontmatter,
     `# ${trimText(payload.content.title, payload.content.rawText)}`,
     '',
-    `Project: ${vaultLink(path.join(vaultFolders.projects, `${project.projectSlug}.md`), project.displayName)}`,
+    `Project: ${project.displayName || project.projectSlug}`,
     '',
     '## Original text',
     '',

@@ -89,7 +89,7 @@ async function seedManualNote(repositories, userId) {
     occurredAt: '2026-04-27T10:00:00.000Z',
     sourceChannel: 'external',
     summary: 'confirmar deploy',
-    markdown: '# Deploy antigo\n\n## Resumo\n\nconfirmar deploy\n',
+    markdown: '# Deploy antigo\n\n## Summary\n\nconfirmar deploy\n',
     frontmatter: { id: 'manual:1' },
     metadata: { manual: true, rawText: 'confirmar deploy', reminderDate: '2026-04-29', reminderTime: '09:30' },
     origin: 'postgres',
@@ -387,25 +387,25 @@ test('updates any note type and still blocks project deletion while notes exist'
     markdown: [
       '# Review',
       '',
-      'Projeto: [[10 Projects/platform|Platform]]',
+      'Project: Platform',
       '',
-      '## Texto original',
-      '',
-      'Push recebido sem analise de IA configurada.',
-      '',
-      '## Resumo',
+      '## Original text',
       '',
       'Push recebido sem analise de IA configurada.',
       '',
-      '## Impacto',
+      '## Summary',
+      '',
+      'Push recebido sem analise de IA configurada.',
+      '',
+      '## Impact',
       '',
       'Nenhum impacto adicional foi resumido.',
       '',
-      '## Riscos',
+      '## Risks',
       '',
       '- none',
       '',
-      '## Proximos passos',
+      '## Next steps',
       '',
       '- none',
       '',
@@ -438,7 +438,7 @@ test('updates any note type and still blocks project deletion while notes exist'
   assert.equal(updated?.metadata.rawText, 'texto atualizado');
   assert.equal(updated?.metadata.reminderDate, '2026-05-02');
   assert.match((await repositories.objectStorage.get(updated.markdownStorageKey)).toString('utf8'), /texto atualizado/);
-  assert.match((await repositories.objectStorage.get(updated.markdownStorageKey)).toString('utf8'), /## Resumo/);
+  assert.match((await repositories.objectStorage.get(updated.markdownStorageKey)).toString('utf8'), /## Summary/);
   assert.match((await repositories.objectStorage.get(updated.markdownStorageKey)).toString('utf8'), /## Findings de review/);
   assert.equal(updated?.summary, 'Push recebido sem analise de IA configurada.');
   const detail = await new GetNoteDetailUseCase(repositories.contentRepository).execute(user.id, reviewNote.id);

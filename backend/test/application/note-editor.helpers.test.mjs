@@ -30,25 +30,25 @@ function structuredReviewNote() {
       '',
       '# Review pedroaugusto04/Knowledge-Base 3882c230',
       '',
-      'Projeto: [[10 Projects/platform|Platform]]',
+      'Project: Platform',
       '',
-      '## Texto original',
-      '',
-      'Push recebido sem analise de IA configurada.',
-      '',
-      '## Resumo',
+      '## Original text',
       '',
       'Push recebido sem analise de IA configurada.',
       '',
-      '## Impacto',
+      '## Summary',
+      '',
+      'Push recebido sem analise de IA configurada.',
+      '',
+      '## Impact',
       '',
       'Nenhum impacto adicional foi resumido.',
       '',
-      '## Riscos',
+      '## Risks',
       '',
       '- none',
       '',
-      '## Proximos passos',
+      '## Next steps',
       '',
       '- none',
       '',
@@ -88,10 +88,10 @@ test('preserves structured markdown sections when updating a structured note', (
   );
 
   assert.equal(updated.summary, 'Push recebido sem analise de IA configurada.');
-  assert.match(updated.markdown, /## Texto original/);
+  assert.match(updated.markdown, /## Original text/);
   assert.match(updated.markdown, /Push revisado manualmente pelo editor\./);
-  assert.match(updated.markdown, /## Resumo/);
+  assert.match(updated.markdown, /## Summary/);
   assert.match(updated.markdown, /Push recebido sem analise de IA configurada\./);
   assert.match(updated.markdown, /## Findings de review/);
-  assert.doesNotMatch(updated.markdown, /Projeto: \[\[10 Projects\/knowledge base\|pedroaugusto04\/Knowledge Base\]\] Texto original style:/);
+  assert.doesNotMatch(updated.markdown, /Project: \[\[10 Projects\/knowledge base\|pedroaugusto04\/Knowledge Base\]\] Original text style:/);
 });

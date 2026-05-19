@@ -224,13 +224,13 @@ function cleanExtraSection(section: string[], { isFirst, title }: { isFirst: boo
   const normalizedHeading = normalizeReaderText(heading);
   const meaningfulContent = content.filter((line) => line.trim());
 
-  if (normalizedHeading === 'texto original' || normalizedHeading === 'original text') return [];
-  if (normalizedHeading === 'resumo' || normalizedHeading === 'summary') return [];
-  if ((normalizedHeading === 'impacto' || normalizedHeading === 'impact') && sameText(meaningfulContent.join('\n'), 'No impact registered.')) return [];
-  if ((normalizedHeading === 'riscos' || normalizedHeading === 'risks') && listHasOnlyNone(meaningfulContent)) return [];
-  if ((normalizedHeading === 'proximos passos' || normalizedHeading === 'next steps') && listHasOnlyNone(meaningfulContent)) return [];
+  if (normalizedHeading === 'original text') return [];
+  if (normalizedHeading === 'summary') return [];
+  if (normalizedHeading === 'impact' && sameText(meaningfulContent.join('\n'), 'No impact registered.')) return [];
+  if (normalizedHeading === 'risks' && listHasOnlyNone(meaningfulContent)) return [];
+  if (normalizedHeading === 'next steps' && listHasOnlyNone(meaningfulContent)) return [];
 
-  const cleanedContent = content.filter((line) => !line.startsWith('Projeto: [[') && !line.startsWith('Project: [['));
+  const cleanedContent = content.filter((line) => !line.startsWith('Project: '));
   const withoutDuplicateTitle = isFirst ? dropDuplicateTitle(cleanedContent, title) : cleanedContent;
   if (!withoutDuplicateTitle.some((line) => line.trim())) return [];
 

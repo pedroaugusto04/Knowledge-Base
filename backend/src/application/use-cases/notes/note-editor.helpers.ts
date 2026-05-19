@@ -109,7 +109,7 @@ function renderStructuredMarkdown(
   structuredNote: StructuredNoteMarkdown,
 ) {
   const sections = structuredNote.sections.map((section) =>
-    normalizeComparableText(section.heading) === 'texto original'
+    normalizeComparableText(section.heading) === 'original text'
       ? { ...section, content: rawText ? rawText.split('\n') : [] }
       : section,
   );
@@ -185,8 +185,8 @@ function parseStructuredNoteMarkdown(markdown: string, title: string): Structure
   }
   if (current) sections.push({ ...current, content: trimBlankEdges(current.content) });
 
-  const rawText = sectionText(sections, 'texto original');
-  const summary = sectionText(sections, 'resumo');
+  const rawText = sectionText(sections, 'original text');
+  const summary = sectionText(sections, 'summary');
   if (!rawText) return null;
   return { preamble, sections, rawText, summary };
 }

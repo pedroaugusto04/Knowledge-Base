@@ -198,7 +198,7 @@ function mockFetch() {
             'project: "n8n-automations"\n' +
             '---\n\n' +
             '# Deploy rollout\n' +
-            'Project: [[10 Projects/n8n-automations|N8N Automations]]\n\n' +
+            'Project: N8N Automations\n\n' +
             '## Original text\n\n' +
             'Revisar deploy.\n\n' +
             '## Summary\n\n' +
@@ -383,7 +383,7 @@ describe('AppShell', () => {
     expect(screen.queryByText('test')).not.toBeInTheDocument();
     expect(screen.queryByText(/source_system/)).not.toBeInTheDocument();
     expect(screen.queryByText(/manual-api/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Projeto: \[\[/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Project:/)).not.toBeInTheDocument();
     expect(screen.queryByText('Original text')).not.toBeInTheDocument();
     expect(screen.queryByText('No impact registered.')).not.toBeInTheDocument();
     expect(screen.queryByText('- none')).not.toBeInTheDocument();
