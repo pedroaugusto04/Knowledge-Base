@@ -29,7 +29,7 @@ import {
   mediaFromInput as mediaFromConversationInput,
   parseApprovalIntent,
   resolveSelectedProjectSlug as resolveAgentSelectedProjectSlug,
-  sanitizeProjectSlug as sanitizeAgentProjectSlug,
+  sanitizeExistingProjectSlug as sanitizeExistingAgentProjectSlug,
   serializeFolderTreeNode as serializeAgentFolderTreeNode,
 } from './services/conversation-agent-state-machine.js';
 
@@ -154,14 +154,17 @@ export class ProcessAgentConversationUseCase {
       return this.reply('ask', this.presenter.projectPrompt(decision.replyText, projects), null, nextState);
     }
     if (nextState.pendingApproval === 'final_confirmation') {
+      const finalConfirmation = this.presenter.finalConfirmationPrompt(nextState, {
+        willCreateProject: this.shouldCreateProject(nextState.project.selectedProjectSlug, projects),
+      });
       const finalState = {
         ...nextState,
-        lastQuestion: this.presenter.finalConfirmationPrompt(nextState),
+        lastQuestion: finalConfirmation,
         lastAgentAction: 'confirm' as const,
         updatedAt: nowIso(),
       };
       await this.conversationStates.upsert(userId, normalizedWorkspaceSlug, key, finalState);
-      return this.reply('confirm', finalState.lastQuestion, null, finalState);
+      return this.reply('confirm', finalConfirmation, null, finalState);
     }
 
     return this.reply('ask', decision.replyText || this.presenter.needsOneMoreDetail(), null, nextState);
@@ -188,7 +191,7 @@ export class ProcessAgentConversationUseCase {
   ): Promise<AgentDecisionTurn> {
     const projects = (await this.contentRepository.listProjects(userId))
       .filter((project) => project.enabled && project.workspaceSlug === workspaceSlug);
-    const candidateProjectSlug = sanitizeAgentProjectSlug(state.project.selectedProjectSlug, projects);
+    const candidateProjectSlug = sanitizeExistingAgentProjectSlug(state.project.selectedProjectSlug, projects);
     const candidateFolders = candidateProjectSlug && candidateProjectSlug !== 'inbox'
       ? await this.contentRepository.listProjectFolders(userId, candidateProjectSlug)
       : [];
@@ -292,20 +295,28 @@ export class ProcessAgentConversationUseCase {
           return this.reply('ask', this.presenter.projectPrompt(approval.turn.decision.replyText, approval.turn.projects), null, nextState);
         }
         if (nextState.pendingApproval === 'final_confirmation') {
+          const finalConfirmation = this.presenter.finalConfirmationPrompt(nextState, {
+            willCreateProject: this.shouldCreateProject(nextState.project.selectedProjectSlug, approval.turn.projects),
+          });
           const finalState = {
             ...nextState,
-            lastQuestion: this.presenter.finalConfirmationPrompt(nextState),
+            lastQuestion: finalConfirmation,
             lastAgentAction: 'confirm' as const,
             updatedAt: nowIso(),
           };
           await this.conversationStates.upsert(userId, workspaceSlug, key, finalState);
-          return this.reply('confirm', finalState.lastQuestion, null, finalState);
+          return this.reply('confirm', finalConfirmation, null, finalState);
         }
         return this.reply('ask', approval.turn.decision.replyText || this.presenter.needsOneMoreDetail(), null, nextState);
       }
-      return this.reply('confirm', this.presenter.finalConfirmationPrompt(state), null, state);
+      const projects = (await this.contentRepository.listProjects(userId))
+        .filter((project) => project.enabled && project.workspaceSlug === workspaceSlug);
+      return this.reply('confirm', this.presenter.finalConfirmationPrompt(state, {
+        willCreateProject: this.shouldCreateProject(state.project.selectedProjectSlug, projects),
+      }), null, state);
     }
 
+    await this.ensureProjectExistsForSubmission(userId, workspaceSlug, state.project.selectedProjectSlug);
     const folderId = await this.folderResolutionService.resolveFolderIdForSubmission(userId, state);
     const payload = buildAgentPayload(input, state, this.environmentProvider.read().reminderTimeZone);
     const ingestResult = await this.ingestEntryUseCase.execute(payload, userId, workspaceSlug, { folderId: folderId || undefined });
@@ -333,6 +344,29 @@ export class ProcessAgentConversationUseCase {
         confidence: state.confidence,
       },
     );
+  }
+
+  private shouldCreateProject(projectSlug: string, projects: ProjectRecord[]) {
+    const normalized = slugify(projectSlug);
+    if (!normalized || normalized === 'inbox') return false;
+    return !projects.some((project) => project.projectSlug === normalized);
+  }
+
+  private async ensureProjectExistsForSubmission(userId: string, workspaceSlug: string, projectSlug: string) {
+    const normalizedProjectSlug = slugify(projectSlug);
+    if (!normalizedProjectSlug || normalizedProjectSlug === 'inbox') return;
+
+    const existing = await this.contentRepository.getProjectBySlug(userId, normalizedProjectSlug);
+    if (existing?.enabled) return;
+
+    await this.contentRepository.upsertProject(userId, {
+      projectSlug: normalizedProjectSlug,
+      displayName: displayNameFromProjectSlug(normalizedProjectSlug),
+      workspaceSlug,
+      repositories: [],
+      defaultTags: [],
+      enabled: true,
+    });
   }
 
   private async resolveApprovalTurn(
@@ -385,6 +419,14 @@ export class ProcessAgentConversationUseCase {
       },
     };
   }
+}
+
+function displayNameFromProjectSlug(projectSlug: string) {
+  return projectSlug
+    .split('-')
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
 }
 
 function serializeErrorForLog(error: unknown) {

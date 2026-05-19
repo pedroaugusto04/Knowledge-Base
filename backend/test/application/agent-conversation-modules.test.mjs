@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { ProcessAgentConversationUseCase } from '../../dist/application/use-cases/conversation/process-agent-conversation.use-case.js';
 import { ConversationAgentPresenter } from '../../dist/application/use-cases/conversation/services/conversation-agent.presenter.js';
 import { ConversationFolderResolutionService } from '../../dist/application/use-cases/conversation/services/conversation-folder-resolution.service.js';
 import {
@@ -30,6 +31,27 @@ test('conversation agent presenter formats final confirmation in English', () =>
   assert.match(message, /Confirm note saving/);
   assert.match(message, /Runbooks \(new, will be created when saved\)/);
   assert.match(message, /Reply "yes" to save or "no" to discard/);
+});
+
+test('conversation agent presenter marks a new project in the final confirmation', () => {
+  const presenter = new ConversationAgentPresenter();
+  const state = {
+    ...emptyAgentConversationState,
+    draft: {
+      ...emptyAgentConversationState.draft,
+      rawText: 'Registrar decisao',
+      kind: 'decision',
+      reminderDate: '',
+      reminderTime: '',
+      tags: [],
+    },
+    project: { selectedProjectSlug: 'projeto-x' },
+    folder: { selectedFolderId: '', suggestedFolderPath: [], placeInRoot: true },
+  };
+
+  const message = presenter.finalConfirmationPrompt(state, { willCreateProject: true });
+
+  assert.match(message, /Project: projeto-x \(new, will be created when saved\)/);
 });
 
 test('conversation agent state machine keeps valid project and prepares final confirmation', () => {
@@ -67,6 +89,41 @@ test('conversation agent state machine keeps valid project and prepares final co
   assert.equal(next.project.selectedProjectSlug, 'platform');
   assert.deepEqual(next.folder.suggestedFolderPath, ['Runbooks', 'API']);
   assert.deepEqual(next.draft.tags, ['deploy']);
+});
+
+test('conversation agent state machine preserves a new project slug for final confirmation', () => {
+  const next = buildNextAgentConversationState({
+    current: emptyAgentConversationState,
+    messageText: 'anote no projeto x',
+    media: emptyAgentConversationState.media,
+    decision: {
+      replyText: 'Confirm note saving.',
+      resolvedDraft: {
+        rawText: 'Anote no projeto x',
+        title: '',
+        kind: 'note',
+        canonicalType: 'event',
+        importance: 'medium',
+        tags: [],
+        reminderDate: '',
+        reminderTime: '',
+      },
+      selectedProjectSlug: 'projeto-x',
+      selectedFolderId: '',
+      suggestedFolderPath: [],
+      placeInRoot: true,
+      pendingApproval: 'final_confirmation',
+      approvalIntent: 'none',
+      confidence: 'high',
+      action: 'confirm',
+    },
+    projects: [{ projectSlug: 'platform', displayName: 'Platform', workspaceSlug: 'default', repositories: [], defaultTags: [], enabled: true }],
+    candidateFolders: [],
+    reminderTimeZone: 'UTC',
+  });
+
+  assert.equal(next.pendingApproval, 'final_confirmation');
+  assert.equal(next.project.selectedProjectSlug, 'projeto-x');
 });
 
 test('conversation folder resolution creates missing nested folders in order', async () => {
@@ -108,4 +165,108 @@ test('conversation approval parser accepts English and legacy Portuguese command
   assert.equal(parseApprovalIntent('sim'), 'approve');
   assert.equal(parseApprovalIntent('no'), 'reject');
   assert.equal(parseApprovalIntent('cancel'), 'cancel');
+});
+
+test('process agent conversation auto-creates a missing project before submitting the note', async () => {
+  const savedStates = new Map();
+  const createdProjects = [];
+  const ingested = [];
+  const contentRepository = {
+    async listProjects() {
+      return [{ projectSlug: 'platform', displayName: 'Platform', workspaceSlug: 'default', repositories: [], defaultTags: [], enabled: true }];
+    },
+    async getProjectBySlug(_userId, projectSlug) {
+      return createdProjects.find((project) => project.projectSlug === projectSlug) || null;
+    },
+    async upsertProject(_userId, input) {
+      createdProjects.push(input);
+      return input;
+    },
+  };
+  const conversationStates = {
+    async get(_userId, _workspaceSlug, key) {
+      const state = savedStates.get(key);
+      return state ? { state } : null;
+    },
+    async upsert(_userId, _workspaceSlug, key, state) {
+      savedStates.set(key, state);
+    },
+    async clear(_userId, _workspaceSlug, key) {
+      savedStates.delete(key);
+    },
+  };
+  const ingestEntryUseCase = {
+    async execute(payload) {
+      ingested.push(payload);
+      return { ok: true, noteId: 'note-1', project: payload.event.projectSlug, eventPath: '20 Inbox/note.md', attachmentIds: [] };
+    },
+  };
+  const credentials = {
+    async findCredential() {
+      return { status: 'connected', revokedAt: null };
+    },
+  };
+  const presenter = new ConversationAgentPresenter();
+  const useCase = new ProcessAgentConversationUseCase(
+    contentRepository,
+    conversationStates,
+    ingestEntryUseCase,
+    {
+      read: () => ({
+        reminderTimeZone: 'UTC',
+        conversationAiProvider: 'openrouter',
+        conversationAiBaseUrl: 'https://example.com',
+        conversationAiModel: 'test-model',
+        conversationAiApiKey: 'test-key',
+      }),
+    },
+    {
+      async decide() {
+        throw new Error('approval-parser-fallback');
+      },
+    },
+    presenter,
+    {
+      async resolveFolderIdForSubmission() {
+        return '';
+      },
+    },
+    credentials,
+  );
+
+  savedStates.set('agent:group@g.us:5511999999999@s.whatsapp.net', {
+    ...emptyAgentConversationState,
+    draft: {
+      ...emptyAgentConversationState.draft,
+      rawText: 'Fiz algo no projeto x',
+      kind: 'note',
+      canonicalType: 'event',
+      importance: 'medium',
+    },
+    project: { selectedProjectSlug: 'projeto-x' },
+    folder: { selectedFolderId: '', suggestedFolderPath: [], placeInRoot: true },
+    pendingApproval: 'final_confirmation',
+  });
+
+  const result = await useCase.execute({
+    messageText: 'sim',
+    senderId: '5511999999999@s.whatsapp.net',
+    chatId: 'group@g.us',
+    messageId: 'msg-1',
+    hasMedia: false,
+    media: {},
+  }, 'user-1', 'default');
+
+  assert.equal(result.action, 'submit');
+  assert.equal(createdProjects.length, 1);
+  assert.deepEqual(createdProjects[0], {
+    projectSlug: 'projeto-x',
+    displayName: 'Projeto X',
+    workspaceSlug: 'default',
+    repositories: [],
+    defaultTags: [],
+    enabled: true,
+  });
+  assert.equal(ingested.length, 1);
+  assert.equal(ingested[0].event.projectSlug, 'projeto-x');
 });

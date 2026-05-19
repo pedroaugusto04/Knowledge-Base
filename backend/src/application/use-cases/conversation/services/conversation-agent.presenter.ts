@@ -38,7 +38,7 @@ export class ConversationAgentPresenter {
     return `${replyText || 'Which project should I use for this note?'}\n\nAvailable projects: ${options.join(', ')}`;
   }
 
-  finalConfirmationPrompt(state: AgentConversationState) {
+  finalConfirmationPrompt(state: AgentConversationState, options?: { willCreateProject?: boolean }) {
     const folderText = state.folder.placeInRoot
       ? 'project root'
       : state.folder.selectedFolderId
@@ -46,10 +46,13 @@ export class ConversationAgentPresenter {
         : state.folder.suggestedFolderPath.length
           ? `${state.folder.suggestedFolderPath.join(' / ')} (new, will be created when saved)`
           : 'project root';
+    const projectText = options?.willCreateProject
+      ? `${state.project.selectedProjectSlug || 'inbox'} (new, will be created when saved)`
+      : state.project.selectedProjectSlug || 'inbox';
     return [
       'Confirm note saving:',
       `Text: ${state.draft.rawText}`,
-      `Project: ${state.project.selectedProjectSlug || 'inbox'}`,
+      `Project: ${projectText}`,
       `Folder: ${folderText}`,
       `Type: ${state.draft.kind}`,
       `Reminder: ${state.draft.reminderDate ? `${state.draft.reminderDate}${state.draft.reminderTime ? ` ${state.draft.reminderTime}` : ''}` : 'no reminder'}`,

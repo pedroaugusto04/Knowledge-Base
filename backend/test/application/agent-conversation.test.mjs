@@ -257,17 +257,41 @@ test('agent conversation allows changing the suggested folder to project root be
   assert.equal(notes[0].folderId, null);
 });
 
-test('agent conversation refuses nonexistent project and asks for an existing project or inbox', async (t) => {
+test('agent conversation keeps nonexistent project, confirms creation and saves the note', async (t) => {
   const turns = new Map([
-    ['fiz algo no projeto x', decision({ selectedProjectSlug: 'projeto-x', pendingApproval: 'none', suggestedFolderPath: [], action: 'ask', replyText: 'Pode confirmar o projeto?' })],
+    ['fiz algo no projeto x', decision({
+      selectedProjectSlug: 'projeto-x',
+      pendingApproval: 'final_confirmation',
+      suggestedFolderPath: [],
+      action: 'confirm',
+      replyText: 'Pode confirmar o projeto?',
+      resolvedDraft: {
+        rawText: 'Fiz algo no projeto x',
+        title: '',
+        kind: 'note',
+        canonicalType: 'event',
+        importance: 'medium',
+        tags: [],
+        reminderDate: '',
+        reminderTime: '',
+      },
+    })],
   ]);
-  const { agentUseCase, user } = await createFixture(t, turns);
+  const { repositories, agentUseCase, user } = await createFixture(t, turns);
 
   const result = await agentUseCase.execute(input('fiz algo no projeto x'), user.id, 'default');
-  assert.equal(result.action, 'ask');
-  assert.equal(result.agent.selectedProjectSlug, '');
-  assert.match(result.replyText, /Available projects/);
-  assert.doesNotMatch(result.replyText, /projeto-x/);
+  assert.equal(result.action, 'confirm');
+  assert.equal(result.agent.selectedProjectSlug, 'projeto-x');
+  assert.match(result.replyText, /Project: projeto-x \(new, will be created when saved\)/);
+
+  const saved = await agentUseCase.execute(input('sim'), user.id, 'default');
+  assert.equal(saved.action, 'submit');
+  const project = await repositories.contentRepository.getProjectBySlug(user.id, 'projeto-x');
+  assert.ok(project);
+  assert.equal(project.displayName, 'Projeto X');
+  const notes = await repositories.contentRepository.listNotes(user.id);
+  assert.equal(notes.length, 1);
+  assert.equal(notes[0].projectSlug, 'projeto-x');
 });
 
 test('agent conversation clears state when final confirmation is denied', async (t) => {

@@ -74,18 +74,24 @@ export function serializeFolderTreeNode(folder: Awaited<ReturnType<typeof buildP
   };
 }
 
-export function sanitizeProjectSlug(value: string, projects: ProjectRecord[]) {
+export function sanitizeProjectSlug(value: string) {
   const normalized = slugify(value);
+  if (!normalized) return '';
+  return normalized;
+}
+
+export function sanitizeExistingProjectSlug(value: string, projects: ProjectRecord[]) {
+  const normalized = sanitizeProjectSlug(value);
   if (!normalized) return '';
   if (normalized === 'inbox') return 'inbox';
   return projects.some((project) => project.projectSlug === normalized) ? normalized : '';
 }
 
 export function resolveSelectedProjectSlug(value: string, current: AgentConversationState, projects: ProjectRecord[]) {
-  const selected = sanitizeProjectSlug(value, projects);
+  const selected = sanitizeProjectSlug(value);
   if (selected) return selected;
   if (String(value || '').trim()) return '';
-  return sanitizeProjectSlug(current.project.selectedProjectSlug, projects);
+  return sanitizeProjectSlug(current.project.selectedProjectSlug);
 }
 
 export function parseApprovalIntent(value: string): AgentConversationApprovalIntent {
