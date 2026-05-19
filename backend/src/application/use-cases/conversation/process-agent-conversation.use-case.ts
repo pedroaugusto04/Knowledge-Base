@@ -223,7 +223,7 @@ export class ProcessAgentConversationUseCase {
         workspaceSlug,
         pendingApproval: state.pendingApproval,
         messageId: input.messageId,
-        error: error instanceof Error ? error.message : String(error),
+        ...serializeErrorForLog(error),
       });
       throw error;
     }
@@ -340,7 +340,7 @@ export class ProcessAgentConversationUseCase {
         userId,
         workspaceSlug,
         pendingApproval: state.pendingApproval,
-        error: error instanceof Error ? error.message : String(error),
+        ...serializeErrorForLog(error),
       });
     }
     return { intent: parserApprovalIntent(input.messageText) };
@@ -581,4 +581,39 @@ function mediaFromInput(input: ConversationInput, state: AgentConversationState)
 
 function mediaForAttachment(state: AgentConversationState) {
   return Boolean(state.media.fileName && state.media.dataBase64);
+}
+
+function serializeErrorForLog(error: unknown) {
+  if (!(error instanceof Error)) {
+    return { error: String(error) };
+  }
+
+  const baseFields: Record<string, unknown> = {
+    errorName: error.name,
+    error: error.message,
+    errorStack: error.stack,
+  };
+  const errorRecord = error as Error & {
+    cause?: unknown;
+    status?: number;
+    statusText?: string;
+    responseBody?: string;
+    endpoint?: string;
+    provider?: unknown;
+    model?: string;
+  };
+
+  if (errorRecord.cause instanceof Error) {
+    baseFields.errorCause = errorRecord.cause.message;
+    baseFields.errorCauseStack = errorRecord.cause.stack;
+  } else if (errorRecord.cause !== undefined) {
+    baseFields.errorCause = String(errorRecord.cause);
+  }
+  if (errorRecord.status !== undefined) baseFields.errorStatus = errorRecord.status;
+  if (errorRecord.statusText !== undefined) baseFields.errorStatusText = errorRecord.statusText;
+  if (errorRecord.responseBody !== undefined) baseFields.errorResponseBody = errorRecord.responseBody;
+  if (errorRecord.endpoint !== undefined) baseFields.errorEndpoint = errorRecord.endpoint;
+  if (errorRecord.provider !== undefined) baseFields.errorProvider = String(errorRecord.provider);
+  if (errorRecord.model !== undefined) baseFields.errorModel = errorRecord.model;
+  return baseFields;
 }
