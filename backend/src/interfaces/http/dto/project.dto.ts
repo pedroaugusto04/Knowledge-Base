@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import { slugify } from '../../../domain/strings.js';
+import { paginationInputSchema } from '../../../contracts/pagination.js';
+import { projectTimelineCategories } from '../../../application/models/project-timeline.models.js';
 import {
   normalizedSlugList,
   optionalStringArraySchema,
@@ -31,6 +33,10 @@ export const projectSlugParamSchema = z.object({
   projectSlug: z.string().trim().min(1).transform((value) => slugify(value)),
 });
 
+export const projectTimelineQuerySchema = paginationInputSchema.extend({
+  category: z.enum(projectTimelineCategories).default('all'),
+});
+
 export const updateProjectBodySchema = z
   .object({
     displayName: z.string().trim().min(1, 'Informe o nome do projeto.').max(120, 'Use no maximo 120 caracteres.'),
@@ -45,6 +51,7 @@ export const updateProjectBodySchema = z
   }));
 
 export type ProjectSlugParam = z.infer<typeof projectSlugParamSchema>;
+export type ProjectTimelineQuery = z.infer<typeof projectTimelineQuerySchema>;
 export type UpdateProjectBody = z.infer<typeof updateProjectBodySchema>;
 
 export const projectFolderIdParamSchema = z.object({

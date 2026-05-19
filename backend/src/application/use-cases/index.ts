@@ -4,6 +4,7 @@ export { ListWorkspaceRepositoriesUseCase } from './workspaces/list-workspace-re
 export { CreateProjectUseCase } from './projects/create-project.use-case.js';
 export { DeleteProjectUseCase } from './projects/delete-project.use-case.js';
 export { ListProjectFoldersUseCase } from './projects/list-project-folders.use-case.js';
+export { ListProjectTimelineUseCase } from './projects/list-project-timeline.use-case.js';
 export { CreateProjectFolderUseCase } from './projects/create-project-folder.use-case.js';
 export { UpdateProjectFolderUseCase } from './projects/update-project-folder.use-case.js';
 export { DeleteProjectFolderUseCase } from './projects/delete-project-folder.use-case.js';

@@ -1,4 +1,4 @@
-import type { NoteDetail, NoteSummary } from './models/note';
+import type { CanonicalNoteType, NoteDetail, NoteSummary } from './models/note';
 import type { NoteStatus, QuickNoteStatus } from './models/note-status';
 import { DEFAULT_PAGE_SIZE, type PaginatedResponse } from './models/pagination';
 import { request } from './request';
@@ -29,6 +29,7 @@ export type CreateNoteParams = {
   rawText: string;
   tags?: string[];
   status?: QuickNoteStatus;
+  canonicalType?: CanonicalNoteType;
   reminderDate?: string;
   reminderTime?: string;
   reminderAt?: string;
@@ -55,6 +56,7 @@ export type UpdateNoteParams = {
   rawText: string;
   tags?: string[];
   status?: QuickNoteStatus;
+  canonicalType?: CanonicalNoteType;
   reminderDate?: string;
   reminderTime?: string;
   reminderAt?: string;

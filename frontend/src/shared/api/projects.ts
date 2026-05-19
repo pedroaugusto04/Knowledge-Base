@@ -1,5 +1,6 @@
 import type { Project } from './models/project';
 import type { ProjectFolder } from './models/project-folder';
+import type { ProjectTimelineCategory, ProjectTimelineItem } from './models/project-timeline';
 import { DEFAULT_PAGE_SIZE, type PaginatedResponse } from './models/pagination';
 import type { Workspace } from './models/workspace';
 import { request } from './request';
@@ -56,6 +57,15 @@ export function deleteProject(projectSlug: string) {
 
 export function fetchProjectFolders(projectSlug: string) {
   return request<{ ok: true; projectSlug: string; folders: ProjectFolder[] }>(`/api/projects/${encodeURIComponent(projectSlug)}/folders`);
+}
+
+export function fetchProjectTimeline(projectSlug: string, params: { page?: number; pageSize?: number; category?: ProjectTimelineCategory }) {
+  const search = new URLSearchParams({
+    page: String(params.page || 1),
+    pageSize: String(params.pageSize || DEFAULT_PAGE_SIZE),
+    category: params.category || 'all',
+  });
+  return request<PaginatedResponse<ProjectTimelineItem, 'timeline'>>(`/api/projects/${encodeURIComponent(projectSlug)}/timeline?${search.toString()}`);
 }
 
 export function createProjectFolder(projectSlug: string, params: { displayName: string; parentFolderId?: string }) {

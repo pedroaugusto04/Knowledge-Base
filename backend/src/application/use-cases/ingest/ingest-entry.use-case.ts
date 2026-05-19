@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { CanonicalType, KnowledgeStatus } from '../../../contracts/enums.js';
+import { KnowledgeStatus } from '../../../contracts/enums.js';
 import { ingestPayloadSchema, withDerivedReminderAt, type IngestPayload } from '../../../contracts/ingest.js';
 import { hasReminder, normalizeManualNoteStatus } from '../../../domain/note-status.js';
 import { buildNotePaths, renderEventNote } from '../../../domain/notes.js';
@@ -121,7 +121,7 @@ async function saveIngestedNote(
   }
   const note = await contentRepository.upsertNote(userId, {
     path: paths.eventRelativePath.replace(/\\/g, '/'),
-    type: CanonicalType.Event,
+    type: payload.classification.canonicalType,
     title,
     projectSlug: project.projectSlug,
     workspaceSlug,
@@ -134,7 +134,7 @@ async function saveIngestedNote(
     markdown,
     frontmatter: {
       id: payload.source.correlationId,
-      type: CanonicalType.Event,
+      type: payload.classification.canonicalType,
       workspace: workspaceSlug,
       source_channel: payload.source.channel,
       event_type: payload.event.type,

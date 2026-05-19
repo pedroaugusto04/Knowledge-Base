@@ -1,4 +1,5 @@
 import { normalizeManualNoteStatus } from '../../../domain/note-status.js';
+import { CanonicalType } from '../../../contracts/enums.js';
 import { buildReminderAt } from '../../../domain/time.js';
 import { renderFrontmatter } from '../../../domain/frontmatter.js';
 import { relocateNotePath } from '../../../domain/notes.js';
@@ -25,6 +26,7 @@ export function buildUpdatedNote(
   const title = trimText(input.title, note.title || input.rawText);
   const rawText = normalizeMultiline(input.rawText);
   const tags = [...new Set(input.tags.map((tag) => tag.trim()).filter(Boolean))];
+  const noteType = normalizeCanonicalType(input.canonicalType, note.type);
   const reminderAt = input.reminderAt || buildReminderAt(input.reminderDate, input.reminderTime, reminderTimeZone);
   const nextStatus = normalizeManualNoteStatus({
     requestedStatus: input.status,
@@ -35,7 +37,7 @@ export function buildUpdatedNote(
   const structuredNote = parseStructuredNoteMarkdown(note.markdown, note.title);
   const frontmatter = {
     ...note.frontmatter,
-    type: note.type,
+    type: noteType,
     workspace: note.workspaceSlug,
     project: note.projectSlug,
     status: nextStatus,
@@ -53,7 +55,7 @@ export function buildUpdatedNote(
   return {
     id: note.id,
     path: relocateNotePath(note.path, note.projectSlug, previousFolder?.fullSlugPath || '', nextFolder?.fullSlugPath || ''),
-    type: note.type,
+    type: noteType,
     title,
     projectSlug: note.projectSlug,
     workspaceSlug: note.workspaceSlug,
@@ -72,6 +74,11 @@ export function buildUpdatedNote(
     source: note.source,
     links: note.links,
   };
+}
+
+function normalizeCanonicalType(value: string | undefined, fallback: string) {
+  if (value && Object.values(CanonicalType).includes(value as CanonicalType)) return value;
+  return fallback || CanonicalType.Event;
 }
 
 export function extractEditableRawText(note: NoteRecord) {

@@ -54,7 +54,7 @@ function payload() {
   };
 }
 
-test('ingest persists one event note with derived reminder, attachment and workspace in repository', async (t) => {
+test('ingest persists one canonical note with derived reminder, attachment and workspace in repository', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await repositories.contentRepository.upsertWorkspace(user.id, {
@@ -74,7 +74,7 @@ test('ingest persists one event note with derived reminder, attachment and works
   assert.equal(result.attachmentIds.length, 1);
 
   const notes = await repositories.contentRepository.listNotes(user.id);
-  assert.equal(notes.filter((note) => note.type === 'event').length, 1);
+  assert.equal(notes.filter((note) => note.type === 'knowledge').length, 1);
   const detail = await repositories.contentRepository.getNoteById(user.id, result.noteId);
   assert.equal(detail.metadata.reminderDate, '2026-04-28');
   assert.equal(detail.metadata.reminderTime, '09:30');

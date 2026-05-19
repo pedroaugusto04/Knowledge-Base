@@ -1,5 +1,9 @@
 import type { NoteStatus } from './note-status';
 
+export const canonicalNoteTypeValues = ['event', 'decision', 'followup', 'incident', 'knowledge'] as const;
+
+export type CanonicalNoteType = (typeof canonicalNoteTypeValues)[number];
+
 export type NoteSummary = {
   id: string;
   path: string;

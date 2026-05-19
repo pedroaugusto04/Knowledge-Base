@@ -6,11 +6,14 @@ import { encryptConfig } from '../../dist/application/credentials.js';
 import { GithubRepositoryResolutionService } from '../../dist/application/services/github-repository-resolution.service.js';
 import {
   CreateProjectFolderUseCase,
+  CreateManualNoteUseCase,
   DeleteNoteUseCase,
   DeleteProjectFolderUseCase,
   DeleteProjectUseCase,
   GetNoteAttachmentContentUseCase,
   GetNoteDetailUseCase,
+  IngestEntryUseCase,
+  ListProjectTimelineUseCase,
   UpdateNoteUseCase,
   UpdateProjectFolderUseCase,
   UpdateProjectUseCase,
@@ -124,6 +127,158 @@ test('updates manual note content and reminder metadata only', async (t) => {
   assert.doesNotMatch((await repositories.objectStorage.get(updated.markdownStorageKey)).toString('utf8'), /confirmar deploy/);
   assert.equal(updated?.metadata.reminderDate, '2026-05-01');
   assert.equal(updated?.metadata.reminderTime, '10:15');
+});
+
+test('creates and updates manual decisions as canonical note types', async (t) => {
+  const repositories = await createPostgresTestRepositories(t);
+  const user = await repositories.createTestUser();
+  await seedProject(repositories, user.id);
+
+  const ingest = new IngestEntryUseCase(repositories.contentRepository, repositories.runtimeEnvironmentProvider);
+  const createNote = new CreateManualNoteUseCase(
+    repositories.contentRepository,
+    ingest,
+    repositories.runtimeEnvironmentProvider,
+  );
+  const created = await createNote.execute({
+    projectSlug: 'platform',
+    title: 'Choose queue provider',
+    rawText: 'Use Postgres queue for v1',
+    tags: ['architecture'],
+    canonicalType: 'decision',
+    reminderDate: '',
+    reminderTime: '',
+  }, user.id);
+
+  const note = await repositories.contentRepository.getNoteById(user.id, created.noteId);
+  assert.equal(note?.type, 'decision');
+  assert.equal(note?.frontmatter.type, 'decision');
+
+  await new UpdateNoteUseCase(repositories.contentRepository, repositories.runtimeEnvironmentProvider).execute({
+    id: created.noteId,
+    title: 'Choose queue provider',
+    rawText: 'Move this back to a regular event',
+    tags: ['architecture'],
+    canonicalType: 'event',
+    reminderDate: '',
+    reminderTime: '',
+  }, user.id);
+
+  const updated = await repositories.contentRepository.getNoteById(user.id, created.noteId);
+  assert.equal(updated?.type, 'event');
+  assert.equal(updated?.frontmatter.type, 'event');
+});
+
+test('lists project timeline by derived category without raw webhook events', async (t) => {
+  const repositories = await createPostgresTestRepositories(t);
+  const user = await repositories.createTestUser();
+  await seedProject(repositories, user.id);
+
+  await repositories.contentRepository.upsertNote(user.id, {
+    path: '20 Inbox/platform/2026/05/whatsapp.md',
+    type: 'event',
+    title: 'WhatsApp update',
+    projectSlug: 'platform',
+    workspaceSlug: 'default',
+    folderId: null,
+    status: 'active',
+    tags: [],
+    occurredAt: '2026-05-05T10:00:00.000Z',
+    sourceChannel: 'whatsapp',
+    summary: 'from chat',
+    markdown: '# WhatsApp update',
+    frontmatter: {},
+    metadata: {},
+    origin: 'postgres',
+    source: 'evolution',
+    links: [],
+  });
+  await repositories.contentRepository.upsertNote(user.id, {
+    path: '20 Inbox/platform/2026/05/github.md',
+    type: 'event',
+    title: 'GitHub push',
+    projectSlug: 'platform',
+    workspaceSlug: 'default',
+    folderId: null,
+    status: 'active',
+    tags: [],
+    occurredAt: '2026-05-04T10:00:00.000Z',
+    sourceChannel: 'github-push',
+    summary: 'push received',
+    markdown: '# GitHub push',
+    frontmatter: {},
+    metadata: {},
+    origin: 'postgres',
+    source: 'github-push',
+    links: [],
+  });
+  await repositories.contentRepository.upsertNote(user.id, {
+    path: '20 Inbox/platform/2026/05/manual.md',
+    type: 'event',
+    title: 'Manual note',
+    projectSlug: 'platform',
+    workspaceSlug: 'default',
+    folderId: null,
+    status: 'active',
+    tags: [],
+    occurredAt: '2026-05-03T10:00:00.000Z',
+    sourceChannel: 'external',
+    summary: 'manual',
+    markdown: '# Manual note',
+    frontmatter: {},
+    metadata: { manual: true },
+    origin: 'postgres',
+    source: 'manual-api',
+    links: [],
+  });
+  await repositories.contentRepository.upsertNote(user.id, {
+    path: '20 Inbox/platform/2026/05/reminder.md',
+    type: 'event',
+    title: 'Reminder note',
+    projectSlug: 'platform',
+    workspaceSlug: 'default',
+    folderId: null,
+    status: 'pending',
+    tags: [],
+    occurredAt: '2026-05-02T10:00:00.000Z',
+    sourceChannel: 'external',
+    summary: 'remind me',
+    markdown: '# Reminder note',
+    frontmatter: {},
+    metadata: { reminderDate: '2026-05-20' },
+    origin: 'postgres',
+    source: 'manual-api',
+    links: [],
+  });
+  await repositories.contentRepository.upsertNote(user.id, {
+    path: '30 Knowledge/platform/2026/05/decision.md',
+    type: 'decision',
+    title: 'Decision note',
+    projectSlug: 'platform',
+    workspaceSlug: 'default',
+    folderId: null,
+    status: 'active',
+    tags: [],
+    occurredAt: '2026-05-01T10:00:00.000Z',
+    sourceChannel: 'external',
+    summary: 'decision',
+    markdown: '# Decision note',
+    frontmatter: {},
+    metadata: { manual: true, reminderDate: '2026-05-21' },
+    origin: 'postgres',
+    source: 'manual-api',
+    links: [],
+  });
+
+  const useCase = new ListProjectTimelineUseCase(repositories.contentRepository);
+  const all = await useCase.execute(user.id, { projectSlug: 'platform', page: 1, pageSize: 10, category: 'all' });
+  assert.deepEqual(all.items.map((item) => item.category), ['whatsapp', 'github-push', 'manual', 'reminder', 'decision']);
+
+  const reminders = await useCase.execute(user.id, { projectSlug: 'platform', page: 1, pageSize: 10, category: 'reminder' });
+  assert.deepEqual(reminders.items.map((item) => item.title), ['Reminder note']);
+
+  const decisions = await useCase.execute(user.id, { projectSlug: 'platform', page: 1, pageSize: 10, category: 'decision' });
+  assert.deepEqual(decisions.items.map((item) => item.title), ['Decision note']);
 });
 
 test('clears manual note reminder metadata', async (t) => {

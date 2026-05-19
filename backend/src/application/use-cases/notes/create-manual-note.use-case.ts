@@ -66,7 +66,7 @@ export class CreateManualNoteUseCase {
       },
       classification: {
         kind: KnowledgeKind.Note,
-        canonicalType: CanonicalType.Event,
+        canonicalType: normalizeManualCanonicalType(input.canonicalType),
         importance: Importance.Low,
         status,
         tags: input.tags,
@@ -89,4 +89,9 @@ export class CreateManualNoteUseCase {
       folderId: input.folderId,
     });
   }
+}
+
+function normalizeManualCanonicalType(value: string | undefined) {
+  if (value && Object.values(CanonicalType).includes(value as CanonicalType)) return value as CanonicalType;
+  return CanonicalType.Event;
 }

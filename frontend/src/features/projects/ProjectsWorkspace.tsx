@@ -9,9 +9,11 @@ import {
   deleteProjectFolder,
   fetchNotes,
   fetchProjectFolders,
+  fetchProjectTimeline,
 } from '../../shared/api/client';
 import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
+import type { ProjectTimelineCategory } from '../../shared/api/models/project-timeline';
 import { ensureNoteDetail, invalidateNoteRelatedQueries } from '../../shared/api/note-query';
 import { notifyGeneralFormError } from '../../shared/forms/errors';
 import { notifySuccess } from '../../shared/ui/notifications';
@@ -44,6 +46,8 @@ export function ProjectsWorkspace({
   const [noteModal, setNoteModal] = useState<NoteModalState | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState(ROOT_FOLDER_ID);
+  const [activeView, setActiveView] = useState<'timeline' | 'folders'>('timeline');
+  const [timelineCategory, setTimelineCategory] = useState<ProjectTimelineCategory>('all');
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
   const dashboardNotes = dashboard.notes || [];
@@ -62,7 +66,39 @@ export function ProjectsWorkspace({
   const folderTree = foldersQuery.data?.folders || [];
   const flatFolders = useMemo(() => flattenFolders(folderTree), [folderTree]);
   const selectedFolder = flatFolders.find((folder) => folder.id === selectedFolderId) || null;
+  const timelinePagination = usePaginationState(`${selected?.projectSlug || ''}:${timelineCategory}:timeline`);
   const notesPagination = usePaginationState(`${selected?.projectSlug || ''}:${selectedFolderId}`);
+  const timelineQuery = useQuery({
+    queryKey: ['project-timeline', selected?.projectSlug || '', timelineCategory, timelinePagination.page],
+    queryFn: () => fetchProjectTimeline(selected?.projectSlug || '', {
+      page: timelinePagination.page,
+      category: timelineCategory,
+    }),
+    enabled: Boolean(selected?.projectSlug),
+    staleTime: timelineCategory === 'all' ? 30_000 : 0,
+    initialData: selected && timelineCategory === 'all'
+      ? {
+          ok: true as const,
+          timeline: dashboardNotes
+            .filter((note) => note.project === selected.projectSlug)
+            .slice(0, DEFAULT_PAGE_SIZE)
+            .map((note) => ({
+              ...note,
+              noteId: note.id,
+              category: note.type === 'decision' ? 'decision' as const : 'manual' as const,
+              sourceChannel: note.source,
+            })),
+          pagination: {
+            page: 1,
+            pageSize: DEFAULT_PAGE_SIZE,
+            total: dashboardNotes.filter((note) => note.project === selected.projectSlug).length,
+            totalPages: Math.max(1, Math.ceil(dashboardNotes.filter((note) => note.project === selected.projectSlug).length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboardNotes.filter((note) => note.project === selected.projectSlug).length > DEFAULT_PAGE_SIZE,
+            hasPrevious: false,
+          },
+        }
+      : undefined,
+  });
   const notesQuery = useQuery({
     queryKey: ['notes', 'projects-page', selected?.projectSlug || '', selectedFolderId, notesPagination.page],
     queryFn: () => fetchNotes({
@@ -88,6 +124,7 @@ export function ProjectsWorkspace({
       : undefined,
   });
   const notes = notesQuery.data?.notes || [];
+  const timelineItems = timelineQuery.data?.timeline || [];
   const selectedProjectDeleteBlockedReason = selected?.projectSlug === 'inbox'
     ? 'Inbox cannot be changed.'
     : dashboardNotes.some((note) => note.project === selected?.projectSlug)
@@ -175,7 +212,17 @@ export function ProjectsWorkspace({
           selectedFolderId={selectedFolderId}
           selectedFolder={selectedFolder}
           notes={notes}
+          timelineItems={timelineItems}
+          timelineCategory={timelineCategory}
+          activeView={activeView}
           notesPagination={notesQuery.data?.pagination}
+          timelinePagination={timelineQuery.data?.pagination}
+          onViewChange={setActiveView}
+          onTimelineCategoryChange={(category) => {
+            setTimelineCategory(category);
+            timelinePagination.setPage(1);
+          }}
+          onTimelinePageChange={timelinePagination.setPage}
           onFolderSelect={setSelectedFolderId}
           onCreateNote={() => setNoteModal({ mode: 'create', projectSlug: selected.projectSlug, folderId: selectedFolderId || undefined })}
           onCreateFolder={() => setFolderModal({ mode: 'create', projectSlug: selected.projectSlug, parentFolderId: selectedFolder?.id })}
@@ -270,5 +317,6 @@ export function ProjectsWorkspace({
 
 async function refreshDashboard(queryClient: ReturnType<typeof useQueryClient>) {
   await invalidateNoteRelatedQueries(queryClient);
+  await queryClient.invalidateQueries({ queryKey: ['project-timeline'] });
   await queryClient.invalidateQueries({ queryKey: ['projects'] });
 }

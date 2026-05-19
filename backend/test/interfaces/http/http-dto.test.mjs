@@ -7,7 +7,7 @@ import { internalN8nIngestBodySchema } from '../../../dist/interfaces/http/dto/i
 import { reminderBoardQuerySchema, updateReminderStatusBodySchema } from '../../../dist/interfaces/http/dto/dashboard.dto.js';
 import { markRemindersBodySchema, queryRequestSchema } from '../../../dist/interfaces/http/dto/query.dto.js';
 import { createNoteBodySchema, noteIdParamSchema, updateNoteBodySchema } from '../../../dist/interfaces/http/dto/note.dto.js';
-import { createProjectBodySchema, projectSlugParamSchema, updateProjectBodySchema } from '../../../dist/interfaces/http/dto/project.dto.js';
+import { createProjectBodySchema, projectSlugParamSchema, projectTimelineQuerySchema, updateProjectBodySchema } from '../../../dist/interfaces/http/dto/project.dto.js';
 import { whatsappWebhookBodySchema } from '../../../dist/interfaces/http/dto/webhook.dto.js';
 import { createWorkspaceBodySchema } from '../../../dist/interfaces/http/dto/workspace.dto.js';
 
@@ -110,8 +110,25 @@ test('create note dto normalizes project, tags and keeps reminder date as transp
     reminderTime: '09:30',
     reminderAt: '',
     status: undefined,
+    canonicalType: 'event',
     folderId: undefined,
   });
+  assert.equal(createNoteBodySchema.parse({ projectSlug: 'acme', rawText: 'decidido', canonicalType: 'decision' }).canonicalType, 'decision');
+  assert.throws(() => createNoteBodySchema.parse({ projectSlug: 'acme', rawText: 'texto', canonicalType: 'unsupported' }));
+});
+
+test('project timeline dto accepts known categories only', () => {
+  assert.deepEqual(projectTimelineQuerySchema.parse({ page: '2', pageSize: '10', category: 'decision' }), {
+    page: 2,
+    pageSize: 10,
+    category: 'decision',
+  });
+  assert.deepEqual(projectTimelineQuerySchema.parse({}), {
+    page: 1,
+    pageSize: 5,
+    category: 'all',
+  });
+  assert.throws(() => projectTimelineQuerySchema.parse({ category: 'webhook' }));
 });
 
 test('agent conversation dto accepts valid payloads', () => {

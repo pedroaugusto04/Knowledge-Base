@@ -4,6 +4,10 @@ import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import type { ListNotesInput } from '../../application/models/note-list.models.js';
+import type {
+  ListProjectTimelineInput,
+  ProjectTimelineFilterCategory,
+} from '../../application/models/project-timeline.models.js';
 import type { ListProjectsInput } from '../../application/models/project-list.models.js';
 import { ContentObjectStorageService } from '../../application/services/content-object-storage.service.js';
 import { ContentRepository } from '../../application/ports/content.repository.js';
@@ -344,6 +348,38 @@ export class PostgresContentRepository extends ContentRepository {
     return { items: result.rows.map((row) => noteSummary(noteFromRow(row))), pagination };
   }
 
+  async listProjectTimeline(userId: string, input: ListProjectTimelineInput) {
+    const values: unknown[] = [userId, input.projectSlug];
+    const clauses = ['user_id = $1', 'project_slug = $2'];
+    appendTimelineCategoryClause(clauses, values, input.category);
+    const where = clauses.join(' and ');
+    const dataWhere = where
+      .replace(/\buser_id\b/g, 'n.user_id')
+      .replace(/\bproject_slug\b/g, 'n.project_slug')
+      .replace(/\btype\b/g, 'n.type')
+      .replace(/\bsource_channel\b/g, 'n.source_channel')
+      .replace(/\bsource\b/g, 'n.source')
+      .replace(/\bmetadata\b/g, 'n.metadata');
+    const totalResult = await this.database.getPool().query(`select count(*)::int as total from kb_notes where ${where}`, values);
+    const total = Number(totalResult.rows[0]?.total || 0);
+    const pagination = buildPaginationMeta({ page: input.page, pageSize: input.pageSize }, total);
+    const result = await this.database.getPool().query(
+      `select n.*, count(a.id)::int as attachment_count
+       from kb_notes n
+       left join kb_attachments a on a.user_id = n.user_id and a.note_id = n.id
+       where ${dataWhere}
+       group by n.id
+       order by n.occurred_at desc, n.title asc
+       limit $${values.length + 1} offset $${values.length + 2}`,
+      [...values, pagination.pageSize, (pagination.page - 1) * pagination.pageSize],
+    );
+
+    return {
+      items: result.rows.map((row) => projectTimelineItem(noteFromRow(row))),
+      pagination,
+    };
+  }
+
   async getNoteById(userId: string, id: string) {
     const result = await this.database.getPool().query('select * from kb_notes where user_id = $1 and id = $2 limit 1', [userId, id]);
     return result.rows[0] ? this.hydrateMarkdown(noteFromRow(result.rows[0])) : null;
@@ -533,4 +569,54 @@ export class PostgresContentRepository extends ContentRepository {
     const index = Number(result.rows[0]?.idx || 0);
     return index > 0 ? Math.ceil(index / input.pageSize) : 1;
   }
+}
+
+function projectTimelineItem(record: NoteRecord) {
+  const summary = noteSummary(record);
+  return {
+    ...summary,
+    noteId: record.id,
+    category: projectTimelineCategory(record),
+    sourceChannel: record.sourceChannel,
+  };
+}
+
+function projectTimelineCategory(record: Pick<NoteRecord, 'type' | 'metadata' | 'source' | 'sourceChannel'>): ProjectTimelineFilterCategory {
+  if (record.type === 'decision') return 'decision';
+  if (hasTimelineReminder(record)) return 'reminder';
+  if (record.sourceChannel === 'github-push') return 'github-push';
+  if (record.sourceChannel === 'whatsapp') return 'whatsapp';
+  return 'manual';
+}
+
+function hasTimelineReminder(record: Pick<NoteRecord, 'metadata'>) {
+  return Boolean(String(record.metadata.reminderDate || '').trim() || String(record.metadata.reminderAt || '').trim());
+}
+
+function appendTimelineCategoryClause(clauses: string[], values: unknown[], category: ListProjectTimelineInput['category']) {
+  const notDecision = "type <> 'decision'";
+  const noReminder = "(coalesce(metadata->>'reminderDate', '') = '' and coalesce(metadata->>'reminderAt', '') = '')";
+  if (category === 'all') return;
+  if (category === 'decision') {
+    clauses.push("type = 'decision'");
+    return;
+  }
+  if (category === 'reminder') {
+    clauses.push(notDecision);
+    clauses.push("(coalesce(metadata->>'reminderDate', '') <> '' or coalesce(metadata->>'reminderAt', '') <> '')");
+    return;
+  }
+  clauses.push(notDecision);
+  clauses.push(noReminder);
+  if (category === 'github-push') {
+    clauses.push("source_channel = 'github-push'");
+    return;
+  }
+  if (category === 'whatsapp') {
+    clauses.push("source_channel = 'whatsapp'");
+    return;
+  }
+  clauses.push("source_channel <> 'github-push'");
+  clauses.push("source_channel <> 'whatsapp'");
+  clauses.push("(metadata->>'manual' = 'true' or source = 'manual-api')");
 }

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { canonicalNoteTypeValues } from '../../shared/api/models/note';
+
 const optionalSlugSchema = z.string().trim().max(80, 'Use at most 80 characters.').refine((value) => !value || /^[a-z0-9._-]+$/.test(value), 'Use only lowercase letters, numbers, dots, hyphens, or underscores.');
 const optionalRepoSchema = z.string().trim().max(180, 'Use at most 180 characters.').refine((value) => !value || /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value), 'Use the owner/repository format.');
 
@@ -21,6 +23,7 @@ export type FolderFormValues = z.infer<typeof folderFormSchema>;
 
 export const noteFormSchema = z.object({
   folderId: z.string(),
+  canonicalType: z.enum(canonicalNoteTypeValues),
   title: z.string().trim().max(160, 'Use at most 160 characters.'),
   rawText: z.string().trim().min(1, 'Enter the note text.').max(20000, 'Use at most 20000 characters.'),
   tags: z.string().max(500, 'Use at most 500 characters.'),

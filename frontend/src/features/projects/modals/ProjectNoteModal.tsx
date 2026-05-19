@@ -47,6 +47,7 @@ export function ProjectNoteModal({
     shouldFocusError: false,
     defaultValues: {
       folderId: note?.folderId || initialFolderId || '',
+      canonicalType: note?.type === 'decision' || note?.type === 'followup' || note?.type === 'incident' || note?.type === 'knowledge' ? note.type : 'event',
       title: note?.title || '',
       rawText: note?.editor?.rawText || '',
       tags: note?.tags.join(', ') || '',
@@ -59,6 +60,7 @@ export function ProjectNoteModal({
     mutationFn: (values: NoteFormValues) => {
       const payload = {
         folderId: values.folderId || undefined,
+        canonicalType: values.canonicalType,
         title: values.title,
         rawText: values.rawText,
         tags: parseCommaSeparatedList(values.tags),
@@ -122,6 +124,34 @@ export function ProjectNoteModal({
                           label: folder.displayName,
                           depth: folder.depth,
                         })),
+                      ]}
+                      required={fieldProps.required}
+                      value={field.value}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+              )}
+            </FormField>
+            <FormField name="canonicalType" label="Type" error={errors.canonicalType?.message} required>
+              {(fieldProps) => (
+                <Controller
+                  control={control}
+                  name="canonicalType"
+                  render={({ field }) => (
+                    <Select
+                      ariaDescribedBy={fieldProps['aria-describedby']}
+                      ariaInvalid={fieldProps['aria-invalid']}
+                      ariaRequired={fieldProps['aria-required']}
+                      dataField={fieldProps['data-field']}
+                      id={fieldProps.id}
+                      options={[
+                        { value: 'event', label: 'Note/Event' },
+                        { value: 'decision', label: 'Decision' },
+                        { value: 'followup', label: 'Follow-up' },
+                        { value: 'incident', label: 'Incident' },
+                        { value: 'knowledge', label: 'Knowledge' },
                       ]}
                       required={fieldProps.required}
                       value={field.value}
