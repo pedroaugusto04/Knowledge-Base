@@ -815,19 +815,24 @@ p { color: var(--muted); line-height: 1.6; }
   min-height: 100vh;
   padding: 36px;
   background:
-    radial-gradient(circle at 12% 8%, var(--surface-success), transparent 28%),
-    radial-gradient(circle at 88% 12%, var(--surface-info), transparent 24%),
-    linear-gradient(135deg, var(--surface-warning), transparent 36%),
-    var(--body-overlay);
+    radial-gradient(circle at 14% 10%, rgba(83, 199, 222, 0.1), transparent 30%),
+    radial-gradient(circle at 86% 4%, rgba(148, 163, 184, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(18, 29, 36, 0.92), rgba(9, 15, 20, 0.98));
 }
 .landing-layout {
   min-height: 100vh;
   padding: 32px;
   background:
-    radial-gradient(circle at 10% 8%, var(--surface-success), transparent 26%),
-    radial-gradient(circle at 88% 10%, var(--surface-info), transparent 22%),
-    linear-gradient(180deg, var(--surface-warning), transparent 24%),
-    var(--body-overlay);
+    radial-gradient(circle at 14% 10%, rgba(83, 199, 222, 0.1), transparent 30%),
+    radial-gradient(circle at 86% 4%, rgba(148, 163, 184, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(18, 29, 36, 0.92), rgba(9, 15, 20, 0.98));
+}
+:root[data-theme="light"] .auth-layout,
+:root[data-theme="light"] .landing-layout {
+  background:
+    radial-gradient(circle at 14% 10%, rgba(15, 143, 174, 0.12), transparent 30%),
+    radial-gradient(circle at 86% 4%, rgba(76, 102, 120, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8fbfd, #edf3f7);
 }
 .landing-shell {
   width: min(1180px, 100%);
