@@ -351,11 +351,13 @@ export class PostgresContentRepository extends ContentRepository {
   async listProjectTimeline(userId: string, input: ListProjectTimelineInput) {
     const values: unknown[] = [userId, input.projectSlug];
     const clauses = ['user_id = $1', 'project_slug = $2'];
+    appendTimelineFolderClause(clauses, values, input.folderId);
     appendTimelineCategoryClause(clauses, values, input.category);
     const where = clauses.join(' and ');
     const dataWhere = where
       .replace(/\buser_id\b/g, 'n.user_id')
       .replace(/\bproject_slug\b/g, 'n.project_slug')
+      .replace(/\bfolder_id\b/g, 'n.folder_id')
       .replace(/\btype\b/g, 'n.type')
       .replace(/\bsource_channel\b/g, 'n.source_channel')
       .replace(/\bsource\b/g, 'n.source')
@@ -591,6 +593,17 @@ function projectTimelineCategory(record: Pick<NoteRecord, 'type' | 'metadata' | 
 
 function hasTimelineReminder(record: Pick<NoteRecord, 'metadata'>) {
   return Boolean(String(record.metadata.reminderDate || '').trim() || String(record.metadata.reminderAt || '').trim());
+}
+
+function appendTimelineFolderClause(clauses: string[], values: unknown[], folderId: ListProjectTimelineInput['folderId']) {
+  if (folderId === undefined) return;
+  const normalizedFolderId = folderId.trim();
+  if (!normalizedFolderId) {
+    clauses.push('folder_id is null');
+    return;
+  }
+  values.push(normalizedFolderId);
+  clauses.push(`folder_id = $${values.length}`);
 }
 
 function appendTimelineCategoryClause(clauses: string[], values: unknown[], category: ListProjectTimelineInput['category']) {

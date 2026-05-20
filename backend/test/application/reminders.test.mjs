@@ -527,7 +527,7 @@ test('daily reminder dispatch ignores resolved and archived reminders even when 
   assert.equal(result.ok, true);
   assert.equal(result.shouldSend, true);
   assert.match(result.text, /Pending reminder/);
-  assert.match(result.text, /Texto: Conferir a pendencia antes do fechamento\./);
+  assert.match(result.text, /Text: Conferir a pendencia antes do fechamento\./);
   assert.doesNotMatch(result.text, /Resolved overdue/);
   assert.doesNotMatch(result.text, /Archived overdue/);
 });
@@ -553,7 +553,7 @@ test('default reminder dispatch sends a due WhatsApp reminder and marks it as se
   assert.equal(sent[0].recipientId, '120363-default@g.us');
   assert.equal(sent[0].workspaceSlug, 'default');
   assert.equal(sent[0].userId, user.id);
-  assert.match(sent[0].text, /^Lembrete\nProjeto: n8n-automations\nNota: Deploy\n\nTexto da nota:\nValidar rollout antes da janela de deploy\.\n\nAgendado para: 2099-12-31 12:00 UTC$/);
+  assert.match(sent[0].text, /^Reminder\nProject: n8n-automations\nNote: Deploy\n\nNote text:\nValidar rollout antes da janela de deploy\.\n\nScheduled for: 2099-12-31 12:00 UTC$/);
   assert.equal(await repositories.reminderDispatchRepository.hasSent(user.id, 'default', 'exact', '2099-12-31T12:00', '11111111-1111-1111-1111-111111111111'), true);
   assert.equal((await repositories.contentRepository.getNoteById(user.id, '11111111-1111-1111-1111-111111111111'))?.status, 'sent');
 });
@@ -634,7 +634,7 @@ test('default reminder dispatch applies 09:00 fallback when reminder has only da
 
   assert.equal(before.sent, 0);
   assert.equal(after.sent, 1);
-  assert.match(sent[0].text, /Agendado para: 2026-05-05 12:00 UTC/);
+  assert.match(sent[0].text, /Scheduled for: 2026-05-05 12:00 UTC/);
 });
 
 test('default reminder dispatch does not mark reminder as sent when Evolution delivery fails', async (t) => {

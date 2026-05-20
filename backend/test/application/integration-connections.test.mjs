@@ -412,6 +412,7 @@ test('ai integrations activate only with server-managed configuration and test d
   const service = new IntegrationCredentialService(
     repositories.credentialRepository,
     repositories.externalIdentityRepository,
+    runtimeEnvironmentProvider(),
   );
   const status = await service.test(user.id, 'default', 'ai-review');
   assert.equal(status.configured, true);

@@ -173,6 +173,14 @@ test('lists project timeline by derived category without raw webhook events', as
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   await seedProject(repositories, user.id);
+  const folder = await repositories.contentRepository.upsertProjectFolder(user.id, {
+    workspaceSlug: 'default',
+    projectSlug: 'platform',
+    parentFolderId: null,
+    displayName: 'Release',
+    folderSlug: 'release',
+    fullSlugPath: 'release',
+  });
 
   await repositories.contentRepository.upsertNote(user.id, {
     path: '20 Inbox/platform/2026/05/whatsapp.md',
@@ -199,7 +207,7 @@ test('lists project timeline by derived category without raw webhook events', as
     title: 'GitHub push',
     projectSlug: 'platform',
     workspaceSlug: 'default',
-    folderId: null,
+    folderId: folder.id,
     status: 'active',
     tags: [],
     occurredAt: '2026-05-04T10:00:00.000Z',
@@ -273,6 +281,12 @@ test('lists project timeline by derived category without raw webhook events', as
   const useCase = new ListProjectTimelineUseCase(repositories.contentRepository);
   const all = await useCase.execute(user.id, { projectSlug: 'platform', page: 1, pageSize: 10, category: 'all' });
   assert.deepEqual(all.items.map((item) => item.category), ['whatsapp', 'github-push', 'manual', 'reminder', 'decision']);
+
+  const root = await useCase.execute(user.id, { projectSlug: 'platform', folderId: '', page: 1, pageSize: 10, category: 'all' });
+  assert.deepEqual(root.items.map((item) => item.title), ['WhatsApp update', 'Manual note', 'Reminder note', 'Decision note']);
+
+  const releaseFolder = await useCase.execute(user.id, { projectSlug: 'platform', folderId: folder.id, page: 1, pageSize: 10, category: 'all' });
+  assert.deepEqual(releaseFolder.items.map((item) => item.title), ['GitHub push']);
 
   const reminders = await useCase.execute(user.id, { projectSlug: 'platform', page: 1, pageSize: 10, category: 'reminder' });
   assert.deepEqual(reminders.items.map((item) => item.title), ['Reminder note']);

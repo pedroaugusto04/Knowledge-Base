@@ -3,9 +3,7 @@ import type { NoteSummary } from '../../shared/api/models/note';
 import type { ProjectTimelineCategory, ProjectTimelineItem } from '../../shared/api/models/project-timeline';
 import type { ProjectFolder } from '../../shared/api/models/project-folder';
 import type { Project } from '../../shared/api/models/project';
-import { Pagination } from '../../shared/ui/pagination';
-import { EmptyState, Panel, Tags } from '../../shared/ui/primitives';
-import { NoteRow } from '../../widgets/notes/NoteRow';
+import { Panel, Tags } from '../../shared/ui/primitives';
 import { FolderTree } from './FolderTree';
 import { ProjectFolderActionsMenu } from './ProjectFolderActionsMenu';
 import { ProjectTimeline } from './ProjectTimeline';
@@ -16,18 +14,8 @@ type ProjectsBrowserProps = {
   folderTree: ProjectFolder[];
   selectedFolderId: string;
   selectedFolder: ProjectFolder | null;
-  notes: NoteSummary[];
   timelineItems: ProjectTimelineItem[];
   timelineCategory: ProjectTimelineCategory;
-  activeView: 'timeline' | 'folders';
-  notesPagination?: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrevious: boolean;
-  };
   timelinePagination?: {
     page: number;
     pageSize: number;
@@ -36,7 +24,6 @@ type ProjectsBrowserProps = {
     hasNext: boolean;
     hasPrevious: boolean;
   };
-  onViewChange: (view: 'timeline' | 'folders') => void;
   onTimelineCategoryChange: (category: ProjectTimelineCategory) => void;
   onTimelinePageChange: (page: number) => void;
   onFolderSelect: (folderId: string) => void;
@@ -47,7 +34,6 @@ type ProjectsBrowserProps = {
   onEditNote: (note: NoteSummary) => void;
   onDeleteNote: (note: NoteSummary) => void;
   onOpenNote: (noteId: string) => void;
-  onNotesPageChange: (page: number) => void;
   onEditProject?: () => void;
   onDeleteProject?: () => void;
   deleteProjectLabel?: string;
@@ -59,13 +45,9 @@ export function ProjectsBrowser({
   folderTree,
   selectedFolderId,
   selectedFolder,
-  notes,
   timelineItems,
   timelineCategory,
-  activeView,
-  notesPagination,
   timelinePagination,
-  onViewChange,
   onTimelineCategoryChange,
   onTimelinePageChange,
   onFolderSelect,
@@ -76,7 +58,6 @@ export function ProjectsBrowser({
   onEditNote,
   onDeleteNote,
   onOpenNote,
-  onNotesPageChange,
   onEditProject,
   onDeleteProject,
   deleteProjectLabel,
@@ -133,14 +114,6 @@ export function ProjectsBrowser({
       </div>
       <div className="project-browser">
         <aside className="folder-browser">
-          <div className="segmented-control project-view-toggle" role="group" aria-label="Project view">
-            <button className={activeView === 'timeline' ? 'active' : ''} type="button" onClick={() => onViewChange('timeline')}>
-              Timeline
-            </button>
-            <button className={activeView === 'folders' ? 'active' : ''} type="button" onClick={() => onViewChange('folders')}>
-              Folders
-            </button>
-          </div>
           <div className="folder-browser-head">
             <div className="folder-browser-head-top">
               <strong>Folders</strong>
@@ -168,44 +141,17 @@ export function ProjectsBrowser({
             onSelect={onFolderSelect}
           />
         </aside>
-        {activeView === 'timeline' ? (
-          <ProjectTimeline
-            dashboard={dashboard}
-            items={timelineItems}
-            pagination={timelinePagination}
-            category={timelineCategory}
-            onCategoryChange={onTimelineCategoryChange}
-            onDeleteNote={onDeleteNote}
-            onEditNote={onEditNote}
-            onOpenNote={onOpenNote}
-            onPageChange={onTimelinePageChange}
-          />
-        ) : (
-          <div className="folder-notes">
-            <div className="folder-notes-head">
-              <h3>{selectedFolder ? selectedFolder.displayName : 'Root'}</h3>
-              <p className="meta">{selectedFolder ? selectedFolder.fullSlugPath : 'Notes without a folder inside the project.'}</p>
-            </div>
-            {notes.length > 0 ? (
-              <div className="timeline">
-                {notes.map((note) => (
-                  <div className="timeline-item" key={note.id}>
-                    <NoteRow
-                      dashboard={dashboard}
-                      note={note}
-                      onDelete={onDeleteNote}
-                      onEdit={onEditNote}
-                      onOpen={onOpenNote}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState>No notes in this folder.</EmptyState>
-            )}
-            {notesPagination ? <Pagination pagination={notesPagination} onPageChange={onNotesPageChange} /> : null}
-          </div>
-        )}
+        <ProjectTimeline
+          dashboard={dashboard}
+          items={timelineItems}
+          pagination={timelinePagination}
+          category={timelineCategory}
+          onCategoryChange={onTimelineCategoryChange}
+          onDeleteNote={onDeleteNote}
+          onEditNote={onEditNote}
+          onOpenNote={onOpenNote}
+          onPageChange={onTimelinePageChange}
+        />
       </div>
     </Panel>
   );

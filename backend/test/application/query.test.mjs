@@ -70,9 +70,10 @@ test('query returns ranked matches from the authenticated user repository scope'
   );
 
   assert.equal(result.ok, true);
-  assert.equal(result.matches.length, 1);
-  assert.equal(result.matches[0].title, 'Deploy rollout');
-  assert.match(result.answer.answer, /Encontrei 1 nota/);
+  assert.equal(result.matches.length, 2);
+  assert.deepEqual(result.matches.map((match) => match.title).sort(), ['Deploy rollout', 'Deploy rollout resolvido']);
+  assert.equal(result.matches.some((match) => match.title === 'Other Deploy'), false);
+  assert.match(result.answer.answer, /I found 2 relevant note/);
 });
 
 test('query filters textual matches by note status', async (t) => {

@@ -59,12 +59,13 @@ export function fetchProjectFolders(projectSlug: string) {
   return request<{ ok: true; projectSlug: string; folders: ProjectFolder[] }>(`/api/projects/${encodeURIComponent(projectSlug)}/folders`);
 }
 
-export function fetchProjectTimeline(projectSlug: string, params: { page?: number; pageSize?: number; category?: ProjectTimelineCategory }) {
+export function fetchProjectTimeline(projectSlug: string, params: { page?: number; pageSize?: number; category?: ProjectTimelineCategory; folderId?: string }) {
   const search = new URLSearchParams({
     page: String(params.page || 1),
     pageSize: String(params.pageSize || DEFAULT_PAGE_SIZE),
     category: params.category || 'all',
   });
+  if (params.folderId !== undefined) search.set('folderId', params.folderId);
   return request<PaginatedResponse<ProjectTimelineItem, 'timeline'>>(`/api/projects/${encodeURIComponent(projectSlug)}/timeline?${search.toString()}`);
 }
 

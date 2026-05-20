@@ -117,11 +117,12 @@ test('create note dto normalizes project, tags and keeps reminder date as transp
   assert.throws(() => createNoteBodySchema.parse({ projectSlug: 'acme', rawText: 'texto', canonicalType: 'unsupported' }));
 });
 
-test('project timeline dto accepts known categories only', () => {
-  assert.deepEqual(projectTimelineQuerySchema.parse({ page: '2', pageSize: '10', category: 'decision' }), {
+test('project timeline dto accepts known categories and optional folder filters only', () => {
+  assert.deepEqual(projectTimelineQuerySchema.parse({ page: '2', pageSize: '10', category: 'decision', folderId: ' folder-1 ' }), {
     page: 2,
     pageSize: 10,
     category: 'decision',
+    folderId: 'folder-1',
   });
   assert.deepEqual(projectTimelineQuerySchema.parse({}), {
     page: 1,

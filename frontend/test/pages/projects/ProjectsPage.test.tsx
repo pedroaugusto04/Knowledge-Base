@@ -558,6 +558,13 @@ describe('ProjectsPage', () => {
       const url = String(input);
       if (url === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
       if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (url.startsWith('/api/projects/platform/timeline?')) {
+        return Response.json({
+          ok: true,
+          timeline: [],
+          pagination: { page: 1, pageSize: 5, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
+        });
+      }
       throw new Error(`unexpected fetch ${url}`);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -568,6 +575,116 @@ describe('ProjectsPage', () => {
     expect(screen.queryByRole('heading', { name: 'Inbox' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Empty' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/api/projects?'))).toBe(false);
+  });
+
+  it('fetches the canonical all timeline even when dashboard notes are empty for the project', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (url.startsWith('/api/projects/empty/timeline?')) {
+        return Response.json({
+          ok: true,
+          timeline: [
+            {
+              id: 'github-note-1',
+              noteId: 'github-note-1',
+              path: '30 Knowledge/empty/github.md',
+              type: 'event',
+              title: 'GitHub push processed',
+              project: 'empty',
+              workspace: 'default',
+              folderId: null,
+              tags: ['github'],
+              date: '2026-05-19T10:00:00.000Z',
+              status: 'active',
+              summary: 'Push captured from GitHub.',
+              source: 'github-push',
+              sourceChannel: 'github-push',
+              category: 'github-push',
+              attachmentCount: 0,
+            },
+          ],
+          pagination: { page: 1, pageSize: 5, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
+        });
+      }
+      return Response.error();
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderProjects({ selectedProject: 'empty' });
+
+    expect(await screen.findByRole('heading', { name: 'GitHub push processed' })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/api/projects/empty/timeline?') && String(input).includes('category=all'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/api/projects/empty/timeline?') && String(input).includes('folderId='))).toBe(true);
+  });
+
+  it('filters the timeline by the selected folder', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (url === '/api/projects/platform/folders') {
+        return Response.json({
+          ok: true,
+          projectSlug: 'platform',
+          folders: [
+            {
+              id: 'folder-1',
+              projectSlug: 'platform',
+              workspaceSlug: 'default',
+              parentFolderId: null,
+              displayName: 'Specs',
+              folderSlug: 'specs',
+              fullSlugPath: 'specs',
+              children: [],
+            },
+          ],
+        });
+      }
+      if (url.startsWith('/api/projects/platform/timeline?') && url.includes('folderId=folder-1')) {
+        return Response.json({
+          ok: true,
+          timeline: [
+            {
+              id: 'folder-note-1',
+              noteId: 'folder-note-1',
+              path: '30 Knowledge/platform/specs/note.md',
+              type: 'event',
+              title: 'Folder scoped note',
+              project: 'platform',
+              workspace: 'default',
+              folderId: 'folder-1',
+              tags: ['specs'],
+              date: '2026-05-19T10:00:00.000Z',
+              status: 'active',
+              summary: 'Only appears after selecting Specs.',
+              source: 'manual-api',
+              sourceChannel: 'external',
+              category: 'manual',
+              attachmentCount: 0,
+            },
+          ],
+          pagination: { page: 1, pageSize: 5, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
+        });
+      }
+      if (url.startsWith('/api/projects/platform/timeline?')) {
+        return Response.json({
+          ok: true,
+          timeline: [],
+          pagination: { page: 1, pageSize: 5, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
+        });
+      }
+      return Response.error();
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderProjects();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Specs' }));
+
+    expect(await screen.findByRole('heading', { name: 'Folder scoped note' })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/api/projects/platform/timeline?') && String(input).includes('folderId=folder-1'))).toBe(true);
   });
 
   it('deletes an empty project after confirmation and redirects selection', async () => {

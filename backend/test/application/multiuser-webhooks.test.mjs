@@ -6,8 +6,10 @@ import { BuildDashboardUseCase, CreateWorkspaceUseCase, HandleGithubPushUseCase,
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
 function configureEnv() {
+  process.env.KB_CREDENTIALS_ENCRYPTION_KEY = crypto.randomBytes(32).toString('base64');
   process.env.KB_GITHUB_APP_WEBHOOK_SECRET = 'github-webhook-secret';
   process.env.KB_REVIEW_AI_PROVIDER = 'none';
+  process.env.KB_CONVERSATION_AI_PROVIDER = 'none';
 }
 
 function canonicalPayload(projectSlug = 'acme-api') {

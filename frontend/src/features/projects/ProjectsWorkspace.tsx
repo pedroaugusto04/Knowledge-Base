@@ -7,7 +7,6 @@ import {
   deleteNote,
   deleteProject,
   deleteProjectFolder,
-  fetchNotes,
   fetchProjectFolders,
   fetchProjectTimeline,
 } from '../../shared/api/client';
@@ -46,7 +45,6 @@ export function ProjectsWorkspace({
   const [noteModal, setNoteModal] = useState<NoteModalState | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState(ROOT_FOLDER_ID);
-  const [activeView, setActiveView] = useState<'timeline' | 'folders'>('timeline');
   const [timelineCategory, setTimelineCategory] = useState<ProjectTimelineCategory>('all');
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
@@ -66,21 +64,23 @@ export function ProjectsWorkspace({
   const folderTree = foldersQuery.data?.folders || [];
   const flatFolders = useMemo(() => flattenFolders(folderTree), [folderTree]);
   const selectedFolder = flatFolders.find((folder) => folder.id === selectedFolderId) || null;
-  const timelinePagination = usePaginationState(`${selected?.projectSlug || ''}:${timelineCategory}:timeline`);
-  const notesPagination = usePaginationState(`${selected?.projectSlug || ''}:${selectedFolderId}`);
+  const timelinePagination = usePaginationState(`${selected?.projectSlug || ''}:${selectedFolderId}:${timelineCategory}:timeline`);
+  const dashboardTimelineNotes = selected
+    ? dashboardNotes.filter((note) => note.project === selected.projectSlug && (selectedFolderId ? note.folderId === selectedFolderId : !note.folderId))
+    : [];
   const timelineQuery = useQuery({
-    queryKey: ['project-timeline', selected?.projectSlug || '', timelineCategory, timelinePagination.page],
+    queryKey: ['project-timeline', selected?.projectSlug || '', selectedFolderId, timelineCategory, timelinePagination.page],
     queryFn: () => fetchProjectTimeline(selected?.projectSlug || '', {
       page: timelinePagination.page,
       category: timelineCategory,
+      folderId: selectedFolderId,
     }),
     enabled: Boolean(selected?.projectSlug),
     staleTime: timelineCategory === 'all' ? 30_000 : 0,
-    initialData: selected && timelineCategory === 'all'
+    placeholderData: selected && timelineCategory === 'all'
       ? {
           ok: true as const,
-          timeline: dashboardNotes
-            .filter((note) => note.project === selected.projectSlug)
+          timeline: dashboardTimelineNotes
             .slice(0, DEFAULT_PAGE_SIZE)
             .map((note) => ({
               ...note,
@@ -91,39 +91,14 @@ export function ProjectsWorkspace({
           pagination: {
             page: 1,
             pageSize: DEFAULT_PAGE_SIZE,
-            total: dashboardNotes.filter((note) => note.project === selected.projectSlug).length,
-            totalPages: Math.max(1, Math.ceil(dashboardNotes.filter((note) => note.project === selected.projectSlug).length / DEFAULT_PAGE_SIZE)),
-            hasNext: dashboardNotes.filter((note) => note.project === selected.projectSlug).length > DEFAULT_PAGE_SIZE,
+            total: dashboardTimelineNotes.length,
+            totalPages: Math.max(1, Math.ceil(dashboardTimelineNotes.length / DEFAULT_PAGE_SIZE)),
+            hasNext: dashboardTimelineNotes.length > DEFAULT_PAGE_SIZE,
             hasPrevious: false,
           },
         }
       : undefined,
   });
-  const notesQuery = useQuery({
-    queryKey: ['notes', 'projects-page', selected?.projectSlug || '', selectedFolderId, notesPagination.page],
-    queryFn: () => fetchNotes({
-      page: notesPagination.page,
-      projectSlug: selected?.projectSlug || '',
-      folderId: selectedFolderId || undefined,
-      rootOnly: !selectedFolderId,
-    }),
-    enabled: Boolean(selected?.projectSlug),
-    initialData: selected && !selectedFolderId
-      ? {
-          ok: true as const,
-          notes: dashboardNotes.filter((note) => note.project === selected.projectSlug && !note.folderId).slice(0, DEFAULT_PAGE_SIZE),
-          pagination: {
-            page: 1,
-            pageSize: DEFAULT_PAGE_SIZE,
-            total: dashboardNotes.filter((note) => note.project === selected.projectSlug && !note.folderId).length,
-            totalPages: Math.max(1, Math.ceil(dashboardNotes.filter((note) => note.project === selected.projectSlug && !note.folderId).length / DEFAULT_PAGE_SIZE)),
-            hasNext: dashboardNotes.filter((note) => note.project === selected.projectSlug && !note.folderId).length > DEFAULT_PAGE_SIZE,
-            hasPrevious: false,
-          },
-        }
-      : undefined,
-  });
-  const notes = notesQuery.data?.notes || [];
   const timelineItems = timelineQuery.data?.timeline || [];
   const selectedProjectDeleteBlockedReason = selected?.projectSlug === 'inbox'
     ? 'Inbox cannot be changed.'
@@ -211,19 +186,18 @@ export function ProjectsWorkspace({
           folderTree={folderTree}
           selectedFolderId={selectedFolderId}
           selectedFolder={selectedFolder}
-          notes={notes}
           timelineItems={timelineItems}
           timelineCategory={timelineCategory}
-          activeView={activeView}
-          notesPagination={notesQuery.data?.pagination}
           timelinePagination={timelineQuery.data?.pagination}
-          onViewChange={setActiveView}
           onTimelineCategoryChange={(category) => {
             setTimelineCategory(category);
             timelinePagination.setPage(1);
           }}
           onTimelinePageChange={timelinePagination.setPage}
-          onFolderSelect={setSelectedFolderId}
+          onFolderSelect={(folderId) => {
+            setSelectedFolderId(folderId);
+            timelinePagination.setPage(1);
+          }}
           onCreateNote={() => setNoteModal({ mode: 'create', projectSlug: selected.projectSlug, folderId: selectedFolderId || undefined })}
           onCreateFolder={() => setFolderModal({ mode: 'create', projectSlug: selected.projectSlug, parentFolderId: selectedFolder?.id })}
           onEditFolder={() => selectedFolder ? setFolderModal({ mode: 'edit', projectSlug: selected.projectSlug, folder: selectedFolder }) : undefined}
@@ -231,7 +205,6 @@ export function ProjectsWorkspace({
           onEditNote={(note) => loadNoteMutation.mutate(note.id)}
           onDeleteNote={(note) => setConfirmState({ kind: 'note', note })}
           onOpenNote={openNote}
-          onNotesPageChange={notesPagination.setPage}
           onEditProject={selected.projectSlug === 'inbox' ? undefined : () => setProjectModal({ mode: 'edit', project: selected })}
           onDeleteProject={selectedProjectDeleteBlockedReason ? undefined : () => setConfirmState({ kind: 'project', project: selected })}
           deleteProjectLabel={selectedProjectDeleteBlockedReason || 'Delete project'}
