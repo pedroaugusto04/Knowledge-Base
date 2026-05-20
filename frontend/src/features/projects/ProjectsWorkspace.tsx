@@ -50,10 +50,10 @@ export function ProjectsWorkspace({
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
   const dashboardNotes = dashboard.notes || [];
-  const selected = routeProject
+  const selected = selectedSlug
     ? dashboard.projects.find((project) => project.projectSlug === selectedSlug) || dashboard.projects[0]
     : undefined;
-  const isAllProjectsSelected = !routeProject;
+  const isAllProjectsSelected = !selectedSlug;
 
   useEffect(() => {
     setSelectedFolderId(ROOT_FOLDER_ID);

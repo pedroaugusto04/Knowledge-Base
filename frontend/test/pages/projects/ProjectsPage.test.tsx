@@ -120,6 +120,29 @@ function renderProjects(options?: { selectedProject?: string; route?: string }) 
   return { openProject, openNote };
 }
 
+function timelineFromDashboardNotes(projectSlug = 'platform') {
+  const notes = (dashboard.notes || []).filter((note) => note.project === projectSlug);
+  return {
+    ok: true,
+    timeline: notes.map((note) => ({
+      ...note,
+      noteId: note.id,
+      category: note.type === 'decision' ? 'decision' : 'manual',
+      sourceChannel: note.source,
+      attachmentCount: note.attachmentCount || 0,
+      folderId: note.folderId || null,
+    })),
+    pagination: {
+      page: 1,
+      pageSize: 5,
+      total: notes.length,
+      totalPages: 1,
+      hasNext: false,
+      hasPrevious: false,
+    },
+  };
+}
+
 describe('ProjectsPage', () => {
   it('allows selecting another project from the header select', () => {
     const { openProject } = renderProjects();
@@ -323,6 +346,7 @@ describe('ProjectsPage', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
       if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (String(input).startsWith('/api/projects/platform/timeline?')) return Response.json(timelineFromDashboardNotes());
       expect(String(input)).toBe('/api/notes/note-1');
       return Response.json({
         ok: true,
@@ -344,7 +368,7 @@ describe('ProjectsPage', () => {
     vi.stubGlobal('fetch', fetchMock);
     const { openNote } = renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit note Deploy antigo' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit note Deploy antigo' }));
 
     expect(openNote).not.toHaveBeenCalled();
     expect(await screen.findByDisplayValue('confirmar deploy')).toBeInTheDocument();
@@ -355,6 +379,7 @@ describe('ProjectsPage', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
       if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (String(input).startsWith('/api/projects/platform/timeline?')) return Response.json(timelineFromDashboardNotes());
       if (String(input) === '/api/notes/note-1' && !init?.method) {
         return Response.json({
           ok: true,
@@ -387,7 +412,7 @@ describe('ProjectsPage', () => {
     vi.stubGlobal('fetch', fetchMock);
     const { openNote } = renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit note Deploy antigo' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit note Deploy antigo' }));
 
     expect(await screen.findByRole('dialog', { name: 'Edit note' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Deploy revisado' } });
@@ -527,6 +552,7 @@ describe('ProjectsPage', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
       if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (String(input).startsWith('/api/projects/platform/timeline?')) return Response.json(timelineFromDashboardNotes());
       expect(String(input)).toBe('/api/notes/note-1');
       expect(init?.method).toBe('DELETE');
       return Response.json({ ok: true, noteId: 'note-1' });
@@ -534,7 +560,7 @@ describe('ProjectsPage', () => {
     vi.stubGlobal('fetch', fetchMock);
     renderProjects();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Delete note Deploy antigo' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete note Deploy antigo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm deletion' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/notes/note-1', expect.objectContaining({ method: 'DELETE' })));
