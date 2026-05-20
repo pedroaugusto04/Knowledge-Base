@@ -9,7 +9,10 @@ import {
   emptyAgentConversationState,
   parseApprovalIntent,
 } from '../../dist/application/use-cases/conversation/services/conversation-agent-state-machine.js';
-import { buildConversationAgentSystemPrompt } from '../../dist/infrastructure/ai/prompts/conversation-agent.prompt.js';
+import {
+  buildConversationAgentSystemPrompt,
+  buildConversationAgentTurnPrompt,
+} from '../../dist/infrastructure/ai/prompts/conversation-agent.prompt.js';
 
 test('conversation agent prompt prefers organized folders over project root fallback', () => {
   const prompt = buildConversationAgentSystemPrompt();
@@ -17,6 +20,24 @@ test('conversation agent prompt prefers organized folders over project root fall
   assert.match(prompt, /prefer the most sensible existing folder/);
   assert.match(prompt, /suggest a short new folder path/);
   assert.match(prompt, /Use placeInRoot=true only when the user explicitly chooses the project root/);
+});
+
+test('conversation agent prompt prioritizes explicit new project requests', () => {
+  const prompt = buildConversationAgentSystemPrompt();
+  const turnPrompt = buildConversationAgentTurnPrompt({
+    messageText: 'crie um projeto novo chamado Projeto X e salve esta nota',
+    currentState: {},
+    availableProjects: [{ projectSlug: 'platform', displayName: 'Platform', defaultTags: [] }],
+    candidateProjectSlug: '',
+    candidateFolders: [],
+    timeZone: 'UTC',
+    currentLocalDate: '2026-05-20',
+    currentLocalTime: '12:00',
+  });
+
+  assert.match(prompt, /explicitly asks to create\/use a new project/);
+  assert.match(prompt, /prefer the new project over existing projects and over "inbox"/);
+  assert.match(turnPrompt, /use the requested new project slug instead of falling back to an existing project or inbox/);
 });
 
 test('conversation agent presenter formats final confirmation in English', () => {
