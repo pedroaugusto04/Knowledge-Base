@@ -123,6 +123,14 @@ async function fixture(t, sender = new CapturingWhatsappSender(), mediaDownloade
   await repositories.credentialRepository.upsertCredential({
     userId: user.id,
     workspaceSlug: 'default',
+    provider: 'whatsapp',
+    status: 'connected',
+    encryptedConfig: {},
+    publicMetadata: {},
+  });
+  await repositories.credentialRepository.upsertCredential({
+    userId: user.id,
+    workspaceSlug: 'default',
     provider: 'ai-conversation',
     status: 'connected',
     encryptedConfig: {},
@@ -147,6 +155,7 @@ async function fixture(t, sender = new CapturingWhatsappSender(), mediaDownloade
   );
   const whatsapp = new HandleWhatsappWebhookUseCase(
     repositories.externalIdentityRepository,
+    repositories.credentialRepository,
     repositories.webhookEventRepository,
     { read: () => ({ reminderTimeZone: 'America/Sao_Paulo', webhookSecret: process.env.KB_WEBHOOK_SECRET || '', whatsappWebhookApiKey: process.env.KB_WPP_WEBHOOK_API_KEY || '', evolutionApiKey: process.env.EVOLUTION_API_KEY || '' }) },
     undefined,
@@ -202,6 +211,14 @@ async function linkWhatsappWorkspace(repositories, userId, workspaceSlug, whatsa
     provider: 'whatsapp',
     identityType: 'jid',
     externalId: whatsappJid,
+    publicMetadata: {},
+  });
+  await repositories.credentialRepository.upsertCredential({
+    userId,
+    workspaceSlug,
+    provider: 'whatsapp',
+    status: 'connected',
+    encryptedConfig: {},
     publicMetadata: {},
   });
   await repositories.credentialRepository.upsertCredential({
@@ -308,6 +325,20 @@ test('linked whatsapp chat completes conversation and saves note on confirmation
   assert.equal(notes.length, 1);
   assert.equal(notes[0].projectSlug, 'n8n-automations');
   assert.equal(notes[0].sourceChannel, 'whatsapp');
+});
+
+test('revoked whatsapp integration ignores linked chat messages before invoking the agent', async (t) => {
+  const { repositories, whatsapp, sender, user } = await fixture(t);
+  await repositories.credentialRepository.revokeCredential(user.id, 'default', 'whatsapp', { revoked: true });
+
+  const result = await whatsapp.execute(evolutionInput('corrigi timeout no webhook'));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.processed, false);
+  assert.equal(result.ignored, 'whatsapp_integration_inactive');
+  assert.equal(sender.sent.length, 0);
+  assert.equal((await repositories.contentRepository.listNotes(user.id)).length, 0);
+  assert.equal(await repositories.countConversationStates(), 0);
 });
 
 test('whatsapp webhook is idempotent for duplicate message deliveries', async (t) => {

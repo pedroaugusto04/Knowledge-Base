@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
-import { ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
+import { CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
 import type { ConversationInput } from '../../../../contracts/conversation.js';
 import { DEFAULT_PAGE_SIZE } from '../../../../contracts/pagination.js';
 import { IntegrationConnectionService } from '../../../integration-connections.js';
 import type { WhatsappWebhookRequest } from '../../../models/webhook-request.models.js';
-import { ExternalIdentityRepository } from '../../../ports/integrations.repository.js';
+import { CredentialRepository, ExternalIdentityRepository } from '../../../ports/integrations.repository.js';
 import { RuntimeEnvironmentProvider } from '../../../ports/runtime-environment.port.js';
 import { WebhookEventRepository } from '../../../ports/webhook-events.repository.js';
 import { WhatsappMediaDownloader } from '../../../ports/whatsapp-media.downloader.js';
@@ -28,6 +28,7 @@ type WhatsappWebhookContext = {
 export class HandleWhatsappWebhookUseCase {
   constructor(
     private readonly externalIdentities: ExternalIdentityRepository,
+    private readonly credentials: CredentialRepository,
     private readonly webhookEvents: WebhookEventRepository,
     private readonly environmentProvider: RuntimeEnvironmentProvider,
     private readonly connections?: IntegrationConnectionService,
@@ -72,6 +73,15 @@ export class HandleWhatsappWebhookUseCase {
     if (!identity) {
       await this.rejected(context, 'identity_not_found');
       throw new NotFoundException('identity_not_found');
+    }
+    const active = await this.isWhatsappIntegrationActive(identity.userId, identity.workspaceSlug);
+    if (!active) {
+      this.logger?.info('whatsapp.webhook.integration_inactive', {
+        externalId: context.externalIdentity.externalId,
+        resolvedUserId: identity.userId,
+        workspaceSlug: identity.workspaceSlug,
+      });
+      return this.processed(context, { ok: true, processed: false, ignored: 'whatsapp_integration_inactive' }, identity.userId);
     }
     const claimed = await this.claimMessageIdempotency(context, 'message', identity.userId);
     if (!claimed) {
@@ -214,6 +224,11 @@ export class HandleWhatsappWebhookUseCase {
   private async sendReply(chatJid: string, text: string) {
     if (!this.whatsappReplySender) return { ok: false as const, error: 'whatsapp_reply_sender_not_configured' };
     return this.whatsappReplySender.sendText({ chatJid, text });
+  }
+
+  private async isWhatsappIntegrationActive(userId: string, workspaceSlug: string) {
+    const credential = await this.credentials.findCredential(userId, workspaceSlug, IntegrationProvider.Whatsapp);
+    return Boolean(credential && credential.status === CredentialRecordStatus.Connected && !credential.revokedAt);
   }
 
   private async claimMessageIdempotency(

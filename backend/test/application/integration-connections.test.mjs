@@ -111,6 +111,7 @@ async function fixture(t) {
   );
   const whatsapp = new HandleWhatsappWebhookUseCase(
     repositories.externalIdentityRepository,
+    repositories.credentialRepository,
     repositories.webhookEventRepository,
     { read: () => ({ webhookSecret: process.env.KB_WEBHOOK_SECRET || '', whatsappWebhookApiKey: process.env.KB_WPP_WEBHOOK_API_KEY || '', evolutionApiKey: process.env.EVOLUTION_API_KEY || '' }) },
     connections,
