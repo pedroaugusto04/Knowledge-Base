@@ -25,6 +25,10 @@ export class ConversationAgentPresenter {
     return 'Note saved successfully.';
   }
 
+  noPendingConfirmation() {
+    return 'There is no pending note to confirm. Send the note text again and I will prepare a new confirmation.';
+  }
+
   couldNotUnderstand() {
     return [
       'I could not identify something useful to save yet.',

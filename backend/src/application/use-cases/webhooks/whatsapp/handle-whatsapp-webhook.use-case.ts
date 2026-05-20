@@ -17,6 +17,7 @@ import { ProcessAgentConversationUseCase } from '../../conversation/process-agen
 import { QueryKnowledgeUseCase } from '../../query/query-knowledge.use-case.js';
 import { AppLogger } from '../../../../observability/logger.js';
 import { parseWhatsappEvolutionMessage } from '../../../utils/webhook.utils.js';
+import { WhatsappConversationTaskQueue, WhatsappWebhookRateLimiter } from './whatsapp-webhook-flow-control.js';
 
 type WhatsappWebhookContext = {
   headers: Record<string, string>;
@@ -26,6 +27,9 @@ type WhatsappWebhookContext = {
 
 @Injectable()
 export class HandleWhatsappWebhookUseCase {
+  private readonly rateLimiter = new WhatsappWebhookRateLimiter();
+  private readonly conversationQueue = new WhatsappConversationTaskQueue();
+
   constructor(
     private readonly externalIdentities: ExternalIdentityRepository,
     private readonly credentials: CredentialRepository,
@@ -87,6 +91,15 @@ export class HandleWhatsappWebhookUseCase {
     if (!claimed) {
       return this.processed(context, { ok: true, processed: false, ignored: 'duplicate_message' }, identity.userId);
     }
+    const rateLimit = this.rateLimiter.consume({
+      userId: identity.userId,
+      workspaceSlug: identity.workspaceSlug,
+      chatId: command.input.chatId,
+      senderId: command.input.senderId,
+    });
+    if (!rateLimit.allowed) {
+      return this.handleRateLimitedMessage(context, identity.userId, command.input.chatId, rateLimit);
+    }
     await this.recordWebhookEvent(context, {
       eventType: 'message',
       status: WebhookEventStatus.Resolved,
@@ -94,7 +107,10 @@ export class HandleWhatsappWebhookUseCase {
     });
 
     try {
-      return await this.handleEvolutionMessage(context, identity.userId, identity.workspaceSlug, command.input);
+      return await this.conversationQueue.enqueue(
+        this.conversationQueueKey(identity.userId, identity.workspaceSlug, command.input),
+        () => this.handleEvolutionMessage(context, identity.userId, identity.workspaceSlug, command.input),
+      );
     } catch (error) {
       await this.failed(context, identity.userId, error);
       throw error;
@@ -226,9 +242,41 @@ export class HandleWhatsappWebhookUseCase {
     return this.whatsappReplySender.sendText({ chatJid, text });
   }
 
+  private async handleRateLimitedMessage(
+    context: WhatsappWebhookContext,
+    userId: string,
+    chatId: string,
+    rateLimit: { retryAfterSeconds: number; noticeAllowed: boolean },
+  ) {
+    const message = `I received too many messages in a short time. Wait ${rateLimit.retryAfterSeconds}s and send it again.`;
+    const sendResult = rateLimit.noticeAllowed
+      ? await this.sendReply(chatId, message)
+      : { ok: false as const, error: 'rate_limit_notice_suppressed' };
+    this.logger?.info('whatsapp.webhook.rate_limited', {
+      externalId: context.externalIdentity.externalId,
+      chatId,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+      noticeSent: sendResult.ok,
+      noticeError: sendResult.ok ? '' : sendResult.error,
+    });
+    return this.processed(context, {
+      ok: true,
+      processed: false,
+      ignored: 'rate_limited',
+      message,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+      replySent: sendResult.ok,
+      replyError: sendResult.ok ? undefined : sendResult.error,
+    }, userId);
+  }
+
   private async isWhatsappIntegrationActive(userId: string, workspaceSlug: string) {
     const credential = await this.credentials.findCredential(userId, workspaceSlug, IntegrationProvider.Whatsapp);
     return Boolean(credential && credential.status === CredentialRecordStatus.Connected && !credential.revokedAt);
+  }
+
+  private conversationQueueKey(userId: string, workspaceSlug: string, input: ConversationInput) {
+    return `${userId}:${workspaceSlug}:${input.chatId}:${input.senderId}`;
   }
 
   private async claimMessageIdempotency(

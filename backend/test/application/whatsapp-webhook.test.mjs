@@ -10,6 +10,7 @@ import {
 } from '../../dist/application/use-cases/index.js';
 import { ConversationAgentPresenter } from '../../dist/application/use-cases/conversation/services/conversation-agent.presenter.js';
 import { ConversationFolderResolutionService } from '../../dist/application/use-cases/conversation/services/conversation-folder-resolution.service.js';
+import { WhatsappConversationTaskQueue } from '../../dist/application/use-cases/webhooks/whatsapp/whatsapp-webhook-flow-control.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
 class CapturingWhatsappSender {
@@ -363,6 +364,58 @@ test('whatsapp webhook is idempotent for duplicate message deliveries', async (t
   assert.equal(second.processed, false);
   assert.equal(second.ignored, 'duplicate_message');
   assert.equal(sender.sent.length, 1);
+});
+
+test('whatsapp webhook rate limits chatty senders with a clear throttled notice', async (t) => {
+  const { whatsapp, sender } = await fixture(t);
+  const results = [];
+  for (let index = 0; index < 7; index += 1) {
+    results.push(await whatsapp.execute(evolutionInput(`mensagem ${index}`, {
+      data: {
+        key: {
+          remoteJid: '120363@g.us',
+          participant: '5511999999999@s.whatsapp.net',
+          id: `rate-limit-${index}`,
+          fromMe: false,
+        },
+        message: { conversation: `mensagem ${index}` },
+      },
+    })));
+  }
+
+  const limited = results.at(-1);
+  assert.equal(limited.processed, false);
+  assert.equal(limited.ignored, 'rate_limited');
+  assert.match(limited.message, /Wait \d+s and send it again/);
+  assert.equal(limited.replySent, true);
+  assert.match(sender.sent.at(-1).text, /I received too many messages in a short time/);
+});
+
+test('whatsapp conversation task queue serializes work for the same conversation key', async () => {
+  const queue = new WhatsappConversationTaskQueue();
+  const events = [];
+  let releaseFirst;
+  const firstRelease = new Promise((resolve) => {
+    releaseFirst = resolve;
+  });
+
+  const first = queue.enqueue('conversation-1', async () => {
+    events.push('first:start');
+    await firstRelease;
+    events.push('first:end');
+    return 'first';
+  });
+  const second = queue.enqueue('conversation-1', async () => {
+    events.push('second:start');
+    return 'second';
+  });
+
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(events, ['first:start']);
+  releaseFirst();
+  assert.equal(await first, 'first');
+  assert.equal(await second, 'second');
+  assert.deepEqual(events, ['first:start', 'first:end', 'second:start']);
 });
 
 test('linked whatsapp chat saves captioned media as a Supabase-backed attachment after confirmation', async (t) => {

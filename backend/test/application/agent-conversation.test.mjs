@@ -422,6 +422,39 @@ test('agent conversation persists multi-turn state and submits from final confir
   assert.equal(await repositories.countConversationStates(), 0);
 });
 
+test('agent conversation expires stale pending confirmations before accepting yes', async (t) => {
+  const turns = new Map();
+  const { repositories, agentUseCase, user } = await createFixture(t, turns);
+  await repositories.conversationStateRepository.upsert(user.id, 'default', 'agent:group@g.us:5511999999999@s.whatsapp.net', {
+    draft: {
+      rawText: 'Mensagem antiga que nao deve ser salva',
+      title: '',
+      kind: 'note',
+      canonicalType: 'event',
+      importance: 'medium',
+      tags: [],
+      reminderDate: '',
+      reminderTime: '',
+    },
+    media: {},
+    project: { selectedProjectSlug: 'platform' },
+    folder: { selectedFolderId: '', suggestedFolderPath: [], placeInRoot: true },
+    pendingApproval: 'final_confirmation',
+    lastQuestion: 'Confirm note saving:',
+    lastUserMessage: 'Mensagem antiga que nao deve ser salva',
+    lastAgentAction: 'confirm',
+    confidence: 'high',
+    updatedAt: '2000-01-01T00:00:00.000Z',
+  });
+
+  const result = await agentUseCase.execute(input('sim'), user.id, 'default');
+
+  assert.equal(result.action, 'ask');
+  assert.match(result.replyText, /no pending note to confirm/);
+  assert.equal((await repositories.contentRepository.listNotes(user.id)).length, 0);
+  assert.equal(await repositories.countConversationStates(), 0);
+});
+
 test('agent conversation accepts AI reminder kind alias and reaches final confirmation', async (t) => {
   const turns = new Map([
     ['me lembra de revisar o deploy amanha', decision({

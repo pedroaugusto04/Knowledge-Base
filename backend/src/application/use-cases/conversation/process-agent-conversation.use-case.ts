@@ -55,6 +55,8 @@ type AgentDecisionTurn = {
   decision: ConversationAgentResponse;
 };
 
+const AGENT_CONVERSATION_STATE_TTL_MS = 15 * 60 * 1000;
+
 @Injectable()
 export class ProcessAgentConversationUseCase {
   constructor(
@@ -105,6 +107,9 @@ export class ProcessAgentConversationUseCase {
       await this.conversationStates.clear(userId, normalizedWorkspaceSlug, key);
       return this.reply('cancel', this.presenter.captureCanceled(), null, EMPTY_AGENT_CONVERSATION_STATE);
     }
+    if (this.isApprovalWithoutPendingState(messageText, state)) {
+      return this.reply('ask', this.presenter.noPendingConfirmation(), null, state);
+    }
     if (state.pendingApproval === 'final_confirmation') {
       return this.handleFinalConfirmation(input, userId, normalizedWorkspaceSlug, key, state);
     }
@@ -116,6 +121,9 @@ export class ProcessAgentConversationUseCase {
       normalizedWorkspaceSlug,
       state,
     );
+    if (this.isEmptyAgentDraftAsk(decision)) {
+      return this.reply('ask', this.presenter.couldNotUnderstand(), null, state);
+    }
 
     const selectedProjectSlug = resolveAgentSelectedProjectSlug(decision.selectedProjectSlug, state, projects);
     const foldersForDecision = selectedProjectSlug && selectedProjectSlug !== 'inbox'
@@ -180,7 +188,36 @@ export class ProcessAgentConversationUseCase {
   private async loadState(userId: string, workspaceSlug: string, key: string) {
     const saved = await this.conversationStates.get(userId, workspaceSlug, key);
     const parsed = saved ? agentConversationStateSchema.safeParse(saved.state) : null;
-    return parsed?.success ? parsed.data : EMPTY_AGENT_CONVERSATION_STATE;
+    if (!parsed?.success) return EMPTY_AGENT_CONVERSATION_STATE;
+    if (this.isExpiredState(parsed.data, saved?.updatedAt || '')) {
+      await this.conversationStates.clear(userId, workspaceSlug, key);
+      this.logger?.info('conversation.agent.state.expired', {
+        userId,
+        workspaceSlug,
+        conversationKey: key,
+        updatedAt: parsed.data.updatedAt || saved?.updatedAt || '',
+      });
+      return EMPTY_AGENT_CONVERSATION_STATE;
+    }
+    return parsed.data;
+  }
+
+  private isExpiredState(state: AgentConversationState, recordUpdatedAt: string) {
+    const updatedAt = Date.parse(state.updatedAt || recordUpdatedAt || '');
+    if (!Number.isFinite(updatedAt)) return false;
+    return Date.now() - updatedAt > AGENT_CONVERSATION_STATE_TTL_MS;
+  }
+
+  private isApprovalWithoutPendingState(messageText: string, state: AgentConversationState) {
+    if (state.pendingApproval !== 'none' || state.draft.rawText) return false;
+    const intent = parseApprovalIntent(messageText);
+    return intent === 'approve' || intent === 'reject';
+  }
+
+  private isEmptyAgentDraftAsk(decision: ConversationAgentResponse) {
+    return decision.action === 'ask'
+      && !String(decision.resolvedDraft.rawText || '').trim()
+      && !String(decision.selectedProjectSlug || '').trim();
   }
 
   private async requestAgentDecision(
