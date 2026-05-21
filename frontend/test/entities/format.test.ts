@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatUsDate } from '../../src/entities/format';
+import { formatUsDate, reminderDisplayDateTime } from '../../src/entities/format';
 
 describe('formatUsDate', () => {
   it('formats plain ISO dates as MM/DD/YYYY', () => {
@@ -15,5 +15,11 @@ describe('formatUsDate', () => {
 
   it('preserves non-date values when parsing fails', () => {
     expect(formatUsDate('sem-data')).toBe('sem-data');
+  });
+});
+
+describe('reminderDisplayDateTime', () => {
+  it('formats UTC reminder timestamps using the user time zone display pattern', () => {
+    expect(reminderDisplayDateTime({ reminderAt: '2026-04-27T12:30:00.000Z' })).toBe('2026-04-27 09:30:00');
   });
 });

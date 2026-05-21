@@ -84,6 +84,7 @@ const dashboard: Dashboard = {
       isOverdue: index === 0 ? false : true,
       reminderDate: index === 0 ? undefined : '2026-04-27',
       reminderTime: index === 0 ? undefined : '09:30',
+      reminderAt: index === 0 ? undefined : '2026-04-27T12:30:00.000Z',
       target: index === 0 ? { kind: HomeTargetKind.Note, id: 'review-1', path: 'reviews/review.md' } : { kind: HomeTargetKind.Note, id: 'note-1', path: '20 Inbox/note.md' },
     })),
     recentInterestingEvents: [
@@ -144,7 +145,7 @@ describe('HomePage', () => {
     expect(eventsPanel).toHaveTextContent('Active');
     expect(screen.getAllByText('Pending').length).toBeGreaterThan(0);
     expect(screen.getByText('High')).toBeInTheDocument();
-    expect(screen.getAllByText(/N8N Automations \/ 04\/27\/2026 09:30/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/N8N Automations \/ 2026-04-27 09:30:00/i).length).toBeGreaterThan(0);
     expect(screen.queryByText('Prioridade 6')).not.toBeInTheDocument();
     expect(screen.getAllByTestId('chart')).toHaveLength(4);
   });
