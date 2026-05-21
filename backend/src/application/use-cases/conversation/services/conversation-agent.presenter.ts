@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import type { AgentConversationState } from '../../../../contracts/agent-conversation.js';
+import type { SaveNoteResult } from '../../../models/note-save-result.models.js';
 
 @Injectable()
 export class ConversationAgentPresenter {
@@ -16,8 +17,18 @@ export class ConversationAgentPresenter {
     return 'Capture canceled. Send a new note whenever you want.';
   }
 
-  noteSaved() {
-    return 'Note saved successfully.';
+  noteSaved(result: SaveNoteResult) {
+    const note = result.note;
+    return [
+      'Note saved successfully:',
+      `Type: ${formatDisplayToken(note.type)}`,
+      `Title: ${note.title}`,
+      `Project: ${note.projectName}`,
+      `Folder: ${note.folderPath}`,
+      `Status: ${formatDisplayToken(note.status)}`,
+      note.hasReminder ? `Reminder: ${formatReminder(note)}` : '',
+      note.attachmentCount > 0 ? `Attachments: ${note.attachmentCount}` : '',
+    ].filter(Boolean).join('\n');
   }
 
   couldNotUnderstand() {
@@ -53,4 +64,17 @@ export class ConversationAgentPresenter {
       state.draft.tags.length ? `Tags: ${state.draft.tags.join(', ')}` : '',
     ].filter(Boolean).join('\n');
   }
+}
+
+function formatDisplayToken(value: string | null | undefined) {
+  return String(value || '')
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ') || 'Not Defined';
+}
+
+function formatReminder(note: SaveNoteResult['note']) {
+  if (note.reminderAt) return note.reminderAt;
+  return [note.reminderDate, note.reminderTime].filter(Boolean).join(' ');
 }

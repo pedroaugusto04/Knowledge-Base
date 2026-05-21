@@ -72,6 +72,13 @@ test('ingest persists one canonical note with derived reminder, attachment and w
   assert.equal(result.ok, true);
   assert.match(result.eventPath, /^20 Inbox\/n8n-automations\//);
   assert.equal(result.attachmentIds.length, 1);
+  assert.equal(result.note.type, 'reminder');
+  assert.equal(result.note.projectName, 'n8n-automations');
+  assert.equal(result.note.folderName, 'Project root');
+  assert.equal(result.note.hasReminder, true);
+  assert.equal(result.note.reminderDate, '2026-04-28');
+  assert.equal(result.note.reminderTime, '09:30');
+  assert.equal(result.note.attachmentCount, 1);
 
   const notes = await repositories.contentRepository.listNotes(user.id);
   assert.equal(notes.filter((note) => note.type === 'knowledge').length, 1);
@@ -157,6 +164,12 @@ test('manual note creation uses ingest and derives optional reminder from the no
   }, user.id);
 
   assert.ok(withoutReminder.noteId);
+  assert.equal(withoutReminder.note.type, 'event');
+  assert.equal(withoutReminder.note.projectName, 'Acme API');
+  assert.equal(withReminder.note.type, 'reminder');
+  assert.equal(withReminder.note.hasReminder, true);
+  assert.equal(withReminder.note.reminderDate, '2026-04-28');
+  assert.equal(withReminder.note.reminderTime, '09:00');
   const notes = await repositories.contentRepository.listNotes(user.id);
   assert.equal(notes.filter((note) => note.type === 'event').length, 2);
   const reminders = await repositories.contentQueryRepository.listReminders(user.id);

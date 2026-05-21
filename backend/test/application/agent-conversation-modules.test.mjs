@@ -227,7 +227,36 @@ test('process agent conversation auto-creates a missing project before submittin
   const ingestEntryUseCase = {
     async execute(payload) {
       ingested.push(payload);
-      return { ok: true, noteId: 'note-1', project: payload.event.projectSlug, eventPath: '20 Inbox/note.md', attachmentIds: [] };
+      return {
+        ok: true,
+        noteId: 'note-1',
+        project: payload.event.projectSlug,
+        eventPath: '20 Inbox/note.md',
+        canonicalPath: '',
+        followupPath: '',
+        dailyPath: '',
+        attachmentIds: [],
+        assetPaths: [],
+        gitStatus: 'test',
+        note: {
+          id: 'note-1',
+          title: payload.content.title || payload.content.rawText,
+          type: payload.classification.canonicalType,
+          status: payload.classification.status,
+          projectSlug: payload.event.projectSlug,
+          projectName: 'Projeto X',
+          workspaceSlug: 'default',
+          folderId: null,
+          folderName: 'Project root',
+          folderPath: 'Project root',
+          eventPath: '20 Inbox/note.md',
+          reminderDate: '',
+          reminderTime: '',
+          reminderAt: '',
+          hasReminder: false,
+          attachmentCount: 0,
+        },
+      };
     },
   };
   const credentials = {

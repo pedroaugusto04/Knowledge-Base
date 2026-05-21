@@ -285,7 +285,7 @@ export class ProcessAgentConversationUseCase {
     });
     return this.reply(
       'submit',
-      this.presenter.noteSaved(),
+      this.presenter.noteSaved(ingestResult),
       payload,
       EMPTY_AGENT_CONVERSATION_STATE,
       ingestResult,

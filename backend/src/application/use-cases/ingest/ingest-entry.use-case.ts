@@ -10,6 +10,8 @@ import type { Project } from '../../../domain/projects.js';
 import { slugify, trimText } from '../../../domain/strings.js';
 import { ContentRepository } from '../../ports/content.repository.js';
 import { RuntimeEnvironmentProvider } from '../../ports/runtime-environment.port.js';
+import type { ProjectFolderRecord } from '../../models/repository-records.models.js';
+import type { SaveNoteResult } from '../../models/note-save-result.models.js';
 
 type IngestExecutionOptions = {
   folderId?: string;
@@ -67,7 +69,7 @@ async function saveIngestedNote(
   reminderTimeZone: string,
   workspaceSlugOverride = '',
   options: IngestExecutionOptions = {},
-) {
+): Promise<SaveNoteResult> {
   const parsed = withDerivedReminderAt(ingestPayloadSchema.parse(input), reminderTimeZone);
   const workspaceSlug = slugify(workspaceSlugOverride || String(parsed.metadata.workspaceSlug || 'default')) || 'default';
   const workspace = (await contentRepository.listWorkspaces(userId)).find((item) => item.workspaceSlug === workspaceSlug);
@@ -169,6 +171,12 @@ async function saveIngestedNote(
       }),
     ),
   );
+  const folderSummary = folder
+    ? await buildFolderSummary(contentRepository, userId, project.projectSlug, folder)
+    : { folderName: 'Project root', folderPath: 'Project root' };
+  const reminderDate = String(payload.actions.reminderDate || '');
+  const reminderTime = String(payload.actions.reminderTime || '');
+  const reminderAt = String(payload.actions.reminderAt || '');
   return {
     ok: true,
     project: project.projectSlug,
@@ -180,5 +188,43 @@ async function saveIngestedNote(
     attachmentIds: attachments.map((attachment) => attachment.id),
     assetPaths: [],
     gitStatus: 'not_used_postgres',
+    note: {
+      id: note.id,
+      title: note.title,
+      type: hasReminder({ reminderDate, reminderAt }) ? 'reminder' : note.type,
+      status: note.status,
+      projectSlug: project.projectSlug,
+      projectName: project.displayName || project.projectSlug,
+      workspaceSlug,
+      folderId: folder?.id || null,
+      folderName: folderSummary.folderName,
+      folderPath: folderSummary.folderPath,
+      eventPath: note.path,
+      reminderDate,
+      reminderTime,
+      reminderAt,
+      hasReminder: hasReminder({ reminderDate, reminderAt }),
+      attachmentCount: attachments.length,
+    },
+  };
+}
+
+async function buildFolderSummary(
+  contentRepository: ContentRepository,
+  userId: string,
+  projectSlug: string,
+  folder: ProjectFolderRecord,
+) {
+  const folders = await contentRepository.listProjectFolders(userId, projectSlug);
+  const byId = new Map(folders.map((item) => [item.id, item]));
+  const names: string[] = [];
+  let current: ProjectFolderRecord | undefined = folder;
+  while (current) {
+    names.unshift(current.displayName);
+    current = current.parentFolderId ? byId.get(current.parentFolderId) : undefined;
+  }
+  return {
+    folderName: folder.displayName,
+    folderPath: names.join(' / ') || folder.displayName,
   };
 }

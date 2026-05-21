@@ -238,16 +238,19 @@ test('linked whatsapp chat processes free text and sends the first conversation 
   assert.equal(result.ok, true);
   assert.equal(result.processed, true);
   assert.equal(result.action, 'submit');
-  assert.equal(result.message, 'Note saved successfully.');
+  assert.match(result.message, /^Note saved successfully:/);
+  assert.match(result.message, /Type: Incident/);
+  assert.match(result.message, /Project: N8N Automations/);
+  assert.match(result.message, /Folder: Webhooks \/ Operacao/);
   assert.equal(result.replySent, true);
-  assert.equal(result.conversationResult.replyText, 'Note saved successfully.');
+  assert.equal(result.conversationResult.replyText, result.message);
   assert.equal(result.replyText, undefined);
   assert.equal(result.text, undefined);
   assert.equal(result.reply, undefined);
   assert.equal(result.confirmText, undefined);
   assert.equal(sender.sent.length, 1);
   assert.equal(sender.sent[0].chatJid, '120363@g.us');
-  assert.equal(sender.sent[0].text, 'Note saved successfully.');
+  assert.equal(sender.sent[0].text, result.message);
 });
 
 test('linked whatsapp private chat processes free text and replies to the private jid', async (t) => {
@@ -266,7 +269,8 @@ test('linked whatsapp private chat processes free text and replies to the privat
   assert.equal(result.replySent, true);
   assert.equal(sender.sent.length, 1);
   assert.equal(sender.sent[0].chatJid, privateJid);
-  assert.equal(sender.sent[0].text, 'Note saved successfully.');
+  assert.match(sender.sent[0].text, /^Note saved successfully:/);
+  assert.match(sender.sent[0].text, /Project: N8N Automations/);
 });
 
 test('linked whatsapp private chats keep users and workspaces isolated', async (t) => {
@@ -303,7 +307,7 @@ test('linked whatsapp chat saves note without explicit confirmation', async (t) 
   const result = await whatsapp.execute(evolutionInput('corrigi timeout no webhook'));
 
   assert.equal(result.action, 'submit');
-  assert.equal(result.message, 'Note saved successfully.');
+  assert.match(result.message, /^Note saved successfully:/);
   assert.equal(result.conversationResult.action, 'submit');
   const notes = await repositories.contentRepository.listNotes(user.id);
   assert.equal(notes.length, 1);
@@ -546,7 +550,7 @@ test('whatsapp webhook processes self-authored messages without bot prefix', asy
   assert.equal(result.processed, true);
   assert.equal(result.replySent, true);
   assert.equal(sender.sent.length, 1);
-  assert.equal(sender.sent[0].text, 'Note saved successfully.');
+  assert.match(sender.sent[0].text, /^Note saved successfully:/);
 });
 
 test('unknown whatsapp chat is still rejected', async (t) => {

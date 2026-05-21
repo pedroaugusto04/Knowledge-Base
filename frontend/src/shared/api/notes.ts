@@ -40,6 +40,24 @@ export type CreateNoteResponse = {
   project: string;
   noteId: string;
   eventPath: string;
+  note: {
+    id: string;
+    title: string;
+    type: string;
+    status: string;
+    projectSlug: string;
+    projectName: string;
+    workspaceSlug: string;
+    folderId: string | null;
+    folderName: string;
+    folderPath: string;
+    eventPath: string;
+    reminderDate: string;
+    reminderTime: string;
+    reminderAt: string;
+    hasReminder: boolean;
+    attachmentCount: number;
+  };
 };
 
 export function createNote(params: CreateNoteParams) {
