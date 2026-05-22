@@ -202,7 +202,7 @@ test('signup duplicate email returns a field error', async (t) => {
     ),
     (error) => {
       assert.equal(error.getResponse().code, 'email_already_registered');
-      assert.deepEqual(error.getResponse().details.fieldErrors, { email: 'Este email ja esta cadastrado.' });
+      assert.deepEqual(error.getResponse().details.fieldErrors, { email: 'This email is already registered.' });
       return true;
     },
   );

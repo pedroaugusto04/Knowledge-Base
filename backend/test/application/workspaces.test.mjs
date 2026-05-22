@@ -92,7 +92,7 @@ test('create workspace rejects a second workspace for the same user in this rele
     () => useCase.execute({ displayName: 'Other Team', workspaceSlug: 'other-team' }, user.id),
     (error) => {
       assert.equal(error.getResponse().code, 'workspace_already_exists');
-      assert.deepEqual(error.getResponse().details.fieldErrors, { workspaceSlug: 'Este usuario ja possui um workspace.' });
+      assert.deepEqual(error.getResponse().details.fieldErrors, { workspaceSlug: 'This user already has a workspace.' });
       return true;
     },
   );
@@ -155,7 +155,7 @@ test('create project persists metadata, updates workspace slugs and rejects dupl
     () => useCase.execute({ displayName: 'Other API', projectSlug: 'acme-api', repositoryIds: [], defaultTags: [] }, user.id),
     (error) => {
       assert.equal(error.getResponse().code, 'project_slug_already_exists');
-      assert.deepEqual(error.getResponse().details.fieldErrors, { projectSlug: 'Este slug de projeto ja existe.' });
+      assert.deepEqual(error.getResponse().details.fieldErrors, { projectSlug: 'This project slug already exists.' });
       return true;
     },
   );

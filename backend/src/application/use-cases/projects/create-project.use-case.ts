@@ -20,7 +20,7 @@ export class CreateProjectUseCase {
     if (projects.some((project) => project.enabled && project.projectSlug === input.projectSlug)) {
       throw new ConflictException({
         code: 'project_slug_already_exists',
-        details: { fieldErrors: { projectSlug: 'Este slug de projeto ja existe.' } },
+        details: { fieldErrors: { projectSlug: 'This project slug already exists.' } },
       });
     }
 

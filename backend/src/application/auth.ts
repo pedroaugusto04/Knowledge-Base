@@ -194,7 +194,7 @@ export class AuthService implements OnModuleInit {
     if (existing) {
       throw new ConflictException({
         code: 'email_already_registered',
-        details: { fieldErrors: { email: 'Este email ja esta cadastrado.' } },
+        details: { fieldErrors: { email: 'This email is already registered.' } },
       });
     }
     const user = await this.users.createUser({
@@ -311,7 +311,7 @@ export class AuthService implements OnModuleInit {
       if (existingGoogleIdentity) return existing;
       throw new ConflictException({
         code: 'email_already_registered',
-        details: { fieldErrors: { email: 'Este email ja esta cadastrado. Entre com senha e vincule o Google depois.' } },
+        details: { fieldErrors: { email: 'This email is already registered. Sign in with your password before linking Google.' } },
       });
     }
     const user = await this.users.createUser({

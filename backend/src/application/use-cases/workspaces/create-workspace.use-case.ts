@@ -21,7 +21,7 @@ export class CreateWorkspaceUseCase {
     if (existing.length > 0) {
       throw new ConflictException({
         code: 'workspace_already_exists',
-        details: { fieldErrors: { workspaceSlug: 'Este usuario ja possui um workspace.' } },
+        details: { fieldErrors: { workspaceSlug: 'This user already has a workspace.' } },
       });
     }
 
