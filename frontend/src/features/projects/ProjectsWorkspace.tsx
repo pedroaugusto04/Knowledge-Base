@@ -51,6 +51,7 @@ export function ProjectsWorkspace({
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState(ROOT_FOLDER_ID);
   const [timelineCategory, setTimelineCategory] = useState<ProjectTimelineCategory>('all');
+  const [hiddenLatestBriefProjects, setHiddenLatestBriefProjects] = useState<Record<string, boolean>>({});
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
   const dashboardNotes = dashboard.notes || [];
@@ -158,12 +159,24 @@ export function ProjectsWorkspace({
     mutationFn: (projectSlug: string) => generateProjectBrief(projectSlug),
     onSuccess: (response, projectSlug) => {
       queryClient.setQueryData<ProjectBriefPanelResponse>(['project-brief', projectSlug], response);
+      setHiddenLatestBriefProjects((current) => ({ ...current, [projectSlug]: false }));
     },
     onError: (error) => notifyGeneralFormError(error, 'Could not generate the project brief.'),
   });
   const showLatestBrief = () => {
+    if (!selected?.projectSlug) return;
+    const currentBrief = latestBriefQuery.data;
+    if (currentBrief && 'source' in currentBrief && currentBrief.source === 'history' && !hiddenLatestBriefProjects[selected.projectSlug]) {
+      setHiddenLatestBriefProjects((current) => ({ ...current, [selected.projectSlug]: true }));
+      return;
+    }
+    setHiddenLatestBriefProjects((current) => ({ ...current, [selected.projectSlug]: false }));
+    if (currentBrief && 'source' in currentBrief && currentBrief.source === 'history') return;
     void latestBriefQuery.refetch();
   };
+  const selectedBriefResponse = selected && hiddenLatestBriefProjects[selected.projectSlug] && latestBriefQuery.data && 'source' in latestBriefQuery.data && latestBriefQuery.data.source === 'history'
+    ? undefined
+    : latestBriefQuery.data;
 
   return (
     <>
@@ -222,7 +235,7 @@ export function ProjectsWorkspace({
           selectedFolderId={selectedFolderId}
           selectedFolder={selectedFolder}
           timelineItems={timelineItems}
-          briefResponse={latestBriefQuery.data}
+          briefResponse={selectedBriefResponse}
           briefLoading={generateBriefMutation.isPending && generateBriefMutation.variables === selected.projectSlug}
           briefHistoryLoading={latestBriefQuery.isFetching}
           briefError={generateBriefMutation.isError && generateBriefMutation.variables === selected.projectSlug

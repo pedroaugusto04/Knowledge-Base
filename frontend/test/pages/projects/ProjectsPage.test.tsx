@@ -302,9 +302,16 @@ describe('ProjectsPage', () => {
 
     expect(await screen.findByText('Platform is actively processing deployment work.')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Showing the latest saved brief.');
+    expect(screen.getByRole('button', { name: 'Hide latest' })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith('/api/projects/platform/brief', expect.objectContaining({ method: 'POST' }));
     fireEvent.click(screen.getByRole('button', { name: 'Deploy antigo' }));
     expect(openNote).toHaveBeenCalledWith('note-1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hide latest' }));
+
+    await waitFor(() => expect(screen.queryByText('Platform is actively processing deployment work.')).not.toBeInTheDocument());
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByText('Generate a new brief or show the latest saved one.')).toBeInTheDocument();
   });
 
   it('shows an empty saved-brief state when no history exists', async () => {

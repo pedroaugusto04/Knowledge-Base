@@ -219,7 +219,7 @@ function ProjectBriefPanel({
             {loading ? 'Generating...' : 'Generate brief'}
           </button>
           <button className="icon-button secondary" disabled={busy} type="button" onClick={onShowLatest}>
-            {historyLoading ? 'Loading...' : 'Show latest'}
+            {historyLoading ? 'Loading...' : source === 'history' ? 'Hide latest' : 'Show latest'}
           </button>
         </div>
       </div>
