@@ -1,5 +1,5 @@
 import type { Project } from './models/project';
-import type { ProjectBriefResponse } from './models/project-brief';
+import type { ProjectBriefResponse, SavedProjectBriefResponse } from './models/project-brief';
 import type { ProjectFolder } from './models/project-folder';
 import type { ProjectTimelineCategory, ProjectTimelineItem } from './models/project-timeline';
 import { DEFAULT_PAGE_SIZE, type PaginatedResponse } from './models/pagination';
@@ -74,6 +74,10 @@ export function generateProjectBrief(projectSlug: string) {
   return request<ProjectBriefResponse>(`/api/projects/${encodeURIComponent(projectSlug)}/brief`, {
     method: 'POST',
   });
+}
+
+export function fetchLatestProjectBrief(projectSlug: string) {
+  return request<SavedProjectBriefResponse>(`/api/projects/${encodeURIComponent(projectSlug)}/brief`);
 }
 
 export function fetchAllProjectsTimeline(params: { page?: number; pageSize?: number; category?: ProjectTimelineCategory }) {

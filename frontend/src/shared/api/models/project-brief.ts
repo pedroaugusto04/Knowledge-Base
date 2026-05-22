@@ -24,3 +24,11 @@ export type ProjectBriefResponse = {
   fallbackReason?: 'generation_failed';
   brief: ProjectBrief;
 };
+
+export type SavedProjectBriefResponse = {
+  ok: true;
+  source: 'history' | 'none';
+  brief: ProjectBrief | null;
+};
+
+export type ProjectBriefPanelResponse = ProjectBriefResponse | SavedProjectBriefResponse;

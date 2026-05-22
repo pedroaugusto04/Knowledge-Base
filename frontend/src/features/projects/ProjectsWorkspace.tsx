@@ -8,11 +8,12 @@ import {
   deleteProject,
   deleteProjectFolder,
   fetchAllProjectsTimeline,
+  fetchLatestProjectBrief,
   fetchProjectFolders,
   fetchProjectTimeline,
   generateProjectBrief,
 } from '../../shared/api/client';
-import type { ProjectBriefResponse } from '../../shared/api/models/project-brief';
+import type { ProjectBriefPanelResponse } from '../../shared/api/models/project-brief';
 import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
 import { getErrorMessage } from '../../shared/api/error-message';
 import type { ProjectTimelineCategory } from '../../shared/api/models/project-timeline';
@@ -50,7 +51,6 @@ export function ProjectsWorkspace({
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState(ROOT_FOLDER_ID);
   const [timelineCategory, setTimelineCategory] = useState<ProjectTimelineCategory>('all');
-  const [briefByProject, setBriefByProject] = useState<Record<string, ProjectBriefResponse>>({});
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
   const dashboardNotes = dashboard.notes || [];
@@ -91,6 +91,12 @@ export function ProjectsWorkspace({
     }),
     enabled: Boolean(selected?.projectSlug),
     staleTime: timelineCategory === 'all' ? 30_000 : 0,
+  });
+  const briefQueryKey = ['project-brief', selected?.projectSlug || ''];
+  const latestBriefQuery = useQuery<ProjectBriefPanelResponse>({
+    queryKey: briefQueryKey,
+    queryFn: () => fetchLatestProjectBrief(selected?.projectSlug || ''),
+    enabled: false,
   });
   const timelineItems = timelineQuery.data?.timeline || [];
   const selectedProjectDeleteBlockedReason = selected?.projectSlug === 'inbox'
@@ -151,10 +157,13 @@ export function ProjectsWorkspace({
   const generateBriefMutation = useMutation({
     mutationFn: (projectSlug: string) => generateProjectBrief(projectSlug),
     onSuccess: (response, projectSlug) => {
-      setBriefByProject((current) => ({ ...current, [projectSlug]: response }));
+      queryClient.setQueryData<ProjectBriefPanelResponse>(['project-brief', projectSlug], response);
     },
     onError: (error) => notifyGeneralFormError(error, 'Could not generate the project brief.'),
   });
+  const showLatestBrief = () => {
+    void latestBriefQuery.refetch();
+  };
 
   return (
     <>
@@ -213,10 +222,14 @@ export function ProjectsWorkspace({
           selectedFolderId={selectedFolderId}
           selectedFolder={selectedFolder}
           timelineItems={timelineItems}
-          briefResponse={briefByProject[selected.projectSlug]}
+          briefResponse={latestBriefQuery.data}
           briefLoading={generateBriefMutation.isPending && generateBriefMutation.variables === selected.projectSlug}
+          briefHistoryLoading={latestBriefQuery.isFetching}
           briefError={generateBriefMutation.isError && generateBriefMutation.variables === selected.projectSlug
             ? getErrorMessage(generateBriefMutation.error, 'Could not generate the project brief.')
+            : ''}
+          briefHistoryError={latestBriefQuery.isError
+            ? getErrorMessage(latestBriefQuery.error, 'Could not load the latest project brief.')
             : ''}
           timelineCategory={timelineCategory}
           timelinePagination={timelineQuery.data?.pagination}
@@ -230,6 +243,7 @@ export function ProjectsWorkspace({
             timelinePagination.setPage(1);
           }}
           onGenerateBrief={() => generateBriefMutation.mutate(selected.projectSlug)}
+          onShowLatestBrief={showLatestBrief}
           onCreateNote={() => setNoteModal({ mode: 'create', projectSlug: selected.projectSlug, folderId: selectedFolderId || undefined })}
           onCreateFolder={() => setFolderModal({ mode: 'create', projectSlug: selected.projectSlug, parentFolderId: selectedFolder?.id })}
           onEditFolder={() => selectedFolder ? setFolderModal({ mode: 'edit', projectSlug: selected.projectSlug, folder: selectedFolder }) : undefined}

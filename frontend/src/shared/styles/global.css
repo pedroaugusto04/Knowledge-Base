@@ -473,6 +473,17 @@ p { color: var(--muted); line-height: 1.6; }
   justify-content: space-between;
   gap: 14px;
 }
+.project-brief-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.project-brief-actions .secondary {
+  background: transparent;
+  border-color: var(--line-soft);
+  color: var(--muted);
+}
 .project-brief-head h3,
 .project-brief-head p,
 .project-brief-section p { margin-bottom: 0; }

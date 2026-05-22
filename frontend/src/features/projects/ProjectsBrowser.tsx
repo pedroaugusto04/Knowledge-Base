@@ -1,6 +1,6 @@
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
-import type { ProjectBriefResponse } from '../../shared/api/models/project-brief';
+import type { ProjectBriefPanelResponse } from '../../shared/api/models/project-brief';
 import type { ProjectTimelineCategory, ProjectTimelineItem } from '../../shared/api/models/project-timeline';
 import type { ProjectFolder } from '../../shared/api/models/project-folder';
 import type { Project } from '../../shared/api/models/project';
@@ -17,9 +17,11 @@ type ProjectsBrowserProps = {
   selectedFolderId: string;
   selectedFolder: ProjectFolder | null;
   timelineItems: ProjectTimelineItem[];
-  briefResponse?: ProjectBriefResponse;
+  briefResponse?: ProjectBriefPanelResponse;
   briefLoading?: boolean;
+  briefHistoryLoading?: boolean;
   briefError?: string;
+  briefHistoryError?: string;
   timelineCategory: ProjectTimelineCategory;
   timelinePagination?: {
     page: number;
@@ -33,6 +35,7 @@ type ProjectsBrowserProps = {
   onTimelinePageChange: (page: number) => void;
   onFolderSelect: (folderId: string) => void;
   onGenerateBrief: () => void;
+  onShowLatestBrief: () => void;
   onCreateNote: () => void;
   onCreateFolder: () => void;
   onEditFolder: () => void;
@@ -54,13 +57,16 @@ export function ProjectsBrowser({
   timelineItems,
   briefResponse,
   briefLoading = false,
+  briefHistoryLoading = false,
   briefError = '',
+  briefHistoryError = '',
   timelineCategory,
   timelinePagination,
   onTimelineCategoryChange,
   onTimelinePageChange,
   onFolderSelect,
   onGenerateBrief,
+  onShowLatestBrief,
   onCreateNote,
   onCreateFolder,
   onEditFolder,
@@ -125,8 +131,11 @@ export function ProjectsBrowser({
       <ProjectBriefPanel
         response={briefResponse}
         loading={briefLoading}
+        historyLoading={briefHistoryLoading}
         error={briefError}
+        historyError={briefHistoryError}
         onGenerate={onGenerateBrief}
+        onShowLatest={onShowLatestBrief}
         onOpenNote={onOpenNote}
       />
       <div className="project-browser">
@@ -177,32 +186,50 @@ export function ProjectsBrowser({
 function ProjectBriefPanel({
   response,
   loading,
+  historyLoading,
   error,
+  historyError,
   onGenerate,
+  onShowLatest,
   onOpenNote,
 }: {
-  response?: ProjectBriefResponse;
+  response?: ProjectBriefPanelResponse;
   loading: boolean;
+  historyLoading: boolean;
   error: string;
+  historyError: string;
   onGenerate: () => void;
+  onShowLatest: () => void;
   onOpenNote: (noteId: string) => void;
 }) {
   const brief = response?.brief;
+  const source = response && 'source' in response ? response.source : '';
+  const hasNoSavedBrief = source === 'none';
+  const isFallback = Boolean(response && 'fallback' in response && response.fallback);
+  const busy = loading || historyLoading;
   return (
     <section className="project-brief-panel" aria-label="Project brief">
       <div className="project-brief-head">
         <div>
           <h3>Project brief</h3>
-          <p>{brief ? `Generated ${new Date(brief.generatedAt).toLocaleString('en-US')}` : 'Generate an operational technical brief from recent project items.'}</p>
+          <p>{brief ? `Generated ${new Date(brief.generatedAt).toLocaleString('en-US')}` : hasNoSavedBrief ? 'No saved brief yet.' : 'Generate a new brief or show the latest saved one.'}</p>
         </div>
-        <button className="icon-button" disabled={loading} type="button" onClick={onGenerate}>
-          {loading ? 'Generating...' : 'Generate brief'}
-        </button>
+        <div className="project-brief-actions">
+          <button className="icon-button" disabled={busy} type="button" onClick={onGenerate}>
+            {loading ? 'Generating...' : 'Generate brief'}
+          </button>
+          <button className="icon-button secondary" disabled={busy} type="button" onClick={onShowLatest}>
+            {historyLoading ? 'Loading...' : 'Show latest'}
+          </button>
+        </div>
       </div>
-      {response?.fallback ? (
+      {isFallback ? (
         <div className="project-brief-fallback" role="status">Showing the latest saved brief because generation failed.</div>
       ) : null}
-      {error ? <div className="project-brief-error" role="alert">{error}</div> : null}
+      {source === 'history' ? (
+        <div className="project-brief-fallback" role="status">Showing the latest saved brief.</div>
+      ) : null}
+      {error || historyError ? <div className="project-brief-error" role="alert">{error || historyError}</div> : null}
       {brief ? (
         <div className="project-brief-grid">
           <ProjectBriefSection title="Summary" items={[brief.summary]} />

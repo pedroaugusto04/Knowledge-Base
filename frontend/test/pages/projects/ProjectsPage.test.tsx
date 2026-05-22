@@ -163,6 +163,14 @@ function projectBriefResponse(fallback = false) {
   } as const;
 }
 
+function savedProjectBriefResponse(brief = projectBriefResponse().brief) {
+  return {
+    ok: true,
+    source: 'history',
+    brief,
+  } as const;
+}
+
 describe('ProjectsPage', () => {
   it('allows selecting another project from the header select', () => {
     const { openProject } = renderProjects();
@@ -274,7 +282,45 @@ describe('ProjectsPage', () => {
 
     expect(screen.getByRole('region', { name: 'Project brief' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Generate brief' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show latest' })).toBeInTheDocument();
     await waitFor(() => expect(fetchMock.mock.calls.some(([input]) => String(input) === '/api/projects/platform/brief')).toBe(false));
+  });
+
+  it('shows the latest saved project brief on demand without generating a new one', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (url.startsWith('/api/projects/platform/timeline?')) return Response.json(timelineFromDashboardNotes());
+      if (url === '/api/projects/platform/brief' && !init?.method) return Response.json(savedProjectBriefResponse());
+      return Response.error();
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { openNote } = renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show latest' }));
+
+    expect(await screen.findByText('Platform is actively processing deployment work.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Showing the latest saved brief.');
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/projects/platform/brief', expect.objectContaining({ method: 'POST' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Deploy antigo' }));
+    expect(openNote).toHaveBeenCalledWith('note-1');
+  });
+
+  it('shows an empty saved-brief state when no history exists', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
+      if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
+      if (url.startsWith('/api/projects/platform/timeline?')) return Response.json(timelineFromDashboardNotes());
+      if (url === '/api/projects/platform/brief' && !init?.method) return Response.json({ ok: true, source: 'none', brief: null });
+      return Response.error();
+    }));
+    renderProjects();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show latest' }));
+
+    expect(await screen.findByText('No saved brief yet.')).toBeInTheDocument();
   });
 
   it('generates and displays a project brief with clickable sources', async () => {

@@ -16,6 +16,7 @@ export {
   deleteProject,
   deleteProjectFolder,
   fetchAllProjectsTimeline,
+  fetchLatestProjectBrief,
   fetchProjectFolders,
   fetchProjectTimeline,
   fetchProjects,

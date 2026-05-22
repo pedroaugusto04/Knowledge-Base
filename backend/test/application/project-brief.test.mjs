@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
-import { GenerateProjectBriefUseCase, CreateWorkspaceUseCase } from '../../dist/application/use-cases/index.js';
+import { GenerateProjectBriefUseCase, GetProjectBriefUseCase, CreateWorkspaceUseCase } from '../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../helpers/postgres-test-repositories.mjs';
 
 function configureAi() {
@@ -171,6 +171,46 @@ test('generate project brief returns latest saved brief as fallback after AI fai
   assert.equal(result.fallback, true);
   assert.equal(result.fallbackReason, 'generation_failed');
   assert.equal(result.brief.summary, 'Saved brief');
+});
+
+test('get project brief returns latest saved brief without calling AI', async (t) => {
+  const { repositories, user } = await setup(t);
+  const generated = await useCase(repositories, {
+    async generate(_config, payload) {
+      return {
+        projectSlug: payload.projectSlug,
+        generatedAt: payload.generatedAt,
+        summary: 'Saved brief for later display',
+        status: 'Active',
+        recentChanges: [],
+        decisions: [],
+        openItems: [],
+        risks: [],
+        nextSteps: [],
+        sources: [],
+      };
+    },
+  }).execute(user.id, 'platform');
+
+  const result = await new GetProjectBriefUseCase(
+    repositories.contentRepository,
+    repositories.projectBriefHistoryRepository,
+  ).execute(user.id, 'platform');
+
+  assert.equal(result.ok, true);
+  assert.equal(result.source, 'history');
+  assert.equal(result.brief.summary, generated.brief.summary);
+});
+
+test('get project brief returns null when no saved brief exists', async (t) => {
+  const { repositories, user } = await setup(t);
+
+  const result = await new GetProjectBriefUseCase(
+    repositories.contentRepository,
+    repositories.projectBriefHistoryRepository,
+  ).execute(user.id, 'platform');
+
+  assert.deepEqual(result, { ok: true, source: 'none', brief: null });
 });
 
 test('generate project brief rejects missing project, disconnected AI, and AI failure without history', async (t) => {
