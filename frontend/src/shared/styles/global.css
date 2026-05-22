@@ -382,6 +382,7 @@ select:not([multiple]) {
   overflow: hidden;
   flex: 0 0 auto;
   aspect-ratio: 1;
+  --avatar-image-position: center 43%;
   border: 1px solid var(--line-soft);
   border-radius: 999px;
   background:
@@ -400,7 +401,7 @@ select:not([multiple]) {
   height: 100%;
   max-width: none;
   object-fit: cover;
-  object-position: center center;
+  object-position: var(--avatar-image-position);
 }
 .topbar-avatar { width: 30px; height: 30px; font-size: 11px; }
 .profile-menu { position: relative; display: inline-flex; }
