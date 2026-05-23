@@ -42,5 +42,8 @@ export function useTypewriterWord(words: readonly string[]) {
     return () => window.clearTimeout(timeout);
   }, [characterCount, isDeleting, wordIndex, words]);
 
-  return (words[wordIndex] || '').slice(0, characterCount);
+  return {
+    typed: (words[wordIndex] || '').slice(0, characterCount),
+    full: words[wordIndex] || ''
+  };
 }

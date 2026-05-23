@@ -551,8 +551,8 @@ describe('AppShell', () => {
 
     renderWithAppProviders(<AppShell />);
 
-    expect(await screen.findByRole('heading', { name: 'Knowledge Vault helps you capture technical context.' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Enter workspace' })).toHaveAttribute('href', '/auth');
+    expect(await screen.findByRole('heading', { name: 'Your team writes the code. Let us capture the context.' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Enter workspace' })[0]).toHaveAttribute('href', '/auth');
     expect(screen.queryByLabelText('Authentication')).not.toBeInTheDocument();
   });
 
@@ -986,12 +986,11 @@ describe('AppShell', () => {
 
     renderWithAppProviders(<AppShell />);
 
-    expect(await screen.findByRole('heading', { name: 'Knowledge Vault helps you capture technical context.' })).toBeInTheDocument();
-    expect(screen.getByText('Keep notes, chats, GitHub activity, decisions, and reminders connected to the projects that need them next.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Save project memory where work already happens.' })).toBeInTheDocument();
-    expect(screen.getByText('Search "retry policy"')).toBeInTheDocument();
-    expect(screen.getByText('Capture')).toBeInTheDocument();
-    expect(screen.getByText('follow up on webhook backfill')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Your team writes the code. Let us capture the context.' })).toBeInTheDocument();
+    expect(screen.getByText('Keep notes, WhatsApp & Telegram logs, GitHub PR reviews, decisions, and reminders unified. Turn unstructured engineering chat into searchable context.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'With Knowledge Vault, you don\'t need to guess.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Semantic Search & AI Assistant' })).toBeInTheDocument();
+    expect(screen.getByText('Context & Evidence')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/auth');
     expect(screen.getByRole('link', { name: 'Create account' })).toHaveAttribute('href', '/auth?mode=signup');
 
