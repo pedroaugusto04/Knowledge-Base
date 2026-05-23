@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiClientError, fetchCurrentUser, fetchDashboard, getErrorMessage, runQuery } from '../../../src/shared/api/client';
+import { ApiClientError, fetchAskHistory, fetchCurrentUser, fetchDashboard, getErrorMessage, runQuery } from '../../../src/shared/api/client';
 import { resolveApiPath } from '../../../src/shared/api/api-path';
 import { request, resetRequestStateForTests } from '../../../src/shared/api/request';
 
@@ -90,6 +90,22 @@ describe('api client', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/query?query=Nota1&projectSlug=&workspaceSlug=workspace1&status=resolved&limit=10&page=1&pageSize=5'),
+      expect.any(Object),
+    );
+  });
+
+  it('fetches Ask AI history with pagination and project filters', async () => {
+    const fetchMock = vi.fn(async () => Response.json({
+      ok: true,
+      history: [],
+      pagination: { page: 2, pageSize: 5, total: 0, totalPages: 1, hasNext: false, hasPrevious: true },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchAskHistory({ page: 2, pageSize: 5, projectSlug: 'platform' });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/ask/history?page=2&pageSize=5&projectSlug=platform'),
       expect.any(Object),
     );
   });

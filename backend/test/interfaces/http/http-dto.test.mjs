@@ -10,6 +10,7 @@ import { createNoteBodySchema, noteIdParamSchema, updateNoteBodySchema } from '.
 import { createProjectBodySchema, projectSlugParamSchema, projectTimelineQuerySchema, updateProjectBodySchema } from '../../../dist/interfaces/http/dto/project.dto.js';
 import { whatsappWebhookBodySchema } from '../../../dist/interfaces/http/dto/webhook.dto.js';
 import { createWorkspaceBodySchema } from '../../../dist/interfaces/http/dto/workspace.dto.js';
+import { askHistoryQuerySchema } from '../../../dist/interfaces/http/dto/ask.dto.js';
 
 test('query dto normalizes limit and slugs', () => {
   const parsed = queryRequestSchema.parse({
@@ -28,6 +29,20 @@ test('query dto normalizes limit and slugs', () => {
     page: 1,
     pageSize: 5,
   });
+});
+
+test('ask history dto accepts pagination and optional project filter', () => {
+  assert.deepEqual(askHistoryQuerySchema.parse({ page: '2', pageSize: '10', projectSlug: ' platform ' }), {
+    page: 2,
+    pageSize: 10,
+    projectSlug: 'platform',
+  });
+  assert.deepEqual(askHistoryQuerySchema.parse({}), {
+    page: 1,
+    pageSize: 5,
+    projectSlug: '',
+  });
+  assert.throws(() => askHistoryQuerySchema.parse({ page: '0' }));
 });
 
 test('mark-sent dto requires ids array', () => {

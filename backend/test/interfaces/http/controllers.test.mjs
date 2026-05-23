@@ -63,6 +63,8 @@ test('dashboard controller delegates project, workspace and note reads to use ca
     { execute: async (_userId, id) => ({ id, title: 'Note detail' }) },
     { execute: async (_userId, id) => ({ id, title: 'Review detail' }) },
     { execute: async (query) => ({ ok: true, query }) },
+    { execute: async (question, userId, options) => ({ ok: true, question, userId, options }) },
+    { execute: async (userId, query) => ({ items: [{ id: 'ask-1', userId, ...query }], pagination: { page: query.page } }) },
   );
 
   assert.deepEqual(await controller.projects(user, {}), { ok: true, projects: dashboard.projects, pagination: {} });
@@ -80,6 +82,12 @@ test('dashboard controller delegates project, workspace and note reads to use ca
   });
   assert.deepEqual(await controller.updateReminderStatus({ id: 'note-1' }, { status: 'resolved' }, user), { ok: true, id: 'note-1', status: 'resolved' });
   assert.deepEqual(await controller.query({ query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '', status: '', page: 1, pageSize: 5 }, user), { ok: true, query: { query: 'deploy', limit: 7, workspaceSlug: '', projectSlug: '', status: '', page: 1, pageSize: 5 } });
+  assert.deepEqual(await controller.ask({ question: 'How to deploy?', projectSlug: 'platform' }, user), { ok: true, question: 'How to deploy?', userId: 'user-1', options: { projectSlug: 'platform' } });
+  assert.deepEqual(await controller.askHistory({ page: 2, pageSize: 5, projectSlug: 'platform' }, user), {
+    ok: true,
+    history: [{ id: 'ask-1', userId: 'user-1', page: 2, pageSize: 5, projectSlug: 'platform' }],
+    pagination: { page: 2 },
+  });
 });
 
 test('operations controller normalizes reminder dispatch and mark-sent inputs', async () => {

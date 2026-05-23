@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { askInputSchema } from '../../../contracts/ask.js';
+import { askHistoryInputSchema, askInputSchema } from '../../../contracts/ask.js';
 
 export const askRequestSchema = z
   .object({
@@ -9,4 +9,7 @@ export const askRequestSchema = z
   })
   .pipe(askInputSchema);
 
+export const askHistoryQuerySchema = askHistoryInputSchema;
+
 export type AskRequest = z.infer<typeof askRequestSchema>;
+export type AskHistoryQuery = z.infer<typeof askHistoryQuerySchema>;

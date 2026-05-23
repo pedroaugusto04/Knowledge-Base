@@ -7,6 +7,7 @@ import { PostgresContentRepository } from '../../dist/infrastructure/repositorie
 import { PostgresContentQueryRepository } from '../../dist/infrastructure/repositories/content-query.repository.js';
 import { PostgresIntegrationRepository } from '../../dist/infrastructure/repositories/integrations.repository.js';
 import { PostgresProjectBriefHistoryRepository } from '../../dist/infrastructure/repositories/project-brief-history.repository.js';
+import { PostgresAskHistoryRepository } from '../../dist/infrastructure/repositories/ask-history.repository.js';
 import { PostgresWebhookEventRepository } from '../../dist/infrastructure/repositories/webhook-events.repository.js';
 import { PostgresWorkflowStateRepository } from '../../dist/infrastructure/repositories/workflow-state.repository.js';
 import { webhookEventFromRow } from '../../dist/infrastructure/mappers/row.mappers.js';
@@ -124,6 +125,7 @@ export async function createPostgresTestRepositories(t) {
   const userRepository = new PostgresUserRepository(database);
   const integrationRepository = new PostgresIntegrationRepository(database);
   const projectBriefHistoryRepository = new PostgresProjectBriefHistoryRepository(database);
+  const askHistoryRepository = new PostgresAskHistoryRepository(database);
   const objectStorage = new InMemoryObjectStorage();
   const contentObjectStorage = new ContentObjectStorageService(objectStorage);
   const contentRepository = new PostgresContentRepository(database, contentObjectStorage);
@@ -190,6 +192,7 @@ export async function createPostgresTestRepositories(t) {
     userRepository,
     credentialRepository: integrationRepository,
     projectBriefHistoryRepository,
+    askHistoryRepository,
     externalIdentityRepository: integrationRepository,
     connectionSessionRepository: integrationRepository,
     contentRepository,

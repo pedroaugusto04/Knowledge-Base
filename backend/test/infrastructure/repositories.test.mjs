@@ -95,6 +95,54 @@ test('postgres repositories share state across content query and workflow ports'
   assert.equal((await repositories.contentQueryRepository.listReminders(user.id)).length, 0);
 });
 
+test('postgres ask history repository saves and lists newest entries by user and project', async (t) => {
+  const repositories = await createPostgresTestRepositories(t);
+  const user = await repositories.createTestUser();
+  const otherUser = await repositories.createTestUser();
+
+  await repositories.askHistoryRepository.save({
+    userId: user.id,
+    projectSlug: 'platform',
+    question: 'First?',
+    answer: 'First answer',
+    confidence: 'medium',
+    sources: [{ noteId: 'note-1', title: 'Deploy', path: 'docs/deploy.md' }],
+    relatedNotes: [{ id: 'note-1', title: 'Deploy', path: 'docs/deploy.md', projectSlug: 'platform', workspaceSlug: 'default' }],
+  });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  await repositories.askHistoryRepository.save({
+    userId: user.id,
+    projectSlug: 'billing',
+    question: 'Second?',
+    answer: 'Second answer',
+    confidence: 'high',
+    sources: [],
+    relatedNotes: [],
+  });
+  await repositories.askHistoryRepository.save({
+    userId: otherUser.id,
+    projectSlug: 'platform',
+    question: 'Other?',
+    answer: 'Other answer',
+    confidence: 'low',
+    sources: [],
+    relatedNotes: [],
+  });
+
+  const all = await repositories.askHistoryRepository.list({ userId: user.id, page: 1, pageSize: 1 });
+  assert.equal(all.items.length, 1);
+  assert.equal(all.items[0].question, 'Second?');
+  assert.equal(all.pagination.total, 2);
+  assert.equal(all.pagination.totalPages, 2);
+  assert.equal(all.pagination.hasNext, true);
+
+  const filtered = await repositories.askHistoryRepository.list({ userId: user.id, projectSlug: 'platform', page: 1, pageSize: 5 });
+  assert.equal(filtered.items.length, 1);
+  assert.equal(filtered.items[0].question, 'First?');
+  assert.deepEqual(filtered.items[0].sources, [{ noteId: 'note-1', title: 'Deploy', path: 'docs/deploy.md' }]);
+  assert.equal(filtered.pagination.total, 1);
+});
+
 test('app module resolves repository providers without KnowledgeStore wiring', async () => {
   delete process.env.KB_DATABASE_URL;
   delete process.env.KB_ADMIN_EMAIL;

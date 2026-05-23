@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { AskKnowledgeUseCase } from '../../dist/application/use-cases/query/ask-knowledge.use-case.js';
+import { RunAskAiUseCase } from '../../dist/application/use-cases/query/run-ask-ai.use-case.js';
+import { ListAskHistoryUseCase } from '../../dist/application/use-cases/query/list-ask-history.use-case.js';
 
 test('AskKnowledgeUseCase embeds query, fetches similar chunks, and generates answer', async () => {
   // Mocks
@@ -126,4 +128,62 @@ test('AskKnowledgeUseCase embeds query, fetches similar chunks, and generates an
       workspaceSlug: 'default',
     },
   ]);
+});
+
+test('RunAskAiUseCase saves only successful web Ask AI answers', async () => {
+  const saved = [];
+  const askKnowledge = {
+    calls: [],
+    result: {
+      ok: true,
+      answer: 'Deploy to staging first.',
+      confidence: 'high',
+      sources: [{ noteId: 'note-1', title: 'Deploy', path: 'docs/deploy.md' }],
+      relatedNotes: [{ id: 'note-1', title: 'Deploy', path: 'docs/deploy.md', projectSlug: 'platform', workspaceSlug: 'default' }],
+    },
+    async execute(question, userId, options) {
+      this.calls.push({ question, userId, options });
+      return this.result;
+    },
+  };
+  const repository = {
+    async save(input) {
+      saved.push(input);
+    },
+  };
+
+  const useCase = new RunAskAiUseCase(askKnowledge, repository);
+  const result = await useCase.execute('How to deploy?', 'user-123', { projectSlug: 'platform' });
+
+  assert.equal(result, askKnowledge.result);
+  assert.deepEqual(askKnowledge.calls, [{ question: 'How to deploy?', userId: 'user-123', options: { projectSlug: 'platform' } }]);
+  assert.deepEqual(saved, [{
+    userId: 'user-123',
+    projectSlug: 'platform',
+    question: 'How to deploy?',
+    answer: 'Deploy to staging first.',
+    confidence: 'high',
+    sources: [{ noteId: 'note-1', title: 'Deploy', path: 'docs/deploy.md' }],
+    relatedNotes: [{ id: 'note-1', title: 'Deploy', path: 'docs/deploy.md', projectSlug: 'platform', workspaceSlug: 'default' }],
+  }]);
+
+  askKnowledge.result = { ok: false, answer: 'Failed.', confidence: 'low', sources: [], relatedNotes: [] };
+  await useCase.execute('Broken?', 'user-123');
+  assert.equal(saved.length, 1);
+});
+
+test('ListAskHistoryUseCase delegates pagination and project filtering to repository', async () => {
+  const calls = [];
+  const repository = {
+    async list(input) {
+      calls.push(input);
+      return { items: [], pagination: { page: input.page, pageSize: input.pageSize, total: 0, totalPages: 1, hasNext: false, hasPrevious: false } };
+    },
+  };
+
+  const useCase = new ListAskHistoryUseCase(repository);
+  const result = await useCase.execute('user-123', { page: 2, pageSize: 5, projectSlug: 'platform' });
+
+  assert.deepEqual(calls, [{ userId: 'user-123', page: 2, pageSize: 5, projectSlug: 'platform' }]);
+  assert.equal(result.pagination.page, 2);
 });

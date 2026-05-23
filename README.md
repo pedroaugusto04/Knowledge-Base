@@ -10,6 +10,7 @@ Transform scattered information into a searchable knowledge base by automaticall
 ## Key Features
 - **Project Organization:** Notes, routines, and decisions centralized by context.
 - **Contextual Search:** Instantly find answers across the team's entire history.
+- **Ask AI History:** Web Ask AI answers are saved per user with project filtering and pagination.
 - **Operational Dashboard:** A quick summary of recent activities, priorities, and reminders.
 - **Project Briefs:** Manual AI-generated technical briefs per project, with saved history and fallback to the last successful brief.
 - **Reminder Kanban:** Operational board for overdue, upcoming, resolved, and archived pending work.

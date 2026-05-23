@@ -1,33 +1,32 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 
-import { runAsk } from '../../shared/api/client';
+import { fetchAskHistory, runAsk } from '../../shared/api/client';
 import type { Project } from '../../shared/api/models/project';
+import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
+import { Pagination } from '../../shared/ui/pagination';
 import { Select } from '../../shared/ui/select';
+import { usePaginationState } from '../../shared/ui/use-pagination-state';
 import { MarkdownView } from '../markdown/MarkdownView';
 import { AskAiIcon } from './AskAiIcon';
 import './AskPanel.css';
 
-type HistoryItem = {
-  question: string;
-  projectLabel: string;
-  answer: string;
-  sources: Array<{
-    noteId: string;
-    title: string;
-    path: string;
-  }>;
-};
-
 export function AskPanel({ openNote, projects }: { openNote: (id: string) => void; projects: Project[] }) {
+  const queryClient = useQueryClient();
   const [question, setQuestion] = useState('');
   const [projectSlug, setProjectSlug] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const { page, setPage } = usePaginationState(projectSlug);
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedProjectLabel = projectSlug
     ? projects.find((project) => project.projectSlug === projectSlug)?.displayName || projectSlug
     : 'All projects';
+  const historyQuery = useQuery({
+    queryKey: ['ask-history', projectSlug, page],
+    queryFn: () => fetchAskHistory({ projectSlug, page, pageSize: DEFAULT_PAGE_SIZE }),
+  });
+  const history = historyQuery.data?.history || [];
 
   const isFirstRender = useRef(true);
 
@@ -50,16 +49,9 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
     try {
       const result = await runAsk({ question: queryText, projectSlug });
       if (result && result.ok) {
-        setHistory((prev) => [
-          ...prev,
-          {
-            question: queryText,
-            projectLabel: selectedProjectLabel,
-            answer: result.answer,
-            sources: result.sources || [],
-          },
-        ]);
         setQuestion('');
+        setPage(1);
+        await queryClient.invalidateQueries({ queryKey: ['ask-history'] });
       } else {
         setError('Could not generate an answer. Please try again.');
       }
@@ -80,7 +72,7 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
 
   return (
     <div className="ask-panel-container">
-      {history.length === 0 && !isLoading && (
+      {history.length === 0 && !isLoading && !historyQuery.isLoading && (
         <div className="ask-welcome">
           <div className="ask-welcome-title">
             <span className="ask-ai-mark">
@@ -117,13 +109,17 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
         </div>
       )}
 
+      {historyQuery.isLoading && (
+        <div className="inline-message">Loading history...</div>
+      )}
+
       {history.length > 0 && (
         <div className="ask-history-list">
-          {history.map((item, index) => (
-            <div className="ask-qa-card" key={index}>
+          {history.map((item) => (
+            <div className="ask-qa-card" key={item.id}>
               <div className="ask-question-bubble">
                 <span className="question-text">{item.question}</span>
-                <span className="ask-project-chip">{item.projectLabel}</span>
+                <span className="ask-project-chip">{projectLabel(item.projectSlug, projects)}</span>
               </div>
               <div className="ask-answer-container">
                 <div className="ask-answer-header">
@@ -155,6 +151,9 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
               </div>
             </div>
           ))}
+          {historyQuery.data?.pagination ? (
+            <Pagination compact pagination={historyQuery.data.pagination} onPageChange={setPage} />
+          ) : null}
         </div>
       )}
 
@@ -182,7 +181,11 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
 
       <div ref={bottomRef} />
 
-      {error && <div className="inline-message error">{error}</div>}
+      {(error || historyQuery.isError) && (
+        <div className="inline-message error">
+          {error || 'Could not load Ask AI history.'}
+        </div>
+      )}
 
       <form className="ask-input-form" onSubmit={handleSubmit}>
         <Select
@@ -212,4 +215,9 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
       </form>
     </div>
   );
+}
+
+function projectLabel(projectSlug: string, projects: Project[]) {
+  if (!projectSlug) return 'All projects';
+  return projects.find((project) => project.projectSlug === projectSlug)?.displayName || projectSlug;
 }

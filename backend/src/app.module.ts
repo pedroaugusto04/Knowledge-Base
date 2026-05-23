@@ -13,6 +13,7 @@ import { EmbeddingGateway } from './application/ports/embedding.gateway.js';
 import { AnswerGenerationGateway } from './application/ports/answer-generation.gateway.js';
 import { EmbeddingQueuePublisher } from './application/ports/embedding-queue.publisher.js';
 import { ProjectBriefHistoryRepository } from './application/ports/project-brief-history.repository.js';
+import { AskHistoryRepository } from './application/ports/ask-history.repository.js';
 import { ReminderDeliveryGateway } from './application/ports/reminder-delivery.gateway.js';
 import { ReviewAnalysisGateway } from './application/ports/review-analysis.port.js';
 import { RuntimeEnvironmentProvider } from './application/ports/runtime-environment.port.js';
@@ -47,6 +48,7 @@ import { PostgresDatabase } from './infrastructure/persistence/database.js';
 import { PostgresIntegrationRepository } from './infrastructure/repositories/integrations.repository.js';
 import { PostgresNoteEmbeddingRepository } from './infrastructure/repositories/note-embedding.repository.js';
 import { PostgresProjectBriefHistoryRepository } from './infrastructure/repositories/project-brief-history.repository.js';
+import { PostgresAskHistoryRepository } from './infrastructure/repositories/ask-history.repository.js';
 import { PostgresSchemaMigrator } from './infrastructure/persistence/schema.migrator.js';
 import { PostgresWebhookEventRepository } from './infrastructure/repositories/webhook-events.repository.js';
 import { PostgresWorkflowStateRepository } from './infrastructure/repositories/workflow-state.repository.js';
@@ -84,6 +86,8 @@ import {
   ProcessAgentConversationUseCase,
   QueryKnowledgeUseCase,
   AskKnowledgeUseCase,
+  RunAskAiUseCase,
+  ListAskHistoryUseCase,
   RefreshReminderStatusesUseCase,
   ListProjectFoldersUseCase,
   UpdateNoteUseCase,
@@ -164,6 +168,8 @@ import { AppLogger } from './observability/logger.js';
     NoteChunkingService,
     ReindexAllEmbeddingsUseCase,
     AskKnowledgeUseCase,
+    RunAskAiUseCase,
+    ListAskHistoryUseCase,
     EvolutionWhatsappReplySender,
     EvolutionReminderDeliveryGateway,
     EvolutionWhatsappMediaDownloader,
@@ -182,6 +188,7 @@ import { AppLogger } from './observability/logger.js';
     PostgresUserRepository,
     PostgresIntegrationRepository,
     PostgresProjectBriefHistoryRepository,
+    PostgresAskHistoryRepository,
     PostgresContentRepository,
     PostgresContentQueryRepository,
     PostgresNoteEmbeddingRepository,
@@ -195,6 +202,7 @@ import { AppLogger } from './observability/logger.js';
     { provide: ConversationAgentGateway, useExisting: DefaultConversationAgentGateway },
     { provide: ProjectBriefAiGateway, useExisting: DefaultProjectBriefAiGateway },
     { provide: ProjectBriefHistoryRepository, useExisting: PostgresProjectBriefHistoryRepository },
+    { provide: AskHistoryRepository, useExisting: PostgresAskHistoryRepository },
     { provide: CredentialRepository, useExisting: PostgresIntegrationRepository },
     { provide: ExternalIdentityRepository, useExisting: PostgresIntegrationRepository },
     { provide: IntegrationConnectionSessionRepository, useExisting: PostgresIntegrationRepository },
