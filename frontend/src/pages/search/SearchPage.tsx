@@ -183,7 +183,7 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
           </Panel>
         </>
       ) : (
-        <AskPanel openNote={openNote} />
+        <AskPanel openNote={openNote} projects={dashboard.projects} />
       )}
     </>
   );

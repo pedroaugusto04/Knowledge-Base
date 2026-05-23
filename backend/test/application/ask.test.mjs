@@ -17,6 +17,7 @@ test('AskKnowledgeUseCase embeds query, fetches similar chunks, and generates an
       assert.equal(userId, 'user-123');
       assert.deepEqual(embedding, [0.1, 0.2, 0.3]);
       assert.equal(options.limit, 8);
+      assert.equal(options.projectSlug, 'infra');
       return [
         {
           id: 'emb-1',
@@ -108,7 +109,7 @@ test('AskKnowledgeUseCase embeds query, fetches similar chunks, and generates an
     mockRuntimeEnv,
   );
 
-  const result = await useCase.execute('How to deploy?', 'user-123');
+  const result = await useCase.execute('How to deploy?', 'user-123', { projectSlug: 'infra' });
 
   assert.equal(result.ok, true);
   assert.equal(result.answer, 'You should deploy to staging first.');

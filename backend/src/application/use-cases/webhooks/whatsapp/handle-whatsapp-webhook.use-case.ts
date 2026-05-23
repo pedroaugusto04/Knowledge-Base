@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 
 import { CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
 import type { ConversationInput } from '../../../../contracts/conversation.js';
-import { DEFAULT_PAGE_SIZE } from '../../../../contracts/pagination.js';
 import { IntegrationConnectionService } from '../../../integration-connections.js';
 import type { WhatsappWebhookRequest } from '../../../models/webhook-request.models.js';
 import { CredentialRepository, ExternalIdentityRepository } from '../../../ports/integrations.repository.js';
@@ -10,11 +9,11 @@ import { RuntimeEnvironmentProvider } from '../../../ports/runtime-environment.p
 import { WebhookEventRepository } from '../../../ports/webhook-events.repository.js';
 import { WhatsappMediaDownloader } from '../../../ports/whatsapp-media.downloader.js';
 import { WhatsappReplySender } from '../../../ports/whatsapp-reply.sender.js';
-import { parseKnowledgeCommand } from '../../../utils/conversation-command.utils.js';
+import { parseAskCommand } from '../../../utils/conversation-command.utils.js';
 import { buildWhatsappWebhookCommand } from '../../../utils/whatsapp-webhook-command.utils.js';
 import { normalizeHeaders } from '../../../utils/webhook.utils.js';
 import { ProcessAgentConversationUseCase } from '../../conversation/process-agent-conversation.use-case.js';
-import { QueryKnowledgeUseCase } from '../../query/query-knowledge.use-case.js';
+import { AskKnowledgeUseCase } from '../../query/ask-knowledge.use-case.js';
 import { AppLogger } from '../../../../observability/logger.js';
 import { parseWhatsappEvolutionMessage } from '../../../utils/webhook.utils.js';
 import { WhatsappConversationTaskQueue, WhatsappWebhookRateLimiter } from './whatsapp-webhook-flow-control.js';
@@ -37,7 +36,7 @@ export class HandleWhatsappWebhookUseCase {
     private readonly environmentProvider: RuntimeEnvironmentProvider,
     private readonly connections?: IntegrationConnectionService,
     private readonly processAgentConversationUseCase?: ProcessAgentConversationUseCase,
-    private readonly queryKnowledgeUseCase?: QueryKnowledgeUseCase,
+    private readonly askKnowledgeUseCase?: AskKnowledgeUseCase,
     private readonly whatsappReplySender?: WhatsappReplySender,
     private readonly whatsappMediaDownloader?: WhatsappMediaDownloader,
     private readonly logger?: AppLogger,
@@ -149,9 +148,9 @@ export class HandleWhatsappWebhookUseCase {
   ) {
     const enrichedInput = await this.withDownloadedMedia(context, input);
 
-    const knowledgeCommand = parseKnowledgeCommand(enrichedInput.messageText || '');
-    if (knowledgeCommand) {
-      return this.handleKnowledgeQuery(context, userId, workspaceSlug, enrichedInput, knowledgeCommand.query);
+    const askCommand = parseAskCommand(enrichedInput.messageText || '');
+    if (askCommand) {
+      return this.handleAskCommand(context, userId, workspaceSlug, enrichedInput, askCommand.question);
     }
 
     if (!this.processAgentConversationUseCase) {
@@ -198,40 +197,36 @@ export class HandleWhatsappWebhookUseCase {
     }, userId);
   }
 
-  private async handleKnowledgeQuery(
+  private async handleAskCommand(
     context: WhatsappWebhookContext,
     userId: string,
     workspaceSlug: string,
     input: ConversationInput,
-    query: string,
+    question: string,
   ) {
-    if (!this.queryKnowledgeUseCase) {
+    if (!this.askKnowledgeUseCase) {
       return this.processed(context, { ok: true, resolvedUserId: userId, processed: false }, userId);
     }
-    const result = await this.queryKnowledgeUseCase.execute({
-      query,
-      workspaceSlug,
-      projectSlug: '',
-      status: '',
-      limit: 5,
-      page: 1,
-      pageSize: DEFAULT_PAGE_SIZE,
-    }, userId);
-    const replyText = [
-      result.answer.answer,
-      '',
-      ...result.answer.bullets.slice(0, 4).map((item) => `- ${item}`),
-      result.matches.length ? '' : '',
-      ...result.matches.slice(0, 4).map((item) => `Fonte: ${item.path}`),
-    ].filter(Boolean).join('\n');
+    const result = await this.askKnowledgeUseCase.execute(question, userId, { workspaceSlug });
+    const replyText = formatAskReply(result);
     const sendResult = await this.sendReply(input.chatId, replyText);
+    this.logger?.info('whatsapp.ask.reply', {
+      externalId: context.externalIdentity.externalId,
+      chatId: input.chatId,
+      messageId: input.messageId,
+      confidence: result.confidence,
+      sourceCount: result.sources.length,
+      sendOk: sendResult.ok,
+      sendError: sendResult.ok ? '' : sendResult.error,
+    });
     return this.processed(context, {
       ok: true,
       processed: true,
-      action: 'reply',
+      action: 'ask',
       message: replyText,
       payload: null,
-      conversationResult: { action: 'reply', replyText, payload: null },
+      askResult: result,
+      conversationResult: { action: 'ask', replyText, payload: null },
       replySent: sendResult.ok,
       replyError: sendResult.ok ? undefined : sendResult.error,
     }, userId);
@@ -389,4 +384,14 @@ export class HandleWhatsappWebhookUseCase {
 
 function normalizeReplyText(value: unknown) {
   return String(value || '').trim() || 'I could not build the reply. Please try again.';
+}
+
+function formatAskReply(result: Awaited<ReturnType<AskKnowledgeUseCase['execute']>>) {
+  const lines = [
+    String(result.answer || '').trim() || 'I could not build the answer. Please try again.',
+    '',
+    `Confidence: ${result.confidence}`,
+    ...result.sources.slice(0, 3).map((source) => `Source: ${source.title} (${source.path})`),
+  ];
+  return lines.filter(Boolean).join('\n');
 }

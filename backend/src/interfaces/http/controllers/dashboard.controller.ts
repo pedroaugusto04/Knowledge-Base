@@ -151,7 +151,7 @@ export class DashboardController {
     @Body(new ZodValidationPipe(askRequestSchema, 'invalid_ask_payload')) body: AskRequest,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.askKnowledge.execute(body.question, user.id);
+    return this.askKnowledge.execute(body.question, user.id, { projectSlug: body.projectSlug });
   }
 }
 

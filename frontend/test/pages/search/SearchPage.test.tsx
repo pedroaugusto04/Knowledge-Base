@@ -10,11 +10,13 @@ import type { NoteSummary } from '../../../src/shared/api/models/note';
 const apiSpies = vi.hoisted(() => ({
   fetchNotes: vi.fn(),
   runQuery: vi.fn(),
+  runAsk: vi.fn(),
 }));
 
 vi.mock('../../../src/shared/api/client', () => ({
   fetchNotes: apiSpies.fetchNotes,
   runQuery: apiSpies.runQuery,
+  runAsk: apiSpies.runAsk,
 }));
 
 const dashboard: Dashboard = {
@@ -47,6 +49,13 @@ const dashboard: Dashboard = {
 beforeEach(() => {
   apiSpies.fetchNotes.mockReset();
   apiSpies.runQuery.mockReset();
+  apiSpies.runAsk.mockReset();
+  apiSpies.fetchNotes.mockResolvedValue({
+    ok: true,
+    notes: dashboard.notes,
+    pagination: { page: 1, pageSize: 5, total: dashboard.notes.length, totalPages: 1, hasNext: false, hasPrevious: false },
+  });
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 afterEach(() => {
@@ -148,6 +157,34 @@ describe('SearchPage', () => {
       });
     });
     expect(await screen.findByText('Resolved follow-up')).toBeInTheDocument();
+  });
+
+  it('passes the selected project to Ask AI requests', async () => {
+    apiSpies.runAsk.mockResolvedValue({
+      ok: true,
+      answer: 'Use the platform rollout notes.',
+      confidence: 'high',
+      sources: [],
+      relatedNotes: [],
+    });
+
+    renderSearchPage('/search');
+
+    fireEvent.click(screen.getByRole('button', { name: /ask ai/i }));
+    fireEvent.click(screen.getByLabelText('Filter Ask AI by project'));
+    fireEvent.click(screen.getByRole('option', { name: 'Platform' }));
+    fireEvent.change(screen.getByPlaceholderText('Ask a question about your knowledge...'), {
+      target: { value: 'How should I deploy?' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
+
+    await waitFor(() => {
+      expect(apiSpies.runAsk).toHaveBeenCalledWith({
+        question: 'How should I deploy?',
+        projectSlug: 'platform',
+      });
+    });
+    expect(await screen.findByText('Use the platform rollout notes.')).toBeInTheDocument();
   });
 });
 

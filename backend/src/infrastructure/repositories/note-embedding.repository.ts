@@ -104,20 +104,35 @@ export class PostgresNoteEmbeddingRepository extends NoteEmbeddingRepository {
     options: FindSimilarOptions,
   ): Promise<SimilarChunk[]> {
     const minSimilarity = options.minSimilarity ?? 0.3;
+    const workspaceFilter = String(options.workspaceSlug || '').trim();
+    const projectFilter = String(options.projectSlug || '').trim();
+    const optionalClauses: string[] = [];
+    const values: unknown[] = [
+      userId,
+      formatEmbeddingForPg(queryEmbedding),
+      minSimilarity,
+      options.limit,
+    ];
+    if (workspaceFilter) {
+      values.push(workspaceFilter);
+      optionalClauses.push(`AND n.workspace_slug = $${values.length}`);
+    }
+    if (projectFilter) {
+      values.push(projectFilter);
+      optionalClauses.push(`AND n.project_slug = $${values.length}`);
+    }
+
     const result = await this.database.getPool().query(
       `SELECT e.*,
               1 - (e.embedding <=> $2::vector) AS similarity
        FROM kb_note_embeddings e
+       JOIN kb_notes n ON n.id = e.note_id AND n.user_id = e.user_id
        WHERE e.user_id = $1
          AND 1 - (e.embedding <=> $2::vector) >= $3
+         ${optionalClauses.join('\n         ')}
        ORDER BY e.embedding <=> $2::vector
        LIMIT $4`,
-      [
-        userId,
-        formatEmbeddingForPg(queryEmbedding),
-        minSimilarity,
-        options.limit,
-      ],
+      values,
     );
 
     return result.rows.map((row) => ({

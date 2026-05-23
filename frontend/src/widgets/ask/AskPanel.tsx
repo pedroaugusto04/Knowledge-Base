@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 
 import { runAsk } from '../../shared/api/client';
+import type { Project } from '../../shared/api/models/project';
+import { Select } from '../../shared/ui/select';
 import { MarkdownView } from '../markdown/MarkdownView';
 import { AskAiIcon } from './AskAiIcon';
 import './AskPanel.css';
 
 type HistoryItem = {
   question: string;
+  projectLabel: string;
   answer: string;
   sources: Array<{
     noteId: string;
@@ -15,12 +18,16 @@ type HistoryItem = {
   }>;
 };
 
-export function AskPanel({ openNote }: { openNote: (id: string) => void }) {
+export function AskPanel({ openNote, projects }: { openNote: (id: string) => void; projects: Project[] }) {
   const [question, setQuestion] = useState('');
+  const [projectSlug, setProjectSlug] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const selectedProjectLabel = projectSlug
+    ? projects.find((project) => project.projectSlug === projectSlug)?.displayName || projectSlug
+    : 'All projects';
 
   const isFirstRender = useRef(true);
 
@@ -41,12 +48,13 @@ export function AskPanel({ openNote }: { openNote: (id: string) => void }) {
     setError(null);
 
     try {
-      const result = await runAsk({ question: queryText });
+      const result = await runAsk({ question: queryText, projectSlug });
       if (result && result.ok) {
         setHistory((prev) => [
           ...prev,
           {
             question: queryText,
+            projectLabel: selectedProjectLabel,
             answer: result.answer,
             sources: result.sources || [],
           },
@@ -115,6 +123,7 @@ export function AskPanel({ openNote }: { openNote: (id: string) => void }) {
             <div className="ask-qa-card" key={index}>
               <div className="ask-question-bubble">
                 <span className="question-text">{item.question}</span>
+                <span className="ask-project-chip">{item.projectLabel}</span>
               </div>
               <div className="ask-answer-container">
                 <div className="ask-answer-header">
@@ -153,6 +162,7 @@ export function AskPanel({ openNote }: { openNote: (id: string) => void }) {
         <div className="ask-qa-card skeleton-card">
           <div className="ask-question-bubble">
             <span className="question-text">{question}</span>
+            <span className="ask-project-chip">{selectedProjectLabel}</span>
           </div>
           <div className="ask-answer-container">
             <div className="ask-answer-header">
@@ -175,6 +185,20 @@ export function AskPanel({ openNote }: { openNote: (id: string) => void }) {
       {error && <div className="inline-message error">{error}</div>}
 
       <form className="ask-input-form" onSubmit={handleSubmit}>
+        <Select
+          ariaLabel="Filter Ask AI by project"
+          className="ask-project-select"
+          disabled={isLoading}
+          options={[
+            { value: '', label: 'All projects' },
+            ...projects.map((project) => ({
+              value: project.projectSlug,
+              label: project.displayName,
+            })),
+          ]}
+          value={projectSlug}
+          onChange={setProjectSlug}
+        />
         <input
           disabled={isLoading}
           value={question}

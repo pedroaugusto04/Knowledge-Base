@@ -6,7 +6,6 @@ import {
   HandleWhatsappWebhookUseCase,
   IngestEntryUseCase,
   ProcessAgentConversationUseCase,
-  QueryKnowledgeUseCase,
 } from '../../dist/application/use-cases/index.js';
 import { ConversationAgentPresenter } from '../../dist/application/use-cases/conversation/services/conversation-agent.presenter.js';
 import { ConversationFolderResolutionService } from '../../dist/application/use-cases/conversation/services/conversation-folder-resolution.service.js';
@@ -81,6 +80,25 @@ class StubConversationAgentGateway {
   }
 }
 
+class StubAskKnowledgeUseCase {
+  constructor(result = {}) {
+    this.calls = [];
+    this.result = {
+      ok: true,
+      answer: 'Deploy using the staging checklist first.',
+      confidence: 'high',
+      sources: [{ noteId: 'note-1', title: 'Deploy checklist', path: '20 Inbox/deploy.md' }],
+      relatedNotes: [],
+      ...result,
+    };
+  }
+
+  async execute(question, userId, options) {
+    this.calls.push({ question, userId, options });
+    return this.result;
+  }
+}
+
 function configureEnv() {
   process.env.KB_WEBHOOK_SECRET = 'webhook-secret';
   process.env.KB_WPP_WEBHOOK_API_KEY = 'provider-key';
@@ -149,9 +167,6 @@ async function fixture(t, sender = new CapturingWhatsappSender(), mediaDownloade
     folderResolution,
     repositories.credentialRepository,
   );
-  const queryKnowledge = new QueryKnowledgeUseCase(
-    repositories.contentQueryRepository,
-  );
   const whatsapp = new HandleWhatsappWebhookUseCase(
     repositories.externalIdentityRepository,
     repositories.credentialRepository,
@@ -159,7 +174,7 @@ async function fixture(t, sender = new CapturingWhatsappSender(), mediaDownloade
     { read: () => ({ reminderTimeZone: 'America/Sao_Paulo', webhookSecret: process.env.KB_WEBHOOK_SECRET || '', whatsappWebhookApiKey: process.env.KB_WPP_WEBHOOK_API_KEY || '', evolutionApiKey: process.env.EVOLUTION_API_KEY || '' }) },
     undefined,
     conversation,
-    queryKnowledge,
+    options.askKnowledge,
     sender,
     mediaDownloader,
   );
@@ -491,34 +506,28 @@ test('direct whatsapp webhook downloads media when Evolution payload has metadat
   assert.equal((await repositories.objectStorage.get(attachments[0].storageKey)).toString('utf8'), 'downloaded image');
 });
 
-test('whatsapp knowledge command replies to query without creating capture state', async (t) => {
-  const { repositories, whatsapp, user } = await fixture(t);
-  await repositories.contentRepository.upsertNote(user.id, {
-    path: '20 Inbox/n8n-automations/2026/04/deploy.md',
-    type: 'event',
-    title: 'Deploy checklist',
-    projectSlug: 'n8n-automations',
-    workspaceSlug: 'default',
-    status: 'active',
-    tags: ['deploy'],
-    occurredAt: '2026-04-27',
-    sourceChannel: 'test',
-    summary: 'Revisar timeout e validar webhook em producao.',
-    markdown: '',
-    frontmatter: {},
-    metadata: {},
-    origin: 'postgres',
-    source: 'test',
-    links: [],
-  });
+test('whatsapp /ask command replies with semantic AI answer scoped to the workspace', async (t) => {
+  const askKnowledge = new StubAskKnowledgeUseCase();
+  const { whatsapp, sender, user } = await fixture(t, new CapturingWhatsappSender(), undefined, { askKnowledge });
 
-  const result = await whatsapp.execute(evolutionInput('/kb /buscar deploy webhook'));
+  const result = await whatsapp.execute(evolutionInput('/kb /ask como fazer deploy?'));
 
-  assert.equal(result.action, 'reply');
-  assert.match(result.message, /deploy/i);
-  assert.equal(result.conversationResult.action, 'reply');
-  assert.match(result.conversationResult.replyText, /deploy/i);
-  assert.equal(await repositories.countConversationStates(), 0);
+  assert.equal(result.action, 'ask');
+  assert.equal(result.replySent, true);
+  assert.match(result.message, /Deploy using the staging checklist first/);
+  assert.match(result.message, /Confidence: high/);
+  assert.match(result.message, /Source: Deploy checklist/);
+  assert.equal(result.askResult, askKnowledge.result);
+  assert.deepEqual(askKnowledge.calls, [
+    {
+      question: 'como fazer deploy?',
+      userId: user.id,
+      options: { workspaceSlug: 'default' },
+    },
+  ]);
+  assert.equal(sender.sent.length, 1);
+  assert.equal(sender.sent[0].chatJid, '120363@g.us');
+  assert.equal(sender.sent[0].text, result.message);
 });
 
 test('whatsapp webhook ignores only bot-prefixed self messages', async (t) => {

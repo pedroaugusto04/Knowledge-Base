@@ -17,7 +17,7 @@ export class AskKnowledgeUseCase {
     private readonly runtimeEnv: RuntimeEnvironmentProvider,
   ) {}
 
-  async execute(question: string, userId: string) {
+  async execute(question: string, userId: string, options: { workspaceSlug?: string; projectSlug?: string } = {}) {
     const env = this.runtimeEnv.read();
     const embeddingConfig = {
       provider: env.embeddingAiProvider,
@@ -43,6 +43,8 @@ export class AskKnowledgeUseCase {
     // 2. Query similar chunks (limit: 8)
     const similarChunks = await this.noteEmbeddingRepository.findSimilar(userId, questionEmbedding, {
       limit: 8,
+      workspaceSlug: options.workspaceSlug,
+      projectSlug: options.projectSlug,
     });
 
     if (similarChunks.length === 0) {
