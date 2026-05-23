@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import { routes } from '../../app/routing/routes';
+import { withFrontendBasePath } from '../../app/base-path';
 import { useTypewriterWord } from '../../layouts/use-typewriter-word';
 import { BrandMark } from '../../shared/ui/brand-mark';
 
@@ -84,7 +85,7 @@ export function LandingPage() {
                 <div className="landing-mock-browser-dot" />
                 <div className="landing-mock-browser-url">https://pedro-duarte.ddns.net/knowledge-base/</div>
               </div>
-              <img src="/dashboard-screenshot.png" alt="Knowledge Vault Dashboard" className="landing-real-screenshot" />
+              <img src={withFrontendBasePath('/dashboard-screenshot.png')} alt="Knowledge Vault Dashboard" className="landing-real-screenshot" />
             </div>
           </div>
         </section>
@@ -305,7 +306,7 @@ export function LandingPage() {
                     <div className="landing-mock-browser-dot" />
                     <div className="landing-mock-browser-url">https://pedro-duarte.ddns.net/knowledge-base/search</div>
                   </div>
-                  <img src="/search-screenshot.png" alt="Ask AI Assistant" className="landing-real-screenshot" />
+                  <img src={withFrontendBasePath('/search-screenshot.png')} alt="Ask AI Assistant" className="landing-real-screenshot" />
                 </div>
               </div>
             </div>
