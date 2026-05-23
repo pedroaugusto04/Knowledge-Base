@@ -15,6 +15,19 @@ export function Pagination({
   const end = pagination.total === 0 ? 0 : Math.min(pagination.total, pagination.page * pagination.pageSize);
   const pages = visiblePages(pagination.page, pagination.totalPages, compact ? 3 : 5);
 
+  const handlePageChange = (newPage: number, event: React.MouseEvent) => {
+    onPageChange(newPage);
+    
+    const target = event.currentTarget as HTMLElement;
+    const scrollContainer = target.closest('.view, .modal-panel, .sidebar, .repository-picker');
+    
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <footer className={`pagination-bar ${compact ? 'pagination-bar-compact' : ''}`} aria-label="Pagination">
       <span className="badge pagination-summary">
@@ -25,7 +38,7 @@ export function Pagination({
           className="icon-button pagination-button"
           type="button"
           disabled={!pagination.hasPrevious}
-          onClick={() => onPageChange(pagination.page - 1)}
+          onClick={(event) => handlePageChange(pagination.page - 1, event)}
           aria-label="Previous page"
         >
           {compact ? '‹' : 'Previous'}
@@ -37,7 +50,7 @@ export function Pagination({
               aria-current={page === pagination.page ? 'page' : undefined}
               className={`pagination-number ${page === pagination.page ? 'active' : ''}`}
               type="button"
-              onClick={() => onPageChange(page)}
+              onClick={(event) => handlePageChange(page, event)}
             >
               {page}
             </button>
@@ -47,7 +60,7 @@ export function Pagination({
           className="icon-button pagination-button"
           type="button"
           disabled={!pagination.hasNext}
-          onClick={() => onPageChange(pagination.page + 1)}
+          onClick={(event) => handlePageChange(pagination.page + 1, event)}
           aria-label="Next page"
         >
           {compact ? '›' : 'Next'}
