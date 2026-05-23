@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { routes } from '../../app/routing/routes';
 import { authLandingContent } from '../../layouts/auth-landing.content';
 import { useTypewriterWord } from '../../layouts/use-typewriter-word';
+import { BrandMark } from '../../shared/ui/brand-mark';
 
 export function LandingPage() {
   const animatedWord = useTypewriterWord(authLandingContent.typewriterWords);
@@ -12,7 +13,7 @@ export function LandingPage() {
       <section className="landing-shell" aria-label="Knowledge Vault landing page">
         <header className="landing-topbar">
           <div className="brand landing-brand" aria-label="Knowledge Vault">
-            <div className="brand-mark">KV</div>
+            <BrandMark />
             <div>
               <strong>Knowledge Vault</strong>
               <span>developer knowledge base</span>

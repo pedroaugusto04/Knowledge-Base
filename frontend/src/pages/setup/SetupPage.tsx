@@ -14,6 +14,7 @@ import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, not
 import { FormField } from '../../shared/forms/fields';
 import { slugifyInput } from '../../shared/forms/normalizers';
 import { notifySuccess } from '../../shared/ui/notifications';
+import { BrandMark } from '../../shared/ui/brand-mark';
 import { PageHead, Panel } from '../../shared/ui/primitives';
 import { useGlobalLoading } from '../../app/global-loading';
 import { workspaceFormSchema, type WorkspaceFormValues } from './setup-page.forms';
@@ -91,7 +92,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
       <div className="setup-shell">
         <section className="setup-hero">
           <Link className="brand auth-brand" to={routes.home} aria-label="Ir para Home">
-            <div className="brand-mark">KV</div>
+            <BrandMark />
             <div>
               <strong>Knowledge Vault</strong>
               <span>workspace setup</span>

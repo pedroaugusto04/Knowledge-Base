@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title>Knowledge Vault mark</title>
+  <desc>Connected message threads converging into a shared memory point.</desc>
   <defs>
     <linearGradient id="frame" x1="10" y1="7" x2="54" y2="57" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#18313a"/>
@@ -9,6 +11,13 @@
       <stop offset="0.52" stop-color="#53c7de"/>
       <stop offset="1" stop-color="#9be7f4"/>
     </linearGradient>
+    <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
   <rect width="64" height="64" rx="14" fill="url(#frame)"/>
   <rect x="5" y="5" width="54" height="54" rx="11" fill="none" stroke="#53c7de" stroke-opacity=".38" stroke-width="1.5"/>
@@ -18,6 +27,6 @@
   <circle cx="18" cy="18" r="4.1" fill="#0d1b22" stroke="#7dd3a5" stroke-width="2"/>
   <circle cx="16" cy="32" r="4.1" fill="#0d1b22" stroke="#53c7de" stroke-width="2"/>
   <circle cx="19" cy="46" r="4.1" fill="#0d1b22" stroke="#9be7f4" stroke-width="2"/>
-  <circle cx="45" cy="38.5" r="7.5" fill="#53c7de" fill-opacity=".18" stroke="#9be7f4" stroke-width="2"/>
+  <circle cx="45" cy="38.5" r="7.5" fill="#53c7de" fill-opacity=".18" stroke="#9be7f4" stroke-width="2" filter="url(#soft-glow)"/>
   <circle cx="45" cy="38.5" r="2.6" fill="#e9fbff"/>
 </svg>

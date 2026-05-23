@@ -25,6 +25,7 @@ import { notifyGeneralFormError } from '../shared/forms/errors';
 import { ConfirmationModal } from '../shared/ui/confirmation-modal';
 import { notifySuccess } from '../shared/ui/notifications';
 import { UserAvatar } from '../shared/ui/user-avatar';
+import { BrandMark } from '../shared/ui/brand-mark';
 import { useGlobalLoading } from '../app/global-loading';
 import { useTheme } from '../app/providers/theme';
 
@@ -232,7 +233,7 @@ export function AppShell() {
       />
       <aside className={`sidebar ${isMobileNavOpen ? 'open' : ''}`} aria-label="Vault navigation" id="app-sidebar">
         <Link className="brand" to={routes.home} aria-label="Go to Home">
-          <div className="brand-mark">KV</div>
+          <BrandMark />
           <div>
             <strong>Knowledge Vault</strong>
             <span>developer knowledge base</span>

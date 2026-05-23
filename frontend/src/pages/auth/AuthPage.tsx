@@ -12,6 +12,7 @@ import { authCopy } from '../../layouts/auth-landing.content';
 import { buildGoogleAuthStartUrl, login, signup } from '../../shared/api/client';
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../shared/forms/errors';
 import { FormField } from '../../shared/forms/fields';
+import { BrandMark } from '../../shared/ui/brand-mark';
 
 function GoogleIcon() {
   return (
@@ -100,7 +101,7 @@ export function AuthPage({ onAuthenticated }: { onAuthenticated: () => void }) {
       <section className="auth-panel auth-panel-standalone" aria-label="Authentication">
         <div className="auth-panel-head">
           <Link className="brand auth-brand" to={routes.home} aria-label="Go to Home">
-            <div className="brand-mark">KV</div>
+            <BrandMark />
             <div>
               <strong>Knowledge Vault</strong>
               <span>developer knowledge base</span>
