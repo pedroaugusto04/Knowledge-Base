@@ -81,7 +81,7 @@ export function AskPanel({ openNote }: { openNote: (id: string) => void }) {
             <h3>Ask your Knowledge Base</h3>
           </div>
           <p>
-            Get answers compiled directly from your notes using semantic search.
+            Get answers compiled directly from your notes using AI.
           </p>
           <div className="ask-suggestions">
             <span className="suggestion-title">Try asking:</span>

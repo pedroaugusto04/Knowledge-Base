@@ -78,8 +78,8 @@ services:
     image: rabbitmq:4-management-alpine
     restart: unless-stopped
     ports:
-      - "${KB_RABBITMQ_PORT:-5672}:5672"
-      - "${KB_RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+      - "${KB_RABBITMQ_PORT:-5673}:5672"
+      - "${KB_RABBITMQ_MANAGEMENT_PORT:-15673}:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${KB_RABBITMQ_USER:-kb}
       RABBITMQ_DEFAULT_PASS: ${KB_RABBITMQ_PASSWORD:-kb_dev}
