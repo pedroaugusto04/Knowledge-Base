@@ -96,6 +96,11 @@
   gap: 14px;
 }
 
+.ask-history-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .ask-qa-card {
   display: flex;
   flex-direction: column;

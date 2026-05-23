@@ -192,16 +192,11 @@ describe('SearchPage', () => {
         projectSlug: 'platform',
       });
     });
-    await waitFor(() => {
-      expect(apiSpies.fetchAskHistory).toHaveBeenCalledWith({
-        page: 1,
-        pageSize: 5,
-        projectSlug: 'platform',
-      });
-    });
+    expect(await screen.findByText('Use the platform rollout notes.')).toBeInTheDocument();
+    expect(apiSpies.fetchAskHistory).not.toHaveBeenCalled();
   });
 
-  it('loads Ask AI history and filters it by selected project', async () => {
+  it('opens paginated Ask AI history from a button and filters it by selected project', async () => {
     apiSpies.fetchAskHistory.mockResolvedValueOnce({
       ok: true,
       history: [{
@@ -233,6 +228,8 @@ describe('SearchPage', () => {
     renderSearchPage('/search');
 
     fireEvent.click(screen.getByRole('button', { name: /ask ai/i }));
+    expect(screen.queryByText('Use the rollout notes.')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show history' }));
 
     expect(await screen.findByText('Use the rollout notes.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Active note' })).toBeInTheDocument();
@@ -276,6 +273,7 @@ describe('SearchPage', () => {
     renderSearchPage('/search');
 
     fireEvent.click(screen.getByRole('button', { name: /ask ai/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show history' }));
     expect(await screen.findByText('First answer.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
 

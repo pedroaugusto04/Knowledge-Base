@@ -11,12 +11,25 @@ import { MarkdownView } from '../markdown/MarkdownView';
 import { AskAiIcon } from './AskAiIcon';
 import './AskPanel.css';
 
+type SessionAskItem = {
+  question: string;
+  answer: string;
+  projectSlug: string;
+  sources: Array<{
+    noteId: string;
+    title: string;
+    path: string;
+  }>;
+};
+
 export function AskPanel({ openNote, projects }: { openNote: (id: string) => void; projects: Project[] }) {
   const queryClient = useQueryClient();
   const [question, setQuestion] = useState('');
   const [projectSlug, setProjectSlug] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionItems, setSessionItems] = useState<SessionAskItem[]>([]);
   const { page, setPage } = usePaginationState(projectSlug);
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedProjectLabel = projectSlug
@@ -25,6 +38,7 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
   const historyQuery = useQuery({
     queryKey: ['ask-history', projectSlug, page],
     queryFn: () => fetchAskHistory({ projectSlug, page, pageSize: DEFAULT_PAGE_SIZE }),
+    enabled: showHistory,
   });
   const history = historyQuery.data?.history || [];
 
@@ -49,6 +63,15 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
     try {
       const result = await runAsk({ question: queryText, projectSlug });
       if (result && result.ok) {
+        setSessionItems((current) => [
+          ...current,
+          {
+            question: queryText,
+            answer: result.answer,
+            projectSlug,
+            sources: result.sources || [],
+          },
+        ]);
         setQuestion('');
         setPage(1);
         await queryClient.invalidateQueries({ queryKey: ['ask-history'] });
@@ -72,7 +95,7 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
 
   return (
     <div className="ask-panel-container">
-      {history.length === 0 && !isLoading && !historyQuery.isLoading && (
+      {!showHistory && sessionItems.length === 0 && !isLoading && (
         <div className="ask-welcome">
           <div className="ask-welcome-title">
             <span className="ask-ai-mark">
@@ -109,52 +132,46 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
         </div>
       )}
 
-      {historyQuery.isLoading && (
+      {!showHistory && sessionItems.length > 0 && (
+        <div className="ask-history-list">
+          {sessionItems.map((item, index) => (
+            <AskAnswerCard
+              key={`${item.question}-${index}`}
+              item={item}
+              openNote={openNote}
+              projects={projects}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="ask-history-toolbar">
+        <button
+          className="icon-button"
+          type="button"
+          onClick={() => setShowHistory((current) => !current)}
+        >
+          {showHistory ? 'Hide history' : 'Show history'}
+        </button>
+      </div>
+
+      {showHistory && historyQuery.isLoading && (
         <div className="inline-message">Loading history...</div>
       )}
 
-      {history.length > 0 && (
+      {showHistory && history.length > 0 && (
         <div className="ask-history-list">
           {history.map((item) => (
-            <div className="ask-qa-card" key={item.id}>
-              <div className="ask-question-bubble">
-                <span className="question-text">{item.question}</span>
-                <span className="ask-project-chip">{projectLabel(item.projectSlug, projects)}</span>
-              </div>
-              <div className="ask-answer-container">
-                <div className="ask-answer-header">
-                  <div className="ask-ai-identity">
-                    <AskAiIcon className="ask-ai-identity-icon" />
-                    <strong>Assistant</strong>
-                  </div>
-                </div>
-                <div className="ask-answer-body">
-                  <MarkdownView markdown={item.answer} />
-                </div>
-                {item.sources.length > 0 && (
-                  <div className="ask-sources-footer">
-                    <span className="sources-label">Sources:</span>
-                    <div className="sources-list">
-                      {item.sources.map((source) => (
-                        <button
-                          className="source-link-btn"
-                          key={source.noteId}
-                          type="button"
-                          onClick={() => openNote(source.noteId)}
-                        >
-                          {source.title || source.path}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <AskAnswerCard key={item.id} item={item} openNote={openNote} projects={projects} />
           ))}
           {historyQuery.data?.pagination ? (
             <Pagination compact pagination={historyQuery.data.pagination} onPageChange={setPage} />
           ) : null}
         </div>
+      )}
+
+      {showHistory && !historyQuery.isLoading && history.length === 0 && (
+        <div className="inline-message">No Ask AI history for this filter.</div>
       )}
 
       {isLoading && (
@@ -181,7 +198,7 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
 
       <div ref={bottomRef} />
 
-      {(error || historyQuery.isError) && (
+      {(error || (showHistory && historyQuery.isError)) && (
         <div className="inline-message error">
           {error || 'Could not load Ask AI history.'}
         </div>
@@ -213,6 +230,62 @@ export function AskPanel({ openNote, projects }: { openNote: (id: string) => voi
           {isLoading ? '...' : 'Ask'}
         </button>
       </form>
+    </div>
+  );
+}
+
+function AskAnswerCard({
+  item,
+  openNote,
+  projects,
+}: {
+  item: {
+    question: string;
+    answer: string;
+    projectSlug: string;
+    sources: Array<{
+      noteId: string;
+      title: string;
+      path: string;
+    }>;
+  };
+  openNote: (id: string) => void;
+  projects: Project[];
+}) {
+  return (
+    <div className="ask-qa-card">
+      <div className="ask-question-bubble">
+        <span className="question-text">{item.question}</span>
+        <span className="ask-project-chip">{projectLabel(item.projectSlug, projects)}</span>
+      </div>
+      <div className="ask-answer-container">
+        <div className="ask-answer-header">
+          <div className="ask-ai-identity">
+            <AskAiIcon className="ask-ai-identity-icon" />
+            <strong>Assistant</strong>
+          </div>
+        </div>
+        <div className="ask-answer-body">
+          <MarkdownView markdown={item.answer} />
+        </div>
+        {item.sources.length > 0 && (
+          <div className="ask-sources-footer">
+            <span className="sources-label">Sources:</span>
+            <div className="sources-list">
+              {item.sources.map((source) => (
+                <button
+                  className="source-link-btn"
+                  key={source.noteId}
+                  type="button"
+                  onClick={() => openNote(source.noteId)}
+                >
+                  {source.title || source.path}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
