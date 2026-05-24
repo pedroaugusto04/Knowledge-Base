@@ -49,6 +49,7 @@ export class DefaultAnswerGenerationGateway extends AnswerGenerationGateway {
       return {
         answer: content,
         confidence: 'medium',
+        requestedAttachments: false,
         sources: [],
       };
     }

@@ -35,6 +35,7 @@ export class AskKnowledgeUseCase {
         ok: false,
         answer: 'Failed to generate embedding for the question.',
         confidence: 'low' as const,
+        requestedAttachments: false,
         sources: [],
         relatedNotes: [],
       };
@@ -52,6 +53,7 @@ export class AskKnowledgeUseCase {
         ok: true,
         answer: 'No relevant information found in the knowledge base.',
         confidence: 'low' as const,
+        requestedAttachments: false,
         sources: [],
         relatedNotes: [],
       };
@@ -95,6 +97,7 @@ export class AskKnowledgeUseCase {
         ok: false,
         answer: 'Failed to generate an answer from the AI model.',
         confidence: 'low' as const,
+        requestedAttachments: false,
         sources: [],
         relatedNotes: [],
       };
@@ -104,6 +107,7 @@ export class AskKnowledgeUseCase {
       ok: true,
       answer: result.answer,
       confidence: result.confidence,
+      requestedAttachments: result.requestedAttachments,
       sources: result.sources,
       relatedNotes: notes
         .filter((n): n is NoteRecord => !!n)

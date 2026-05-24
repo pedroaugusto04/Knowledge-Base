@@ -22,6 +22,7 @@ export type AnswerGenerationRequest = {
 export type AnswerGenerationResponse = {
   answer: string;
   confidence: 'high' | 'medium' | 'low';
+  requestedAttachments: boolean;
   sources: Array<{
     noteId: string;
     title: string;

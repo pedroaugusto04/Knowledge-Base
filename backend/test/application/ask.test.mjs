@@ -83,6 +83,7 @@ test('AskKnowledgeUseCase embeds query, fetches similar chunks, and generates an
       return {
         answer: 'You should deploy to staging first.',
         confidence: 'high',
+        requestedAttachments: false,
         sources: [
           { noteId: 'note-1', title: 'Deployment Guide', path: 'docs/deploy.md' },
         ],
@@ -116,6 +117,7 @@ test('AskKnowledgeUseCase embeds query, fetches similar chunks, and generates an
   assert.equal(result.ok, true);
   assert.equal(result.answer, 'You should deploy to staging first.');
   assert.equal(result.confidence, 'high');
+  assert.equal(result.requestedAttachments, false);
   assert.deepEqual(result.sources, [
     { noteId: 'note-1', title: 'Deployment Guide', path: 'docs/deploy.md' },
   ]);
@@ -138,6 +140,7 @@ test('RunAskAiUseCase saves only successful web Ask AI answers', async () => {
       ok: true,
       answer: 'Deploy to staging first.',
       confidence: 'high',
+      requestedAttachments: true,
       sources: [{ noteId: 'note-1', title: 'Deploy', path: 'docs/deploy.md' }],
       relatedNotes: [{ id: 'note-1', title: 'Deploy', path: 'docs/deploy.md', projectSlug: 'platform', workspaceSlug: 'default' }],
     },
@@ -167,7 +170,7 @@ test('RunAskAiUseCase saves only successful web Ask AI answers', async () => {
     relatedNotes: [{ id: 'note-1', title: 'Deploy', path: 'docs/deploy.md', projectSlug: 'platform', workspaceSlug: 'default' }],
   }]);
 
-  askKnowledge.result = { ok: false, answer: 'Failed.', confidence: 'low', sources: [], relatedNotes: [] };
+  askKnowledge.result = { ok: false, answer: 'Failed.', confidence: 'low', requestedAttachments: false, sources: [], relatedNotes: [] };
   await useCase.execute('Broken?', 'user-123');
   assert.equal(saved.length, 1);
 });

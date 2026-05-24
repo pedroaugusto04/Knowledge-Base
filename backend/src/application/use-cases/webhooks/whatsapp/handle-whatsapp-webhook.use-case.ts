@@ -211,7 +211,7 @@ export class HandleWhatsappWebhookUseCase {
       return this.processed(context, { ok: true, resolvedUserId: userId, processed: false }, userId);
     }
     const result = await this.askKnowledgeUseCase.execute(question, userId, { workspaceSlug });
-    const attachmentResolution = await this.resolveAskAttachments(userId, workspaceSlug, question, result);
+    const attachmentResolution = await this.resolveAskAttachments(userId, workspaceSlug, result);
     const replyText = formatAskReply(result, attachmentResolution);
     const sendResult = await this.sendReply(input.chatId, replyText);
     const mediaDispatch = await this.sendAskAttachments(input.chatId, attachmentResolution);
@@ -254,7 +254,6 @@ export class HandleWhatsappWebhookUseCase {
   private async resolveAskAttachments(
     userId: string,
     workspaceSlug: string,
-    question: string,
     result: Awaited<ReturnType<AskKnowledgeUseCase['execute']>>,
   ): Promise<WhatsappAskAttachmentResolution> {
     if (!this.resolveWhatsappAskAttachmentsUseCase) {
@@ -263,7 +262,7 @@ export class HandleWhatsappWebhookUseCase {
     return this.resolveWhatsappAskAttachmentsUseCase.execute({
       userId,
       workspaceSlug,
-      question,
+      requestedAttachments: result.requestedAttachments,
       sources: result.sources,
       relatedNotes: result.relatedNotes,
     });

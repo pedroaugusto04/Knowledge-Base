@@ -94,6 +94,7 @@ class StubAskKnowledgeUseCase {
       ok: true,
       answer: 'Deploy using the staging checklist first.',
       confidence: 'high',
+      requestedAttachments: false,
       sources: [{ noteId: 'note-1', title: 'Deploy checklist', path: '20 Inbox/deploy.md' }],
       relatedNotes: [],
       ...result,
@@ -585,8 +586,9 @@ test('whatsapp /ask command sends related note attachments only when requested',
   });
   askKnowledge.result.sources = [{ noteId: note.id, title: note.title, path: note.path }];
   askKnowledge.result.relatedNotes = [{ id: note.id, title: note.title, path: note.path, workspaceSlug: note.workspaceSlug }];
+  askKnowledge.result.requestedAttachments = true;
 
-  const result = await whatsapp.execute(evolutionInput('/kb /ask me manda o PDF do deploy'));
+  const result = await whatsapp.execute(evolutionInput('/kb /ask quero o PDF do deploy'));
 
   assert.equal(result.action, 'ask');
   assert.equal(result.replySent, true);
@@ -617,8 +619,9 @@ test('whatsapp /ask command limits media replies to 3 attachments', async (t) =>
   }
   askKnowledge.result.sources = seeded.map(({ note }) => ({ noteId: note.id, title: note.title, path: note.path }));
   askKnowledge.result.relatedNotes = seeded.map(({ note }) => ({ id: note.id, workspaceSlug: note.workspaceSlug }));
+  askKnowledge.result.requestedAttachments = true;
 
-  const result = await whatsapp.execute(evolutionInput('/kb /ask envia os anexos do deploy'));
+  const result = await whatsapp.execute(evolutionInput('/kb /ask quero os anexos do deploy'));
 
   assert.equal(result.mediaSent, 3);
   assert.equal(sender.media.length, 3);
@@ -635,8 +638,9 @@ test('whatsapp /ask command skips attachments over 15 MB and mentions the size l
   });
   askKnowledge.result.sources = [{ noteId: note.id, title: note.title, path: note.path }];
   askKnowledge.result.relatedNotes = [{ id: note.id, workspaceSlug: note.workspaceSlug }];
+  askKnowledge.result.requestedAttachments = true;
 
-  const result = await whatsapp.execute(evolutionInput('/kb /ask envia o arquivo do deploy'));
+  const result = await whatsapp.execute(evolutionInput('/kb /ask quero o arquivo do deploy'));
 
   assert.equal(result.mediaSent, 0);
   assert.equal(result.mediaOversized, 1);
@@ -672,8 +676,9 @@ test('whatsapp /ask command reports no attachments when related notes have none'
   });
   askKnowledge.result.sources = [{ noteId: emptyNote.id, title: emptyNote.title, path: emptyNote.path }];
   askKnowledge.result.relatedNotes = [{ id: emptyNote.id, workspaceSlug: emptyNote.workspaceSlug }];
+  askKnowledge.result.requestedAttachments = true;
 
-  const result = await whatsapp.execute(evolutionInput('/kb /ask manda o arquivo do deploy'));
+  const result = await whatsapp.execute(evolutionInput('/kb /ask quero o arquivo do deploy'));
 
   assert.equal(result.mediaSent, 0);
   assert.equal(sender.media.length, 0);
@@ -701,8 +706,9 @@ test('whatsapp /ask attachments stay scoped to the linked workspace', async (t) 
   });
   askKnowledge.result.sources = [{ noteId: note.id, title: note.title, path: note.path }];
   askKnowledge.result.relatedNotes = [{ id: note.id, workspaceSlug: note.workspaceSlug }];
+  askKnowledge.result.requestedAttachments = true;
 
-  const result = await whatsapp.execute(evolutionInput('/kb /ask envia o arquivo do deploy'));
+  const result = await whatsapp.execute(evolutionInput('/kb /ask quero o arquivo do deploy'));
 
   assert.equal(result.mediaSent, 0);
   assert.equal(sender.media.length, 0);

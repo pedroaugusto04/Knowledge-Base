@@ -12,9 +12,6 @@ import type { WhatsappMediaType } from '../../ports/whatsapp-reply.sender.js';
 const maxAttachmentsPerReply = 3;
 const maxAttachmentBytes = 15 * 1024 * 1024;
 
-const sendIntentPattern = /\b(send|share|return|attach|download|manda|mandar|mande|envia|enviar|envie|retorna|retornar|retorne|encaminha|encaminhar|anexa|anexar|passe|passa)\b/i;
-const attachmentTermPattern = /\b(file|files|attachment|attachments|document|documents|pdf|image|images|photo|photos|media|audio|video|arquivo|arquivos|anexo|anexos|anexado|anexados|documento|documentos|imagem|imagens|foto|fotos|midia|m[ií]dia|áudio|audio|vídeo|video|planilha|docx|zip)\b/i;
-
 @Injectable()
 export class ResolveWhatsappAskAttachmentsUseCase {
   constructor(
@@ -25,11 +22,11 @@ export class ResolveWhatsappAskAttachmentsUseCase {
   async execute(input: {
     userId: string;
     workspaceSlug: string;
-    question: string;
+    requestedAttachments: boolean;
     sources?: WhatsappAskAttachmentNoteRef[];
     relatedNotes?: WhatsappAskAttachmentNoteRef[];
   }): Promise<WhatsappAskAttachmentResolution> {
-    if (!hasExplicitAttachmentRequest(input.question)) {
+    if (!input.requestedAttachments) {
       return emptyResolution(false);
     }
 
@@ -104,11 +101,6 @@ function emptyResolution(requested: boolean): WhatsappAskAttachmentResolution {
     oversizedCount: 0,
     missingContentCount: 0,
   };
-}
-
-function hasExplicitAttachmentRequest(question: string): boolean {
-  const normalized = String(question || '').normalize('NFC');
-  return sendIntentPattern.test(normalized) && attachmentTermPattern.test(normalized);
 }
 
 function noteIdFromRef(ref: WhatsappAskAttachmentNoteRef): string {
