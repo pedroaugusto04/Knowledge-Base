@@ -101,6 +101,7 @@ export enum CredentialRecordStatus {
 export enum WebhookEventStatus {
   Rejected = 'rejected',
   Resolved = 'resolved',
+  Ignored = 'ignored',
   Processed = 'processed',
   Failed = 'failed',
 }

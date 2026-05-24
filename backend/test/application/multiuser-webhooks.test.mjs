@@ -61,8 +61,10 @@ function githubBody(installationId = 42) {
     before: '1111111',
     after: '2222222',
     installation: { id: installationId },
-    repository: { full_name: 'acme/api', name: 'api', html_url: 'https://github.com/acme/api' },
+    compare: 'https://github.com/acme/api/compare/1111111...2222222',
+    repository: { id: 101, full_name: 'acme/api', name: 'api', private: true, html_url: 'https://github.com/acme/api' },
     pusher: { name: 'pedro' },
+    sender: { login: 'octocat' },
     head_commit: {
       message: 'fix webhook',
       timestamp: '2026-04-27T12:00:00.000Z',
@@ -160,13 +162,27 @@ test('github app webhook resolves user by installation id and rejects unknown id
     workspaceSlug: 'default',
   }, user.id);
   const ingest = new IngestEntryUseCase(repositories.contentRepository, repositories.runtimeEnvironmentProvider);
+  const unusedGithubGateway = {
+    verifyWebhookSignature() {},
+    async fetchInstallationToken() {
+      throw new Error('installation token should not be fetched for unselected repositories');
+    },
+    async fetchComparePayload() {
+      throw new Error('compare payload should not be fetched for unselected repositories');
+    },
+  };
+  const unusedReviewGateway = {
+    async generate() {
+      throw new Error('review analysis should not run for unselected repositories');
+    },
+  };
   const handler = new HandleGithubPushUseCase(
     ingest,
     repositories.externalIdentityRepository,
     repositories.webhookEventRepository,
     repositories.runtimeEnvironmentProvider,
-    githubGateway,
-    reviewGateway,
+    unusedGithubGateway,
+    unusedReviewGateway,
     repositories.contentRepository,
   );
 
@@ -184,15 +200,30 @@ test('github app webhook resolves user by installation id and rejects unknown id
 
   const result = await handler.execute(signedGithubInput(githubBody(42)));
   assert.equal(result.ok, true);
+  assert.equal(result.processed, false);
+  assert.equal(result.ignored, 'github_repository_not_selected');
   const notes = await repositories.contentRepository.listNotes(user.id);
-  assert.equal(notes.length, 1);
-  assert.equal(notes[0].sourceChannel, 'github-push');
-  assert.equal(notes[0].projectSlug, 'inbox');
-  assert.equal(notes[0].metadata.repoFullName, 'acme/api');
-  assert.equal(notes[0].metadata.headSha, '2222222');
-  assert.deepEqual(notes[0].metadata.changedFiles, ['src/app.ts']);
+  assert.equal(notes.length, 0);
   const projects = await repositories.contentRepository.listProjects(user.id);
   assert.equal(projects.find((project) => project.projectSlug === 'inbox')?.repositories.length, 0);
+  const event = await repositories.getLastWebhookEvent();
+  assert.equal(event.status, 'ignored');
+  assert.equal(event.error, 'github_repository_not_selected');
+  assert.deepEqual(event.rawPayload, {
+    installationId: '42',
+    repositoryId: '101',
+    repositoryFullName: 'acme/api',
+    repositoryPrivate: true,
+    ref: 'refs/heads/main',
+    before: '1111111',
+    after: '2222222',
+    deleted: false,
+    pusherName: 'pedro',
+    senderLogin: 'octocat',
+  });
+  assert.equal(JSON.stringify(event.rawPayload).includes('fix webhook'), false);
+  assert.equal(JSON.stringify(event.rawPayload).includes('src/app.ts'), false);
+  assert.equal(JSON.stringify(event.rawPayload).includes('compare'), false);
 });
 
 test('github push resolves project by explicit repository mapping', async (t) => {
@@ -253,4 +284,11 @@ test('github push resolves project by explicit repository mapping', async (t) =>
   assert.equal(notes[0].metadata.repoFullName, 'acme/api');
   assert.equal(notes[0].metadata.headSha, '2222222');
   assert.deepEqual(notes[0].metadata.changedFiles, ['src/app.ts']);
+  const event = await repositories.getLastWebhookEvent();
+  assert.equal(event.status, 'processed');
+  assert.equal(event.rawPayload.repositoryFullName, 'acme/api');
+  assert.equal(event.rawPayload.repositoryPrivate, true);
+  assert.equal(JSON.stringify(event.rawPayload).includes('fix webhook'), false);
+  assert.equal(JSON.stringify(event.rawPayload).includes('src/app.ts'), false);
+  assert.equal(JSON.stringify(event.rawPayload).includes('compare'), false);
 });

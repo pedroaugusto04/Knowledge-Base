@@ -13,6 +13,36 @@ import { WebhookEventRepository } from '../../../ports/webhook-events.repository
 import { normalizeHeaders } from '../../../utils/webhook.utils.js';
 import { IngestEntryUseCase } from '../../ingest/ingest-entry.use-case.js';
 
+type GithubPushPayload = {
+  ref?: string;
+  before?: string;
+  after?: string;
+  deleted?: boolean;
+  installation?: { id?: string | number };
+  repository?: {
+    id?: string | number;
+    full_name?: string;
+    private?: boolean;
+  };
+  pusher?: { name?: string };
+  sender?: { login?: string };
+};
+
+function githubAuditPayload(body: GithubPushPayload): Record<string, unknown> {
+  return {
+    installationId: body.installation?.id == null ? '' : String(body.installation.id),
+    repositoryId: body.repository?.id == null ? '' : String(body.repository.id),
+    repositoryFullName: String(body.repository?.full_name || '').trim(),
+    repositoryPrivate: body.repository?.private === true,
+    ref: String(body.ref || ''),
+    before: String(body.before || ''),
+    after: String(body.after || ''),
+    deleted: body.deleted === true,
+    pusherName: String(body.pusher?.name || ''),
+    senderLogin: String(body.sender?.login || ''),
+  };
+}
+
 @Injectable()
 export class HandleGithubPushUseCase {
   constructor(
@@ -29,7 +59,8 @@ export class HandleGithubPushUseCase {
   async execute(input: GithubPushWebhookRequest) {
     const environment = this.environmentProvider.read();
     const headers = normalizeHeaders(input.headers || {});
-    const body = input.body || {};
+    const body = (input.body || {}) as GithubPushPayload;
+    const rawPayload = githubAuditPayload(body);
     const installationId = String((body.installation as { id?: unknown } | undefined)?.id || '').trim();
     const externalIdentity = { provider: ExternalIdentityProvider.GithubApp, identityType: 'installation_id', externalId: installationId };
     if (!environment.githubWebhookSecret) {
@@ -39,7 +70,7 @@ export class HandleGithubPushUseCase {
         status: WebhookEventStatus.Rejected,
         externalIdentity,
         rawHeaders: headers,
-        rawPayload: body,
+        rawPayload,
         error: 'github_webhook_secret_not_configured',
       });
       throw new UnauthorizedException('github_webhook_secret_not_configured');
@@ -57,7 +88,7 @@ export class HandleGithubPushUseCase {
         status: WebhookEventStatus.Rejected,
         externalIdentity,
         rawHeaders: headers,
-        rawPayload: body,
+        rawPayload,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new UnauthorizedException('invalid_github_signature');
@@ -69,7 +100,7 @@ export class HandleGithubPushUseCase {
         status: WebhookEventStatus.Rejected,
         externalIdentity,
         rawHeaders: headers,
-        rawPayload: body,
+        rawPayload,
         error: 'missing_installation_id',
       });
       throw new UnauthorizedException('missing_installation_id');
@@ -82,7 +113,7 @@ export class HandleGithubPushUseCase {
         status: WebhookEventStatus.Rejected,
         externalIdentity,
         rawHeaders: headers,
-        rawPayload: body,
+        rawPayload,
         error: 'identity_not_found',
       });
       throw new NotFoundException('identity_not_found');
@@ -94,9 +125,28 @@ export class HandleGithubPushUseCase {
       resolvedUserId: identity.userId,
       externalIdentity,
       rawHeaders: headers,
-      rawPayload: body,
+      rawPayload,
     });
     try {
+      const repoFullName = String(body.repository?.full_name || '').trim();
+      const projectSlug = await this.findSelectedProjectSlug(repoFullName, identity.userId, identity.workspaceSlug);
+      if (!projectSlug) {
+        await this.webhookEvents.recordWebhookEvent({
+          provider: IntegrationProvider.GithubApp,
+          eventType: String(headers['x-github-event'] || 'push'),
+          status: WebhookEventStatus.Ignored,
+          resolvedUserId: identity.userId,
+          externalIdentity,
+          rawHeaders: headers,
+          rawPayload,
+          error: 'github_repository_not_selected',
+        });
+        return {
+          ok: true,
+          processed: false,
+          ignored: 'github_repository_not_selected',
+        };
+      }
       const aiCredential = this.credentials
         ? await this.credentials.findCredential(identity.userId, identity.workspaceSlug, IntegrationProvider.AiReview)
         : null;
@@ -109,7 +159,7 @@ export class HandleGithubPushUseCase {
           reviewAnalysisGateway: this.reviewAnalysisGateway,
         },
       );
-      const resolvedPayload = await this.resolveProjectForPayload(payload, identity.userId, identity.workspaceSlug);
+      const resolvedPayload = this.resolvePayloadProject(payload, projectSlug);
       const ingestResult = await this.ingestEntryUseCase.execute(resolvedPayload, identity.userId, identity.workspaceSlug);
       await this.webhookEvents.recordWebhookEvent({
         provider: IntegrationProvider.GithubApp,
@@ -118,7 +168,7 @@ export class HandleGithubPushUseCase {
         resolvedUserId: identity.userId,
         externalIdentity,
         rawHeaders: headers,
-        rawPayload: body,
+        rawPayload,
       });
       return {
         ok: true,
@@ -134,22 +184,25 @@ export class HandleGithubPushUseCase {
         resolvedUserId: identity.userId,
         externalIdentity,
         rawHeaders: headers,
-        rawPayload: body,
+        rawPayload,
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
   }
 
-  private async resolveProjectForPayload<T extends Awaited<ReturnType<typeof buildGithubReviewEvent>>>(payload: T, userId: string, workspaceSlug: string): Promise<T> {
-    if (!this.contentRepository) return payload;
-    const repoFullName = String(payload.metadata.repoFullName || '').trim().toLowerCase();
-    if (!repoFullName) return payload;
+  private async findSelectedProjectSlug(repoFullName: string, userId: string, workspaceSlug: string): Promise<string | null> {
+    const normalizedRepoFullName = repoFullName.trim().toLowerCase();
+    if (!normalizedRepoFullName) return null;
+    if (!this.contentRepository) return 'inbox';
     const projects = await this.contentRepository.listProjects(userId);
     const project = projects.find(
-      (item) => item.enabled && item.workspaceSlug === workspaceSlug && item.repositories.some(r => r.fullName.trim().toLowerCase() === repoFullName),
+      (item) => item.enabled && item.workspaceSlug === workspaceSlug && item.repositories.some(r => r.fullName.trim().toLowerCase() === normalizedRepoFullName),
     );
-    const projectSlug = project?.projectSlug || 'inbox';
+    return project?.projectSlug || null;
+  }
+
+  private resolvePayloadProject<T extends Awaited<ReturnType<typeof buildGithubReviewEvent>>>(payload: T, projectSlug: string): T {
     return {
       ...payload,
       event: {
