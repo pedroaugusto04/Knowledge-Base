@@ -36,11 +36,7 @@ export function useMobilePaginatedItems<T extends IdentifiableItem>({
       setMobileItems(items);
     }
 
-    if (!isMobilePagination) {
-      setLoadedMobilePage(pagination?.page || 0);
-      setMobileItems(items);
-      return;
-    }
+    if (!isMobilePagination) return;
 
     if (!pagination || isPlaceholderData) return;
 
