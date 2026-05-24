@@ -41,6 +41,7 @@ export function rankKnowledgeMatches(notes: VaultNoteSummary[], query: Pick<Quer
         projectSlug: note.project,
         score,
         snippet: note.summary || note.title,
+        attachmentCount: note.attachmentCount,
       };
     })
     .filter((match) => match.score > 0)

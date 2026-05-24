@@ -7,6 +7,7 @@ import { Badge, EmptyState } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { MobileInfinitePagination, useMobilePaginatedItems } from '../../shared/ui/mobile-infinite-pagination';
 import { PencilIcon, TrashIcon } from '../../shared/ui/icons';
+import { AttachmentIndicator } from '../../widgets/notes/AttachmentIndicator';
 
 const categoryOptions: Array<{ value: ProjectTimelineCategory; label: string }> = projectTimelineCategoryValues.map((value) => ({
   value,
@@ -79,6 +80,7 @@ export function ProjectTimeline({
                   <span className="meta">{formatUsDateTime(item.date)}</span>
                   <span className="meta">{projectName(dashboard.projects, item.project)}</span>
                   <span className="meta">{item.source || item.sourceChannel}</span>
+                  <AttachmentIndicator count={item.attachmentCount || 0} />
                 </div>
                 <div className="project-timeline-body">
                   <div>

@@ -20,5 +20,6 @@ export type QueryResponse = {
     projectSlug: string;
     score: number;
     snippet: string;
+    attachmentCount?: number;
   }>;
 };

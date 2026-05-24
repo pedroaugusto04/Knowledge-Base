@@ -367,10 +367,11 @@ function queryMatchToNoteSummary(match: {
   status: NoteStatus;
   summary: string;
   source: string;
+  attachmentCount?: number;
 }): NoteSummary {
   return {
     ...match,
-    attachmentCount: 0,
+    attachmentCount: match.attachmentCount || 0,
     folderId: null,
   };
 }
