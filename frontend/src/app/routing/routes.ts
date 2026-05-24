@@ -2,9 +2,10 @@ export const routes = {
   setup: '/setup',
   home: '/',
   auth: '/auth',
+  map: '/map',
   projects: '/projects',
   project: (projectSlug: string) => `/projects/${encodeURIComponent(projectSlug)}`,
-  projectMap: (projectSlug: string) => `/projects/${encodeURIComponent(projectSlug)}/map`,
+  projectMap: (projectSlug: string) => `/map/${encodeURIComponent(projectSlug)}`,
   vault: '/vault',
   note: (noteId: string) => `/vault/${encodeURIComponent(noteId)}`,
   search: '/search',
@@ -14,10 +15,11 @@ export const routes = {
   integrations: '/settings/integrations',
 } as const;
 
-export type View = 'home' | 'projects' | 'note' | 'search' | 'kanban' | 'reminders' | 'profile' | 'integrations';
+export type View = 'home' | 'map' | 'projects' | 'note' | 'search' | 'kanban' | 'reminders' | 'profile' | 'integrations';
 
 export const navItems: Array<{ view: View; label: string; path: string }> = [
   { view: 'home', label: 'Home', path: routes.home },
+  { view: 'map', label: 'Map', path: routes.map },
   { view: 'projects', label: 'Projects', path: routes.projects },
   { view: 'search', label: 'Search', path: routes.search },
   { view: 'kanban', label: 'Kanban', path: routes.kanban },

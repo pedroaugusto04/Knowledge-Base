@@ -15,7 +15,7 @@ type ProjectKnowledgeForceGraphProps = {
   onOpenNote: (noteId: string) => void;
 };
 
-const DEFAULT_SIZE = { width: 960, height: 640 };
+const DEFAULT_SIZE = { width: 1200, height: 760 };
 
 export function ProjectKnowledgeForceGraph({
   nodes,
@@ -50,7 +50,7 @@ export function ProjectKnowledgeForceGraph({
       const rect = element.getBoundingClientRect();
       setSize({
         width: Math.max(320, Math.floor(rect.width || DEFAULT_SIZE.width)),
-        height: Math.max(window.innerWidth < 720 ? 430 : 640, Math.floor(rect.height || 0)),
+        height: Math.max(window.innerWidth < 720 ? 520 : 760, Math.floor(rect.height || 0)),
       });
     };
     updateSize();
@@ -246,24 +246,25 @@ function graphLinkNode(value: string | number | GraphNode) {
 }
 
 function linkDistance(item: GraphLink) {
-  if (item.type === 'contains') return 145;
-  if (item.type === 'filed-in' || item.type === 'from-repository') return 130;
-  return 112;
+  if (item.type === 'contains') return 190;
+  if (item.type === 'filed-in' || item.type === 'from-repository') return 170;
+  return 150;
 }
 
 function chargeStrength(item: GraphNode, denseMap: boolean) {
-  const base = item.type === 'project' ? -520 : item.type === 'note' ? -310 : -360;
+  const base = item.type === 'project' ? -720 : item.type === 'note' ? -460 : -520;
   return denseMap ? base * 1.28 : base;
 }
 
 function collisionRadius(item: GraphNode) {
   const radius = item.size || knowledgeMapNodeStyles[item.type].radius;
-  const labelAllowance = item.type === 'note' || item.type === 'tag' ? 24 : 34;
+  const noteLabelAllowance = Math.min(150, Math.max(64, item.label.length * 5.8));
+  const labelAllowance = item.type === 'note' ? noteLabelAllowance : item.type === 'tag' ? 38 : 48;
   return radius + labelAllowance;
 }
 
 function shouldShowLabel(item: GraphNode, zoomScale: number, activeNodeId: string) {
-  if (item.type === 'project' || item.type === 'repository' || item.type === 'folder' || item.type === 'category') return true;
+  if (item.type === 'project' || item.type === 'repository' || item.type === 'folder' || item.type === 'category' || item.type === 'note') return true;
   if (item.id === activeNodeId) return true;
   return zoomScale >= (item.type === 'note' ? 1.25 : 1.7);
 }

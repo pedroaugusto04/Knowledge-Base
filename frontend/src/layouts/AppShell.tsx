@@ -32,6 +32,7 @@ import { useGlobalLoading } from '../app/global-loading';
 
 
 function activeView(pathname: string): View {
+  if (pathname.startsWith('/map')) return 'map';
   if (pathname.startsWith('/projects')) return 'projects';
   if (pathname.startsWith('/vault')) return 'note';
   if (pathname.startsWith('/search')) return 'search';
@@ -377,7 +378,8 @@ export function AppShell() {
           <Routes>
             <Route path="/" element={<HomePage {...pageContext} />} />
             <Route path="/projects" element={<ProjectsPage {...pageContext} />} />
-            <Route path="/projects/:projectSlug/map" element={<ProjectKnowledgeMapPage dashboard={pageContext.dashboard} openNote={pageContext.openNote} />} />
+            <Route path="/map" element={<ProjectKnowledgeMapPage dashboard={pageContext.dashboard} openNote={pageContext.openNote} selectedProject={pageContext.selectedProject} />} />
+            <Route path="/map/:projectSlug" element={<ProjectKnowledgeMapPage dashboard={pageContext.dashboard} openNote={pageContext.openNote} selectedProject={pageContext.selectedProject} />} />
             <Route path="/projects/:projectSlug" element={<ProjectsPage {...pageContext} />} />
             <Route path="/vault" element={<Navigate replace to={routes.projects} />} />
             <Route path="/vault/:noteId" element={shouldBlockNoteRoute ? null : <VaultPage {...pageContext} />} />

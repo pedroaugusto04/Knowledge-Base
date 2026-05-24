@@ -1,6 +1,3 @@
-import { Link } from 'react-router-dom';
-
-import { routes } from '../../app/routing/routes';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
 import type { ProjectBriefPanelResponse } from '../../shared/api/models/project-brief';
@@ -134,7 +131,6 @@ export function ProjectsBrowser({
         </div>
         <div className="project-actions">
           <Tags items={project.defaultTags.map(formatDisplayToken)} />
-          <Link className="icon-button secondary" to={routes.projectMap(project.projectSlug)}>Map</Link>
           <button className="icon-button" type="button" onClick={onCreateNote}>New note</button>
         </div>
       </div>

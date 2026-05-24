@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import type { ProjectsPageContext } from '../../../app/page-context';
@@ -9,6 +9,7 @@ import { fetchProjectFolders, fetchProjectKnowledgeMap } from '../../../shared/a
 import type { KnowledgeMapNodeType, ProjectKnowledgeMapResponse } from '../../../shared/api/models/project-knowledge-map';
 import { projectTimelineCategoryValues, type ProjectTimelineCategory } from '../../../shared/api/models/project-timeline';
 import { EmptyState, InlineMessage, PageHead } from '../../../shared/ui/primitives';
+import { Select } from '../../../shared/ui/select';
 import { flattenFolders } from '../projects.helpers';
 import { ProjectKnowledgeForceGraph } from './ProjectKnowledgeForceGraph';
 import {
@@ -19,16 +20,18 @@ import {
 } from './knowledge-map.constants';
 import { filterKnowledgeMapDataset } from './knowledge-map.helpers';
 
-type ProjectKnowledgeMapPageProps = Pick<ProjectsPageContext, 'dashboard' | 'openNote'>;
+type ProjectKnowledgeMapPageProps = Pick<ProjectsPageContext, 'dashboard' | 'openNote' | 'selectedProject'>;
 const categoryOptions: Array<{ value: ProjectTimelineCategory; label: string }> = projectTimelineCategoryValues.map((value) => ({
   value,
   label: formatDisplayToken(value),
 }));
 
-export function ProjectKnowledgeMapPage({ dashboard, openNote }: ProjectKnowledgeMapPageProps) {
+export function ProjectKnowledgeMapPage({ dashboard, openNote, selectedProject }: ProjectKnowledgeMapPageProps) {
   const params = useParams();
   const navigate = useNavigate();
-  const projectSlug = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
+  const projectSlug = params.projectSlug
+    ? decodeURIComponent(params.projectSlug)
+    : selectedProject || dashboard.projects[0]?.projectSlug || '';
   const project = useMemo(
     () => dashboard.projects.find((item) => item.projectSlug === projectSlug) || null,
     [dashboard.projects, projectSlug],
@@ -63,6 +66,11 @@ export function ProjectKnowledgeMapPage({ dashboard, openNote }: ProjectKnowledg
     [graph, visibleTypes],
   );
 
+  useEffect(() => {
+    setFolderId('');
+    setResetSignal((current) => current + 1);
+  }, [projectSlug]);
+
   if (!project) {
     return (
       <>
@@ -77,11 +85,24 @@ export function ProjectKnowledgeMapPage({ dashboard, openNote }: ProjectKnowledg
       <PageHead
         title={(
           <div className="page-head-title-row">
-            <h1>{project.displayName}</h1>
-            <span className="repo-tag">Map</span>
+            <h1>Map</h1>
+            <label className="sr-only" htmlFor="knowledge-map-project-select">Select project</label>
+            <Select
+              ariaLabel="Select project"
+              className="page-head-select"
+              id="knowledge-map-project-select"
+              options={dashboard.projects.map((item) => ({
+                value: item.projectSlug,
+                label: item.displayName,
+              }))}
+              value={project.projectSlug}
+              onChange={(nextProjectSlug) => {
+                if (nextProjectSlug) navigate(routes.projectMap(nextProjectSlug));
+              }}
+            />
           </div>
         )}
-        subtitle="Recent notes, folders, repositories, tags, and categories."
+        subtitle={project.displayName}
         action={(
           <div className="knowledge-map-actions">
             <button className="icon-button secondary" type="button" onClick={() => setPaused((current) => !current)}>
@@ -92,8 +113,6 @@ export function ProjectKnowledgeMapPage({ dashboard, openNote }: ProjectKnowledg
             </button>
           </div>
         )}
-        backLabel="Back to project"
-        onBack={() => navigate(routes.project(project.projectSlug))}
       />
 
       {query.isError ? (
