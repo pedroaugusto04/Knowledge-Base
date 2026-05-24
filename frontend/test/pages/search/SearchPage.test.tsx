@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithAppProviders } from '../../../src/app/test-utils';
@@ -19,6 +20,7 @@ vi.mock('../../../src/shared/api/client', () => ({
   fetchNotes: apiSpies.fetchNotes,
   runQuery: apiSpies.runQuery,
   runAsk: apiSpies.runAsk,
+  updateNote: vi.fn(),
 }));
 
 const dashboard: Dashboard = {
@@ -88,10 +90,12 @@ describe('SearchPage', () => {
 
     renderSearchPage('/search');
 
-    const input = screen.getByPlaceholderText('Enter what you are looking for...');
+    const input = screen.getByPlaceholderText('Search or ask anything...');
     fireEvent.change(input, { target: { value: 'd' } });
     fireEvent.change(input, { target: { value: 'de' } });
     fireEvent.change(input, { target: { value: 'dep' } });
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/search?q=dep');
 
     await act(async () => {
       vi.advanceTimersByTime(349);
@@ -172,19 +176,15 @@ describe('SearchPage', () => {
       ok: true,
       answer: 'Use the platform rollout notes.',
       confidence: 'high',
-      sources: [],
+      sources: [{ noteId: 'active-1', title: 'Active note', path: '20 Inbox/platform/note.md' }],
       relatedNotes: [],
     });
 
-    renderSearchPage('/search');
+    renderSearchPage('/search?q=How%20should%20I%20deploy%3F');
 
-    fireEvent.click(screen.getByRole('button', { name: /ask ai/i }));
-    fireEvent.click(screen.getByLabelText('Filter Ask AI by project'));
+    fireEvent.click(screen.getByLabelText('Filter by project'));
     fireEvent.click(screen.getByRole('option', { name: 'Platform' }));
-    fireEvent.change(screen.getByPlaceholderText('Ask a question about your knowledge...'), {
-      target: { value: 'How should I deploy?' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
+    fireEvent.click(screen.getByRole('button', { name: /ask ai about this/i }));
 
     await waitFor(() => {
       expect(apiSpies.runAsk).toHaveBeenCalledWith({
@@ -193,6 +193,7 @@ describe('SearchPage', () => {
       });
     });
     expect(await screen.findByText('Use the platform rollout notes.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Active note' })).toBeInTheDocument();
     expect(apiSpies.fetchAskHistory).not.toHaveBeenCalled();
   });
 
@@ -227,13 +228,12 @@ describe('SearchPage', () => {
 
     renderSearchPage('/search');
 
-    fireEvent.click(screen.getByRole('button', { name: /ask ai/i }));
     expect(screen.queryByText('Use the rollout notes.')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
 
     expect(await screen.findByText('Use the rollout notes.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Active note' })).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText('Filter Ask AI by project'));
+    fireEvent.click(screen.getByLabelText('Filter by project'));
     fireEvent.click(screen.getByRole('option', { name: 'Platform' }));
 
     expect(await screen.findByText('Deploy platform from staging.')).toBeInTheDocument();
@@ -272,8 +272,7 @@ describe('SearchPage', () => {
 
     renderSearchPage('/search');
 
-    fireEvent.click(screen.getByRole('button', { name: /ask ai/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Show history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
     expect(await screen.findByText('First answer.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
 
@@ -284,18 +283,26 @@ describe('SearchPage', () => {
 
 function renderSearchPage(route = '/search') {
   return renderWithAppProviders(
-    <SearchPage
-      dashboard={dashboard}
-      selectedProject=""
-      selectedNoteId=""
-      setSelectedProject={vi.fn()}
-      openProject={vi.fn()}
-      openNote={vi.fn()}
-      editNote={vi.fn()}
-      deleteNote={vi.fn()}
-    />,
+    <>
+      <SearchPage
+        dashboard={dashboard}
+        selectedProject=""
+        selectedNoteId=""
+        setSelectedProject={vi.fn()}
+        openProject={vi.fn()}
+        openNote={vi.fn()}
+        editNote={vi.fn()}
+        deleteNote={vi.fn()}
+      />
+      <LocationProbe />
+    </>,
     { route },
   );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <span data-testid="location">{`${location.pathname}${location.search}`}</span>;
 }
 
 function buildNote(overrides: Partial<NoteSummary> = {}): NoteSummary {

@@ -1,21 +1,25 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
 import type { PageContext } from '../../app/page-context';
 import { formatDisplayToken } from '../../entities/format';
-import { fetchNotes, runQuery } from '../../shared/api/client';
-import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
+import { fetchAskHistory, fetchNotes, runAsk, runQuery } from '../../shared/api/client';
+import type { AskHistoryResponse } from '../../shared/api/models/ask';
+import type { AskAnswerCardItem } from '../../widgets/ask/AskAnswerCard';
+import { AskAnswerCard, projectLabel } from '../../widgets/ask/AskAnswerCard';
+import { AskAiIcon } from '../../widgets/ask/AskAiIcon';
+import type { NoteSummary } from '../../shared/api/models/note';
 import { type NoteStatus } from '../../shared/api/models/note-status';
-import { EmptyState, PageHead, Panel } from '../../shared/ui/primitives';
+import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
+import { EmptyState, InlineMessage, PageHead, Panel } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { Select } from '../../shared/ui/select';
 import { useDebouncedValue } from '../../shared/ui/use-debounced-value';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
 import { NoteRow } from '../../widgets/notes/NoteRow';
-import { AskPanel } from '../../widgets/ask/AskPanel';
-import { AskAiIcon } from '../../widgets/ask/AskAiIcon';
+import './SearchPage.css';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -27,10 +31,30 @@ const statusOptions: Array<{ value: '' | NoteStatus; label: string }> = [
   })),
 ];
 
+const askSuggestions = [
+  'What are the main decisions recently?',
+  'Summarize the deployment rollout status.',
+];
+
 export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageContext) {
-  const [activeTab, setActiveTab] = useState<'search' | 'ask'>('search');
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  const [projectSlug, setProjectSlug] = useState('');
+  const [status, setStatus] = useState<'' | NoteStatus>('');
+  const [askAnswer, setAskAnswer] = useState<AskAnswerCardItem | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [isAsking, setIsAsking] = useState(false);
+  const [askError, setAskError] = useState<string | null>(null);
+  const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug || '';
+  const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
+  const debouncedProjectSlug = useDebouncedValue(projectSlug, SEARCH_DEBOUNCE_MS);
+  const debouncedStatus = useDebouncedValue(status, SEARCH_DEBOUNCE_MS);
+  const hasQuery = Boolean(debouncedQuery.trim());
+  const hasQueryInput = Boolean(query.trim());
+  const { page, setPage } = usePaginationState(`${debouncedQuery}:${debouncedProjectSlug}:${workspaceSlug}:${debouncedStatus}`);
+  const { page: historyPage, setPage: setHistoryPage } = usePaginationState(`ask-history:${projectSlug}`);
+
   const setQuery = (newQuery: string) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -42,14 +66,7 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
       return next;
     }, { replace: true });
   };
-  const [projectSlug, setProjectSlug] = useState('');
-  const [status, setStatus] = useState<'' | NoteStatus>('');
-  const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug || '';
-  const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
-  const debouncedProjectSlug = useDebouncedValue(projectSlug, SEARCH_DEBOUNCE_MS);
-  const debouncedStatus = useDebouncedValue(status, SEARCH_DEBOUNCE_MS);
-  const { page, setPage } = usePaginationState(`${debouncedQuery}:${debouncedProjectSlug}:${workspaceSlug}:${debouncedStatus}`);
-  const hasQuery = Boolean(debouncedQuery.trim());
+
   const queryResult = useQuery({
     queryKey: ['search', debouncedQuery, debouncedProjectSlug, workspaceSlug, debouncedStatus, page],
     queryFn: () => runQuery({
@@ -70,123 +87,280 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
     enabled: !hasQuery,
     placeholderData: keepPreviousData,
     initialData: !hasQuery && dashboard.notes
-      ? {
-        ok: true as const,
-        notes: dashboard.notes
-          .filter((note) =>
-            (!workspaceSlug || note.workspace === workspaceSlug)
-            && (!debouncedProjectSlug || note.project === debouncedProjectSlug)
-            && (!debouncedStatus || note.status === debouncedStatus),
-          )
-          .slice(0, DEFAULT_PAGE_SIZE),
-        pagination: {
-          page: 1,
-          pageSize: DEFAULT_PAGE_SIZE,
-          total: dashboard.notes.filter((note) =>
-            (!workspaceSlug || note.workspace === workspaceSlug)
-            && (!debouncedProjectSlug || note.project === debouncedProjectSlug)
-            && (!debouncedStatus || note.status === debouncedStatus),
-          ).length,
-          totalPages: Math.max(1, Math.ceil(dashboard.notes.filter((note) =>
-            (!workspaceSlug || note.workspace === workspaceSlug)
-            && (!debouncedProjectSlug || note.project === debouncedProjectSlug)
-            && (!debouncedStatus || note.status === debouncedStatus),
-          ).length / DEFAULT_PAGE_SIZE)),
-          hasNext: dashboard.notes.filter((note) =>
-            (!workspaceSlug || note.workspace === workspaceSlug)
-            && (!debouncedProjectSlug || note.project === debouncedProjectSlug)
-            && (!debouncedStatus || note.status === debouncedStatus),
-          ).length > DEFAULT_PAGE_SIZE,
-          hasPrevious: false,
-        },
-      }
+      ? dashboardNotesPage(dashboard.notes, {
+        workspaceSlug,
+        projectSlug: debouncedProjectSlug,
+        status: debouncedStatus,
+      })
       : undefined,
   });
+  const historyQuery = useQuery({
+    queryKey: ['ask-history', projectSlug, historyPage],
+    queryFn: () => fetchAskHistory({ projectSlug, page: historyPage, pageSize: DEFAULT_PAGE_SIZE }),
+    enabled: showHistory,
+    placeholderData: keepPreviousData,
+  });
+
+  const selectedProjectLabel = projectLabel(projectSlug, dashboard.projects);
+  const visibleNotes = hasQuery
+    ? queryResult.data?.matches.map(queryMatchToNoteSummary) || []
+    : notesResult.data?.notes || [];
+  const pagination = hasQuery ? queryResult.data?.pagination : notesResult.data?.pagination;
+  const isResultsStale = hasQuery ? queryResult.isPlaceholderData : notesResult.isPlaceholderData;
+  const isResultsError = hasQuery ? queryResult.isError : notesResult.isError;
+
+  const handleAsk = async () => {
+    const question = query.trim();
+    if (!question || isAsking) return;
+
+    setIsAsking(true);
+    setAskError(null);
+    setAskAnswer(null);
+    setShowHistory(false);
+
+    try {
+      const result = await runAsk({ question, projectSlug });
+      if (result?.ok) {
+        setAskAnswer({
+          question,
+          answer: result.answer,
+          projectSlug,
+          sources: result.sources || [],
+        });
+        setHistoryPage(1);
+        await queryClient.invalidateQueries({ queryKey: ['ask-history'] });
+      } else {
+        setAskError('Could not generate an answer. Please try again.');
+      }
+    } catch (error: unknown) {
+      setAskError(error instanceof Error ? error.message : 'An unexpected error occurred while communicating with the AI.');
+    } finally {
+      setIsAsking(false);
+    }
+  };
 
   return (
     <>
-      <PageHead title="Search" subtitle="" />
+      <PageHead title="Search" subtitle="Search notes and ask AI from the same evidence." />
 
-      <div className="search-tabs segmented-control">
-        <button
-          className={`search-tab ${activeTab === 'search' ? 'active' : ''}`}
-          type="button"
-          onClick={() => setActiveTab('search')}
-        >
-          Search Notes
-        </button>
-        <button
-          className={`search-tab ${activeTab === 'ask' ? 'active' : ''}`}
-          type="button"
-          onClick={() => setActiveTab('ask')}
-        >
-          <AskAiIcon className="search-tab-icon" />
-          Ask AI
-        </button>
-      </div>
+      <section className="search-box unified-search-box">
+        <input
+          aria-label="Search query"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search or ask anything..."
+          type="search"
+        />
+        <div className="filters">
+          <Select
+            ariaLabel="Current workspace"
+            className="search-filter search-filter-workspace"
+            disabled
+            options={[{ value: workspaceSlug || 'current-workspace', label: workspaceSlug || 'current-workspace' }]}
+            value={workspaceSlug || 'current-workspace'}
+            onChange={() => undefined}
+          />
+          <Select
+            ariaLabel="Filter by project"
+            className="search-filter search-filter-project"
+            options={[
+              { value: '', label: 'All projects' },
+              ...dashboard.projects.map((project) => ({
+                value: project.projectSlug,
+                label: project.displayName,
+              })),
+            ]}
+            value={projectSlug}
+            onChange={(nextProjectSlug) => {
+              setProjectSlug(nextProjectSlug);
+              setAskAnswer(null);
+              setAskError(null);
+            }}
+          />
+          <Select
+            ariaLabel="Filter by status"
+            className="search-filter search-filter-status"
+            options={statusOptions}
+            value={status}
+            onChange={(nextValue) => setStatus(nextValue as '' | NoteStatus)}
+          />
+        </div>
+      </section>
 
-      {activeTab === 'search' ? (
-        <>
-          <section className="search-box">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Enter what you are looking for..." type="search" />
-            <div className="filters">
-              <Select
-                ariaLabel="Current workspace"
-                className="search-filter search-filter-workspace"
-                disabled
-                options={[{ value: workspaceSlug || 'current-workspace', label: workspaceSlug || 'current-workspace' }]}
-                value={workspaceSlug || 'current-workspace'}
-                onChange={() => undefined}
-              />
-              <Select
-                ariaLabel="Filter by project"
-                className="search-filter search-filter-project"
-                options={[
-                  { value: '', label: 'All projects' },
-                  ...dashboard.projects.map((project) => ({
-                    value: project.projectSlug,
-                    label: project.displayName,
-                  })),
-                ]}
-                value={projectSlug}
-                onChange={setProjectSlug}
-              />
-              <Select
-                ariaLabel="Filter by status"
-                className="search-filter search-filter-status"
-                options={statusOptions}
-                value={status}
-                onChange={(nextValue) => setStatus(nextValue as '' | NoteStatus)}
-              />
+      <Panel className="ai-answer-panel">
+        <div className="ai-answer-heading">
+          <div>
+            <h2>AI Answer</h2>
+            <p>Uses the current query and selected project.</p>
+          </div>
+          <div className="ai-answer-actions">
+            <button className="icon-button secondary" type="button" onClick={() => setShowHistory((current) => !current)}>
+              {showHistory ? 'Answer' : 'History'}
+            </button>
+            <button className="icon-button" disabled={!hasQueryInput || isAsking} type="button" onClick={handleAsk}>
+              <AskAiIcon className="ai-answer-action-icon" />
+              {isAsking ? 'Asking...' : 'Ask AI about this'}
+            </button>
+          </div>
+        </div>
+
+        {!showHistory && !askAnswer && !isAsking && !askError ? (
+          <div className="ask-inline-empty">
+            <div className="ask-suggestions">
+              <span className="suggestion-title">Try asking:</span>
+              {askSuggestions.map((suggestion) => (
+                <button className="suggestion-btn" key={suggestion} type="button" onClick={() => setQuery(suggestion)}>
+                  "{suggestion}"
+                </button>
+              ))}
             </div>
-          </section>
-          <Panel>
-            <h2>Results</h2>
-            <div className={`list ${hasQuery ? (queryResult.isPlaceholderData ? 'stale-data' : '') : (notesResult.isPlaceholderData ? 'stale-data' : '')}`}>
-              {hasQuery
-                ? queryResult.data?.matches.map((match) => (
-                  <NoteRow
-                    key={match.id}
-                    note={{ ...match, attachmentCount: 0, folderId: null }}
-                    dashboard={dashboard}
-                    onDelete={() => deleteNote({ id: match.id, title: match.title })}
-                    onEdit={() => editNote(match.id)}
-                    onOpen={openNote}
-                  />
-                ))
-                : notesResult.data?.notes.map((note) => (
-                  <NoteRow key={note.id} note={note} dashboard={dashboard} onDelete={() => deleteNote(note)} onEdit={() => editNote(note.id)} onOpen={openNote} />
-                ))}
-            </div>
-            {hasQuery && queryResult.data ? <Pagination pagination={queryResult.data.pagination} onPageChange={setPage} /> : null}
-            {!hasQuery && notesResult.data ? <Pagination pagination={notesResult.data.pagination} onPageChange={setPage} /> : null}
-            {hasQuery && !queryResult.data?.matches.length ? <EmptyState>Try another term or remove some filters.</EmptyState> : null}
-            {!hasQuery && !notesResult.data?.notes.length ? <EmptyState>No notes found with these filters.</EmptyState> : null}
-          </Panel>
-        </>
-      ) : (
-        <AskPanel openNote={openNote} projects={dashboard.projects} />
-      )}
+          </div>
+        ) : null}
+
+        {!showHistory && isAsking ? <AskAnswerSkeleton question={query.trim()} projectLabel={selectedProjectLabel} /> : null}
+
+        {!showHistory && askAnswer ? (
+          <AskAnswerCard item={askAnswer} openNote={openNote} projects={dashboard.projects} />
+        ) : null}
+
+        {!showHistory && askError ? <InlineMessage tone="error">{askError}</InlineMessage> : null}
+
+        {showHistory ? (
+          <AskHistorySection
+            historyQuery={historyQuery}
+            openNote={openNote}
+            projects={dashboard.projects}
+            setPage={setHistoryPage}
+          />
+        ) : null}
+      </Panel>
+
+      <Panel className="matching-notes-panel">
+        <div className="matching-notes-heading">
+          <h2>Matching Notes</h2>
+          <span className="matching-notes-count">{pagination ? `${pagination.total} total` : ''}</span>
+        </div>
+        {isResultsError ? <InlineMessage tone="error">Could not load notes for these filters.</InlineMessage> : null}
+        <div className={`list ${isResultsStale ? 'stale-data' : ''}`}>
+          {visibleNotes.map((note) => (
+            <NoteRow
+              key={note.id}
+              note={note}
+              dashboard={dashboard}
+              onDelete={() => deleteNote({ id: note.id, title: note.title })}
+              onEdit={() => editNote(note.id)}
+              onOpen={openNote}
+            />
+          ))}
+        </div>
+        {pagination ? <Pagination pagination={pagination} onPageChange={setPage} /> : null}
+        {!visibleNotes.length && !isResultsError ? <EmptyState>No notes found with these filters.</EmptyState> : null}
+      </Panel>
     </>
   );
+}
+
+function AskAnswerSkeleton({ question, projectLabel: selectedProjectLabel }: { question: string; projectLabel: string }) {
+  return (
+    <div className="ask-qa-card skeleton-card">
+      <div className="ask-question-bubble">
+        <span className="question-text">{question}</span>
+        <span className="ask-project-chip">{selectedProjectLabel}</span>
+      </div>
+      <div className="ask-answer-container">
+        <div className="ask-answer-header">
+          <div className="ask-ai-identity">
+            <AskAiIcon className="ask-ai-identity-icon" />
+            <strong>Thinking...</strong>
+          </div>
+        </div>
+        <div className="ask-skeleton-lines">
+          <div className="skeleton-line line-1"></div>
+          <div className="skeleton-line line-2"></div>
+          <div className="skeleton-line line-3"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AskHistorySection({
+  historyQuery,
+  openNote,
+  projects,
+  setPage,
+}: {
+  historyQuery: UseQueryResult<AskHistoryResponse>;
+  openNote: (id: string) => void;
+  projects: PageContext['dashboard']['projects'];
+  setPage: (page: number) => void;
+}) {
+  const history = historyQuery.data?.history || [];
+
+  if (historyQuery.isLoading) {
+    return <div className="inline-message">Loading history...</div>;
+  }
+
+  if (historyQuery.isError) {
+    return <InlineMessage tone="error">Could not load Ask AI history.</InlineMessage>;
+  }
+
+  if (history.length === 0) {
+    return <div className="inline-message">No Ask AI history for this filter.</div>;
+  }
+
+  return (
+    <div className={`ask-history-list ${historyQuery.isPlaceholderData ? 'stale-data' : ''}`}>
+      {history.map((item) => (
+        <AskAnswerCard key={item.id} item={item} openNote={openNote} projects={projects} />
+      ))}
+      {historyQuery.data?.pagination ? (
+        <Pagination compact pagination={historyQuery.data.pagination} onPageChange={setPage} />
+      ) : null}
+    </div>
+  );
+}
+
+function queryMatchToNoteSummary(match: {
+  id: string;
+  path: string;
+  title: string;
+  type: string;
+  project: string;
+  workspace: string;
+  tags: string[];
+  date: string;
+  status: NoteStatus;
+  summary: string;
+  source: string;
+}): NoteSummary {
+  return {
+    ...match,
+    attachmentCount: 0,
+    folderId: null,
+  };
+}
+
+function dashboardNotesPage(
+  notes: NoteSummary[],
+  filters: { workspaceSlug: string; projectSlug: string; status: '' | NoteStatus },
+) {
+  const filteredNotes = notes.filter((note) =>
+    (!filters.workspaceSlug || note.workspace === filters.workspaceSlug)
+    && (!filters.projectSlug || note.project === filters.projectSlug)
+    && (!filters.status || note.status === filters.status),
+  );
+
+  return {
+    ok: true as const,
+    notes: filteredNotes.slice(0, DEFAULT_PAGE_SIZE),
+    pagination: {
+      page: 1,
+      pageSize: DEFAULT_PAGE_SIZE,
+      total: filteredNotes.length,
+      totalPages: Math.max(1, Math.ceil(filteredNotes.length / DEFAULT_PAGE_SIZE)),
+      hasNext: filteredNotes.length > DEFAULT_PAGE_SIZE,
+      hasPrevious: false,
+    },
+  };
 }
