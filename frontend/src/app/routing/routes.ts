@@ -4,6 +4,7 @@ export const routes = {
   auth: '/auth',
   projects: '/projects',
   project: (projectSlug: string) => `/projects/${encodeURIComponent(projectSlug)}`,
+  projectMap: (projectSlug: string) => `/projects/${encodeURIComponent(projectSlug)}/map`,
   vault: '/vault',
   note: (noteId: string) => `/vault/${encodeURIComponent(noteId)}`,
   search: '/search',

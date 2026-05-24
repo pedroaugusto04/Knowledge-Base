@@ -12,6 +12,7 @@ import type {
   RepositoryRecord,
 } from '../models/repository-records.models.js';
 import type { ListNotesInput, PaginatedNotes } from '../models/note-list.models.js';
+import type { ListProjectKnowledgeMapInput } from '../models/project-knowledge-map.models.js';
 import type { ListProjectTimelineInput, PaginatedProjectTimeline } from '../models/project-timeline.models.js';
 import type { ListProjectsInput, PaginatedProjects } from '../models/project-list.models.js';
 import type { ReviewView } from '../models/review.models.js';
@@ -35,6 +36,7 @@ export abstract class ContentRepository {
   abstract listNotes(userId: string): Promise<NoteRecord[]>;
   abstract listNotesPage(userId: string, input: ListNotesInput): Promise<PaginatedNotes>;
   abstract listProjectTimeline(userId: string, input: ListProjectTimelineInput): Promise<PaginatedProjectTimeline>;
+  abstract listProjectKnowledgeMapItems(userId: string, input: ListProjectKnowledgeMapInput): Promise<NoteRecord[]>;
   abstract getNoteById(userId: string, id: string): Promise<NoteRecord | null>;
   abstract getNoteByPath(userId: string, path: string): Promise<NoteRecord | null>;
   abstract upsertNote(userId: string, input: SaveNoteInput): Promise<NoteRecord>;

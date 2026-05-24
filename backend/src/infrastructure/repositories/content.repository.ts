@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import type { ListNotesInput } from '../../application/models/note-list.models.js';
+import type { ListProjectKnowledgeMapInput } from '../../application/models/project-knowledge-map.models.js';
 import type {
   ListProjectTimelineInput,
   ProjectTimelineFilterCategory,
@@ -382,6 +383,34 @@ export class PostgresContentRepository extends ContentRepository {
       items: result.rows.map((row) => projectTimelineItem(noteFromRow(row))),
       pagination,
     };
+  }
+
+  async listProjectKnowledgeMapItems(userId: string, input: ListProjectKnowledgeMapInput) {
+    const values: unknown[] = [userId, input.projectSlug];
+    const clauses = ['user_id = $1', 'project_slug = $2'];
+    appendTimelineFolderClause(clauses, values, input.folderId, input.folderIds);
+    appendTimelineCategoryClause(clauses, input.category);
+    const where = clauses.join(' and ');
+    const dataWhere = where
+      .replace(/\buser_id\b/g, 'n.user_id')
+      .replace(/\bproject_slug\b/g, 'n.project_slug')
+      .replace(/\bfolder_id\b/g, 'n.folder_id')
+      .replace(/\btype\b/g, 'n.type')
+      .replace(/\bsource_channel\b/g, 'n.source_channel')
+      .replace(/\bsource\b/g, 'n.source')
+      .replace(/\bmetadata\b/g, 'n.metadata');
+    const result = await this.database.getPool().query(
+      `select n.*, count(a.id)::int as attachment_count
+       from kb_notes n
+       left join kb_attachments a on a.user_id = n.user_id and a.note_id = n.id
+       where ${dataWhere}
+       group by n.id
+       order by n.occurred_at desc, n.title asc
+       limit $${values.length + 1}`,
+      [...values, input.limit],
+    );
+
+    return result.rows.map((row) => noteFromRow(row));
   }
 
   async getNoteById(userId: string, id: string) {

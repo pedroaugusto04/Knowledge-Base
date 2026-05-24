@@ -11,6 +11,7 @@ import { HomePage } from '../pages/home/HomePage';
 import { IntegrationsPage } from '../pages/integrations/IntegrationsPage';
 import { KanbanPage } from '../pages/kanban/KanbanPage';
 import { ProjectsPage } from '../pages/projects/ProjectsPage';
+import { ProjectKnowledgeMapPage } from '../features/projects/knowledge-map/ProjectKnowledgeMapPage';
 import { ProfilePage } from '../pages/profile/ProfilePage';
 import { RemindersPage } from '../pages/reminders/RemindersPage';
 import { SearchPage } from '../pages/search/SearchPage';
@@ -367,6 +368,7 @@ export function AppShell() {
           <Routes>
             <Route path="/" element={<HomePage {...pageContext} />} />
             <Route path="/projects" element={<ProjectsPage {...pageContext} />} />
+            <Route path="/projects/:projectSlug/map" element={<ProjectKnowledgeMapPage dashboard={pageContext.dashboard} openNote={pageContext.openNote} />} />
             <Route path="/projects/:projectSlug" element={<ProjectsPage {...pageContext} />} />
             <Route path="/vault" element={<Navigate replace to={routes.projects} />} />
             <Route path="/vault/:noteId" element={shouldBlockNoteRoute ? null : <VaultPage {...pageContext} />} />

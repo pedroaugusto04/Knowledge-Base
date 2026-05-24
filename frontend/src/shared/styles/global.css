@@ -813,6 +813,93 @@ p { color: var(--muted); line-height: 1.6; }
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+.knowledge-map-page {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.knowledge-map-actions,
+.knowledge-map-stats,
+.knowledge-map-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.knowledge-map-stats {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.knowledge-map-stats span,
+.knowledge-map-legend span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+  background: var(--surface-5);
+}
+.knowledge-map-legend {
+  color: var(--muted);
+  font-size: 12px;
+}
+.knowledge-map-legend i {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.12);
+}
+.knowledge-map-canvas {
+  min-height: 640px;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    var(--surface-2);
+  background-size: 34px 34px;
+}
+.knowledge-map-canvas svg {
+  display: block;
+  width: 100%;
+  height: 640px;
+  touch-action: none;
+}
+.knowledge-map-node {
+  outline: none;
+}
+.knowledge-map-node.note {
+  cursor: pointer;
+}
+.knowledge-map-node.note:hover circle,
+.knowledge-map-node.note:focus-visible circle {
+  stroke: var(--active-text);
+  stroke-width: 2px;
+}
+.knowledge-map-node-label {
+  fill: var(--text);
+  paint-order: stroke;
+  stroke: var(--surface-2);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3px;
+  font-family: var(--ui);
+  font-size: 12px;
+  pointer-events: none;
+}
+.knowledge-map-loading {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line-soft);
+  border-radius: 8px;
+  color: var(--muted);
+}
 .note-reader { min-width: 0; min-height: 620px; }
 .vault-reader { width: 100%; }
 .note-reader-head { display: grid; gap: 10px; min-width: 0; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line-soft); }
@@ -3033,6 +3120,19 @@ p { color: var(--muted); line-height: 1.6; }
   .setup-submit,
   .setup-actions .icon-button {
     width: 100%;
+    justify-content: center;
+  }
+  .knowledge-map-canvas {
+    min-height: 430px;
+  }
+  .knowledge-map-canvas svg {
+    height: 430px;
+  }
+  .knowledge-map-actions {
+    width: 100%;
+  }
+  .knowledge-map-actions .icon-button {
+    flex: 1 1 130px;
     justify-content: center;
   }
   .auth-layout { padding: 16px; }

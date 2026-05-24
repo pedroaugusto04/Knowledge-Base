@@ -19,6 +19,7 @@ export {
   fetchAllProjectsTimeline,
   fetchLatestProjectBrief,
   fetchProjectFolders,
+  fetchProjectKnowledgeMap,
   fetchProjectTimeline,
   fetchProjects,
   generateProjectBrief,

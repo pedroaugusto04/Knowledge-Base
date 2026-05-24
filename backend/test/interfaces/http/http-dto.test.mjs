@@ -7,7 +7,7 @@ import { internalN8nIngestBodySchema } from '../../../dist/interfaces/http/dto/i
 import { reminderBoardQuerySchema, updateReminderStatusBodySchema } from '../../../dist/interfaces/http/dto/dashboard.dto.js';
 import { markRemindersBodySchema, queryRequestSchema } from '../../../dist/interfaces/http/dto/query.dto.js';
 import { createNoteBodySchema, noteIdParamSchema, updateNoteBodySchema } from '../../../dist/interfaces/http/dto/note.dto.js';
-import { createProjectBodySchema, projectSlugParamSchema, projectTimelineQuerySchema, updateProjectBodySchema } from '../../../dist/interfaces/http/dto/project.dto.js';
+import { createProjectBodySchema, projectKnowledgeMapQuerySchema, projectSlugParamSchema, projectTimelineQuerySchema, updateProjectBodySchema } from '../../../dist/interfaces/http/dto/project.dto.js';
 import { whatsappWebhookBodySchema } from '../../../dist/interfaces/http/dto/webhook.dto.js';
 import { createWorkspaceBodySchema } from '../../../dist/interfaces/http/dto/workspace.dto.js';
 import { askHistoryQuerySchema } from '../../../dist/interfaces/http/dto/ask.dto.js';
@@ -27,7 +27,7 @@ test('query dto normalizes limit and slugs', () => {
     projectSlug: 'n8n-automations',
     status: '',
     page: 1,
-    pageSize: 5,
+    pageSize: 10,
   });
 });
 
@@ -39,7 +39,7 @@ test('ask history dto accepts pagination and optional project filter', () => {
   });
   assert.deepEqual(askHistoryQuerySchema.parse({}), {
     page: 1,
-    pageSize: 5,
+    pageSize: 10,
     projectSlug: '',
   });
   assert.throws(() => askHistoryQuerySchema.parse({ page: '0' }));
@@ -141,10 +141,25 @@ test('project timeline dto accepts known categories and optional folder filters 
   });
   assert.deepEqual(projectTimelineQuerySchema.parse({}), {
     page: 1,
-    pageSize: 5,
+    pageSize: 10,
     category: 'all',
   });
   assert.throws(() => projectTimelineQuerySchema.parse({ category: 'webhook' }));
+});
+
+test('project knowledge map dto accepts bounded limit and project filters', () => {
+  assert.deepEqual(projectKnowledgeMapQuerySchema.parse({ limit: '120', category: 'github-push', folderId: ' folder-1 ' }), {
+    limit: 120,
+    category: 'github-push',
+    folderId: 'folder-1',
+  });
+  assert.deepEqual(projectKnowledgeMapQuerySchema.parse({}), {
+    limit: 80,
+    category: 'all',
+  });
+  assert.throws(() => projectKnowledgeMapQuerySchema.parse({ limit: '0' }));
+  assert.throws(() => projectKnowledgeMapQuerySchema.parse({ limit: '151' }));
+  assert.throws(() => projectKnowledgeMapQuerySchema.parse({ category: 'webhook' }));
 });
 
 test('agent conversation dto accepts valid payloads', () => {

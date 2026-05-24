@@ -38,6 +38,12 @@ export const projectTimelineQuerySchema = paginationInputSchema.extend({
   folderId: z.string().trim().optional(),
 });
 
+export const projectKnowledgeMapQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(150).default(80),
+  category: z.enum(projectTimelineCategories).default('all'),
+  folderId: z.string().trim().optional(),
+});
+
 export const updateProjectBodySchema = z
   .object({
     displayName: z.string().trim().min(1, 'Informe o nome do projeto.').max(120, 'Use no maximo 120 caracteres.'),
@@ -53,6 +59,7 @@ export const updateProjectBodySchema = z
 
 export type ProjectSlugParam = z.infer<typeof projectSlugParamSchema>;
 export type ProjectTimelineQuery = z.infer<typeof projectTimelineQuerySchema>;
+export type ProjectKnowledgeMapQuery = z.infer<typeof projectKnowledgeMapQuerySchema>;
 export type UpdateProjectBody = z.infer<typeof updateProjectBodySchema>;
 
 export const projectFolderIdParamSchema = z.object({

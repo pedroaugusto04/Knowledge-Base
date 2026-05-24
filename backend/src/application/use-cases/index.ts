@@ -5,6 +5,7 @@ export { ListWorkspaceRepositoriesUseCase } from './workspaces/list-workspace-re
 export { CreateProjectUseCase } from './projects/create-project.use-case.js';
 export { DeleteProjectUseCase } from './projects/delete-project.use-case.js';
 export { ListProjectFoldersUseCase } from './projects/list-project-folders.use-case.js';
+export { ListProjectKnowledgeMapUseCase } from './projects/list-project-knowledge-map.use-case.js';
 export { ListProjectTimelineUseCase } from './projects/list-project-timeline.use-case.js';
 export { GenerateProjectBriefUseCase } from './projects/generate-project-brief.use-case.js';
 export { GetProjectBriefUseCase } from './projects/get-project-brief.use-case.js';

@@ -1,6 +1,7 @@
 import type { Project } from './models/project';
 import type { ProjectBriefResponse, SavedProjectBriefResponse } from './models/project-brief';
 import type { ProjectFolder } from './models/project-folder';
+import type { ProjectKnowledgeMapQuery, ProjectKnowledgeMapResponse } from './models/project-knowledge-map';
 import type { ProjectTimelineCategory, ProjectTimelineItem } from './models/project-timeline';
 import { DEFAULT_PAGE_SIZE, type PaginatedResponse } from './models/pagination';
 import type { Workspace } from './models/workspace';
@@ -68,6 +69,15 @@ export function fetchProjectTimeline(projectSlug: string, params: { page?: numbe
   });
   if (params.folderId) search.set('folderId', params.folderId);
   return request<PaginatedResponse<ProjectTimelineItem, 'timeline'>>(`/api/projects/${encodeURIComponent(projectSlug)}/timeline?${search.toString()}`);
+}
+
+export function fetchProjectKnowledgeMap(projectSlug: string, params: ProjectKnowledgeMapQuery = {}) {
+  const search = new URLSearchParams({
+    limit: String(params.limit || 80),
+    category: params.category || 'all',
+  });
+  if (params.folderId) search.set('folderId', params.folderId);
+  return request<ProjectKnowledgeMapResponse>(`/api/projects/${encodeURIComponent(projectSlug)}/knowledge-map?${search.toString()}`);
 }
 
 export function generateProjectBrief(projectSlug: string) {

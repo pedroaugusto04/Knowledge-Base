@@ -9,6 +9,7 @@ import {
   GenerateProjectBriefUseCase,
   GetProjectBriefUseCase,
   ListProjectFoldersUseCase,
+  ListProjectKnowledgeMapUseCase,
   ListProjectTimelineUseCase,
   UpdateProjectFolderUseCase,
   UpdateProjectUseCase,
@@ -19,6 +20,7 @@ import {
   createProjectBodySchema,
   createProjectFolderBodySchema,
   projectFolderIdParamSchema,
+  projectKnowledgeMapQuerySchema,
   projectSlugParamSchema,
   projectTimelineQuerySchema,
   updateProjectBodySchema,
@@ -26,6 +28,7 @@ import {
   type CreateProjectBody,
   type CreateProjectFolderBody,
   type ProjectFolderParam,
+  type ProjectKnowledgeMapQuery,
   type ProjectSlugParam,
   type ProjectTimelineQuery,
   type UpdateProjectBody,
@@ -42,6 +45,7 @@ export class ProjectsController {
     private readonly deleteProjectUseCase: DeleteProjectUseCase,
     private readonly generateProjectBriefUseCase: GenerateProjectBriefUseCase,
     private readonly getProjectBriefUseCase: GetProjectBriefUseCase,
+    private readonly listProjectKnowledgeMapUseCase: ListProjectKnowledgeMapUseCase,
     private readonly listProjectTimelineUseCase: ListProjectTimelineUseCase,
     private readonly listProjectFoldersUseCase: ListProjectFoldersUseCase,
     private readonly createProjectFolderUseCase: CreateProjectFolderUseCase,
@@ -94,6 +98,15 @@ export class ProjectsController {
   ) {
     const result = await this.listProjectTimelineUseCase.execute(user.id, { ...query, projectSlug: params.projectSlug });
     return { ok: true, timeline: result.items, pagination: result.pagination };
+  }
+
+  @Get(':projectSlug/knowledge-map')
+  async knowledgeMap(
+    @Param(new ZodValidationPipe(projectSlugParamSchema, 'invalid_project_slug')) params: ProjectSlugParam,
+    @Query(new ZodValidationPipe(projectKnowledgeMapQuerySchema, 'invalid_project_knowledge_map_query')) query: ProjectKnowledgeMapQuery,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.listProjectKnowledgeMapUseCase.execute(user.id, { ...query, projectSlug: params.projectSlug });
   }
 
   @Post(':projectSlug/brief')
