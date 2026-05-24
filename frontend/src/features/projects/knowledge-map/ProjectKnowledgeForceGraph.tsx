@@ -109,7 +109,7 @@ export function ProjectKnowledgeForceGraph({
       .selectAll<SVGGElement, GraphNode>('g')
       .data(graphNodes)
       .join('g')
-      .attr('class', (item) => `knowledge-map-node ${item.type}`)
+      .attr('class', (item) => `knowledge-map-node ${item.type}${isReviewNote(item) ? ' review-note' : ''}`)
       .attr('role', (item) => (item.type === 'note' && item.noteId ? 'button' : 'img'))
       .attr('tabindex', (item) => (item.type === 'note' && item.noteId ? 0 : -1))
       .attr('aria-label', (item) => (item.type === 'note' && item.noteId ? `Open note ${item.label}` : `${knowledgeMapNodeStyles[item.type].label} ${item.label}`))
@@ -136,7 +136,7 @@ export function ProjectKnowledgeForceGraph({
     node
       .append('circle')
       .attr('r', (item) => item.size || knowledgeMapNodeStyles[item.type].radius)
-      .attr('fill', (item) => knowledgeMapNodeStyles[item.type].color)
+      .attr('fill', nodeColor)
       .attr('stroke', 'rgba(255,255,255,0.74)')
       .attr('stroke-width', 1.2);
 
@@ -252,21 +252,31 @@ function linkDistance(item: GraphLink) {
 }
 
 function chargeStrength(item: GraphNode, denseMap: boolean) {
-  const base = item.type === 'project' ? -720 : item.type === 'note' ? -460 : -520;
+  const base = item.type === 'project' ? -720 : item.type === 'note' ? -500 : -520;
   return denseMap ? base * 1.28 : base;
 }
 
 function collisionRadius(item: GraphNode) {
   const radius = item.size || knowledgeMapNodeStyles[item.type].radius;
+  if (isReviewNote(item)) return radius + 28;
   const noteLabelAllowance = Math.min(150, Math.max(64, item.label.length * 5.8));
   const labelAllowance = item.type === 'note' ? noteLabelAllowance : item.type === 'tag' ? 38 : 48;
   return radius + labelAllowance;
 }
 
 function shouldShowLabel(item: GraphNode, zoomScale: number, activeNodeId: string) {
-  if (item.type === 'project' || item.type === 'repository' || item.type === 'folder' || item.type === 'category' || item.type === 'note') return true;
   if (item.id === activeNodeId) return true;
+  if (isReviewNote(item)) return zoomScale >= 1.55;
+  if (item.type === 'project' || item.type === 'repository' || item.type === 'folder' || item.type === 'category' || item.type === 'note') return true;
   return zoomScale >= (item.type === 'note' ? 1.25 : 1.7);
+}
+
+function nodeColor(item: GraphNode) {
+  return isReviewNote(item) ? '#38bdf8' : knowledgeMapNodeStyles[item.type].color;
+}
+
+function isReviewNote(item: GraphNode) {
+  return item.type === 'note' && item.isReview;
 }
 
 function graphNodePosition(item: GraphNode, time: number, staticPosition: boolean) {

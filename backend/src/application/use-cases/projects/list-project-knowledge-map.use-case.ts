@@ -100,6 +100,7 @@ export function buildProjectKnowledgeMap(
       status: note.status,
       date: note.occurredAt,
       size: Math.min(18, 10 + (note.attachmentCount || 0)),
+      isReview: isReviewNote(note),
     });
     addLink(links, projectNodeId, noteNodeId, 'contains', 0.16);
 
@@ -174,6 +175,10 @@ function collectAncestorFolderIds(folders: ProjectFolderRecord[], selectedIds: S
 
 function hasReminder(record: Pick<NoteRecord, 'metadata'>) {
   return Boolean(String(record.metadata.reminderDate || '').trim() || String(record.metadata.reminderAt || '').trim());
+}
+
+function isReviewNote(record: Pick<NoteRecord, 'metadata' | 'sourceChannel'>) {
+  return record.metadata.eventType === 'code_review' || record.sourceChannel === 'github-push';
 }
 
 function noteRepositoryFullName(note: NoteRecord) {

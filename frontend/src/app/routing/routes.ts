@@ -19,9 +19,9 @@ export type View = 'home' | 'map' | 'projects' | 'note' | 'search' | 'kanban' | 
 
 export const navItems: Array<{ view: View; label: string; path: string }> = [
   { view: 'home', label: 'Home', path: routes.home },
-  { view: 'map', label: 'Map', path: routes.map },
   { view: 'projects', label: 'Projects', path: routes.projects },
   { view: 'search', label: 'Search', path: routes.search },
   { view: 'kanban', label: 'Kanban', path: routes.kanban },
   { view: 'reminders', label: 'Reminders', path: routes.reminders },
+  { view: 'map', label: 'Map', path: routes.map },
 ];

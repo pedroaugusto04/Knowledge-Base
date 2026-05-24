@@ -17,6 +17,7 @@ export type KnowledgeMapNode = {
   status?: string;
   date?: string;
   size?: number;
+  isReview?: boolean;
 };
 
 export type KnowledgeMapLink = {

@@ -76,6 +76,8 @@ test('buildProjectKnowledgeMap deduplicates tags and categories and links core n
   assert.equal(result.stats.noteCount, 2);
   assert.deepEqual(tagNodes.map((node) => node.id).sort(), ['tag:deploy', 'tag:risk']);
   assert.deepEqual(categoryNodes.map((node) => node.id).sort(), ['category:decision', 'category:github-push']);
+  assert.equal(result.nodes.find((node) => node.id === 'note:note-1')?.isReview, true);
+  assert.equal(result.nodes.find((node) => node.id === 'note:note-2')?.isReview, false);
   assert.ok(result.links.some((link) => link.source === 'project:platform' && link.target === 'note:note-1' && link.type === 'contains'));
   assert.ok(result.links.some((link) => link.source === 'folder:folder-1' && link.target === 'note:note-1' && link.type === 'filed-in'));
   assert.ok(result.links.some((link) => link.source === 'note:note-1' && link.target === 'repository:repo-1' && link.type === 'from-repository'));
