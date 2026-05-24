@@ -16,21 +16,3 @@ export function renderFrontmatter(values: Record<string, unknown>): string {
   lines.push('---', '');
   return lines.join('\n');
 }
-
-export function parseFrontmatter(content: string): Record<string, unknown> {
-  const match = String(content || '').match(/^---\n([\s\S]*?)\n---\n?/);
-  if (!match) return {};
-  const result: Record<string, unknown> = {};
-  for (const line of match[1].split('\n')) {
-    const index = line.indexOf(':');
-    if (index <= 0) continue;
-    const key = line.slice(0, index).trim();
-    const rawValue = line.slice(index + 1).trim();
-    try {
-      result[key] = JSON.parse(rawValue);
-    } catch {
-      result[key] = rawValue;
-    }
-  }
-  return result;
-}

@@ -25,11 +25,6 @@ export const notesListQuerySchema = paginationInputSchema.extend({
   projectSlug: z.string().default(''),
   folderId: z.string().default(''),
   status: z.enum(notesListStatusValues).default(''),
-  rootOnly: z
-    .union([z.boolean(), z.string()])
-    .optional()
-    .default(false)
-    .transform((value) => value === true || value === 'true'),
   selectedId: z.string().default(''),
 }).transform((input) => ({
   ...input,

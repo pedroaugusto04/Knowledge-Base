@@ -11,14 +11,6 @@ export const noteStatusValues = [
 
 export type NoteStatus = (typeof noteStatusValues)[number];
 
-export const reminderNoteStatusValues = [
-  KnowledgeStatus.Pending,
-  KnowledgeStatus.Overdue,
-  KnowledgeStatus.Sent,
-  KnowledgeStatus.Resolved,
-  KnowledgeStatus.Archived,
-] as const;
-
 export const reminderDispatchEligibleStatuses = [
   KnowledgeStatus.Pending,
   KnowledgeStatus.Overdue,
@@ -28,7 +20,7 @@ export function hasReminder(input: { reminderDate?: string; reminderAt?: string 
   return Boolean(String(input?.reminderDate || '').trim() || String(input?.reminderAt || '').trim());
 }
 
-export function isTerminalNoteStatus(status: string | null | undefined) {
+function isTerminalNoteStatus(status: string | null | undefined) {
   return status === KnowledgeStatus.Resolved || status === KnowledgeStatus.Archived;
 }
 

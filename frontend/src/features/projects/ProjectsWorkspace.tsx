@@ -89,7 +89,7 @@ export function ProjectsWorkspace({
     queryFn: () => fetchProjectTimeline(selected?.projectSlug || '', {
       page: timelinePagination.page,
       category: timelineCategory,
-      folderId: selectedFolderId,
+      folderId: selectedFolderId || undefined,
     }),
     enabled: Boolean(selected?.projectSlug),
     staleTime: timelineCategory === 'all' ? 30_000 : 0,

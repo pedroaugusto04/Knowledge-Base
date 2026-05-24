@@ -434,5 +434,3 @@ export class AuthService implements OnModuleInit {
     return user;
   }
 }
-
-export const passwordHashing = { hashPassword, verifyPassword };

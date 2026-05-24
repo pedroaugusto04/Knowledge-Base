@@ -180,7 +180,7 @@ export function formatDateInTimeZone(date: Date, timeZone = 'UTC'): string {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-export function formatTimeInTimeZone(date: Date, timeZone = 'UTC'): string {
+function formatTimeInTimeZone(date: Date, timeZone = 'UTC'): string {
   const parts = dateTimeParts(date, timeZone);
   return `${parts.hour}:${parts.minute}`;
 }

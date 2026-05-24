@@ -6,7 +6,7 @@ export function projectName(projects: Project[], slug: string) {
   return projects.find((project) => project.projectSlug === slug)?.displayName || slug;
 }
 
-export function userTimeZone() {
+function userTimeZone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_USER_TIME_ZONE;
 }
 
@@ -69,7 +69,7 @@ export function formatUsDateTime(value: string | null | undefined) {
   return `${datePart} ${hours}:${minutes}`;
 }
 
-export function formatDateTimeInUserTimeZone(value: string | null | undefined) {
+function formatDateTimeInUserTimeZone(value: string | null | undefined) {
   const parts = dateTimePartsInUserTimeZone(value);
   if (!parts) return value || '';
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
@@ -81,7 +81,7 @@ export function formatDateInUserTimeZone(value: string | null | undefined) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-export function formatTimeInUserTimeZone(value: string | null | undefined) {
+function formatTimeInUserTimeZone(value: string | null | undefined) {
   const parts = dateTimePartsInUserTimeZone(value);
   if (!parts) return '';
   return `${parts.hour}:${parts.minute}`;

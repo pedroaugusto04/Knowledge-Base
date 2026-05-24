@@ -8,7 +8,7 @@ export async function fetchNote(id: string): Promise<NoteDetail> {
   return result.note;
 }
 
-export function fetchNotes(params: { page?: number; pageSize?: number; workspaceSlug?: string; projectSlug?: string; folderId?: string; status?: '' | NoteStatus; rootOnly?: boolean; selectedId?: string }) {
+export function fetchNotes(params: { page?: number; pageSize?: number; workspaceSlug?: string; projectSlug?: string; folderId?: string; status?: '' | NoteStatus; selectedId?: string }) {
   const search = new URLSearchParams({
     page: String(params.page || 1),
     pageSize: String(params.pageSize || DEFAULT_PAGE_SIZE),
@@ -16,7 +16,6 @@ export function fetchNotes(params: { page?: number; pageSize?: number; workspace
     projectSlug: params.projectSlug || '',
     folderId: params.folderId || '',
     status: params.status || '',
-    rootOnly: params.rootOnly ? 'true' : 'false',
     selectedId: params.selectedId || '',
   });
   return request<PaginatedResponse<NoteSummary, 'notes'>>(`/api/notes?${search.toString()}`);

@@ -238,7 +238,7 @@ function mockFetch() {
         pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
       });
     }
-    if (url === '/api/notes?page=1&pageSize=10&workspaceSlug=&projectSlug=n8n-automations&folderId=&status=&rootOnly=false&selectedId=') {
+    if (url === '/api/notes?page=1&pageSize=10&workspaceSlug=&projectSlug=n8n-automations&folderId=&status=&selectedId=') {
       return Response.json({
         ok: true,
         notes: dashboard.notes,
@@ -843,7 +843,7 @@ describe('AppShell', () => {
           pagination: { page: 1, pageSize: 10, total: 0, totalPages: 1, hasNext: false, hasPrevious: false },
         });
       }
-      if (url === '/api/notes?page=1&pageSize=10&workspaceSlug=&projectSlug=n8n-automations&folderId=&status=&rootOnly=false&selectedId=') {
+      if (url === '/api/notes?page=1&pageSize=10&workspaceSlug=&projectSlug=n8n-automations&folderId=&status=&selectedId=') {
         return Response.json({
           ok: true,
           notes: [],

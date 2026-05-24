@@ -813,7 +813,7 @@ describe('ProjectsPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'GitHub push processed' })).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/api/projects/empty/timeline?') && String(input).includes('category=all'))).toBe(true);
-    expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/api/projects/empty/timeline?') && String(input).includes('folderId='))).toBe(true);
+    expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/api/projects/empty/timeline?') && String(input).includes('folderId='))).toBe(false);
   });
 
   it('filters the timeline by the selected folder', async () => {

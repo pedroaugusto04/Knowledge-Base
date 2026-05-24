@@ -2,6 +2,6 @@ export const noteStatusValues = ['active', 'pending', 'overdue', 'sent', 'resolv
 
 export type NoteStatus = (typeof noteStatusValues)[number];
 
-export const quickNoteStatusValues = ['resolved', 'archived'] as const;
+const quickNoteStatusValues = ['resolved', 'archived'] as const;
 
 export type QuickNoteStatus = (typeof quickNoteStatusValues)[number];

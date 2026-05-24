@@ -2,7 +2,7 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
 }
 
-export function normalizeFrontendBasePath(value: string | undefined): string {
+function normalizeFrontendBasePath(value: string | undefined): string {
   const normalized = trimTrailingSlash((value || '').trim());
   if (!normalized || normalized === '/') return '/';
   return normalized.startsWith('/') ? normalized : `/${normalized}`;

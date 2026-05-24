@@ -320,8 +320,6 @@ export class PostgresContentRepository extends ContentRepository {
     if (input.folderId) {
       values.push(input.folderId);
       clauses.push(`folder_id = $${values.length}`);
-    } else if (input.rootOnly) {
-      clauses.push('folder_id is null');
     }
 
     const where = clauses.join(' and ');
@@ -355,7 +353,7 @@ export class PostgresContentRepository extends ContentRepository {
       values.push(input.projectSlug);
       clauses.push(`project_slug = $${values.length}`);
     }
-    appendTimelineFolderClause(clauses, values, input.folderId);
+    appendTimelineFolderClause(clauses, values, input.folderId, input.folderIds);
     appendTimelineCategoryClause(clauses, input.category);
     const where = clauses.join(' and ');
     const dataWhere = where
@@ -599,13 +597,23 @@ function hasTimelineReminder(record: Pick<NoteRecord, 'metadata'>) {
   return Boolean(String(record.metadata.reminderDate || '').trim() || String(record.metadata.reminderAt || '').trim());
 }
 
-function appendTimelineFolderClause(clauses: string[], values: unknown[], folderId: ListProjectTimelineInput['folderId']) {
-  if (folderId === undefined) return;
-  const normalizedFolderId = folderId.trim();
-  if (!normalizedFolderId) {
-    clauses.push('folder_id is null');
+function appendTimelineFolderClause(
+  clauses: string[],
+  values: unknown[],
+  folderId: ListProjectTimelineInput['folderId'],
+  folderIds: ListProjectTimelineInput['folderIds'],
+) {
+  if (folderIds && folderIds.length > 0) {
+    const placeholders = folderIds.map((id) => {
+      values.push(id);
+      return `$${values.length}`;
+    });
+    clauses.push(`folder_id in (${placeholders.join(', ')})`);
     return;
   }
+  if (folderId === undefined) return;
+  const normalizedFolderId = folderId.trim();
+  if (!normalizedFolderId) return;
   values.push(normalizedFolderId);
   clauses.push(`folder_id = $${values.length}`);
 }

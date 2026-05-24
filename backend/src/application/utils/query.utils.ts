@@ -1,7 +1,7 @@
 import type { QueryInput } from '../../contracts/query.js';
 import type { VaultNoteSummary } from '../models/vault-note.models.js';
 
-export function tokenizeQuery(query: string): string[] {
+function tokenizeQuery(query: string): string[] {
   return query
     .toLowerCase()
     .normalize('NFKD')
@@ -11,7 +11,7 @@ export function tokenizeQuery(query: string): string[] {
     .filter((token) => token.length >= 2);
 }
 
-export function scoreKnowledgeNote(note: VaultNoteSummary, tokens: string[]): number {
+function scoreKnowledgeNote(note: VaultNoteSummary, tokens: string[]): number {
   const haystack = [note.title, note.path, note.summary, note.tags.join(' ')].join('\n').toLowerCase();
   return tokens.reduce((total, token) => total + (haystack.includes(token) ? 5 : 0), 0);
 }

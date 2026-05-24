@@ -80,6 +80,8 @@ export function ProjectsBrowser({
   deleteProjectLabel,
   isStale = false,
 }: ProjectsBrowserProps) {
+  const folderScopeLabel = selectedFolder ? `${selectedFolder.displayName} and descendant folders` : 'All project notes';
+
   return (
     <Panel className="spaced">
       <div className="page-head">
@@ -161,7 +163,7 @@ export function ProjectsBrowser({
                 ) : null}
               </div>
             </div>
-            <span className="meta">{selectedFolder ? selectedFolder.displayName : 'Root'}</span>
+            <span className="meta">{folderScopeLabel}</span>
           </div>
           <FolderTree
             folders={folderTree}

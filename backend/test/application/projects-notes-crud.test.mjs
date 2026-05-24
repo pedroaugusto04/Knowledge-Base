@@ -286,11 +286,39 @@ test('lists project timeline by derived category without raw webhook events', as
   const allProjects = await useCase.execute(user.id, { page: 1, pageSize: 10, category: 'all' });
   assert.deepEqual(allProjects.items.map((item) => item.category), ['whatsapp', 'github-push', 'manual', 'reminder', 'decision']);
 
+  const nestedFolder = await repositories.contentRepository.upsertProjectFolder(user.id, {
+    workspaceSlug: 'default',
+    projectSlug: 'platform',
+    parentFolderId: folder.id,
+    displayName: 'Release QA',
+    folderSlug: 'release-qa',
+    fullSlugPath: 'release/release-qa',
+  });
+  await repositories.contentRepository.upsertNote(user.id, {
+    path: '30 Knowledge/platform/2026/05/release-qa.md',
+    type: 'event',
+    title: 'Release QA checklist',
+    projectSlug: 'platform',
+    workspaceSlug: 'default',
+    folderId: nestedFolder.id,
+    status: 'active',
+    tags: [],
+    occurredAt: '2026-05-06T10:00:00.000Z',
+    sourceChannel: 'external',
+    summary: 'qa details',
+    markdown: '# Release QA checklist',
+    frontmatter: {},
+    metadata: { manual: true },
+    origin: 'postgres',
+    source: 'manual-api',
+    links: [],
+  });
+
   const root = await useCase.execute(user.id, { projectSlug: 'platform', folderId: '', page: 1, pageSize: 10, category: 'all' });
-  assert.deepEqual(root.items.map((item) => item.title), ['WhatsApp update', 'Manual note', 'Reminder note', 'Decision note']);
+  assert.deepEqual(root.items.map((item) => item.title), ['Release QA checklist', 'WhatsApp update', 'GitHub push', 'Manual note', 'Reminder note', 'Decision note']);
 
   const releaseFolder = await useCase.execute(user.id, { projectSlug: 'platform', folderId: folder.id, page: 1, pageSize: 10, category: 'all' });
-  assert.deepEqual(releaseFolder.items.map((item) => item.title), ['GitHub push']);
+  assert.deepEqual(releaseFolder.items.map((item) => item.title), ['Release QA checklist', 'GitHub push']);
 
   const reminders = await useCase.execute(user.id, { projectSlug: 'platform', page: 1, pageSize: 10, category: 'reminder' });
   assert.deepEqual(reminders.items.map((item) => item.title), ['Reminder note']);

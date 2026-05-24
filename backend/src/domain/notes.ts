@@ -16,11 +16,6 @@ export const vaultFolders = {
   assets: '90 Assets',
 } as const;
 
-export function vaultLink(relativePath: string, label = ''): string {
-  const normalized = relativePath.replace(/\\/g, '/').replace(/\.md$/i, '');
-  return label ? `[[${normalized}|${label}]]` : `[[${normalized}]]`;
-}
-
 export function folderForCanonicalType(type: IngestPayload['classification']['canonicalType']): string {
   if (type === 'knowledge' || type === 'decision') return vaultFolders.knowledge;
   if (type === 'incident') return vaultFolders.incidents;

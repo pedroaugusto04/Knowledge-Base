@@ -133,5 +133,3 @@ export enum AiProvider {
   Gemini = 'gemini',
   None = 'none',
 }
-
-export const integrationProviderValues = Object.values(IntegrationProvider);
