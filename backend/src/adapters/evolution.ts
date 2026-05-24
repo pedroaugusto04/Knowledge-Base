@@ -48,9 +48,12 @@ export class EvolutionWhatsappReplySender extends WhatsappReplySender {
 
     let mediaValue = input.mediaBase64;
     const isUrl = /^(https?|ftp):\/\//i.test(mediaValue);
-    const hasPrefix = mediaValue.startsWith('data:');
-    if (!isUrl && !hasPrefix) {
-      mediaValue = `data:${input.mimeType || 'application/octet-stream'};base64,${mediaValue}`;
+    if (!isUrl) {
+      const marker = ';base64,';
+      const markerIndex = mediaValue.indexOf(marker);
+      if (markerIndex !== -1) {
+        mediaValue = mediaValue.slice(markerIndex + marker.length);
+      }
     }
 
     let fileName = input.fileName || 'attachment';
