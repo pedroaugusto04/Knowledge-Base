@@ -50,12 +50,21 @@ export class EvolutionWhatsappReplySender extends WhatsappReplySender {
     }
 
     let fileName = input.fileName || 'attachment';
-    if (!fileName.includes('.')) {
-      const parts = (input.mimeType || '').split('/');
-      if (parts.length === 2) {
-        const ext = parts[1].toLowerCase();
-        const suffix = ext === 'jpeg' ? 'jpg' : ext;
-        fileName = `${fileName}.${suffix}`;
+    const parts = (input.mimeType || '').split('/');
+    let extension = '';
+    if (parts.length === 2) {
+      const ext = parts[1].toLowerCase();
+      extension = ext === 'jpeg' ? 'jpg' : ext;
+    }
+
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const currentExt = lastDotIndex !== -1 ? fileName.slice(lastDotIndex + 1).toLowerCase() : '';
+    const genericExtensions = ['image', 'video', 'audio', 'document', 'sticker'];
+
+    if (lastDotIndex === -1 || genericExtensions.includes(currentExt)) {
+      const baseName = lastDotIndex === -1 ? fileName : fileName.slice(0, lastDotIndex);
+      if (extension) {
+        fileName = `${baseName}.${extension}`;
       }
     }
 

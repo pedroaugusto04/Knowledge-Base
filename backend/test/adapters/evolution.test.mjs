@@ -136,3 +136,46 @@ test('evolution whatsapp media downloader accepts nested base64 response', async
     globalThis.fetch = originalFetch;
   }
 });
+
+test('evolution whatsapp sender normalizes generic or missing filename extensions', async () => {
+  process.env.EVOLUTION_API_URL = 'https://evolution.example';
+  process.env.EVOLUTION_API_KEY = 'evolution-key';
+  process.env.EVOLUTION_INSTANCE_NAME = 'kb-instance';
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return { ok: true, status: 200 };
+  };
+
+  try {
+    const sender = new EvolutionWhatsappReplySender();
+    
+    // Test case 1: Generic extension '.image'
+    await sender.sendMedia({
+      chatJid: '120363@g.us',
+      mediaType: 'image',
+      mimeType: 'image/jpeg',
+      fileName: 'attachment.image',
+      mediaBase64: Buffer.from('hello').toString('base64'),
+    });
+
+    // Test case 2: Missing extension
+    await sender.sendMedia({
+      chatJid: '120363@g.us',
+      mediaType: 'image',
+      mimeType: 'image/png',
+      fileName: 'custom_photo',
+      mediaBase64: Buffer.from('hello').toString('base64'),
+    });
+
+    assert.equal(calls.length, 2);
+    
+    assert.equal(JSON.parse(calls[0].options.body).fileName, 'attachment.jpg');
+    assert.equal(JSON.parse(calls[1].options.body).fileName, 'custom_photo.png');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+

@@ -120,8 +120,15 @@ function parseWhatsappMedia(payload: Record<string, unknown>, message: Record<st
     const media = objectValue(message[key]);
     if (!media) continue;
     const mimeType = stringValue(media.mimetype || media.mimeType) || fallbackMimeType;
+    let fileName = stringValue(media.fileName || media.title);
+    if (!fileName) {
+      const parts = mimeType.split('/');
+      const ext = parts.length === 2 ? parts[1].toLowerCase() : type;
+      const suffix = ext === 'jpeg' ? 'jpg' : (ext === 'octet-stream' ? 'bin' : ext);
+      fileName = `attachment.${suffix}`;
+    }
     return {
-      fileName: stringValue(media.fileName || media.title || `attachment.${type}`),
+      fileName,
       mimeType,
       sizeBytes: numberValue(media.fileLength || media.fileSize || media.sizeBytes),
       dataBase64: mediaBase64(payload),
