@@ -5,6 +5,7 @@
 }
 
 .sidebar {
+  background: var(--panel);
   border-right: 1px solid var(--border-strong);
   padding: 18px 14px;
   overflow: auto;

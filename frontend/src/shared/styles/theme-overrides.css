@@ -1,6 +1,6 @@
 /* ── Light-mode contrast reinforcements ── */
 :root[data-theme="light"] .sidebar {
-  background: var(--glass-panel);
+  background: var(--panel);
   border-color: var(--line-soft);
 }
 
