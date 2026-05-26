@@ -23,9 +23,9 @@ import { Badge, EmptyState, InlineMessage, Panel } from '../../shared/ui/primiti
 // Zod form schema
 // ---------------------------------------------------------------------------
 const webhookFormSchema = z.object({
-  label: z.string().trim().max(100).optional().default(''),
+  label: z.string().trim().min(1, 'Label is required.').max(100),
   url: z.string().trim().url('Enter a valid URL.'),
-  secret: z.string().trim().max(256).optional().default(''),
+  secret: z.string().max(256),
   events: z.array(z.string()).min(1, 'Select at least one event.'),
 });
 type WebhookFormValues = z.infer<typeof webhookFormSchema>;
@@ -61,7 +61,7 @@ function TriggerPicker({
         <fieldset key={group} className="webhook-trigger-group">
           <legend>{group.charAt(0).toUpperCase() + group.slice(1)}</legend>
           {items.map((t) => (
-            <label key={t.trigger} className="webhook-trigger-option" title={t.description}>
+            <label key={t.trigger} className="webhook-trigger-option">
               <input
                 checked={selected.includes(t.trigger)}
                 disabled={disabled}
@@ -70,7 +70,7 @@ function TriggerPicker({
               />
               <span>
                 <strong>{t.label}</strong>
-                <small>{t.trigger}</small>
+                <small>{t.description}</small>
               </span>
             </label>
           ))}
@@ -178,7 +178,7 @@ function WebhookFormModal({
               (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
             )}
           >
-            <FormField name="label" label="Label (optional)" error={errors.label?.message}>
+            <FormField name="label" label="Label" required={true} error={errors.label?.message}>
               {(props) => <input className="form-input" {...props} {...register('label')} placeholder="Production webhook" />}
             </FormField>
             <FormField name="url" label="Endpoint URL" error={errors.url?.message}>

@@ -237,7 +237,8 @@
 /* Trigger picker */
 .webhook-trigger-picker {
   display: grid;
-  gap: 12px;
+  gap: 20px;
+  margin-top: 6px;
 }
 
 .webhook-trigger-group {
