@@ -11,6 +11,7 @@ import { WhatsappMediaDownloader } from '../../../ports/integrations/whatsapp-me
 import { WhatsappReplySender } from '../../../ports/integrations/whatsapp-reply.sender.js';
 import { parseAskCommand, isAskReset } from '../../../utils/conversation-command.utils.js';
 import { isConversationStateExpired } from '../../../utils/conversation-state.utils.js';
+import { askConversationStateSchema, pushAskTurn, emptyAskConversationState, type AskConversationTurn, type AskConversationState } from '../../../../contracts/ask-conversation.js';
 import { buildWhatsappWebhookCommand } from '../../../utils/whatsapp-webhook-command.utils.js';
 import { normalizeHeaders } from '../../../utils/webhook.utils.js';
 import { ProcessAgentConversationUseCase } from '../../conversation/process-agent-conversation.use-case.js';
@@ -241,17 +242,19 @@ export class HandleWhatsappWebhookUseCase {
       return this.processed(context, { ok: true, resolvedUserId: userId, processed: false }, userId);
     }
 
-    let conversationHistory: any[] = [];
+    let conversationState: AskConversationState = emptyAskConversationState();
     const key = `ask:${input.chatId}:${input.senderId}`;
 
     if (this.conversationStates) {
       try {
         const record = await this.conversationStates.get(userId, workspaceSlug, key);
         if (record && record.state) {
-          const state = record.state as any;
-          const isExpired = isConversationStateExpired(state.updatedAt, record.updatedAt);
-          if (!isExpired && Array.isArray(state.turns)) {
-            conversationHistory = state.turns;
+          const parsed = askConversationStateSchema.safeParse(record.state);
+          if (parsed.success) {
+            const isExpired = isConversationStateExpired(parsed.data.updatedAt, record.updatedAt);
+            if (!isExpired) {
+              conversationState = parsed.data;
+            }
           }
         }
       } catch (err) {
@@ -259,28 +262,24 @@ export class HandleWhatsappWebhookUseCase {
       }
     }
 
-    const executeOptions: { workspaceSlug?: string; conversationHistory?: any[] } = {
+    const executeOptions: { workspaceSlug?: string; conversationHistory?: AskConversationTurn[] } = {
       workspaceSlug,
     };
-    if (conversationHistory.length > 0) {
-      executeOptions.conversationHistory = conversationHistory;
+    if (conversationState.turns.length > 0) {
+      executeOptions.conversationHistory = conversationState.turns;
     }
 
     const result = await this.askKnowledgeUseCase.execute(question, userId, executeOptions);
 
     if (result.ok && this.conversationStates) {
       try {
-        const newTurn = {
+        const newTurn: AskConversationTurn = {
           question,
-          answer: result.answer,
+          answer: result.answer || '',
           projectSlug: '',
           timestamp: new Date().toISOString(),
         };
-        const updatedTurns = [...conversationHistory, newTurn].slice(-5);
-        const nextState = {
-          turns: updatedTurns,
-          updatedAt: new Date().toISOString(),
-        };
+        const nextState = pushAskTurn(conversationState, newTurn);
         await this.conversationStates.upsert(userId, workspaceSlug, key, nextState);
       } catch (err) {
         this.logger?.error('whatsapp.ask.save_state_failed', { userId, workspaceSlug, key, error: String(err) });
