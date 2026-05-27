@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
 import type { PageContext } from '../app/page-context';
@@ -95,6 +95,7 @@ export function AppShell() {
     }),
     enabled: Boolean(debouncedSearchValue.trim()),
   });
+  const isSearching = searchQuery.isLoading || searchQuery.isFetching || (searchValue.trim() !== debouncedSearchValue.trim());
   const activeNavItem = navItems.find((item) => item.view === view);
   const topbarTitle = view === 'note'
     ? 'Note details'
@@ -271,7 +272,7 @@ export function AppShell() {
   if (!activeWorkspace) return <Navigate replace to={routes.setup} />;
   if (location.pathname === routes.auth) return <Navigate replace to={routes.home} />;
 
-  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     const matches = searchQuery.data?.matches || [];
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -426,7 +427,7 @@ export function AppShell() {
             </label>
             {isPopoverOpen && searchValue.trim() && (
               <div className="command-bar-popover" role="listbox">
-                {searchQuery.isLoading ? (
+                {isSearching ? (
                   <div className="command-bar-popover-status">Searching...</div>
                 ) : searchQuery.data?.matches?.length ? (
                   searchQuery.data.matches.map((match, index) => (
