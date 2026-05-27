@@ -31,8 +31,19 @@ export class AskKnowledgeUseCase {
       apiKey: env.embeddingAiApiKey,
     };
 
+    let queryText = question;
+    if (options.conversationHistory && options.conversationHistory.length > 0) {
+      const answerConfig = {
+        conversationAiProvider: env.conversationAiProvider,
+        conversationAiBaseUrl: env.conversationAiBaseUrl,
+        conversationAiModel: env.conversationAiModel,
+        conversationAiApiKey: env.conversationAiApiKey,
+      };
+      queryText = await this.answerGenerationGateway.rewriteQuery(answerConfig, question, options.conversationHistory);
+    }
+
     // 1. Generate embedding for the question
-    const embeddings = await this.embeddingGateway.generateEmbeddings(embeddingConfig, [question]);
+    const embeddings = await this.embeddingGateway.generateEmbeddings(embeddingConfig, [queryText]);
     const questionEmbedding = embeddings[0];
 
     if (!questionEmbedding || questionEmbedding.length === 0) {

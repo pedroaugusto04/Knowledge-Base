@@ -38,4 +38,10 @@ export abstract class AnswerGenerationGateway {
     config: AnswerGenerationConfig,
     payload: AnswerGenerationRequest,
   ): Promise<AnswerGenerationResponse | null>;
+
+  abstract rewriteQuery(
+    config: AnswerGenerationConfig,
+    question: string,
+    history: AskConversationTurn[],
+  ): Promise<string>;
 }

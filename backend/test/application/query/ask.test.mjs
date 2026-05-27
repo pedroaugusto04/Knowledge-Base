@@ -91,6 +91,9 @@ test('AskKnowledgeUseCase embeds query, fetches similar chunks, and generates an
         ],
       };
     },
+    rewriteQuery: async (config, question, history) => {
+      return question;
+    },
   };
 
   const mockRuntimeEnv = {
@@ -191,4 +194,54 @@ test('ListAskHistoryUseCase delegates pagination and project filtering to reposi
 
   assert.deepEqual(calls, [{ userId: 'user-123', page: 2, pageSize: 5, projectSlug: 'platform' }]);
   assert.equal(result.pagination.page, 2);
+});
+
+test('AskKnowledgeUseCase rewrites the question using the gateway when history is present', async () => {
+  const mockEmbeddingGateway = {
+    generateEmbeddings: async (config, texts) => {
+      assert.deepEqual(texts, ['How to deploy the platform application?']);
+      return [[0.1, 0.2, 0.3]];
+    },
+  };
+
+  const mockNoteEmbeddingRepository = {
+    findSimilar: async () => [],
+  };
+
+  const mockContentRepository = {
+    getNotesByIds: async () => [],
+  };
+
+  const mockAnswerGenerationGateway = {
+    generate: async () => null,
+    rewriteQuery: async (config, question, history) => {
+      assert.equal(question, 'And how do I deploy it?');
+      assert.equal(history.length, 1);
+      assert.equal(history[0].question, 'What is the platform application?');
+      return 'How to deploy the platform application?';
+    },
+  };
+
+  const mockRuntimeEnv = {
+    read: () => ({
+      embeddingAiProvider: 'gemini',
+      embeddingAiBaseUrl: 'http://gemini.api',
+      embeddingAiModel: 'gemini-embedding-001',
+      embeddingAiApiKey: 'key-123',
+    }),
+  };
+
+  const useCase = new AskKnowledgeUseCase(
+    mockEmbeddingGateway,
+    mockNoteEmbeddingRepository,
+    mockContentRepository,
+    mockAnswerGenerationGateway,
+    mockRuntimeEnv,
+  );
+
+  const history = [
+    { question: 'What is the platform application?', answer: 'It is a dashboard.', projectSlug: 'infra', timestamp: '' },
+  ];
+
+  await useCase.execute('And how do I deploy it?', 'user-123', { conversationHistory: history });
 });

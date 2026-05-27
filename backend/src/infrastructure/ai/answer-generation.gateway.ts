@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { AiProvider } from '../../contracts/enums.js';
+import type { AskConversationTurn } from '../../contracts/ask-conversation.js';
 import {
   AnswerGenerationGateway,
   type AnswerGenerationConfig,
@@ -52,6 +53,50 @@ export class DefaultAnswerGenerationGateway extends AnswerGenerationGateway {
         requestedAttachments: false,
         sources: [],
       };
+    }
+  }
+
+  async rewriteQuery(
+    config: AnswerGenerationConfig,
+    question: string,
+    history: AskConversationTurn[],
+  ): Promise<string> {
+    if (
+      config.conversationAiProvider === AiProvider.None ||
+      !config.conversationAiApiKey ||
+      !config.conversationAiModel ||
+      history.length === 0
+    ) {
+      return question;
+    }
+
+    const chatConfig = {
+      provider: config.conversationAiProvider,
+      baseUrl: config.conversationAiBaseUrl,
+      model: config.conversationAiModel,
+      apiKey: config.conversationAiApiKey,
+    };
+
+    const systemPrompt = [
+      'You are a search query optimizer.',
+      'Given a conversation history and a follow-up question from the user, rewrite the follow-up question to be an independent, self-contained search query.',
+      'Ensure the rewritten query is in the same language as the follow-up question, resolves all pronouns (e.g. "it", "he", "they", "the file", "them", "isso", "dele", "aquilo") to their full referenced entities from the history, and retains all relevant keywords.',
+      'If the question is already self-contained or the history is empty, return the original question exactly.',
+      'Return a JSON object with this shape: {"rewrittenQuery": "..."}'
+    ].join('\n');
+
+    const userContent = JSON.stringify({
+      history: history.map(h => ({ question: h.question, answer: h.answer })),
+      followUpQuestion: question
+    });
+
+    try {
+      const content = await runChatCompletion(chatConfig, systemPrompt, userContent);
+      if (!content) return question;
+      const parsed = JSON.parse(content);
+      return String(parsed.rewrittenQuery || question).trim();
+    } catch {
+      return question;
     }
   }
 }
