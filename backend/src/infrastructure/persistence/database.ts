@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import pg from 'pg';
 
 import { readEnvironment } from '../../adapters/environment.js';
@@ -26,8 +26,13 @@ function buildSslConfig(environment: ReturnType<typeof readEnvironment>): pg.Poo
 }
 
 @Injectable()
-export class PostgresDatabase {
+export class PostgresDatabase implements OnModuleDestroy {
   private pool: pg.Pool | null = null;
+
+  async onModuleDestroy(): Promise<void> {
+    await this.pool?.end();
+    this.pool = null;
+  }
 
   isConfigured(): boolean {
     return Boolean(readEnvironment().databaseUrl);
