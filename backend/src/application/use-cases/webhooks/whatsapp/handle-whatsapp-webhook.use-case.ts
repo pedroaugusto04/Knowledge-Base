@@ -527,18 +527,10 @@ function formatAskReply(
   result: Awaited<ReturnType<AskKnowledgeUseCase['execute']>>,
   attachmentResolution?: WhatsappAskAttachmentResolution,
 ) {
-  const showMetadata = !attachmentResolution?.requested;
   const lines = [
     String(result.answer || '').trim() || 'I could not build the answer. Please try again.',
     ...formatAskAttachmentNotices(attachmentResolution),
   ];
-  if (showMetadata) {
-    lines.push(
-      '',
-      `Confidence: ${result.confidence}`,
-      ...result.sources.slice(0, 3).map((source) => `Source: ${source.title} (${source.path})`),
-    );
-  }
   return lines.filter(Boolean).join('\n');
 }
 

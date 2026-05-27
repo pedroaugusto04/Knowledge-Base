@@ -561,8 +561,8 @@ test('whatsapp /ask command replies with semantic AI answer scoped to the worksp
   assert.equal(result.action, 'ask');
   assert.equal(result.replySent, true);
   assert.match(result.message, /Deploy using the staging checklist first/);
-  assert.match(result.message, /Confidence: high/);
-  assert.match(result.message, /Source: Deploy checklist/);
+  assert.doesNotMatch(result.message, /Confidence:/);
+  assert.doesNotMatch(result.message, /Source:/);
   assert.equal(result.askResult, askKnowledge.result);
   assert.deepEqual(askKnowledge.calls, [
     {
