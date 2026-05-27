@@ -65,7 +65,7 @@ export function QuickNoteStatusActions({
     <div className={`quick-note-status-actions${compact ? ' compact' : ''}`}>
       <button
         aria-label={`Resolve note ${note.title}`}
-        className="row-action-button"
+        className="row-action-button success"
         type="button"
         title="Resolve"
         disabled={mutation.isPending}
@@ -78,7 +78,7 @@ export function QuickNoteStatusActions({
       </button>
       <button
         aria-label={`Archive note ${note.title}`}
-        className="row-action-button"
+        className="row-action-button archive"
         type="button"
         title="Archive"
         disabled={mutation.isPending}

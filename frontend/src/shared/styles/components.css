@@ -686,6 +686,18 @@
   color: var(--danger-text);
 }
 
+.row-action-button.success:hover {
+  border-color: var(--success-border);
+  background: var(--surface-success);
+  color: var(--success-text-soft);
+}
+
+.row-action-button.archive:hover {
+  border-color: var(--warning-border);
+  background: var(--surface-warning);
+  color: var(--warning-text);
+}
+
 .row-action-button:disabled {
   opacity: 0.45;
   border-color: var(--line-soft);
