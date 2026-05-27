@@ -92,14 +92,14 @@ export async function buildGithubReviewEvent(
     branch: String(body.ref || '').replace(/^refs\/heads\//, '') || 'main',
     headCommit: {
       sha: String(body.after || ''),
-      message: trimText(String(body.head_commit?.message || ''), 'sem mensagem'),
+      message: trimText(String(body.head_commit?.message || ''), 'no message'),
       url: String(body.head_commit?.url || ''),
     },
     commits: compare.commits.length
       ? compare.commits
       : (body.commits || []).map((commit) => ({
           sha: String(commit.id || ''),
-          message: trimText(String(commit.message || ''), 'sem mensagem'),
+          message: trimText(String(commit.message || ''), 'no message'),
         })),
     files: compare.files.length
       ? compare.files
@@ -134,8 +134,8 @@ export async function buildGithubReviewEvent(
       projectSlug: normalizeProjectSlug(body),
     },
     content: {
-      rawText: trimText(String(body.head_commit?.message || ''), 'Push sem mensagem detalhada'),
-      title: `[${body.repository?.name || repoFullName.split('/').pop() || 'inbox'}] ${String(body.head_commit?.message || 'Push sem mensagem detalhada').split('\n')[0]}`,
+      rawText: trimText(String(body.head_commit?.message || ''), 'Push without detailed message'),
+      title: `[${body.repository?.name || repoFullName.split('/').pop() || 'inbox'}] ${String(body.head_commit?.message || 'Push without detailed message').split('\n')[0]}`,
       attachments: [],
       sections: {
         summary: analysis.summary,

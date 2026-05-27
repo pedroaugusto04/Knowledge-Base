@@ -79,7 +79,7 @@ export async function fetchComparePayload(repoFullName: string, before: string, 
     commits: Array.isArray(data.commits)
       ? data.commits.map((commit) => ({
           sha: String(commit.sha || ''),
-          message: trimText(String(commit.commit?.message || ''), 'sem mensagem'),
+          message: trimText(String(commit.commit?.message || ''), 'no message'),
         }))
       : [],
   };

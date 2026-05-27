@@ -465,10 +465,10 @@ function formatAskAttachmentNotices(attachmentResolution?: WhatsappAskAttachment
   if (!attachmentResolution?.requested) return [];
   const notices: string[] = [];
   if (attachmentResolution.noteCount > 0 && attachmentResolution.attachmentCount === 0) {
-    notices.push('Não encontrei arquivo anexado nas notas encontradas.');
+    notices.push('I could not find any attached files in the notes found.');
   }
   if (attachmentResolution.oversizedCount > 0) {
-    notices.push(`Encontrei ${attachmentResolution.oversizedCount} arquivo(s) acima de 15 MB e não enviei por tamanho.`);
+    notices.push(`I found ${attachmentResolution.oversizedCount} file(s) larger than 15 MB, which were not sent due to the size limit.`);
   }
   return notices;
 }

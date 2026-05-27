@@ -694,7 +694,7 @@ test('whatsapp /ask command skips attachments over 15 MB and mentions the size l
   assert.equal(result.mediaSent, 0);
   assert.equal(result.mediaOversized, 1);
   assert.equal(sender.media.length, 0);
-  assert.match(result.message, /acima de 15 MB/);
+  assert.match(result.message, /larger than 15 MB/);
 });
 
 test('whatsapp /ask command reports no attachments when related notes have none', async (t) => {
@@ -731,7 +731,7 @@ test('whatsapp /ask command reports no attachments when related notes have none'
 
   assert.equal(result.mediaSent, 0);
   assert.equal(sender.media.length, 0);
-  assert.match(result.message, /Não encontrei arquivo anexado/);
+  assert.match(result.message, /I could not find any attached files/);
 });
 
 test('whatsapp /ask attachments stay scoped to the linked workspace', async (t) => {
