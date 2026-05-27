@@ -679,11 +679,19 @@
   background: var(--surface-hover-accent);
 }
 
+.row-action-button.danger {
+  color: var(--red);
+}
+
 .row-action-button.danger:hover,
 .danger-button {
   border-color: var(--danger-border);
   background: var(--surface-danger-strong);
   color: var(--danger-text);
+}
+
+.row-action-button.success {
+  color: var(--green);
 }
 
 .row-action-button.success:hover {
@@ -692,10 +700,24 @@
   color: var(--success-text-soft);
 }
 
+.row-action-button.archive {
+  color: var(--amber);
+}
+
 .row-action-button.archive:hover {
   border-color: var(--warning-border);
   background: var(--surface-warning);
   color: var(--warning-text);
+}
+
+.row-action-button.edit {
+  color: var(--cyan);
+}
+
+.row-action-button.edit:hover {
+  border-color: var(--accent-border);
+  background: var(--surface-hover-accent);
+  color: var(--active-text);
 }
 
 .row-action-button:disabled {

@@ -102,7 +102,7 @@ export function VaultPage({
                   {editNote ? (
                     <button
                       aria-label={`Edit note ${noteQuery.data.title}`}
-                      className="row-action-button"
+                      className="row-action-button edit"
                       title="Edit"
                       type="button"
                       onClick={() => editNote(noteQuery.data.id)}

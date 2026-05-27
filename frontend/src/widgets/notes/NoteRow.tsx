@@ -40,7 +40,7 @@ export function NoteRow({
         {onEdit ? (
           <button
             aria-label={`Edit note ${note.title}`}
-            className="row-action-button"
+            className="row-action-button edit"
             title="Edit"
             type="button"
             onClick={(event) => {

@@ -102,7 +102,7 @@ export function ProjectTimeline({
                     {onEditNote ? (
                       <button
                         aria-label={`Edit note ${item.title}`}
-                        className="row-action-button"
+                        className="row-action-button edit"
                         title="Edit"
                         type="button"
                         onClick={(event) => {
