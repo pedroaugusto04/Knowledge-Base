@@ -275,3 +275,126 @@ test('github app push processes selected repositories with minimized audit paylo
   assert.equal(serializedPayload.includes('src/private.ts'), false);
   assert.equal(serializedPayload.includes('compare'), false);
 });
+
+test('github app push sends whatsapp alert for high severity AI review findings', async () => {
+  const events = [];
+  const whatsappMessages = [];
+  const body = githubWebhookBody();
+  const handler = new HandleGithubPushUseCase(
+    {
+      async execute(payload) {
+        return { ok: true, project: payload.event.projectSlug };
+      },
+    },
+    {
+      async findExternalIdentity() {
+        return { userId: 'user-1', workspaceSlug: 'default' };
+      },
+    },
+    {
+      async recordWebhookEvent(event) {
+        events.push(event);
+        return event;
+      },
+    },
+    {
+      read: () => ({
+        githubWebhookSecret: 'github-webhook-secret',
+        githubAppId: '123',
+        githubAppPrivateKey: 'private-key',
+        reviewAiProvider: 'openrouter',
+        reviewAiBaseUrl: 'https://ai.example.com/v1',
+        reviewAiModel: 'review-model',
+        reviewAiApiKey: 'review-key',
+      }),
+    },
+    {
+      verifyWebhookSignature() {},
+      async fetchInstallationToken() {
+        return 'installation-token';
+      },
+      async fetchComparePayload() {
+        return { commits: [], files: [] };
+      },
+    },
+    {
+      async generate() {
+        return {
+          summary: 'The push introduces a risky permission change.',
+          impact: 'Private data can be exposed.',
+          risks: ['permission regression'],
+          nextSteps: ['Fix the authorization check'],
+          reviewFindings: [
+            {
+              severity: 'high',
+              file: 'src/private.ts',
+              summary: 'Authorization is bypassed for private records',
+              recommendation: 'Restore the user ownership filter before returning records',
+            },
+          ],
+        };
+      },
+    },
+    {
+      async listProjects() {
+        return [
+          {
+            projectSlug: 'platform',
+            displayName: 'Platform',
+            workspaceSlug: 'default',
+            enabled: true,
+            defaultTags: [],
+            repositories: [{ fullName: 'acme/api' }],
+          },
+        ];
+      },
+      async listWorkspaces() {
+        return [
+          {
+            workspaceSlug: 'default',
+            displayName: 'Default',
+            whatsappChatJid: '5511999999999@s.whatsapp.net',
+            telegramChatId: '',
+            createdAt: '2026-04-27T10:00:00.000Z',
+            updatedAt: '2026-04-27T10:00:00.000Z',
+          },
+        ];
+      },
+    },
+    {
+      async findCredential(_userId, _workspaceSlug, provider) {
+        return {
+          id: `credential-${provider}`,
+          userId: 'user-1',
+          workspaceSlug: 'default',
+          provider,
+          status: 'connected',
+          encryptedConfig: {},
+          publicMetadata: {},
+          createdAt: '2026-04-27T10:00:00.000Z',
+          updatedAt: '2026-04-27T10:00:00.000Z',
+          revokedAt: null,
+        };
+      },
+    },
+    {
+      async sendText(input) {
+        whatsappMessages.push(input);
+        return { ok: true };
+      },
+    },
+  );
+
+  const result = await handler.execute(githubWebhookInput(body));
+
+  assert.equal(result.whatsappNotification.sent, true);
+  assert.equal(whatsappMessages.length, 1);
+  assert.equal(whatsappMessages[0].chatJid, '5511999999999@s.whatsapp.net');
+  assert.match(whatsappMessages[0].text, /Commit: def456/);
+  assert.match(whatsappMessages[0].text, /The push introduces a risky permission change/);
+  assert.match(whatsappMessages[0].text, /A IA encontrou problemas importantes neste commit/);
+  assert.match(whatsappMessages[0].text, /\[HIGH\]\s+\(src\/private\.ts\)/);
+  assert.match(whatsappMessages[0].text, /Problema: Authorization is bypassed/);
+  assert.match(whatsappMessages[0].text, /Como resolver: Restore the user ownership filter/);
+  assert.equal(events.at(-1).status, 'processed');
+});

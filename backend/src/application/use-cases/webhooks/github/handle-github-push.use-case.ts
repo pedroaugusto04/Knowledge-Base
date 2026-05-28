@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 import { AiProvider, CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider, WebhookEventStatus } from '../../../../contracts/enums.js';
-import { buildTelegramCodeReviewMessage } from '../../../../domain/notifications.js';
+import { buildTelegramCodeReviewMessage, buildWhatsappHighSeverityCodeReviewMessage } from '../../../../domain/notifications.js';
 import { buildGithubReviewEvent } from '../../../github-review.js';
 import type { GithubPushWebhookRequest } from '../../../models/webhook-request.models.js';
 import { ContentRepository } from '../../../ports/notes/content.repository.js';
 import { GithubIntegrationGateway } from '../../../ports/integrations/github-integration.port.js';
 import { CredentialRepository, ExternalIdentityRepository } from '../../../ports/integrations/integrations.repository.js';
+import { WhatsappReplySender } from '../../../ports/integrations/whatsapp-reply.sender.js';
 import { ReviewAnalysisGateway } from '../../../ports/projects/review-analysis.port.js';
 import { RuntimeEnvironmentProvider } from '../../../ports/observability/runtime-environment.port.js';
 import { WebhookEventRepository } from '../../../ports/webhooks/webhook-events.repository.js';
@@ -54,6 +55,7 @@ export class HandleGithubPushUseCase {
     private readonly reviewAnalysisGateway: ReviewAnalysisGateway,
     private readonly contentRepository?: ContentRepository,
     private readonly credentials?: CredentialRepository,
+    private readonly whatsappReplySender?: WhatsappReplySender,
   ) {}
 
   async execute(input: GithubPushWebhookRequest) {
@@ -125,6 +127,7 @@ export class HandleGithubPushUseCase {
       );
       const resolvedPayload = this.resolvePayloadProject(payload, projectSlug);
       const ingestResult = await this.ingestEntryUseCase.execute(resolvedPayload, identity.userId, identity.workspaceSlug);
+      const whatsappNotification = await this.notifyWhatsappOnHighSeverityFindings(resolvedPayload, identity.userId, identity.workspaceSlug);
       await this.webhookEvents.recordWebhookEvent({
         provider: IntegrationProvider.GithubApp,
         eventType: String(headers['x-github-event'] || 'push'),
@@ -138,6 +141,7 @@ export class HandleGithubPushUseCase {
         ok: true,
         payload: resolvedPayload,
         ingestResult,
+        whatsappNotification,
         telegramMessage: buildTelegramCodeReviewMessage(resolvedPayload),
       };
     } catch (error) {
@@ -178,5 +182,36 @@ export class HandleGithubPushUseCase {
         tags: [...new Set(['code-review', projectSlug, ...payload.classification.tags.filter((tag) => tag !== payload.event.projectSlug)])],
       },
     };
+  }
+
+  private async notifyWhatsappOnHighSeverityFindings(
+    payload: Awaited<ReturnType<typeof buildGithubReviewEvent>>,
+    userId: string,
+    workspaceSlug: string,
+  ): Promise<{ sent: boolean; skipped?: string; error?: string }> {
+    const hasHighSeverityFinding = payload.content.sections.reviewFindings.some((finding) => ['high', 'critical'].includes(finding.severity));
+    if (!hasHighSeverityFinding) return { sent: false, skipped: 'no_high_severity_findings' };
+    if (!this.credentials || !this.contentRepository || !this.whatsappReplySender) return { sent: false, skipped: 'whatsapp_not_configured' };
+
+    const credential = await this.credentials.findCredential(userId, workspaceSlug, IntegrationProvider.Whatsapp);
+    const connected = Boolean(credential && credential.status === CredentialRecordStatus.Connected && !credential.revokedAt);
+    if (!connected) return { sent: false, skipped: 'whatsapp_not_connected' };
+
+    const workspaces = await this.contentRepository.listWorkspaces(userId);
+    const workspace = workspaces.find((item) => item.workspaceSlug === workspaceSlug);
+    const chatJid = String(workspace?.whatsappChatJid || '').trim();
+    if (!chatJid) return { sent: false, skipped: 'whatsapp_chat_not_bound' };
+
+    try {
+      const result = await this.whatsappReplySender.sendText({
+        chatJid,
+        text: buildWhatsappHighSeverityCodeReviewMessage(payload),
+      });
+      return result.ok
+        ? { sent: true }
+        : { sent: false, error: result.error || 'whatsapp_send_failed' };
+    } catch (error) {
+      return { sent: false, error: error instanceof Error ? error.message : String(error) };
+    }
   }
 }
