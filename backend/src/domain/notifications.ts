@@ -24,21 +24,21 @@ export function buildWhatsappHighSeverityCodeReviewMessage(payload: IngestPayloa
   const sections = payload.content.sections;
   const findings = (sections.reviewFindings || []).filter((finding) => ['high', 'critical'].includes(finding.severity));
   const lines = [
-    'Alerta de code review da IA',
-    `Projeto: ${payload.event.projectSlug}`,
-    `Repositório: ${String(payload.metadata.repoFullName || '').trim() || payload.source.conversationId || 'unknown'}`,
+    'AI code review alert',
+    `Project: ${payload.event.projectSlug}`,
+    `Repository: ${String(payload.metadata.repoFullName || '').trim() || payload.source.conversationId || 'unknown'}`,
     `Commit: ${commitLabel(payload)}`,
     payload.metadata.compareUrl ? `Compare: ${String(payload.metadata.compareUrl)}` : '',
-    `Resumo: ${sections.summary || payload.content.rawText}`,
-    sections.impact ? `Impacto: ${sections.impact}` : '',
-    'A IA encontrou problemas importantes neste commit:',
+    `Summary: ${sections.summary || payload.content.rawText}`,
+    sections.impact ? `Impact: ${sections.impact}` : '',
+    'The AI found important issues in this commit:',
     ...findings.slice(0, 5).map((finding) => {
       const location = finding.file ? ` (${finding.file})` : '';
-      const recommendation = finding.recommendation || 'Revise este ponto antes de seguir com a mudanca.';
+      const recommendation = finding.recommendation || 'Review this issue before moving forward with the change.';
       return [
         `- [${finding.severity.toUpperCase()}]${location}`,
-        `  Problema: ${finding.summary}`,
-        `  Como resolver: ${recommendation}`,
+        `  Problem: ${finding.summary}`,
+        `  How to fix: ${recommendation}`,
       ].join('\n');
     }),
   ];

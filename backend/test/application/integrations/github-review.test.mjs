@@ -392,9 +392,9 @@ test('github app push sends whatsapp alert for high severity AI review findings'
   assert.equal(whatsappMessages[0].chatJid, '5511999999999@s.whatsapp.net');
   assert.match(whatsappMessages[0].text, /Commit: def456/);
   assert.match(whatsappMessages[0].text, /The push introduces a risky permission change/);
-  assert.match(whatsappMessages[0].text, /A IA encontrou problemas importantes neste commit/);
+  assert.match(whatsappMessages[0].text, /The AI found important issues in this commit/);
   assert.match(whatsappMessages[0].text, /\[HIGH\]\s+\(src\/private\.ts\)/);
-  assert.match(whatsappMessages[0].text, /Problema: Authorization is bypassed/);
-  assert.match(whatsappMessages[0].text, /Como resolver: Restore the user ownership filter/);
+  assert.match(whatsappMessages[0].text, /Problem: Authorization is bypassed/);
+  assert.match(whatsappMessages[0].text, /How to fix: Restore the user ownership filter/);
   assert.equal(events.at(-1).status, 'processed');
 });
