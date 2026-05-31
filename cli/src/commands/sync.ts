@@ -46,14 +46,14 @@ export async function runSync(options: SyncOptions): Promise<void> {
   if (options.watch) {
     console.log(pc.cyan(`Starting sync in WATCH mode for: ${targetPath}`));
     await syncDirectory(targetDir, defaultProject, ledgerPath, options.dryRun || false, filesList);
-    
+
     // Watch logic
     let debounceTimer: NodeJS.Timeout | null = null;
     fs.watch(targetPath, { recursive: !isFile }, (eventType, filename) => {
       if (!isFile) {
         if (!filename || filename.endsWith('.kb-sync.json') || !filename.endsWith('.md')) return;
       }
-      
+
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(async () => {
         console.log(pc.blue(`\nChange detected in ${filename || path.basename(targetPath)}. Syncing...`));
@@ -64,9 +64,9 @@ export async function runSync(options: SyncOptions): Promise<void> {
         }
       }, 500);
     });
-    
+
     // Keep process alive in watch mode
-    await new Promise(() => {});
+    await new Promise(() => { });
     return;
   }
 
@@ -76,13 +76,13 @@ export async function runSync(options: SyncOptions): Promise<void> {
   try {
     const stats = await syncDirectory(targetDir, defaultProject, ledgerPath, options.dryRun || false, filesList);
     s.stop(pc.green('Sync complete!'));
-    
+
     console.log('\n' + pc.bold('Sync Summary:'));
     console.log(` - Created: ${pc.green(stats.created)}`);
     console.log(` - Updated: ${pc.cyan(stats.updated)}`);
     console.log(` - Skipped: ${pc.gray(stats.skipped)}`);
     console.log(` - Failed:  ${pc.red(stats.failed)}\n`);
-    
+
     outro(pc.green('Files synced successfully.'));
   } catch (error: any) {
     s.stop(pc.red('Sync failed'));
@@ -100,7 +100,7 @@ async function syncDirectory(
 ) {
   const ledger = loadLedger(ledgerPath);
   const files = filesList || getMarkdownFiles(targetDir);
-  
+
   const stats = { created: 0, updated: 0, skipped: 0, failed: 0 };
   const updatedLedgerFiles: Record<string, LedgerEntry> = {};
 
@@ -153,7 +153,16 @@ async function syncDirectory(
       if (noteId) {
         // Update existing note
         try {
-          await client.updateNote(noteId, notePayload);
+          const updatePayload: any = {
+            title: notePayload.title,
+            rawText: notePayload.rawText,
+            tags: notePayload.tags,
+            canonicalType: notePayload.canonicalType,
+          };
+          if (notePayload.status === 'resolved' || notePayload.status === 'archived') {
+            updatePayload.status = notePayload.status;
+          }
+          await client.updateNote(noteId, updatePayload);
           stats.updated++;
           console.log(pc.cyan(`Updated: ${relativePath}`));
         } catch (err: any) {
@@ -177,7 +186,7 @@ async function syncDirectory(
         noteId = createdId;
         stats.created++;
         console.log(pc.green(`Created: ${relativePath}`));
-        
+
         // Inject ID back to frontmatter
         injectIdIntoFrontmatter(filePath, content, noteId as string);
       }
