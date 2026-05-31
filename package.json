@@ -13,8 +13,9 @@
     "dev:frontend": "vite --config frontend/vite.config.ts",
     "migrate": "npm run build:api && node backend/dist/infrastructure/persistence/run-migrations.js",
     "test:api": "node scripts/run-api-tests.mjs",
+    "test:cli": "node scripts/run-cli-tests.mjs",
     "test:frontend": "vitest run --config frontend/vite.config.ts",
-    "test": "npm run test:api && npm run test:frontend",
+    "test": "npm run test:api && npm run test:cli && npm run test:frontend",
     "cli": "npm run build:cli && node cli/dist/index.js"
   },
   "dependencies": {
