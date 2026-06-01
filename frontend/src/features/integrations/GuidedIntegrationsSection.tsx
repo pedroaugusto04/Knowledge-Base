@@ -429,6 +429,7 @@ export function GuidedIntegrationsSection({
   defaultOpenGithubRepositories = false,
   onGithubRepositoriesSaved,
   onLoaded,
+  hideGridWrapper = false,
 }: {
   workspaceSlug: string;
   returnToPath: string;
@@ -436,6 +437,7 @@ export function GuidedIntegrationsSection({
   defaultOpenGithubRepositories?: boolean;
   onGithubRepositoriesSaved?: () => void;
   onLoaded?: (integrations: UserIntegration[]) => void;
+  hideGridWrapper?: boolean;
 }) {
   const [codeConnection, setCodeConnection] = useState<IntegrationConnectionResponse | null>(null);
   const [showGithubRepositories, setShowGithubRepositories] = useState(false);
@@ -471,20 +473,24 @@ export function GuidedIntegrationsSection({
   if (integrationsQuery.isLoading) return <EmptyState>Loading integrations...</EmptyState>;
   if (!integrationsQuery.data) return <InlineMessage tone="error">{getErrorMessage(integrationsQuery.error, 'Could not load integration status.')}</InlineMessage>;
 
+  const cards = integrations.map((integration) => (
+    <IntegrationCard
+      integration={integration}
+      key={integrationId(integration)}
+      workspaceSlug={workspaceSlug}
+      returnToPath={returnToPath}
+      onCodeConnection={setCodeConnection}
+      onGithubRepositories={() => setShowGithubRepositories(true)}
+    />
+  ));
+
   return (
     <>
-      <section className="grid cols-2 integrations-grid">
-        {integrations.map((integration) => (
-          <IntegrationCard
-            integration={integration}
-            key={integrationId(integration)}
-            workspaceSlug={workspaceSlug}
-            returnToPath={returnToPath}
-            onCodeConnection={setCodeConnection}
-            onGithubRepositories={() => setShowGithubRepositories(true)}
-          />
-        ))}
-      </section>
+      {hideGridWrapper ? cards : (
+        <section className="grid cols-2 integrations-grid">
+          {cards}
+        </section>
+      )}
       {codeConnection ? <CodeConnectionModal connection={codeConnection} onClose={() => setCodeConnection(null)} workspaceSlug={workspaceSlug} /> : null}
       {showGithubRepositories ? <GithubRepositoriesModal workspaceSlug={workspaceSlug} onClose={() => setShowGithubRepositories(false)} onSaved={onGithubRepositoriesSaved} /> : null}
     </>

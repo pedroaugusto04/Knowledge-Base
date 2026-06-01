@@ -177,10 +177,6 @@
   margin-top: 28px;
 }
 
-.webhook-card {
-  grid-column: 1 / -1;
-}
-
 .webhook-card .integration-card-body {
   gap: 0;
 }
