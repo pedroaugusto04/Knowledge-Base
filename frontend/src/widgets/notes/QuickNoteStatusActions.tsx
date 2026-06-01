@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { updateNote } from '../../shared/api/client';
 import { reminderInputDate, reminderInputTime } from '../../entities/format';
@@ -106,7 +106,13 @@ export function QuickNoteStatusActions({
   compact?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const actions = resolveQuickStatusActions(note.status);
+  const [displayStatus, setDisplayStatus] = useState(note.status);
+  const actions = resolveQuickStatusActions(displayStatus);
+
+  useEffect(() => {
+    setDisplayStatus(note.status);
+  }, [note.id, note.status]);
+
   const mutation = useMutation({
     mutationFn: async (action: QuickStatusAction) => {
       const detail = note.editor ? note : await ensureNoteDetail(queryClient, note.id);
@@ -123,7 +129,10 @@ export function QuickNoteStatusActions({
       notifySuccess(action.successMessage);
       await invalidateNoteRelatedQueries(queryClient, note.id);
     },
-    onError: (error) => notifyGeneralFormError(error, 'Could not update the note status.'),
+    onError: (error) => {
+      setDisplayStatus(note.status);
+      notifyGeneralFormError(error, 'Could not update the note status.');
+    },
   });
 
   return (
@@ -140,6 +149,7 @@ export function QuickNoteStatusActions({
             disabled={mutation.isPending}
             onClick={(event) => {
               event.stopPropagation();
+              setDisplayStatus(action.status);
               mutation.mutate(action);
             }}
           >

@@ -1,8 +1,13 @@
-import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { updateNote } from '../../../src/shared/api/client';
 import { renderWithAppProviders } from '../../../src/app/test-utils';
 import { NoteRow } from '../../../src/widgets/notes/NoteRow';
+
+vi.mock('../../../src/shared/api/client', () => ({
+  updateNote: vi.fn().mockResolvedValue({ ok: true, noteId: 'note-3' }),
+}));
 
 afterEach(() => {
   cleanup();
@@ -106,7 +111,24 @@ describe('NoteRow', () => {
     expect(screen.queryByRole('button', { name: 'Archive note Resolvido' })).not.toBeInTheDocument();
   });
 
-  it('shows an unarchive action for archived notes', () => {
+  it('shows an unarchive action for archived notes', async () => {
+    const archivedNote = {
+      id: 'note-3',
+      path: '20 Inbox/platform/archived.md',
+      type: 'event',
+      title: 'Arquivada',
+      project: 'platform',
+      workspace: 'default',
+      folderId: null,
+      tags: ['deploy'],
+      date: '2026-04-27',
+      status: 'archived',
+      summary: 'Resumo',
+      source: 'manual-api',
+      attachmentCount: 0,
+      editor: { rawText: 'Resumo', reminderDate: '', reminderTime: '', reminderAt: '' },
+    } as any;
+
     renderWithAppProviders(
       <NoteRow
         dashboard={{
@@ -116,28 +138,25 @@ describe('NoteRow', () => {
           reminders: [],
           home: { windowDays: 7, metrics: [], activityByDay: [], activityByProject: [], priorities: [], recentInterestingEvents: [] },
         }}
-        note={{
-          id: 'note-3',
-          path: '20 Inbox/platform/archived.md',
-          type: 'event',
-          title: 'Arquivada',
-          project: 'platform',
-          workspace: 'default',
-          folderId: null,
-          tags: ['deploy'],
-          date: '2026-04-27',
-          status: 'archived',
-          summary: 'Resumo',
-          source: 'manual-api',
-          attachmentCount: 0,
-        }}
+        note={archivedNote}
         onOpen={vi.fn()}
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Unarchive note Arquivada' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Resolve note Arquivada' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Archive note Arquivada' })).not.toBeInTheDocument();
+    const unarchiveButton = screen.getByRole('button', { name: 'Unarchive note Arquivada' });
+    fireEvent.click(unarchiveButton);
+
+    expect(screen.queryByRole('button', { name: 'Unarchive note Arquivada' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resolve note Arquivada' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Archive note Arquivada' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(updateNote).toHaveBeenCalledWith(
+        'note-3',
+        expect.objectContaining({
+          status: 'active',
+        }),
+      );
+    });
   });
 
   it('hides the attachment indicator when a note has no attachments', () => {
