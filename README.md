@@ -1,6 +1,3 @@
----
-id: 9b82a11e-884a-4533-8deb-c703b058d9b2
----
 # Knowledge Vault
 
 Knowledge Vault centralizes your team's operational knowledge in one place, preventing the loss of critical context and decisions.
