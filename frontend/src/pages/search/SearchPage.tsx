@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -38,6 +38,7 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  const [searchInput, setSearchInput] = useState(query);
   const [projectSlug, setProjectSlug] = useState('');
   const [status, setStatus] = useState<'' | NoteStatus>('');
   const [askAnswer, setAskAnswer] = useState<AskAnswerCardItem | null>(null);
@@ -46,7 +47,7 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
   const [isAsking, setIsAsking] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug || '';
-  const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
+  const debouncedQuery = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
   const debouncedProjectSlug = useDebouncedValue(projectSlug, SEARCH_DEBOUNCE_MS);
   const debouncedStatus = useDebouncedValue(status, SEARCH_DEBOUNCE_MS);
   const hasQuery = Boolean(debouncedQuery.trim());
@@ -54,17 +55,21 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
   const { page, setPage } = usePaginationState(resultsPaginationKey);
   const { page: historyPage, setPage: setHistoryPage } = usePaginationState(`ask-history:${projectSlug}`);
 
-  const setQuery = (newQuery: string) => {
+  useEffect(() => {
+    setSearchInput(query);
+  }, [query]);
+
+  useEffect(() => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (newQuery) {
-        next.set('q', newQuery);
+      if (debouncedQuery) {
+        next.set('q', debouncedQuery);
       } else {
         next.delete('q');
       }
       return next;
     }, { replace: true });
-  };
+  }, [debouncedQuery, setSearchParams]);
 
   const queryResult = useQuery({
     queryKey: ['search', debouncedQuery, debouncedProjectSlug, workspaceSlug, debouncedStatus, page],
@@ -120,7 +125,7 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
   });
 
   const handleAsk = async () => {
-    const question = query.trim();
+    const question = searchInput.trim();
     if (isAsking) return;
     if (!question) {
       notifyWarning('Type something before asking AI.');
@@ -163,10 +168,14 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
         <div className="search-input-row">
           <input
             aria-label="Search query"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            autoComplete="off"
+            enterKeyHint="search"
+            inputMode="search"
+            spellCheck={false}
+            type="text"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search or ask anything..."
-            type="search"
           />
           <div className="search-actions">
             <button className="icon-button" disabled={isAsking} type="button" onClick={handleAsk}>
@@ -240,7 +249,7 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
         </div>
       </section>
 
-      {isAsking ? <AskAnswerSkeleton question={query.trim()} projectLabel={selectedProjectLabel} /> : null}
+      {isAsking ? <AskAnswerSkeleton question={searchInput.trim()} projectLabel={selectedProjectLabel} /> : null}
 
       {!isAsking && askAnswer && !isAnswerHidden ? (
         <Panel className="ai-answer-card-panel">
@@ -340,13 +349,13 @@ function AskHistoryPopover({
   return (
     <div className={`ask-history-popover ${historyQuery.isPlaceholderData ? 'stale-data' : ''}`} role="dialog">
       <div className="ask-history-popover-list">
-      {history.map((item) => (
-        <button className="ask-history-item" key={item.id} type="button" onClick={() => onSelect(item)}>
-          <span className="ask-history-question">{item.question}</span>
-          <span className="ask-history-project">{projectLabel(item.projectSlug, projects)}</span>
-          <span className="ask-history-answer">{item.answer}</span>
-        </button>
-      ))}
+        {history.map((item) => (
+          <button className="ask-history-item" key={item.id} type="button" onClick={() => onSelect(item)}>
+            <span className="ask-history-question">{item.question}</span>
+            <span className="ask-history-project">{projectLabel(item.projectSlug, projects)}</span>
+            <span className="ask-history-answer">{item.answer}</span>
+          </button>
+        ))}
       </div>
       {historyQuery.data?.pagination ? (
         <Pagination compact pagination={historyQuery.data.pagination} onPageChange={setPage} />

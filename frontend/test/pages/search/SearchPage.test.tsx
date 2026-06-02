@@ -115,7 +115,8 @@ describe('SearchPage', () => {
     fireEvent.change(input, { target: { value: 'de' } });
     fireEvent.change(input, { target: { value: 'dep' } });
 
-    expect(screen.getByTestId('location')).toHaveTextContent('/search?q=dep');
+    expect(input).toHaveValue('dep');
+    expect(screen.getByTestId('location')).toHaveTextContent('/search');
 
     await act(async () => {
       vi.advanceTimersByTime(349);
@@ -123,11 +124,14 @@ describe('SearchPage', () => {
     });
 
     expect(apiSpies.runQuery).not.toHaveBeenCalled();
+    expect(screen.getByTestId('location')).toHaveTextContent('/search');
 
     await act(async () => {
       vi.advanceTimersByTime(1);
       await Promise.resolve();
     });
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/search?q=dep');
 
     expect(apiSpies.runQuery).toHaveBeenCalledTimes(1);
     expect(apiSpies.runQuery).toHaveBeenLastCalledWith({
