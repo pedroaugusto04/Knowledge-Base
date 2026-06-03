@@ -6,10 +6,14 @@ import { BrowserRouter } from 'react-router-dom';
 import { frontendBasePath } from './base-path';
 import { GlobalLoadingProvider } from './global-loading';
 import { queryClient } from './providers/query-client';
+import { registerServiceWorker } from './register-sw';
 import { ThemeProvider } from './providers/theme';
 import { AppShell } from '../layouts/AppShell';
 import '../shared/styles/global.css';
 import { NotificationsProvider } from '../shared/ui/notifications';
+
+// Register service worker for PWA caching + push notifications
+registerServiceWorker();
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>

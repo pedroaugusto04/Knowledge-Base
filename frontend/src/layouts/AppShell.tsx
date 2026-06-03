@@ -31,6 +31,7 @@ import { BrandMark } from '../shared/ui/brand-mark';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
 import { useGlobalLoading } from '../app/global-loading';
 import { useDebouncedValue } from '../shared/ui/use-debounced-value';
+import { OfflineBanner } from '../shared/ui/offline-banner';
 
 
 function activeView(pathname: string): View {
@@ -316,6 +317,7 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
+      <OfflineBanner />
       <button
         aria-label="Close navigation"
         aria-hidden={!isMobileNavOpen}
