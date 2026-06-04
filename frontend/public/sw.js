@@ -128,10 +128,11 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title || 'Knowledge Base';
+  const defaultIcon = new URL('icon-512.png', self.registration.scope).toString();
   const options = {
     body: data.body || 'Novo lembrete recebido.',
-    icon: data.icon || '/icon-512.png',
-    badge: data.badge || '/icon-512.png',
+    icon: data.icon || defaultIcon,
+    badge: data.badge || defaultIcon,
     data: data.data || {},
     vibrate: [100, 50, 100],
   };
