@@ -1219,14 +1219,14 @@
 
 /* Breadcrumbs styling */
 .global-breadcrumbs {
-  margin-bottom: 16px;
-  padding: 8px 16px;
-  background: var(--surface-2);
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
+  margin-top: -10px;
+  margin-bottom: 12px;
+  padding: 0;
+  background: none;
+  border: none;
   animation: fade-in 0.25s ease;
   font-family: var(--ui);
-  font-size: 13px;
+  font-size: 12px;
   display: inline-flex;
 }
 
@@ -1237,7 +1237,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  gap: 4px;
+  gap: 2px;
 }
 
 .breadcrumbs-item {
@@ -1247,17 +1247,19 @@
 }
 
 .breadcrumbs-separator {
-  margin: 0 6px;
-  color: var(--line-soft);
+  margin: 0 4px;
+  color: var(--muted);
+  opacity: 0.5;
   user-select: none;
+  font-size: 11px;
 }
 
 .breadcrumbs-link {
   color: var(--muted);
   text-decoration: none;
   font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
   transition: all 0.15s ease;
 }
 
@@ -1270,7 +1272,7 @@
   color: var(--text-strong);
   font-weight: 600;
   cursor: default;
-  padding: 4px 10px;
+  padding: 3px 6px;
 }
 
 

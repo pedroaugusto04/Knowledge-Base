@@ -281,7 +281,13 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
                 dashboard={dashboard}
                 onDelete={() => deleteNote({ id: note.id, title: note.title })}
                 onEdit={() => editNote(note.id)}
-                onOpen={setSideNoteId}
+                onOpen={(id) => {
+                  if (sideNoteId === id) {
+                    openNote(id);
+                  } else {
+                    setSideNoteId(id);
+                  }
+                }}
                 onDoubleClick={openNote}
               />
             ))}

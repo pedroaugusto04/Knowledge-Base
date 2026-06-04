@@ -55,6 +55,14 @@ export function ProjectsWorkspace({
   const [timelineCategory, setTimelineCategory] = useState<ProjectTimelineCategory>('all');
   const [hiddenLatestBriefProjects, setHiddenLatestBriefProjects] = useState<Record<string, boolean>>({});
   const [sideNoteId, setSideNoteId] = useState<string | null>(null);
+
+  const handleOpenNote = (id: string) => {
+    if (sideNoteId === id) {
+      openNote(id);
+    } else {
+      setSideNoteId(id);
+    }
+  };
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
   const dashboardNotes = dashboard.notes || [];
@@ -230,7 +238,7 @@ export function ProjectsWorkspace({
                 }}
                 onDeleteNote={(note) => setConfirmState({ kind: 'note', note })}
                 onEditNote={(note) => loadNoteMutation.mutate(note.id)}
-                onOpenNote={setSideNoteId}
+                onOpenNote={handleOpenNote}
                 onOpenNoteFullPage={openNote}
                 onPageChange={timelinePagination.setPage}
                 isStale={allProjectsTimelineQuery.isPlaceholderData}
@@ -273,7 +281,7 @@ export function ProjectsWorkspace({
               onDeleteFolder={() => selectedFolder ? setConfirmState({ kind: 'folder', projectSlug: selected.projectSlug, folder: selectedFolder }) : undefined}
               onEditNote={(note) => loadNoteMutation.mutate(note.id)}
               onDeleteNote={(note) => setConfirmState({ kind: 'note', note })}
-              onOpenNote={setSideNoteId}
+              onOpenNote={handleOpenNote}
               onOpenNoteFullPage={openNote}
               onEditProject={selected.projectSlug === 'inbox' ? undefined : () => setProjectModal({ mode: 'edit', project: selected })}
               onDeleteProject={selectedProjectDeleteBlockedReason ? undefined : () => setConfirmState({ kind: 'project', project: selected })}
