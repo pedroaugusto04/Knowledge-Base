@@ -10,7 +10,7 @@ export {
   saveGithubRepositories,
   testIntegration,
 } from './integrations';
-export { createNote, deleteNote, fetchNote, fetchNotes, updateNote } from './notes';
+export { createNote, deleteNote, fetchNote, fetchNotes, updateNote, pinNote, fetchRelatedNotes } from './notes';
 export {
   createProject,
   createProjectFolder,

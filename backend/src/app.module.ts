@@ -117,6 +117,8 @@ import {
   ListPushSubscriptionsUseCase,
   CreatePushSubscriptionUseCase,
   DeletePushSubscriptionUseCase,
+  SetNotePinnedUseCase,
+  FindRelatedNotesUseCase,
 } from './application/use-cases/index.js';
 import { NoteEventDispatcher } from './application/services/note-event-dispatcher.js';
 import { WebhookDeliveryService } from './application/services/webhook-delivery.service.js';
@@ -216,6 +218,8 @@ import { AppLogger } from './observability/logger.js';
     ResolveWhatsappAskAttachmentsUseCase,
     RunAskAiUseCase,
     ListAskHistoryUseCase,
+    SetNotePinnedUseCase,
+    FindRelatedNotesUseCase,
     EvolutionWhatsappReplySender,
     EvolutionReminderDeliveryGateway,
     EvolutionWhatsappMediaDownloader,

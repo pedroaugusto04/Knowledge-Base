@@ -19,6 +19,7 @@ export type NoteSummary = {
   source: string;
   attachmentCount: number;
   isOverdue?: boolean;
+  isPinned?: boolean;
 };
 
 export type NoteAttachment = {

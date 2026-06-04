@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
 import { formatDisplayToken, formatUsDate, noteTypeLabel, projectName, typeIcon } from '../../entities/format';
@@ -5,8 +6,18 @@ import { Badge } from '../../shared/ui/primitives';
 import { AttachmentIndicator } from './AttachmentIndicator';
 import { QuickNoteStatusActions } from './QuickNoteStatusActions';
 import { PencilIcon, TrashIcon } from '../../shared/ui/icons';
+import { pinNote } from '../../shared/api/client';
+import { invalidateNoteRelatedQueries } from '../../shared/api/note-query';
+import { notifySuccess } from '../../shared/ui/notifications';
+import { notifyGeneralFormError } from '../../shared/forms/errors';
 
-
+function PinIcon({ active }: { active?: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={active ? '0' : '1.2'} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.103 1.307-.263 1.777l-1.02 3.06a.5.5 0 0 0-.05.158V10h.833a.5.5 0 0 1 .374.832l-2.5 3a.5.5 0 0 1-.748 0l-2.5-3A.5.5 0 0 1 7.167 10h.833V5.5c0-.056-.017-.11-.05-.158l-1.02-3.06C6.77 1.807 6.667 1.18 6.667.5a.5.5 0 0 1 .5-.5z"/>
+    </svg>
+  );
+}
 
 export function NoteRow({
   note,
@@ -21,10 +32,27 @@ export function NoteRow({
   onEdit?: (note: NoteSummary) => void;
   onDelete?: (note: NoteSummary) => void;
 }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () => pinNote(note.id, !note.isPinned),
+    onSuccess: async () => {
+      notifySuccess(note.isPinned ? 'Note unpinned.' : 'Note pinned.');
+      await invalidateNoteRelatedQueries(queryClient, note.id);
+    },
+    onError: (error) => {
+      notifyGeneralFormError(error, 'Could not toggle pin status.');
+    },
+  });
+
   return (
     <article className="list-row clickable" onClick={() => onOpen(note.id)}>
       <div className="list-row-body note-row-body">
         <div className="meta-row">
+          {note.isPinned && (
+            <span className="pinned-badge" title="Pinned Note" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: 'var(--amber)', fontSize: '11px', fontWeight: 'bold' }}>
+              <PinIcon active /> Pinned
+            </span>
+          )}
           <Badge value={noteTypeLabel(note.type)} tone={note.type} />
           <Badge value={formatDisplayToken(note.status)} tone={note.status} />
           <span className="meta">
@@ -37,6 +65,19 @@ export function NoteRow({
       </div>
       <div className="row-actions">
         <QuickNoteStatusActions note={note} compact />
+        <button
+          aria-label={note.isPinned ? `Unpin note ${note.title}` : `Pin note ${note.title}`}
+          className={`row-action-button pin ${note.isPinned ? 'active' : ''}`}
+          title={note.isPinned ? 'Unpin' : 'Pin'}
+          type="button"
+          disabled={mutation.isPending}
+          onClick={(event) => {
+            event.stopPropagation();
+            mutation.mutate();
+          }}
+        >
+          <PinIcon active={note.isPinned} />
+        </button>
         {onEdit ? (
           <button
             aria-label={`Edit note ${note.title}`}
@@ -82,4 +123,5 @@ function getCleanSummary(summary: string | undefined): string {
   }
   return text;
 }
+
 

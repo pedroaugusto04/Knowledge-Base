@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { PageContext } from '../../app/page-context';
 import { formatDisplayToken, formatUsDate, noteTypeLabel, projectName } from '../../entities/format';
 import { normalizeComparableText } from '../../entities/text';
-import { fetchNotes } from '../../shared/api/client';
+import { fetchNotes, fetchRelatedNotes } from '../../shared/api/client';
 import type { NoteAttachment, NoteSummary } from '../../shared/api/models/note';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import { noteDetailQueryOptions } from '../../shared/api/note-query';
@@ -92,10 +92,40 @@ export function VaultPage({
   const previousNote = previousNoteOnPage || lastNavigationNote(previousPageQuery.data?.notes);
   const nextNote = nextNoteOnPage || firstNavigationNote(nextPageQuery.data?.notes);
 
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    if (isLeftSwipe && nextNote) {
+      openNote(nextNote.id);
+    } else if (isRightSwipe && previousNote) {
+      openNote(previousNote.id);
+    }
+  };
+
   return (
     <>
       <PageHead title="Note details" subtitle={selectedProjectDetails?.displayName || ''} onBack={() => navigate(-1)} />
-      <article className="note-reader vault-reader">
+      <article
+        className="note-reader vault-reader"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+
         {noteQuery.data ? (
           <>
             <header className="note-reader-head">
@@ -149,6 +179,7 @@ export function VaultPage({
               summary={noteQuery.data.summary}
               title={noteQuery.data.title}
             />
+            <RelatedNotesSection noteId={noteQuery.data.id} openNote={openNote} />
           </>
         ) : (
           <EmptyState>{selectedProjectDetails ? 'Open a note to start reading details.' : 'Select a project and open a note to start reading details.'}</EmptyState>
@@ -157,6 +188,61 @@ export function VaultPage({
     </>
   );
 }
+
+function RelatedNotesSection({
+  noteId,
+  openNote,
+}: {
+  noteId: string;
+  openNote: (id: string) => void;
+}) {
+  const { data: relatedNotes, isLoading, isError } = useQuery({
+    queryKey: ['notes', 'related', noteId],
+    queryFn: () => fetchRelatedNotes(noteId),
+    enabled: Boolean(noteId),
+  });
+
+  if (isLoading) {
+    return <div className="related-notes-loading">Finding related notes...</div>;
+  }
+
+  if (isError || !relatedNotes || relatedNotes.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="related-notes-section" aria-label="Related notes">
+      <h2 className="note-body-label">Related Notes</h2>
+      <div className="related-notes-grid">
+        {relatedNotes.map((note) => (
+          <div
+            key={note.id}
+            className="related-note-card clickable"
+            onClick={() => openNote(note.id)}
+          >
+            <div className="related-note-card-meta">
+              <Badge value={noteTypeLabel(note.type)} tone={note.type} />
+              <span className="meta">{formatUsDate(note.date)}</span>
+            </div>
+            <h4>{note.title}</h4>
+            <p>{getCleanSummary(note.summary)}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function getCleanSummary(summary: string | undefined): string {
+  if (!summary) return '';
+  let text = summary.replace(/\r?\n/g, ' ');
+  text = text.replace(/\s+/g, ' ').trim();
+  if (text.length > 200) {
+    return text.substring(0, 200) + '...';
+  }
+  return text;
+}
+
 
 function NoteAttachments({ attachments }: { attachments?: NoteAttachment[] }) {
   const [activeAttachment, setActiveAttachment] = useState<NoteAttachment | null>(null);

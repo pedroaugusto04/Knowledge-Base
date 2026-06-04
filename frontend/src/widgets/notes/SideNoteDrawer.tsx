@@ -8,10 +8,14 @@ import type { Project } from '../../shared/api/models/project';
 import { noteDetailQueryOptions } from '../../shared/api/note-query';
 import { Badge, EmptyState, InlineMessage, Tags } from '../../shared/ui/primitives';
 import { useMediaQuery } from '../../shared/ui/use-media-query';
+import { fetchRelatedNotes } from '../../shared/api/client';
+import type { NoteSummary } from '../../shared/api/models/note';
 import { MarkdownView } from '../markdown/MarkdownView';
 import { AttachmentIndicator } from './AttachmentIndicator';
 
 export type SideNoteDrawerProps = {
+
+
   noteId: string;
   onClose: () => void;
   onOpenFullPage: (noteId: string) => void;
@@ -28,6 +32,20 @@ export function SideNoteDrawer({ noteId, onClose, onOpenFullPage, dashboardProje
       contentRef.current.scrollTop = 0;
     }
   }, [noteId]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
 
   return (
     <aside className="knowledge-map-drawer" aria-label="Note details drawer">
@@ -72,6 +90,7 @@ export function SideNoteDrawer({ noteId, onClose, onOpenFullPage, dashboardProje
               summary={noteQuery.data.summary}
               title={noteQuery.data.title}
             />
+            <RelatedNotesSection noteId={noteQuery.data.id} openNote={onOpenFullPage} />
           </>
         ) : (
           <EmptyState>No details found.</EmptyState>
@@ -80,6 +99,61 @@ export function SideNoteDrawer({ noteId, onClose, onOpenFullPage, dashboardProje
     </aside>
   );
 }
+
+function RelatedNotesSection({
+  noteId,
+  openNote,
+}: {
+  noteId: string;
+  openNote: (id: string) => void;
+}) {
+  const { data: relatedNotes, isLoading, isError } = useQuery({
+    queryKey: ['notes', 'related', noteId],
+    queryFn: () => fetchRelatedNotes(noteId),
+    enabled: Boolean(noteId),
+  });
+
+  if (isLoading) {
+    return <div className="related-notes-loading">Finding related notes...</div>;
+  }
+
+  if (isError || !relatedNotes || relatedNotes.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="related-notes-section" aria-label="Related notes">
+      <h2 className="note-body-label">Related Notes</h2>
+      <div className="related-notes-grid">
+        {relatedNotes.map((note) => (
+          <div
+            key={note.id}
+            className="related-note-card clickable"
+            onClick={() => openNote(note.id)}
+          >
+            <div className="related-note-card-meta">
+              <Badge value={noteTypeLabel(note.type)} tone={note.type} />
+              <span className="meta">{formatUsDate(note.date)}</span>
+            </div>
+            <h4>{note.title}</h4>
+            <p>{getCleanSummary(note.summary)}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function getCleanSummary(summary: string | undefined): string {
+  if (!summary) return '';
+  let text = summary.replace(/\r?\n/g, ' ');
+  text = text.replace(/\s+/g, ' ').trim();
+  if (text.length > 200) {
+    return text.substring(0, 200) + '...';
+  }
+  return text;
+}
+
 
 function NoteAttachments({ attachments }: { attachments?: NoteAttachment[] }) {
   const [activeAttachment, setActiveAttachment] = useState<NoteAttachment | null>(null);

@@ -2,7 +2,14 @@ import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, R
 import type { Response } from 'express';
 
 import type { AuthenticatedUser } from '../../../../application/auth.js';
-import { CreateManualNoteUseCase, DeleteNoteUseCase, GetNoteAttachmentContentUseCase, UpdateNoteUseCase } from '../../../../application/use-cases/index.js';
+import {
+  CreateManualNoteUseCase,
+  DeleteNoteUseCase,
+  GetNoteAttachmentContentUseCase,
+  UpdateNoteUseCase,
+  SetNotePinnedUseCase,
+  FindRelatedNotesUseCase,
+} from '../../../../application/use-cases/index.js';
 import { CurrentUser } from '../../auth.decorators.js';
 import { AccessTokenAuthGuard, TrustedOriginGuard } from '../../auth.guards.js';
 import {
@@ -10,10 +17,12 @@ import {
   noteAttachmentContentParamSchema,
   noteIdParamSchema,
   updateNoteBodySchema,
+  pinNoteBodySchema,
   type CreateNoteBody,
   type NoteAttachmentContentParam,
   type NoteIdParam,
   type UpdateNoteBody,
+  type PinNoteBody,
 } from '../../dto/note.dto.js';
 import { ZodValidationPipe } from '../../zod-validation.pipe.js';
 
@@ -25,6 +34,8 @@ export class NotesController {
     private readonly updateNote: UpdateNoteUseCase,
     private readonly deleteNote: DeleteNoteUseCase,
     private readonly getAttachmentContent: GetNoteAttachmentContentUseCase,
+    private readonly setNotePinnedUseCase: SetNotePinnedUseCase,
+    private readonly findRelatedNotesUseCase: FindRelatedNotesUseCase,
   ) {}
 
   @Post()
@@ -68,6 +79,24 @@ export class NotesController {
     response.setHeader('Content-Length', String(content.body.byteLength || content.sizeBytes));
     response.setHeader('Content-Disposition', inlineContentDisposition(content.fileName));
     return response.send(content.body);
+  }
+
+  @Patch(':id/pin')
+  @UseGuards(TrustedOriginGuard)
+  pin(
+    @Param(new ZodValidationPipe(noteIdParamSchema, 'invalid_note_id')) params: NoteIdParam,
+    @Body(new ZodValidationPipe(pinNoteBodySchema, 'invalid_pin_note_payload')) body: PinNoteBody,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.setNotePinnedUseCase.execute(user.id, params.id, body.pinned);
+  }
+
+  @Get(':id/related')
+  related(
+    @Param(new ZodValidationPipe(noteIdParamSchema, 'invalid_note_id')) params: NoteIdParam,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.findRelatedNotesUseCase.execute(user.id, params.id);
   }
 }
 

@@ -720,6 +720,24 @@
   color: var(--active-text);
 }
 
+.row-action-button.pin {
+  color: var(--muted);
+}
+
+.row-action-button.pin.active {
+  color: var(--amber);
+  border-color: var(--warning-border);
+  background: var(--surface-warning);
+}
+
+.row-action-button.pin:hover {
+  border-color: var(--warning-border);
+  background: var(--surface-warning);
+  color: var(--amber);
+}
+
+
+
 .row-action-button:disabled {
   opacity: 0.45;
   border-color: var(--line-soft);

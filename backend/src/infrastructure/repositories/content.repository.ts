@@ -307,7 +307,7 @@ export class PostgresContentRepository extends ContentRepository {
        left join kb_attachments a on a.user_id = n.user_id and a.note_id = n.id
        where n.user_id = $1
        group by n.id
-       order by n.occurred_at desc, n.title asc`,
+       order by n.is_pinned desc, n.occurred_at desc, n.title asc`,
       [userId],
     );
     return result.rows.map(noteFromRow);
@@ -350,7 +350,7 @@ export class PostgresContentRepository extends ContentRepository {
        left join kb_attachments a on a.user_id = n.user_id and a.note_id = n.id
        where ${dataWhere}
        group by n.id
-       order by n.occurred_at desc, n.title asc
+       order by n.is_pinned desc, n.occurred_at desc, n.title asc
        limit $${values.length + 1} offset $${values.length + 2}`,
       [...values, pagination.pageSize, (pagination.page - 1) * pagination.pageSize],
     );
@@ -385,7 +385,7 @@ export class PostgresContentRepository extends ContentRepository {
        left join kb_attachments a on a.user_id = n.user_id and a.note_id = n.id
        where ${dataWhere}
        group by n.id
-       order by n.occurred_at desc, n.title asc
+       order by n.is_pinned desc, n.occurred_at desc, n.title asc
        limit $${values.length + 1} offset $${values.length + 2}`,
       [...values, pagination.pageSize, (pagination.page - 1) * pagination.pageSize],
     );
@@ -416,7 +416,7 @@ export class PostgresContentRepository extends ContentRepository {
        left join kb_attachments a on a.user_id = n.user_id and a.note_id = n.id
        where ${dataWhere}
        group by n.id
-       order by n.occurred_at desc, n.title asc
+       order by n.is_pinned desc, n.occurred_at desc, n.title asc
        limit $${values.length + 1}`,
       [...values, input.limit],
     );
@@ -604,7 +604,7 @@ export class PostgresContentRepository extends ContentRepository {
 
   private async resolveNotePage(input: ListNotesInput, where: string, values: unknown[]) {
     const selected = await this.database.getPool().query(
-      `select occurred_at, title
+      `select occurred_at, title, is_pinned
        from kb_notes
        where ${where} and id = $${values.length + 1}
        limit 1`,
@@ -618,13 +618,26 @@ export class PostgresContentRepository extends ContentRepository {
        from kb_notes
        where ${where}
          and (
-           occurred_at > $${values.length + 1}
-           or (occurred_at = $${values.length + 1} and title <= $${values.length + 2})
+           (is_pinned and not $${values.length + 1}::boolean)
+           or (is_pinned = $${values.length + 1}::boolean and occurred_at > $${values.length + 2})
+           or (is_pinned = $${values.length + 1}::boolean and occurred_at = $${values.length + 2} and title <= $${values.length + 3})
          )`,
-      [...values, note.occurred_at, note.title],
+      [...values, note.is_pinned, note.occurred_at, note.title],
     );
     const index = Number(result.rows[0]?.idx || 0);
     return index > 0 ? Math.ceil(index / input.pageSize) : 1;
+  }
+
+  async setNotePinned(userId: string, id: string, pinned: boolean) {
+    const result = await this.database.getPool().query(
+      `update kb_notes
+       set is_pinned = $3,
+           updated_at = now()
+       where user_id = $1 and id = $2
+       returning *`,
+      [userId, id, pinned],
+    );
+    return result.rows[0] ? noteFromRow(result.rows[0]) : null;
   }
 }
 

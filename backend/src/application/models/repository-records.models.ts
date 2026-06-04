@@ -136,6 +136,7 @@ export type NoteRecord = {
   source: string;
   links: string[];
   attachmentCount?: number;
+  isPinned?: boolean;
 };
 
 export type AttachmentRecord = {

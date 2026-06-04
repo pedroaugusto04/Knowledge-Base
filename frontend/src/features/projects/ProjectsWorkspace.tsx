@@ -33,6 +33,8 @@ import { ProjectsBrowser } from './ProjectsBrowser';
 import { flattenFolders } from './projects.helpers';
 import type { ConfirmState, FolderModalState, NoteModalState, ProjectModalState } from './projects.types';
 import { ProjectTimeline } from './ProjectTimeline';
+import { SideNoteDrawer } from '../../widgets/notes/SideNoteDrawer';
+
 
 type ProjectsWorkspaceProps = ProjectsPageContext;
 
@@ -52,6 +54,7 @@ export function ProjectsWorkspace({
   const [selectedFolderId, setSelectedFolderId] = useState(ROOT_FOLDER_ID);
   const [timelineCategory, setTimelineCategory] = useState<ProjectTimelineCategory>('all');
   const [hiddenLatestBriefProjects, setHiddenLatestBriefProjects] = useState<Record<string, boolean>>({});
+  const [sideNoteId, setSideNoteId] = useState<string | null>(null);
   const routeProject = params.projectSlug ? decodeURIComponent(params.projectSlug) : '';
   const selectedSlug = routeProject || selectedProject;
   const dashboardNotes = dashboard.notes || [];
@@ -206,75 +209,87 @@ export function ProjectsWorkspace({
         subtitle=""
         action={<button className="icon-button" type="button" onClick={() => setProjectModal({ mode: 'create' })}>New project</button>}
       />
-      {isAllProjectsSelected ? (
-        <Panel className="spaced">
-          <div className="page-head">
-            <div>
-              <h2>All</h2>
-              <p>Notes from all projects</p>
-            </div>
-          </div>
-          <ProjectTimeline
-            dashboard={dashboard}
-            items={allProjectsTimelineQuery.data?.timeline || []}
-            pagination={allProjectsTimelineQuery.data?.pagination}
-            category={timelineCategory}
-            onCategoryChange={(category) => {
-              setTimelineCategory(category);
-              timelinePagination.setPage(1);
-            }}
-            onDeleteNote={(note) => setConfirmState({ kind: 'note', note })}
-            onEditNote={(note) => loadNoteMutation.mutate(note.id)}
-            onOpenNote={openNote}
-            onPageChange={timelinePagination.setPage}
-            isStale={allProjectsTimelineQuery.isPlaceholderData}
-            resetKey={`all:${timelineCategory}:timeline`}
+      <div className={`knowledge-map-container-layout${sideNoteId ? ' has-drawer' : ''}`}>
+        <div style={{ minWidth: 0 }}>
+          {isAllProjectsSelected ? (
+            <Panel className="spaced">
+              <div className="page-head">
+                <div>
+                  <h2>All</h2>
+                  <p>Notes from all projects</p>
+                </div>
+              </div>
+              <ProjectTimeline
+                dashboard={dashboard}
+                items={allProjectsTimelineQuery.data?.timeline || []}
+                pagination={allProjectsTimelineQuery.data?.pagination}
+                category={timelineCategory}
+                onCategoryChange={(category) => {
+                  setTimelineCategory(category);
+                  timelinePagination.setPage(1);
+                }}
+                onDeleteNote={(note) => setConfirmState({ kind: 'note', note })}
+                onEditNote={(note) => loadNoteMutation.mutate(note.id)}
+                onOpenNote={setSideNoteId}
+                onPageChange={timelinePagination.setPage}
+                isStale={allProjectsTimelineQuery.isPlaceholderData}
+                resetKey={`all:${timelineCategory}:timeline`}
+              />
+            </Panel>
+          ) : selected ? (
+            <ProjectsBrowser
+              dashboard={dashboard}
+              project={selected}
+              folderTree={folderTree}
+              selectedFolderId={selectedFolderId}
+              selectedFolder={selectedFolder}
+              timelineItems={timelineItems}
+              briefResponse={selectedBriefResponse}
+              briefLoading={generateBriefMutation.isPending && generateBriefMutation.variables === selected.projectSlug}
+              briefHistoryLoading={latestBriefQuery.isFetching}
+              briefError={generateBriefMutation.isError && generateBriefMutation.variables === selected.projectSlug
+                ? getErrorMessage(generateBriefMutation.error, 'Could not generate the project brief.')
+                : ''}
+              briefHistoryError={latestBriefQuery.isError
+                ? getErrorMessage(latestBriefQuery.error, 'Could not load the latest project brief.')
+                : ''}
+              timelineCategory={timelineCategory}
+              timelinePagination={timelineQuery.data?.pagination}
+              onTimelineCategoryChange={(category) => {
+                setTimelineCategory(category);
+                timelinePagination.setPage(1);
+              }}
+              onTimelinePageChange={timelinePagination.setPage}
+              onFolderSelect={(folderId) => {
+                setSelectedFolderId(folderId);
+                timelinePagination.setPage(1);
+              }}
+              onGenerateBrief={() => generateBriefMutation.mutate(selected.projectSlug)}
+              onShowLatestBrief={showLatestBrief}
+              onCreateNote={() => setNoteModal({ mode: 'create', projectSlug: selected.projectSlug, folderId: selectedFolderId || undefined })}
+              onCreateFolder={() => setFolderModal({ mode: 'create', projectSlug: selected.projectSlug, parentFolderId: selectedFolder?.id })}
+              onEditFolder={() => selectedFolder ? setFolderModal({ mode: 'edit', projectSlug: selected.projectSlug, folder: selectedFolder }) : undefined}
+              onDeleteFolder={() => selectedFolder ? setConfirmState({ kind: 'folder', projectSlug: selected.projectSlug, folder: selectedFolder }) : undefined}
+              onEditNote={(note) => loadNoteMutation.mutate(note.id)}
+              onDeleteNote={(note) => setConfirmState({ kind: 'note', note })}
+              onOpenNote={setSideNoteId}
+              onEditProject={selected.projectSlug === 'inbox' ? undefined : () => setProjectModal({ mode: 'edit', project: selected })}
+              onDeleteProject={selectedProjectDeleteBlockedReason ? undefined : () => setConfirmState({ kind: 'project', project: selected })}
+              deleteProjectLabel={selectedProjectDeleteBlockedReason || 'Delete project'}
+              isStale={timelineQuery.isPlaceholderData}
+              timelineResetKey={`${selected.projectSlug}:${selectedFolderId}:${timelineCategory}:timeline`}
+            />
+          ) : null}
+        </div>
+        {sideNoteId && (
+          <SideNoteDrawer
+            noteId={sideNoteId}
+            dashboardProjects={dashboard.projects}
+            onClose={() => setSideNoteId(null)}
+            onOpenFullPage={openNote}
           />
-        </Panel>
-      ) : selected ? (
-        <ProjectsBrowser
-          dashboard={dashboard}
-          project={selected}
-          folderTree={folderTree}
-          selectedFolderId={selectedFolderId}
-          selectedFolder={selectedFolder}
-          timelineItems={timelineItems}
-          briefResponse={selectedBriefResponse}
-          briefLoading={generateBriefMutation.isPending && generateBriefMutation.variables === selected.projectSlug}
-          briefHistoryLoading={latestBriefQuery.isFetching}
-          briefError={generateBriefMutation.isError && generateBriefMutation.variables === selected.projectSlug
-            ? getErrorMessage(generateBriefMutation.error, 'Could not generate the project brief.')
-            : ''}
-          briefHistoryError={latestBriefQuery.isError
-            ? getErrorMessage(latestBriefQuery.error, 'Could not load the latest project brief.')
-            : ''}
-          timelineCategory={timelineCategory}
-          timelinePagination={timelineQuery.data?.pagination}
-          onTimelineCategoryChange={(category) => {
-            setTimelineCategory(category);
-            timelinePagination.setPage(1);
-          }}
-          onTimelinePageChange={timelinePagination.setPage}
-          onFolderSelect={(folderId) => {
-            setSelectedFolderId(folderId);
-            timelinePagination.setPage(1);
-          }}
-          onGenerateBrief={() => generateBriefMutation.mutate(selected.projectSlug)}
-          onShowLatestBrief={showLatestBrief}
-          onCreateNote={() => setNoteModal({ mode: 'create', projectSlug: selected.projectSlug, folderId: selectedFolderId || undefined })}
-          onCreateFolder={() => setFolderModal({ mode: 'create', projectSlug: selected.projectSlug, parentFolderId: selectedFolder?.id })}
-          onEditFolder={() => selectedFolder ? setFolderModal({ mode: 'edit', projectSlug: selected.projectSlug, folder: selectedFolder }) : undefined}
-          onDeleteFolder={() => selectedFolder ? setConfirmState({ kind: 'folder', projectSlug: selected.projectSlug, folder: selectedFolder }) : undefined}
-          onEditNote={(note) => loadNoteMutation.mutate(note.id)}
-          onDeleteNote={(note) => setConfirmState({ kind: 'note', note })}
-          onOpenNote={openNote}
-          onEditProject={selected.projectSlug === 'inbox' ? undefined : () => setProjectModal({ mode: 'edit', project: selected })}
-          onDeleteProject={selectedProjectDeleteBlockedReason ? undefined : () => setConfirmState({ kind: 'project', project: selected })}
-          deleteProjectLabel={selectedProjectDeleteBlockedReason || 'Delete project'}
-          isStale={timelineQuery.isPlaceholderData}
-          timelineResetKey={`${selected.projectSlug}:${selectedFolderId}:${timelineCategory}:timeline`}
-        />
-      ) : null}
+        )}
+      </div>
       {projectModal ? (
         <ProjectModal
           githubConnected={githubConnected}

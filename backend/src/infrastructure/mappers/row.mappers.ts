@@ -190,6 +190,7 @@ export function noteFromRow(row: Row): NoteRecord {
     source: String(row.source || row.source_channel || ''),
     links: stringArray(row.links),
     attachmentCount: Number(row.attachment_count || 0),
+    isPinned: row.is_pinned === true,
   };
 }
 

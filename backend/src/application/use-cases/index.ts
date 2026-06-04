@@ -54,4 +54,7 @@ export {
   CreatePushSubscriptionUseCase,
   DeletePushSubscriptionUseCase,
 } from './push/push-subscription.use-cases.js';
+export { SetNotePinnedUseCase } from './notes/set-note-pinned.use-case.js';
+export { FindRelatedNotesUseCase } from './notes/find-related-notes.use-case.js';
+
 

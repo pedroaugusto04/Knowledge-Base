@@ -12,6 +12,7 @@ export type VaultNoteSummary = {
   summary: string;
   source: string;
   attachmentCount: number;
+  isPinned?: boolean;
 };
 
 export type VaultNoteAttachment = {

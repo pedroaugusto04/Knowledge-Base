@@ -33,6 +33,7 @@ export function noteSummary(record: NoteRecord): VaultNoteSummary {
     summary: record.summary,
     source: record.source || record.sourceChannel,
     attachmentCount: record.attachmentCount || 0,
+    isPinned: record.isPinned,
   };
 }
 

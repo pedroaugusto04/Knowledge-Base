@@ -94,3 +94,9 @@ export const updateNoteBodySchema = z
 export type NoteIdParam = z.infer<typeof noteIdParamSchema>;
 export type NoteAttachmentContentParam = z.infer<typeof noteAttachmentContentParamSchema>;
 export type UpdateNoteBody = z.infer<typeof updateNoteBodySchema>;
+
+export const pinNoteBodySchema = z.object({
+  pinned: z.boolean(),
+});
+export type PinNoteBody = z.infer<typeof pinNoteBodySchema>;
+

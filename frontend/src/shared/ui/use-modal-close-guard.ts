@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 export const discardChangesConfirmationCopy = {
   cancelLabel: 'Keep editing',
@@ -32,6 +32,24 @@ export function useModalCloseGuard({ isDirty, onClose }: { isDirty: boolean; onC
     setIsDiscardConfirmationOpen(false);
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isDiscardConfirmationOpen) {
+          event.preventDefault();
+          cancelClose();
+        } else {
+          event.preventDefault();
+          requestClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDiscardConfirmationOpen, cancelClose, requestClose]);
+
   return {
     cancelClose,
     confirmClose,
@@ -40,3 +58,4 @@ export function useModalCloseGuard({ isDirty, onClose }: { isDirty: boolean; onC
     resetCloseGuard,
   };
 }
+

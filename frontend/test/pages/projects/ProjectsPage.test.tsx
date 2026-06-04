@@ -296,6 +296,25 @@ describe('ProjectsPage', () => {
       if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
       if (url.startsWith('/api/projects/platform/timeline?')) return Response.json(timelineFromDashboardNotes());
       if (url === '/api/projects/platform/brief' && !init?.method) return Response.json(savedProjectBriefResponse());
+      if (url === '/api/notes/note-1') {
+        return Response.json({
+          ok: true,
+          note: {
+            id: 'note-1',
+            project: 'platform',
+            workspace: 'default',
+            title: 'Deploy antigo',
+            markdown: '# Deploy antigo',
+            frontmatter: {},
+            tags: [],
+            date: '2026-04-27',
+            status: 'active',
+            summary: '',
+            attachments: [],
+            links: [],
+          },
+        });
+      }
       return Response.error();
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -308,6 +327,7 @@ describe('ProjectsPage', () => {
     expect(screen.getByRole('button', { name: 'Hide latest' })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith('/api/projects/platform/brief', expect.objectContaining({ method: 'POST' }));
     fireEvent.click(screen.getByRole('button', { name: 'Deploy antigo' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open page' }));
     expect(openNote).toHaveBeenCalledWith('note-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide latest' }));
@@ -340,6 +360,25 @@ describe('ProjectsPage', () => {
       if (url === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
       if (url.startsWith('/api/projects/platform/timeline?')) return Response.json(timelineFromDashboardNotes());
       if (url === '/api/projects/platform/brief' && init?.method === 'POST') return Response.json(projectBriefResponse());
+      if (url === '/api/notes/note-1') {
+        return Response.json({
+          ok: true,
+          note: {
+            id: 'note-1',
+            project: 'platform',
+            workspace: 'default',
+            title: 'Deploy antigo',
+            markdown: '# Deploy antigo',
+            frontmatter: {},
+            tags: [],
+            date: '2026-04-27',
+            status: 'active',
+            summary: '',
+            attachments: [],
+            links: [],
+          },
+        });
+      }
       return Response.error();
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -350,6 +389,7 @@ describe('ProjectsPage', () => {
     expect(await screen.findByText('Platform is actively processing deployment work.')).toBeInTheDocument();
     expect(screen.getByText('Active with one open rollout item.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Deploy antigo' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open page' }));
     expect(openNote).toHaveBeenCalledWith('note-1');
   });
 

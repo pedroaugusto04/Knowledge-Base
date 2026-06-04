@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useEffect } from 'react';
 
 export function ConfirmationModal({
   busy = false,
@@ -20,6 +20,20 @@ export function ConfirmationModal({
   tone?: 'default' | 'danger';
 }) {
   const titleId = useId();
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onCancel]);
+
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={onCancel}>

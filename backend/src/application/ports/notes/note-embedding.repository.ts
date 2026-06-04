@@ -35,4 +35,6 @@ export abstract class NoteEmbeddingRepository {
     queryEmbedding: number[],
     options: FindSimilarOptions,
   ): Promise<SimilarChunk[]>;
+
+  abstract getNoteEmbeddings(userId: string, noteId: string): Promise<NoteEmbeddingRecord[]>;
 }

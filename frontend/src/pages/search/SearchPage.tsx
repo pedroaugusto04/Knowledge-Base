@@ -21,6 +21,7 @@ import { notifyWarning } from '../../shared/ui/notifications';
 import { useDebouncedValue } from '../../shared/ui/use-debounced-value';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
 import { NoteRow } from '../../widgets/notes/NoteRow';
+import { SideNoteDrawer } from '../../widgets/notes/SideNoteDrawer';
 import './SearchPage.css';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -46,6 +47,7 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
   const [showHistory, setShowHistory] = useState(false);
   const [isAsking, setIsAsking] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
+  const [sideNoteId, setSideNoteId] = useState<string | null>(null);
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug || '';
   const debouncedQuery = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
   const debouncedProjectSlug = useDebouncedValue(projectSlug, SEARCH_DEBOUNCE_MS);
@@ -264,31 +266,42 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
 
       {askError ? <InlineMessage className="ask-error-message" tone="error">{askError}</InlineMessage> : null}
 
-      <Panel className="matching-notes-panel">
-        <div className="matching-notes-heading">
-          <h2>Matching Notes</h2>
-          <span className="matching-notes-count">{pagination ? `${pagination.total} total` : ''}</span>
-        </div>
-        {isResultsError ? <InlineMessage tone="error">Could not load notes for these filters.</InlineMessage> : null}
-        <div className={`list ${isResultsStale ? 'stale-data' : ''}`}>
-          {paginatedVisibleNotes.map((note) => (
-            <NoteRow
-              key={note.id}
-              note={note}
-              dashboard={dashboard}
-              onDelete={() => deleteNote({ id: note.id, title: note.title })}
-              onEdit={() => editNote(note.id)}
-              onOpen={openNote}
-            />
-          ))}
-        </div>
-        {pagination ? (
-          isMobilePagination
-            ? <MobileInfinitePagination pagination={pagination} isLoading={isResultsFetching || pagination.page > loadedMobilePage} onPageChange={setPage} />
-            : <Pagination pagination={pagination} onPageChange={setPage} />
-        ) : null}
-        {!paginatedVisibleNotes.length && !isResultsError ? <EmptyState>No notes found with these filters.</EmptyState> : null}
-      </Panel>
+      <div className={`knowledge-map-container-layout${sideNoteId ? ' has-drawer' : ''}`}>
+        <Panel className="matching-notes-panel" style={{ minWidth: 0 }}>
+          <div className="matching-notes-heading">
+            <h2>Matching Notes</h2>
+            <span className="matching-notes-count">{pagination ? `${pagination.total} total` : ''}</span>
+          </div>
+          {isResultsError ? <InlineMessage tone="error">Could not load notes for these filters.</InlineMessage> : null}
+          <div className={`list ${isResultsStale ? 'stale-data' : ''}`}>
+            {paginatedVisibleNotes.map((note) => (
+              <NoteRow
+                key={note.id}
+                note={note}
+                dashboard={dashboard}
+                onDelete={() => deleteNote({ id: note.id, title: note.title })}
+                onEdit={() => editNote(note.id)}
+                onOpen={setSideNoteId}
+              />
+            ))}
+          </div>
+          {pagination ? (
+            isMobilePagination
+              ? <MobileInfinitePagination pagination={pagination} isLoading={isResultsFetching || pagination.page > loadedMobilePage} onPageChange={setPage} />
+              : <Pagination pagination={pagination} onPageChange={setPage} />
+          ) : null}
+          {!paginatedVisibleNotes.length && !isResultsError ? <EmptyState>No notes found with these filters.</EmptyState> : null}
+        </Panel>
+
+        {sideNoteId && (
+          <SideNoteDrawer
+            noteId={sideNoteId}
+            dashboardProjects={dashboard.projects}
+            onClose={() => setSideNoteId(null)}
+            onOpenFullPage={openNote}
+          />
+        )}
+      </div>
     </>
   );
 }

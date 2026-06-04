@@ -92,3 +92,16 @@ export function deleteNote(id: string) {
     method: 'DELETE',
   });
 }
+
+export function pinNote(id: string, pinned: boolean) {
+  return request<{ ok: true; noteId: string; pinned: boolean }>(`/api/notes/${encodeURIComponent(id)}/pin`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ pinned }),
+  });
+}
+
+export function fetchRelatedNotes(id: string): Promise<NoteSummary[]> {
+  return request<NoteSummary[]>(`/api/notes/${encodeURIComponent(id)}/related`);
+}
+
