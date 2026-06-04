@@ -32,6 +32,7 @@ import { ThemeToggle } from '../shared/ui/theme-toggle';
 import { useGlobalLoading } from '../app/global-loading';
 import { useDebouncedValue } from '../shared/ui/use-debounced-value';
 import { OfflineBanner } from '../shared/ui/offline-banner';
+import { Line, LineChart, ResponsiveContainer } from 'recharts';
 
 
 function activeView(pathname: string): View {
@@ -372,6 +373,21 @@ export function AppShell() {
                 >
                   <span className="file-icon">P</span>
                   <span>{project.displayName}</span>
+                  {project.activitySparkline && (
+                    <div className="project-sparkline" style={{ width: '40px', height: '16px', marginLeft: 'auto', marginRight: '4px', flexShrink: 0 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={project.activitySparkline}>
+                          <Line
+                            type="monotone"
+                            dataKey="count"
+                            stroke={project.projectSlug === pageContext.selectedProject ? 'var(--text)' : 'var(--muted)'}
+                            strokeWidth={1.5}
+                            dot={false}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </button>
                 <button
                   aria-label={project.favorite ? 'Unstar' : 'Star'}

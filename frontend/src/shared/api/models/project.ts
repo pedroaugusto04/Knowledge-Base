@@ -18,4 +18,5 @@ export type Project = {
   defaultTags: string[];
   enabled: boolean;
   favorite: boolean;
+  activitySparkline?: { date: string; count: number }[];
 };

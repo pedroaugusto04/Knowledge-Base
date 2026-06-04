@@ -2,6 +2,7 @@ import type { Dashboard } from '../../shared/api/models/dashboard';
 import { formatDisplayToken } from '../../entities/format';
 import { Badge } from '../../shared/ui/primitives';
 import { PencilIcon, TrashIcon } from '../../shared/ui/icons';
+import { Line, LineChart, ResponsiveContainer } from 'recharts';
 
 
 
@@ -67,6 +68,21 @@ export function ProjectCard({
       <div className="meta-row">
         <Badge value={formatDisplayToken(project.enabled ? 'active' : 'archived')} tone={project.enabled ? 'active' : 'archived'} />
         <span className="meta">{project.defaultTags.slice(0, 2).join(' / ')}</span>
+        {project.activitySparkline && (
+          <div className="project-sparkline" style={{ width: '60px', height: '20px', marginLeft: 'auto' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={project.activitySparkline}>
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="var(--sparkline-stroke, var(--text-muted))"
+                  strokeWidth={1.5}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </article>
   );
