@@ -1,11 +1,9 @@
-import { createContext, useContext, useEffect, useEffectEvent, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 
-export type ThemePreference = 'system' | 'dark' | 'light';
+export type ThemePreference = 'dark' | 'light';
 export type EffectiveTheme = 'dark' | 'light';
 
 export const THEME_STORAGE_KEY = 'knowledge-base-theme';
-
-const SYSTEM_THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
 type ThemeContextValue = {
   effectiveTheme: EffectiveTheme;
@@ -17,7 +15,7 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function isThemePreference(value: string | null): value is ThemePreference {
-  return value === 'system' || value === 'dark' || value === 'light';
+  return value === 'dark' || value === 'light';
 }
 
 function getThemeStorage() {
@@ -38,19 +36,10 @@ function getThemeStorage() {
 
 function readStoredThemePreference(): ThemePreference {
   const storage = getThemeStorage();
-  if (!storage) return 'system';
+  if (!storage) return 'dark';
 
   const storedPreference = storage.getItem(THEME_STORAGE_KEY);
-  return isThemePreference(storedPreference) ? storedPreference : 'system';
-}
-
-function getSystemTheme(): EffectiveTheme {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'dark';
-  return window.matchMedia(SYSTEM_THEME_MEDIA_QUERY).matches ? 'dark' : 'light';
-}
-
-function resolveEffectiveTheme(preference: ThemePreference): EffectiveTheme {
-  return preference === 'system' ? getSystemTheme() : preference;
+  return isThemePreference(storedPreference) ? storedPreference : 'dark';
 }
 
 function applyThemeToDocument(theme: EffectiveTheme) {
@@ -60,52 +49,27 @@ function applyThemeToDocument(theme: EffectiveTheme) {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(() => readStoredThemePreference());
-  const [effectiveTheme, setEffectiveTheme] = useState<EffectiveTheme>(() => resolveEffectiveTheme(readStoredThemePreference()));
 
   useLayoutEffect(() => {
-    applyThemeToDocument(effectiveTheme);
-  }, [effectiveTheme]);
+    applyThemeToDocument(preference);
+  }, [preference]);
 
   useEffect(() => {
     const storage = getThemeStorage();
-
-    setEffectiveTheme(resolveEffectiveTheme(preference));
-
-    if (preference === 'system') {
-      storage?.removeItem(THEME_STORAGE_KEY);
-      return;
+    const stored = storage?.getItem(THEME_STORAGE_KEY);
+    if (preference !== 'dark' || stored !== null) {
+      storage?.setItem(THEME_STORAGE_KEY, preference);
     }
-
-    storage?.setItem(THEME_STORAGE_KEY, preference);
   }, [preference]);
 
-  const handleSystemThemeChange = useEffectEvent((event: MediaQueryListEvent) => {
-    setEffectiveTheme(event.matches ? 'dark' : 'light');
-  });
-
-  useEffect(() => {
-    if (preference !== 'system' || typeof window.matchMedia !== 'function') return undefined;
-
-    const mediaQuery = window.matchMedia(SYSTEM_THEME_MEDIA_QUERY);
-    setEffectiveTheme(mediaQuery.matches ? 'dark' : 'light');
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    };
-  }, [handleSystemThemeChange, preference]);
-
   const value = useMemo<ThemeContextValue>(() => ({
-    effectiveTheme,
+    effectiveTheme: preference,
     preference,
     setPreference: setPreferenceState,
     toggleTheme: () => {
-      setPreferenceState((current) => {
-        const currentTheme = current === 'system' ? getSystemTheme() : current;
-        return currentTheme === 'dark' ? 'light' : 'dark';
-      });
+      setPreferenceState((current) => (current === 'dark' ? 'light' : 'dark'));
     },
-  }), [effectiveTheme, preference]);
+  }), [preference]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

@@ -410,7 +410,7 @@ describe('AppShell', () => {
     expect(screen.queryByText('- none')).not.toBeInTheDocument();
   });
 
-  it('uses the system dark preference when there is no saved theme', async () => {
+  it('uses dark mode by default when there is no saved theme', async () => {
     const storage = stubLocalStorage();
     stubMatchMedia(true);
     vi.stubGlobal('fetch', mockFetch());
@@ -423,7 +423,7 @@ describe('AppShell', () => {
     expect(storage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
-  it('uses the system light preference when there is no saved theme', async () => {
+  it('ignores the system light preference and uses dark mode by default when there is no saved theme', async () => {
     const storage = stubLocalStorage();
     stubMatchMedia(false);
     vi.stubGlobal('fetch', mockFetch());
@@ -431,8 +431,8 @@ describe('AppShell', () => {
     renderWithAppProviders(<AppShell />);
 
     expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
-    expect(document.documentElement.dataset.theme).toBe('light');
-    expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(document.documentElement.style.colorScheme).toBe('dark');
     expect(storage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
