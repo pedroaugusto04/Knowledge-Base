@@ -21,10 +21,17 @@
 /* Elevated surfaces: cards, panels, readers, search */
 :root[data-theme="light"] .card,
 :root[data-theme="light"] .panel,
-:root[data-theme="light"] .note-reader,
 :root[data-theme="light"] .search-box {
   background: var(--panel);
   border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+:root[data-theme="light"] .note-reader {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
   box-shadow: var(--shadow);
 }
 
