@@ -209,10 +209,10 @@ export function ProjectsWorkspace({
         subtitle=""
         action={<button className="icon-button" type="button" onClick={() => setProjectModal({ mode: 'create' })}>New project</button>}
       />
-      <div className={`knowledge-map-container-layout${sideNoteId ? ' has-drawer' : ''}`}>
+      <div className={`knowledge-map-container-layout${sideNoteId ? ' has-drawer' : ''} spaced`}>
         <div style={{ minWidth: 0 }}>
           {isAllProjectsSelected ? (
-            <Panel className="spaced">
+            <Panel>
               <div className="page-head">
                 <div>
                   <h2>All</h2>

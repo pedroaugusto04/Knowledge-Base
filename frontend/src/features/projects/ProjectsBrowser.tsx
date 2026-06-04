@@ -85,7 +85,7 @@ export function ProjectsBrowser({
   const folderScopeLabel = selectedFolder ? `${selectedFolder.displayName} and descendant folders` : 'All project notes';
 
   return (
-    <Panel className="spaced">
+    <Panel>
       <div className="page-head">
         <div>
           <div className="project-title-row">

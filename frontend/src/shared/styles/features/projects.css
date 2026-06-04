@@ -692,6 +692,7 @@
   gap: 16px;
   position: relative;
   min-width: 0;
+  align-items: start;
 }
 
 .knowledge-map-container-layout.has-drawer {
@@ -760,6 +761,7 @@
 .knowledge-map-drawer-content {
   padding: 16px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -772,3 +774,37 @@
   gap: 6px;
   align-items: center;
 }
+
+/* Side Note Drawer horizontal scroll prevention */
+.knowledge-map-drawer-content pre,
+.knowledge-map-drawer-content code {
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+}
+
+.knowledge-map-drawer-content table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.knowledge-map-drawer-content p,
+.knowledge-map-drawer-content li,
+.knowledge-map-drawer-content span,
+.knowledge-map-drawer-content h1,
+.knowledge-map-drawer-content h2,
+.knowledge-map-drawer-content h3,
+.knowledge-map-drawer-content h4,
+.knowledge-map-drawer-content div {
+  max-width: 100%;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+.knowledge-map-drawer-content img {
+  max-width: 100%;
+  height: auto;
+}
+

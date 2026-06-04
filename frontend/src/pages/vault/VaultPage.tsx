@@ -28,6 +28,7 @@ export function VaultPage({
   editNote,
   deleteNote,
 }: PageContext) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const navigate = useNavigate();
   const params = useParams();
   const routeNoteId = params.noteId ? decodeURIComponent(params.noteId) : '';
@@ -155,12 +156,16 @@ export function VaultPage({
                       <TrashIcon />
                     </button>
                   ) : null}
-                  <button className="icon-button" disabled={!previousNote} type="button" onClick={() => previousNote && openNote(previousNote.id)}>
-                    Previous
-                  </button>
-                  <button className="icon-button" disabled={!nextNote} type="button" onClick={() => nextNote && openNote(nextNote.id)}>
-                    Next
-                  </button>
+                  {!isMobile && (
+                    <>
+                      <button className="icon-button" disabled={!previousNote} type="button" onClick={() => previousNote && openNote(previousNote.id)}>
+                        Previous
+                      </button>
+                      <button className="icon-button" disabled={!nextNote} type="button" onClick={() => nextNote && openNote(nextNote.id)}>
+                        Next
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="note-meta-row">
