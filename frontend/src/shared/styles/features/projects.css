@@ -708,10 +708,13 @@
   box-shadow: var(--shadow-strong);
   display: flex;
   flex-direction: column;
-  height: clamp(700px, calc(100vh - 210px), 860px);
+  height: clamp(700px, calc(100vh - 130px), 860px);
   min-width: 0;
   overflow: hidden;
   animation: slide-in-right 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: sticky;
+  top: 96px;
+  align-self: start;
 }
 
 .knowledge-map-drawer-head {
