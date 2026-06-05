@@ -542,3 +542,81 @@ test('webhook event logs redact sensitive headers and payload recursively', asyn
   assert.equal(event.rawPayload.nested.apiKey, '[redacted]');
   assert.equal(event.rawPayload.nested.keep, 'visible');
 });
+
+test('sends automatic introduction message when whatsapp/telegram connects', async (t) => {
+  configureEnv();
+  const repositories = await createPostgresTestRepositories(t);
+  const user = await repositories.userRepository.createUser({ email: 'owner-intro@example.com', displayName: 'Owner', passwordHash: 'hash', role: 'user' });
+  await repositories.contentRepository.upsertWorkspace(user.id, {
+    workspaceSlug: 'default',
+    displayName: 'Default',
+    whatsappChatJid: '',
+    telegramChatId: '',
+    createdAt: '2026-04-27T00:00:00.000Z',
+    updatedAt: '2026-04-27T00:00:00.000Z',
+  });
+  const environmentProvider = runtimeEnvironmentProvider();
+  const githubGateway = githubIntegrationGateway();
+  const githubRepositoryResolution = new GithubRepositoryResolutionService(
+    repositories.contentRepository,
+    repositories.credentialRepository,
+    environmentProvider,
+    githubGateway,
+  );
+
+  const mockWhatsappSender = {
+    sentTextCalls: [],
+    async sendText(input) {
+      this.sentTextCalls.push(input);
+      return { ok: true };
+    },
+    async sendMedia(input) {
+      return { ok: true };
+    }
+  };
+
+  const mockTelegramSender = {
+    sentTextCalls: [],
+    async sendText(input) {
+      this.sentTextCalls.push(input);
+      return { ok: true };
+    }
+  };
+
+  const connections = new IntegrationConnectionService(
+    repositories.credentialRepository,
+    repositories.externalIdentityRepository,
+    repositories.connectionSessionRepository,
+    repositories.contentRepository,
+    githubRepositoryResolution,
+    environmentProvider,
+    githubGateway,
+    mockWhatsappSender,
+    mockTelegramSender,
+  );
+
+  // 1. WhatsApp Connection
+  const wppSetup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'whatsapp' });
+  await connections.completeWhatsappFromWebhook({
+    code: wppSetup.verificationCode,
+    chatJid: '5511999999999@s.whatsapp.net',
+  });
+
+  assert.equal(mockWhatsappSender.sentTextCalls.length, 1);
+  assert.equal(mockWhatsappSender.sentTextCalls[0].chatJid, '5511999999999@s.whatsapp.net');
+  assert.ok(mockWhatsappSender.sentTextCalls[0].text.startsWith('Conexão realizada com sucesso!'));
+  assert.ok(mockWhatsappSender.sentTextCalls[0].text.includes('Este é o seu canal do WhatsApp'));
+
+  // 2. Telegram Connection
+  const tgSetup = await connections.connect({ userId: user.id, workspaceSlug: 'default', provider: 'telegram' });
+  await connections.completeTelegramFromWebhook({
+    code: tgSetup.verificationCode,
+    chatId: '987654321',
+  });
+
+  assert.equal(mockTelegramSender.sentTextCalls.length, 1);
+  assert.equal(mockTelegramSender.sentTextCalls[0].chatId, '987654321');
+  assert.ok(mockTelegramSender.sentTextCalls[0].text.startsWith('Conexão realizada com sucesso!'));
+  assert.ok(mockTelegramSender.sentTextCalls[0].text.includes('Este é o seu canal do Telegram'));
+});
+

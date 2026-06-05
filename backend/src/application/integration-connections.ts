@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException, Optional } from '@nestjs/common';
 
 import { CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider } from '../contracts/enums.js';
 import { slugify } from '../domain/strings.js';
@@ -9,6 +9,9 @@ import { ContentRepository } from './ports/notes/content.repository.js';
 import { CredentialRepository, ExternalIdentityRepository, IntegrationConnectionSessionRepository } from './ports/integrations/integrations.repository.js';
 import { RuntimeEnvironmentProvider, type RuntimeEnvironment } from './ports/observability/runtime-environment.port.js';
 import { GithubRepositoryResolutionService } from './services/github-repository-resolution.service.js';
+import { WhatsappReplySender } from './ports/integrations/whatsapp-reply.sender.js';
+import { TelegramMessageSender } from './ports/integrations/telegram-message.sender.js';
+import { AppLogger } from '../observability/logger.js';
 import {
   appendQuery as appendConnectionQuery,
   buildBrowserRedirectUrl as buildConnectionBrowserRedirectUrl,
@@ -28,6 +31,8 @@ import {
   type ConnectionSessionMetadata,
   type ConnectionSessionView,
 } from './integrations/connection-session.helpers.js';
+
+import { WHATSAPP_INTRO_MESSAGE, TELEGRAM_INTRO_MESSAGE } from './integrations/connection-messages.js';
 
 export type { ConnectionSessionView };
 
@@ -92,6 +97,9 @@ export class IntegrationConnectionService {
     private readonly githubRepositoryResolution: GithubRepositoryResolutionService,
     private readonly environmentProvider: RuntimeEnvironmentProvider,
     private readonly githubIntegrationGateway: GithubIntegrationGateway,
+    @Optional() private readonly whatsappReplySender?: WhatsappReplySender,
+    @Optional() private readonly telegramMessageSender?: TelegramMessageSender,
+    @Optional() private readonly logger?: AppLogger,
   ) {}
 
   private environment() {
@@ -417,6 +425,27 @@ export class IntegrationConnectionService {
     });
     await this.upsertWorkspaceBinding(session.userId, session.workspaceSlug, input.spec.workspaceBinding, externalId);
     const consumed = await this.consumeSessionAsConnected(session.id, { connectedAccount: externalId });
+
+    try {
+      if (input.spec.provider === IntegrationProvider.Whatsapp && this.whatsappReplySender) {
+        await this.whatsappReplySender.sendText({
+          chatJid: externalId,
+          text: WHATSAPP_INTRO_MESSAGE,
+        });
+      } else if (input.spec.provider === IntegrationProvider.Telegram && this.telegramMessageSender) {
+        await this.telegramMessageSender.sendText({
+          chatId: externalId,
+          text: TELEGRAM_INTRO_MESSAGE,
+        });
+      }
+    } catch (error) {
+      this.logger?.error('connection.introduction_send_failed', {
+        provider: input.spec.provider,
+        externalId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     return {
       ok: true as const,
       provider: input.spec.provider,
