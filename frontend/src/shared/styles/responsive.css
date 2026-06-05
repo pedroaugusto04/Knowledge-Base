@@ -494,8 +494,7 @@
   }
 
   /* Mobile card optimization: hide secondary metadata & layout actions */
-  .list-row-body .meta-row .badge:not(.badge-active):not(.badge-pending):not(.badge-resolved):not(.badge-archived):not(.badge-sent),
-  .project-timeline-meta .badge:not(.badge-active):not(.badge-pending):not(.badge-resolved):not(.badge-archived):not(.badge-sent),
+  .project-timeline-meta .badge:nth-child(1),
   .list-row-body .meta-row .pinned-badge,
   .list-row-body .meta-row .meta-project,
   .list-row-body .meta-row .meta-separator,
