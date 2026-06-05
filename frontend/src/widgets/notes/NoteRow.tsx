@@ -27,6 +27,7 @@ export function NoteRow({
   onDoubleClick,
   onEdit,
   onDelete,
+  onPinSuccess,
 }: {
   note: NoteSummary;
   dashboard: Dashboard;
@@ -34,6 +35,7 @@ export function NoteRow({
   onDoubleClick?: (id: string) => void;
   onEdit?: (note: NoteSummary) => void;
   onDelete?: (note: NoteSummary) => void;
+  onPinSuccess?: () => void;
 }) {
   const queryClient = useQueryClient();
   const mutation = useMutation({
@@ -41,6 +43,7 @@ export function NoteRow({
     onSuccess: async () => {
       notifySuccess(note.isPinned ? 'Note unpinned.' : 'Note pinned.');
       await invalidateNoteRelatedQueries(queryClient, note.id);
+      onPinSuccess?.();
     },
     onError: (error) => {
       notifyGeneralFormError(error, 'Could not toggle pin status.');

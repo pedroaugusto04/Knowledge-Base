@@ -291,6 +291,7 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
                   }
                 }}
                 onDoubleClick={openNote}
+                onPinSuccess={() => setPage(1)}
               />
             ))}
           </div>

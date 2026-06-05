@@ -41,10 +41,9 @@ export function useMobilePaginatedItems<T extends IdentifiableItem>({
     if (!pagination || isPlaceholderData) return;
 
     if (pagination.page <= 1) {
-      pageItemsRef.current = { ...pageItemsRef.current, 1: items };
-      const highestPage = Math.max(loadedMobilePage, pagination.page);
-      setMobileItems(mergePageItems(pageItemsRef.current, highestPage));
-      setLoadedMobilePage(highestPage);
+      pageItemsRef.current = { 1: items };
+      setMobileItems(items);
+      setLoadedMobilePage(1);
       return;
     }
 
