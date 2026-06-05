@@ -494,12 +494,17 @@
   }
 
   /* Mobile card optimization: hide secondary metadata & layout actions */
-  .list-row-body .meta-row .badge:nth-child(1),
-  .project-timeline-meta .badge:nth-child(1),
-  .project-timeline-meta .badge:nth-child(2),
+  .list-row-body .meta-row .badge:not(.badge-active):not(.badge-pending):not(.badge-resolved):not(.badge-archived):not(.badge-sent),
+  .project-timeline-meta .badge:not(.badge-active):not(.badge-pending):not(.badge-resolved):not(.badge-archived):not(.badge-sent),
+  .list-row-body .meta-row .pinned-badge,
+  .list-row-body .meta-row .meta-project,
+  .list-row-body .meta-row .meta-separator,
   .project-timeline-meta .meta:nth-of-type(2),
   .project-timeline-meta .meta:nth-of-type(3),
-  .quick-note-status-actions,
+  .list-row-body .meta-row .attachment-indicator,
+  .project-timeline-meta .attachment-indicator,
+  .list-row .quick-note-status-actions,
+  .project-timeline-card .quick-note-status-actions,
   .list-row > .row-actions > .row-action-button.pin,
   .list-row > .row-actions > .file-icon,
   .list-row > .row-actions > div > .file-icon {

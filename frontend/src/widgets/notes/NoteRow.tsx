@@ -58,8 +58,12 @@ export function NoteRow({
           )}
           <Badge value={noteTypeLabel(note.type)} tone={note.type} />
           <Badge value={formatDisplayToken(note.status)} tone={note.status} />
-          <span className="meta">
-            {projectName(dashboard.projects, note.project)} / {formatUsDate(note.date)}
+          <span className="meta meta-project">
+            {projectName(dashboard.projects, note.project)}
+          </span>
+          <span className="meta-separator"> / </span>
+          <span className="meta meta-date">
+            {formatUsDate(note.date)}
           </span>
           <AttachmentIndicator count={note.attachmentCount || 0} />
         </div>
