@@ -10,7 +10,7 @@ export class FindRelatedNotesUseCase {
     private readonly noteEmbeddingRepository: NoteEmbeddingRepository,
   ) {}
 
-  async execute(userId: string, noteId: string, limit = 5) {
+  async execute(userId: string, noteId: string, limit = 3) {
     const note = await this.contentRepository.getNoteById(userId, noteId);
     if (!note) throw new NotFoundException('note_not_found');
 
