@@ -47,10 +47,6 @@ kb init
 * **Flags Úteis:**
   * `--watch` ou `-w`: Monitoramento e sincronização em tempo real.
   * `--dry-run`: Simula a sincronização sem realizar alterações no servidor.
-
-> [!NOTE]
-> A sincronização é inteligente (idempotente) através do arquivo local `.kb-sync.json`, injetando automaticamente o `id` da nota no frontmatter YAML dos arquivos Markdown sincronizados.
-
 ---
 
 ## Executando com Docker
