@@ -141,7 +141,11 @@ export function VaultPage({
   };
 
   return (
-    <>
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <PageHead
         title={noteQuery.data?.title || 'Note details'}
         subtitle={selectedProjectDetails?.displayName || ''}
@@ -188,9 +192,6 @@ export function VaultPage({
       />
       <article
         className="note-reader vault-reader"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
 
         {noteQuery.data ? (
@@ -218,7 +219,7 @@ export function VaultPage({
           <EmptyState>{selectedProjectDetails ? 'Open a note to start reading details.' : 'Select a project and open a note to start reading details.'}</EmptyState>
         )}
       </article>
-    </>
+    </div>
   );
 }
 
