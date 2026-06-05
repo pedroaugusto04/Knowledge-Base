@@ -23,7 +23,7 @@ O **Knowledge Vault** centraliza o conhecimento operacional e as decisões do se
 ---
 
 ## Integrações
-* **WhatsApp:** Envie áudios ou textos para gerar notas estruturadas por IA. Receba lembretes automáticos integrados via *Evolution API* (`whatsappChatJid`).
+* **WhatsApp:** Envie áudios ou textos para gerar notas estruturadas por IA. Receba lembretes automáticos integrados via *WhatsApp*.
 * **Telegram:** Receba alertas de falhas em pipelines, resumos de revisões e interaja diretamente com o bot.
 * **GitHub Push:** Captura eventos de `git push`, analisa commits/diffs por IA e envia um resumo técnico acessível para o canal do Telegram e para a base.
 
