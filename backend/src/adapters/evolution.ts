@@ -76,16 +76,30 @@ export class EvolutionWhatsappReplySender extends WhatsappReplySender {
     }
 
     const baseUrl = environment.evolutionApiUrl.replace(/\/+$/, '');
-    const url = `${baseUrl}/message/sendMedia/${encodeURIComponent(environment.evolutionInstanceName)}`;
-    const payload: Record<string, unknown> = {
-      number: input.chatJid,
-      mediatype: input.mediaType,
-      mimetype: input.mimeType || 'application/octet-stream',
-      media: mediaValue,
-      fileName,
-    };
+    const isAudio = input.mediaType === 'audio';
+    const url = isAudio
+      ? `${baseUrl}/message/sendWhatsAppAudio/${encodeURIComponent(environment.evolutionInstanceName)}`
+      : `${baseUrl}/message/sendMedia/${encodeURIComponent(environment.evolutionInstanceName)}`;
+
+    const payload: Record<string, unknown> = isAudio
+      ? {
+          number: input.chatJid,
+          audio: isUrl ? mediaValue : `data:${input.mimeType || 'audio/mp3'};base64,${mediaValue}`,
+          options: {
+            delay: 1200,
+            encoding: !isUrl,
+          },
+        }
+      : {
+          number: input.chatJid,
+          mediatype: input.mediaType,
+          mimetype: input.mimeType || 'application/octet-stream',
+          media: mediaValue,
+          fileName,
+        };
+
     const caption = String(input.caption || '').trim();
-    if (caption) payload.caption = caption;
+    if (!isAudio && caption) payload.caption = caption;
 
     try {
       const response = await fetch(url, {
@@ -101,11 +115,11 @@ export class EvolutionWhatsappReplySender extends WhatsappReplySender {
         this.logger?.error('whatsapp.send_media.failed', {
           status: response.status,
           errorBody,
-          chatJid: payload.number,
-          mediaType: payload.mediatype,
-          mimeType: payload.mimetype,
-          fileName: payload.fileName,
-          mediaPrefix: typeof payload.media === 'string' ? payload.media.slice(0, 100) : ''
+          chatJid: input.chatJid,
+          mediaType: input.mediaType,
+          mimeType: input.mimeType,
+          fileName,
+          mediaPrefix: typeof mediaValue === 'string' ? mediaValue.slice(0, 100) : ''
         });
         return { ok: false, error: `evolution_api_http_${response.status}` };
       }
