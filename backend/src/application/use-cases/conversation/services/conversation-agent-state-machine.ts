@@ -4,7 +4,7 @@ import {
   type AgentConversationState,
 } from '../../../../contracts/agent-conversation.js';
 import type { ConversationInput } from '../../../../contracts/conversation.js';
-import { slugify, trimText } from '../../../../domain/strings.js';
+import { normalizeMultiline, slugify, trimText } from '../../../../domain/strings.js';
 import { normalizeDate, normalizeTime, nowIso } from '../../../../domain/time.js';
 import type { ProjectFolderRecord, ProjectRecord } from '../../../models/repository-records.models.js';
 import type { ConversationAgentFolderContext, ConversationAgentResponse } from '../../../ports/conversation/conversation-agent.gateway.js';
@@ -25,7 +25,7 @@ export function buildNextAgentConversationState(input: {
   const draft = agentConversationDraftSchema.parse({
     ...input.current.draft,
     ...input.decision.resolvedDraft,
-    rawText: trimText(input.decision.resolvedDraft.rawText, trimText(input.current.draft.rawText, input.messageText)),
+    rawText: normalizeMultiline(input.decision.resolvedDraft.rawText || normalizeMultiline(input.current.draft.rawText || input.messageText)),
     reminderDate: normalizeDate(input.decision.resolvedDraft.reminderDate || input.current.draft.reminderDate || '', input.reminderTimeZone),
     reminderTime: normalizeTime(input.decision.resolvedDraft.reminderTime || input.current.draft.reminderTime || ''),
     tags: [...new Set([...(input.current.draft.tags || []), ...(input.decision.resolvedDraft.tags || [])].map((tag) => slugify(tag)).filter(Boolean))],
