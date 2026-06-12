@@ -219,6 +219,10 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
             </Panel>
           ) : null}
 
+          {!isAsking && !askAnswer && !showHistory ? (
+            <AskWaitingState />
+          ) : null}
+
           {askError ? <InlineMessage className="ask-error-message" tone="error">{askError}</InlineMessage> : null}
         </>
       ) : (
@@ -310,3 +314,25 @@ function AskHistoryInline({
     </Panel>
   );
 }
+
+function AskWaitingState() {
+  return (
+    <div className="ask-waiting-card">
+      <div className="ask-waiting-visual">
+        <div className="ai-core-pulse">
+          <div className="core-ring ring-1"></div>
+          <div className="core-ring ring-2"></div>
+          <div className="core-ring ring-3"></div>
+          <div className="core-center">
+            <AskAiIcon className="waiting-ai-icon" />
+          </div>
+        </div>
+      </div>
+      <div className="ask-waiting-text">
+        <h3>AI Core Idle</h3>
+        <p>Awaiting your query. Ask anything about your notes above to activate the intelligence network.</p>
+      </div>
+    </div>
+  );
+}
+
