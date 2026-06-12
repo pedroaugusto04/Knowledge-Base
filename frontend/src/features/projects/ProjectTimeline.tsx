@@ -201,65 +201,69 @@ export function ProjectTimeline({
                   <span className="meta meta-source">{item.source || item.sourceChannel}</span>
                   <AttachmentIndicator count={item.attachmentCount || 0} />
                 </div>
+                <button
+                  aria-label={item.isPinned ? `Unpin note ${item.title}` : `Pin note ${item.title}`}
+                  className={`row-action-button pin ${item.isPinned ? 'active' : ''}`}
+                  title={item.isPinned ? 'Unpin' : 'Pin'}
+                  type="button"
+                  disabled={pinMutation.isPending}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    pinMutation.mutate({ noteId: item.noteId, pinned: !item.isPinned });
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '14px',
+                    right: '14px',
+                    zIndex: 2,
+                  }}
+                >
+                  <PinIcon active={item.isPinned} />
+                </button>
                 <div className="project-timeline-body">
                   <div>
                     <h3>{item.title}</h3>
                     <p>{item.summary}</p>
                   </div>
-                  <div className="row-actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', alignSelf: 'stretch', justifyContent: 'space-between' }}>
-                    <button
-                      aria-label={item.isPinned ? `Unpin note ${item.title}` : `Pin note ${item.title}`}
-                      className={`row-action-button pin ${item.isPinned ? 'active' : ''}`}
-                      title={item.isPinned ? 'Unpin' : 'Pin'}
-                      type="button"
-                      disabled={pinMutation.isPending}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        pinMutation.mutate({ noteId: item.noteId, pinned: !item.isPinned });
+                  <div className="row-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-end', marginTop: 'auto' }}>
+                    <QuickNoteStatusActions
+                      note={{
+                        id: item.noteId,
+                        title: item.title,
+                        status: item.status,
+                        project: item.project,
+                        tags: item.tags,
                       }}
-                    >
-                      <PinIcon active={item.isPinned} />
-                    </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: 'auto' }}>
-                      <QuickNoteStatusActions
-                        note={{
-                          id: item.noteId,
-                          title: item.title,
-                          status: item.status,
-                          project: item.project,
-                          tags: item.tags,
+                      compact
+                    />
+                    {onEditNote ? (
+                      <button
+                        aria-label={`Edit note ${item.title}`}
+                        className="row-action-button edit"
+                        title="Edit"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEditNote(item);
                         }}
-                        compact
-                      />
-                      {onEditNote ? (
-                        <button
-                          aria-label={`Edit note ${item.title}`}
-                          className="row-action-button edit"
-                          title="Edit"
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onEditNote(item);
-                          }}
-                        >
-                          <PencilIcon />
-                        </button>
-                      ) : null}
-                      {onDeleteNote ? (
-                        <button
-                          aria-label={`Delete note ${item.title}`}
-                          className="row-action-button danger"
-                          title="Delete"
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onDeleteNote(item);
-                          }}
-                        >
-                          <TrashIcon />
-                        </button>
-                      ) : null}
-                    </div>
+                      >
+                        <PencilIcon />
+                      </button>
+                    ) : null}
+                    {onDeleteNote ? (
+                      <button
+                        aria-label={`Delete note ${item.title}`}
+                        className="row-action-button danger"
+                        title="Delete"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDeleteNote(item);
+                        }}
+                      >
+                        <TrashIcon />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>

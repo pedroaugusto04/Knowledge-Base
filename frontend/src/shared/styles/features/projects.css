@@ -375,6 +375,7 @@
 }
 
 .project-timeline-card {
+  position: relative;
   display: grid;
   gap: 10px;
   min-width: 0;
@@ -405,6 +406,7 @@
 .project-timeline-meta {
   flex-wrap: wrap;
   justify-content: flex-start;
+  padding-right: 40px;
 }
 
 .project-timeline-body > div:first-child {

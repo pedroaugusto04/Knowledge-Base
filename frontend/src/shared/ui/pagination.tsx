@@ -5,10 +5,12 @@ export function Pagination({
   pagination,
   onPageChange,
   compact = false,
+  disableScrollToTop = false,
 }: {
   pagination: PaginationMeta;
   onPageChange: (page: number) => void;
   compact?: boolean;
+  disableScrollToTop?: boolean;
 }) {
   if (pagination.totalPages <= 1) return null;
 
@@ -17,17 +19,19 @@ export function Pagination({
   const pages = visiblePages(pagination.page, pagination.totalPages, compact ? 3 : 5);
 
   const handlePageChange = (newPage: number, event: React.MouseEvent) => {
-    const target = event.currentTarget as HTMLElement;
-    let scrollContainer: Element | Window = target.closest('.view, .modal-panel, .sidebar, .repository-picker') || window;
-    
-    if (scrollContainer !== window) {
-      const el = scrollContainer as HTMLElement;
-      if (el.scrollHeight <= el.clientHeight) {
-        scrollContainer = window;
+    if (!disableScrollToTop) {
+      const target = event.currentTarget as HTMLElement;
+      let scrollContainer: Element | Window = target.closest('.view, .modal-panel, .sidebar, .repository-picker') || window;
+      
+      if (scrollContainer !== window) {
+        const el = scrollContainer as HTMLElement;
+        if (el.scrollHeight <= el.clientHeight) {
+          scrollContainer = window;
+        }
       }
-    }
 
-    animateScrollToTop(scrollContainer);
+      animateScrollToTop(scrollContainer);
+    }
     onPageChange(newPage);
   };
 

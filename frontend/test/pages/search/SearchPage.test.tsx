@@ -104,7 +104,7 @@ describe('SearchPage (Ask AI)', () => {
 
     fireEvent.click(screen.getByLabelText('Filter by project'));
     fireEvent.click(screen.getByRole('option', { name: 'Platform' }));
-    fireEvent.click(screen.getByRole('button', { name: /ask/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Ask$/ }));
 
     await waitFor(() => {
       expect(apiSpies.runAsk).toHaveBeenCalledWith({
@@ -120,7 +120,7 @@ describe('SearchPage (Ask AI)', () => {
   it('keeps Ask AI clickable and warns when there is no query', () => {
     renderSearchPage('/search');
 
-    const askButton = screen.getByRole('button', { name: /ask/i });
+    const askButton = screen.getByRole('button', { name: /^Ask$/ });
     expect(askButton).toBeEnabled();
 
     fireEvent.click(askButton);
@@ -136,7 +136,7 @@ describe('SearchPage (Ask AI)', () => {
 
     const input = screen.getByPlaceholderText('Ask anything about your notes...');
     fireEvent.change(input, { target: { value: 'deploy' } });
-    fireEvent.click(screen.getByRole('button', { name: /ask/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Ask$/ }));
 
     expect(await screen.findByText('AI unavailable')).toBeInTheDocument();
   });
@@ -253,6 +253,7 @@ describe('SearchPage (Ask AI)', () => {
 
   it('renders the project brief panel before generation without calling the brief endpoint', async () => {
     renderSearchPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
 
     expect(screen.getByRole('region', { name: 'Project brief' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Generate brief' })).toBeInTheDocument();
@@ -267,6 +268,7 @@ describe('SearchPage (Ask AI)', () => {
       brief: projectBriefResponse().brief,
     });
     renderSearchPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Show latest' }));
 
@@ -287,6 +289,7 @@ describe('SearchPage (Ask AI)', () => {
       brief: null,
     });
     renderSearchPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Show latest' }));
 
@@ -300,6 +303,7 @@ describe('SearchPage (Ask AI)', () => {
       brief: projectBriefResponse().brief,
     });
     renderSearchPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Generate brief' }));
 
@@ -314,6 +318,7 @@ describe('SearchPage (Ask AI)', () => {
     });
     apiSpies.generateProjectBrief.mockReturnValue(briefPromise);
     renderSearchPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Generate brief' }));
 
@@ -334,6 +339,7 @@ describe('SearchPage (Ask AI)', () => {
       brief: projectBriefResponse().brief,
     });
     renderSearchPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Generate brief' }));
 
@@ -343,6 +349,7 @@ describe('SearchPage (Ask AI)', () => {
   it('shows a friendly project brief error when there is no fallback', async () => {
     apiSpies.generateProjectBrief.mockRejectedValue(new Error('Project brief generation failed.'));
     renderSearchPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Generate brief' }));
 

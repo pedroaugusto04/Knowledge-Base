@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 import type { PageContext } from '../../app/page-context';
 import { fetchAskHistory, fetchLatestProjectBrief, generateProjectBrief, runAsk } from '../../shared/api/client';
@@ -22,6 +22,7 @@ const ASK_HISTORY_PAGE_SIZE = 5;
 
 export function SearchPage({ dashboard, openNote }: PageContext) {
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<'ask' | 'brief'>('ask');
   const [questionInput, setQuestionInput] = useState('');
   const [projectSlug, setProjectSlug] = useState('');
   const [askAnswer, setAskAnswer] = useState<AskAnswerCardItem | null>(null);
@@ -30,7 +31,16 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
   const [showHistory, setShowHistory] = useState(false);
   const [hiddenLatestBriefProjects, setHiddenLatestBriefProjects] = useState<Record<string, boolean>>({});
 
+  const historyRef = useRef<HTMLDivElement>(null);
   const { page: historyPage, setPage: setHistoryPage } = usePaginationState(`ask-history:${projectSlug}`);
+
+  const handleHistoryPageChange = (newPage: number) => {
+    setHistoryPage(newPage);
+    setTimeout(() => {
+      historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
   const selectedProjectLabel = projectLabel(projectSlug, dashboard.projects);
 
   const historyQuery = useQuery({
@@ -106,36 +116,13 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
 
   return (
     <>
-      <PageHead title="Ask AI" subtitle="Ask questions, generate project briefs, and explore your AI history." />
-
-      {/* Question input */}
-      <section className="search-box ask-ai-input-section">
-        <div className="ask-ai-input-row">
-          <AskAiIcon className="ask-ai-input-icon" />
-          <input
-            aria-label="Ask a question"
-            autoComplete="off"
-            enterKeyHint="send"
-            spellCheck={false}
-            type="text"
-            value={questionInput}
-            onChange={(event) => setQuestionInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                handleAsk();
-              }
-            }}
-            placeholder="Ask anything about your notes..."
-          />
-          <button className="icon-button ask-ai-send-btn" disabled={isAsking} type="button" onClick={handleAsk}>
-            {isAsking ? 'Asking...' : 'Ask'}
-          </button>
-        </div>
-        <div className="ask-ai-filters">
+      <PageHead
+        title="Ask AI"
+        subtitle="Ask questions, generate project briefs, and explore your AI history."
+        action={
           <Select
             ariaLabel="Filter by project"
-            className="ask-ai-filter"
+            className="page-head-select"
             options={[
               { value: '', label: 'All projects' },
               ...dashboard.projects.map((project) => ({
@@ -150,63 +137,113 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
               setAskError(null);
             }}
           />
-          <button
-            aria-expanded={showHistory}
-            className={`icon-button secondary ask-ai-history-toggle ${showHistory ? 'active' : ''}`}
-            type="button"
-            onClick={() => setShowHistory((current) => !current)}
-          >
-            {showHistory ? 'Hide history' : 'Show history'}
-          </button>
-        </div>
-      </section>
+        }
+      />
 
-      {/* History inline */}
-      {showHistory ? (
-        <AskHistoryInline
-          historyQuery={historyQuery}
-          projects={dashboard.projects}
-          setPage={setHistoryPage}
-          onSelect={(item) => {
-            setAskAnswer({
-              question: item.question,
-              answer: item.answer,
-              projectSlug: item.projectSlug,
-              sources: item.sources,
-            });
-            setAskError(null);
-          }}
-        />
-      ) : null}
+      <div className="segmented-control" style={{ maxWidth: '360px', marginBottom: '20px' }}>
+        <button
+          className={activeTab === 'ask' ? 'active' : ''}
+          onClick={() => setActiveTab('ask')}
+          type="button"
+        >
+          Ask AI
+        </button>
+        <button
+          className={activeTab === 'brief' ? 'active' : ''}
+          onClick={() => setActiveTab('brief')}
+          type="button"
+        >
+          Project Briefs
+        </button>
+      </div>
 
-      {/* AI Answer */}
-      {isAsking ? <AskAnswerSkeleton question={questionInput.trim()} projectLabel={selectedProjectLabel} /> : null}
+      {activeTab === 'ask' ? (
+        <>
+          {/* Question input */}
+          <section className="search-box ask-ai-input-section">
+            <div className="ask-ai-input-row">
+              <AskAiIcon className="ask-ai-input-icon" />
+              <input
+                aria-label="Ask a question"
+                autoComplete="off"
+                enterKeyHint="send"
+                spellCheck={false}
+                type="text"
+                value={questionInput}
+                onChange={(event) => setQuestionInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleAsk();
+                  }
+                }}
+                placeholder="Ask anything about your notes..."
+              />
+              <button className="icon-button ask-ai-send-btn" disabled={isAsking} type="button" onClick={handleAsk}>
+                {isAsking ? 'Asking...' : 'Ask'}
+              </button>
+              <button
+                aria-expanded={showHistory}
+                className={`icon-button secondary ask-ai-history-toggle ${showHistory ? 'active' : ''}`}
+                type="button"
+                onClick={() => setShowHistory((current) => !current)}
+              >
+                {showHistory ? 'Hide history' : 'Show history'}
+              </button>
+            </div>
+          </section>
 
-      {!isAsking && askAnswer ? (
-        <Panel className="ai-answer-card-panel">
-          <AskAnswerCard item={askAnswer} openNote={openNote} projects={dashboard.projects} />
+          {/* History inline */}
+          {showHistory ? (
+            <div ref={historyRef}>
+              <AskHistoryInline
+                historyQuery={historyQuery}
+                projects={dashboard.projects}
+                setPage={handleHistoryPageChange}
+                onSelect={(item) => {
+                  setAskAnswer({
+                    question: item.question,
+                    answer: item.answer,
+                    projectSlug: item.projectSlug,
+                    sources: item.sources,
+                  });
+                  setAskError(null);
+                  setShowHistory(false);
+                }}
+              />
+            </div>
+          ) : null}
+
+          {/* AI Answer */}
+          {isAsking ? <AskAnswerSkeleton question={questionInput.trim()} projectLabel={selectedProjectLabel} /> : null}
+
+          {!isAsking && askAnswer ? (
+            <Panel className="ai-answer-card-panel">
+              <AskAnswerCard item={askAnswer} openNote={openNote} projects={dashboard.projects} />
+            </Panel>
+          ) : null}
+
+          {askError ? <InlineMessage className="ask-error-message" tone="error">{askError}</InlineMessage> : null}
+        </>
+      ) : (
+        /* Project Brief */
+        <Panel className="ask-ai-brief-panel">
+          <ProjectBriefPanel
+            response={selectedBriefResponse}
+            loading={generateBriefMutation.isPending && generateBriefMutation.variables === briefProjectSlug}
+            historyLoading={latestBriefQuery.isFetching}
+            error={generateBriefMutation.isError && generateBriefMutation.variables === briefProjectSlug
+              ? getErrorMessage(generateBriefMutation.error, 'Could not generate the project brief.')
+              : ''}
+            historyError={latestBriefQuery.isError
+              ? getErrorMessage(latestBriefQuery.error, 'Could not load the latest project brief.')
+              : ''}
+            onGenerate={() => generateBriefMutation.mutate(briefProjectSlug)}
+            onShowLatest={showLatestBrief}
+            onOpenNote={openNote}
+          />
         </Panel>
-      ) : null}
-
-      {askError ? <InlineMessage className="ask-error-message" tone="error">{askError}</InlineMessage> : null}
-
-      {/* Project Brief */}
-      <Panel className="ask-ai-brief-panel">
-        <ProjectBriefPanel
-          response={selectedBriefResponse}
-          loading={generateBriefMutation.isPending && generateBriefMutation.variables === briefProjectSlug}
-          historyLoading={latestBriefQuery.isFetching}
-          error={generateBriefMutation.isError && generateBriefMutation.variables === briefProjectSlug
-            ? getErrorMessage(generateBriefMutation.error, 'Could not generate the project brief.')
-            : ''}
-          historyError={latestBriefQuery.isError
-            ? getErrorMessage(latestBriefQuery.error, 'Could not load the latest project brief.')
-            : ''}
-          onGenerate={() => generateBriefMutation.mutate(briefProjectSlug)}
-          onShowLatest={showLatestBrief}
-          onOpenNote={openNote}
-        />
-      </Panel>
+      )}
     </>
   );
 }
@@ -221,7 +258,7 @@ function AskAnswerSkeleton({ question, projectLabel: selectedProjectLabel }: { q
       <div className="ask-answer-container">
         <div className="ask-answer-header">
           <div className="ask-ai-identity">
-            <AskAiIcon className="ask-ai-identity-icon" />
+            <AskAiIcon className="ask-ai-identity-icon ask-ai-pulse" />
             <strong>Thinking...</strong>
           </div>
         </div>
@@ -270,7 +307,7 @@ function AskHistoryInline({
             ))}
           </div>
           {historyQuery.data?.pagination ? (
-            <Pagination compact pagination={historyQuery.data.pagination} onPageChange={setPage} />
+            <Pagination compact disableScrollToTop pagination={historyQuery.data.pagination} onPageChange={setPage} />
           ) : null}
         </>
       )}

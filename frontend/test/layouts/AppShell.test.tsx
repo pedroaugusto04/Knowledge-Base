@@ -670,6 +670,7 @@ describe('AppShell', () => {
     renderWithAppProviders(<AppShell />, { route: '/search' });
 
     expect(await screen.findByRole('heading', { name: 'Ask AI' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
     expect(screen.getByText('Project brief')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Matching Notes' })).not.toBeInTheDocument();
   });
