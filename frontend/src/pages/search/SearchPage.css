@@ -244,6 +244,7 @@
   border: 1px dashed var(--line-soft);
   border-radius: 12px;
   max-width: 760px;
+  min-height: 420px;
   margin-top: 14px;
   position: relative;
   overflow: hidden;

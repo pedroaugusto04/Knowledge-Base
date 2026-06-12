@@ -329,8 +329,8 @@ function AskWaitingState() {
         </div>
       </div>
       <div className="ask-waiting-text">
-        <h3>AI Core Idle</h3>
-        <p>Awaiting your query. Ask anything about your notes above to activate the intelligence network.</p>
+        <h3>Waiting</h3>
+        <p>Ask a question to get started.</p>
       </div>
     </div>
   );
