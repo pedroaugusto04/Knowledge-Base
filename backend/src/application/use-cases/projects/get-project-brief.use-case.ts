@@ -11,13 +11,24 @@ export class GetProjectBriefUseCase {
   ) {}
 
   async execute(userId: string, projectSlug: string) {
-    const project = await this.contentRepository.getProjectBySlug(userId, projectSlug);
-    if (!project || !project.enabled) throw new NotFoundException('project_not_found');
+    let workspaceSlug = '';
+    if (projectSlug === 'all') {
+      const workspaces = await this.contentRepository.listWorkspaces(userId);
+      if (workspaces.length > 0) {
+        workspaceSlug = workspaces[0].workspaceSlug;
+      } else {
+        throw new NotFoundException('workspace_not_found');
+      }
+    } else {
+      const project = await this.contentRepository.getProjectBySlug(userId, projectSlug);
+      if (!project || !project.enabled) throw new NotFoundException('project_not_found');
+      workspaceSlug = project.workspaceSlug;
+    }
 
     const latest = await this.historyRepository.findLatest({
       userId,
-      workspaceSlug: project.workspaceSlug,
-      projectSlug: project.projectSlug,
+      workspaceSlug,
+      projectSlug,
     });
 
     return {

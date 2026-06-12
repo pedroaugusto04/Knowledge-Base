@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { fetchNote, updateNote } from '../../shared/api/client';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { fetchNote, updateNote, pinNote } from '../../shared/api/client';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary, CanonicalNoteType } from '../../shared/api/models/note';
 import { projectTimelineCategoryValues, type ProjectTimelineCategory, type ProjectTimelineItem } from '../../shared/api/models/project-timeline';
@@ -14,6 +14,18 @@ import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
 import { AttachmentIndicator } from '../../widgets/notes/AttachmentIndicator';
 import { QuickNoteStatusActions } from '../../widgets/notes/QuickNoteStatusActions';
 import { type NoteStatus } from '../../shared/api/models/note-status';
+import { invalidateNoteRelatedQueries } from '../../shared/api/note-query';
+import { notifySuccess } from '../../shared/ui/notifications';
+import { notifyGeneralFormError } from '../../shared/forms/errors';
+
+function PinIcon({ active }: { active?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '1em', height: '1em' }}>
+      <line x1="12" y1="17" x2="12" y2="22" />
+      <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.91a2 2 0 0 1-.43-1.24V5a2 2 0 0 0-2-2h-3.6a2 2 0 0 0-2 2v4.85a2 2 0 0 1-.43 1.24l-2.33 2.91a2 2 0 0 0-.44 1.24z" />
+    </svg>
+  );
+}
 
 const categoryOptions: Array<{ value: ProjectTimelineCategory; label: string }> = projectTimelineCategoryValues.map((value) => ({
   value,
@@ -63,6 +75,16 @@ export function ProjectTimeline({
   });
 
   const queryClient = useQueryClient();
+  const pinMutation = useMutation({
+    mutationFn: ({ noteId, pinned }: { noteId: string; pinned: boolean }) => pinNote(noteId, pinned),
+    onSuccess: async (_, { pinned }) => {
+      notifySuccess(pinned ? 'Note pinned.' : 'Note unpinned.');
+      await invalidateNoteRelatedQueries(queryClient);
+    },
+    onError: (error) => {
+      notifyGeneralFormError(error, 'Could not toggle pin status.');
+    },
+  });
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState<{ type: 'resolve' | 'archive' } | null>(null);
 
@@ -165,6 +187,11 @@ export function ProjectTimeline({
               <div className="project-timeline-marker" aria-hidden="true" />
               <div className="project-timeline-card">
                 <div className="project-timeline-meta">
+                  {item.isPinned && (
+                    <span className="pinned-badge" title="Pinned Note" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: 'var(--amber)', fontSize: '11px', fontWeight: 'bold' }}>
+                      <PinIcon active /> Pinned
+                    </span>
+                  )}
                   <Badge value={formatDisplayToken(item.category)} tone={item.category} />
                   <Badge value={noteTypeLabel(item.type)} tone={item.type} />
                   <Badge value={formatDisplayToken(item.status)} tone={item.status} />
@@ -179,7 +206,20 @@ export function ProjectTimeline({
                     <h3>{item.title}</h3>
                     <p>{item.summary}</p>
                   </div>
-                  <div className="row-actions">
+                  <div className="row-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button
+                      aria-label={item.isPinned ? `Unpin note ${item.title}` : `Pin note ${item.title}`}
+                      className={`row-action-button pin ${item.isPinned ? 'active' : ''}`}
+                      title={item.isPinned ? 'Unpin' : 'Pin'}
+                      type="button"
+                      disabled={pinMutation.isPending}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        pinMutation.mutate({ noteId: item.noteId, pinned: !item.isPinned });
+                      }}
+                    >
+                      <PinIcon active={item.isPinned} />
+                    </button>
                     <QuickNoteStatusActions
                       note={{
                         id: item.noteId,

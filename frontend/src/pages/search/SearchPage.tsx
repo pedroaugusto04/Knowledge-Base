@@ -41,7 +41,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
   });
 
   // Project Brief state & queries — scoped to the selected project
-  const briefProjectSlug = projectSlug || '';
+  const briefProjectSlug = projectSlug || 'all';
   const briefQueryKey = ['project-brief', briefProjectSlug];
   const latestBriefQuery = useQuery<ProjectBriefPanelResponse>({
     queryKey: briefQueryKey,
@@ -109,7 +109,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
       <PageHead title="Ask AI" subtitle="Ask questions, generate project briefs, and explore your AI history." />
 
       {/* Question input */}
-      <section className="ask-ai-input-section">
+      <section className="search-box ask-ai-input-section">
         <div className="ask-ai-input-row">
           <AskAiIcon className="ask-ai-input-icon" />
           <input

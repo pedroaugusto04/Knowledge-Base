@@ -22,4 +22,5 @@ export type ProjectTimelineItem = {
   tags: string[];
   path: string;
   attachmentCount: number;
+  isPinned?: boolean;
 };

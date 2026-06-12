@@ -25,26 +25,40 @@ export class GenerateProjectBriefUseCase {
   ) {}
 
   async execute(userId: string, projectSlug: string) {
-    const project = await this.contentRepository.getProjectBySlug(userId, projectSlug);
-    if (!project || !project.enabled) throw new NotFoundException('project_not_found');
+    let workspaceSlug = '';
+    let isAll = false;
+
+    if (projectSlug === 'all') {
+      isAll = true;
+      const workspaces = await this.contentRepository.listWorkspaces(userId);
+      if (workspaces.length > 0) {
+        workspaceSlug = workspaces[0].workspaceSlug;
+      } else {
+        throw new NotFoundException('workspace_not_found');
+      }
+    } else {
+      const project = await this.contentRepository.getProjectBySlug(userId, projectSlug);
+      if (!project || !project.enabled) throw new NotFoundException('project_not_found');
+      workspaceSlug = project.workspaceSlug;
+    }
 
     const config = this.aiConfig();
-    await this.requireConnectedIntegration(userId, project.workspaceSlug);
+    await this.requireConnectedIntegration(userId, workspaceSlug);
 
     const generatedAt = new Date().toISOString();
     const items = (await this.contentRepository.listNotes(userId))
-      .filter((note) => note.workspaceSlug === project.workspaceSlug && note.projectSlug === project.projectSlug)
+      .filter((note) => note.workspaceSlug === workspaceSlug && (isAll || note.projectSlug === projectSlug))
       .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt) || left.title.localeCompare(right.title))
       .slice(0, CONTEXT_WINDOW)
       .map(toContextItem);
     const contextHash = sha256(JSON.stringify(items));
 
     if (items.length === 0) {
-      const brief = emptyProjectBrief(project.projectSlug, generatedAt);
+      const brief = emptyProjectBrief(projectSlug, generatedAt);
       await this.historyRepository.save({
         userId,
-        workspaceSlug: project.workspaceSlug,
-        projectSlug: project.projectSlug,
+        workspaceSlug,
+        projectSlug,
         brief,
         sourceRefs: brief.sources,
         contextHash,
@@ -57,17 +71,17 @@ export class GenerateProjectBriefUseCase {
 
     try {
       const brief = await this.aiGateway.generate(config, {
-        projectSlug: project.projectSlug,
+        projectSlug,
         generatedAt,
         contextWindow: CONTEXT_WINDOW,
         items,
       });
       if (!brief) throw new Error('project_brief_generation_empty');
-      const normalized = normalizeBrief(brief, project.projectSlug, generatedAt, items);
+      const normalized = normalizeBrief(brief, projectSlug, generatedAt, items);
       await this.historyRepository.save({
         userId,
-        workspaceSlug: project.workspaceSlug,
-        projectSlug: project.projectSlug,
+        workspaceSlug,
+        projectSlug,
         brief: normalized,
         sourceRefs: normalized.sources,
         contextHash,
@@ -79,8 +93,8 @@ export class GenerateProjectBriefUseCase {
     } catch {
       const latest = await this.historyRepository.findLatest({
         userId,
-        workspaceSlug: project.workspaceSlug,
-        projectSlug: project.projectSlug,
+        workspaceSlug,
+        projectSlug,
       });
       if (latest) {
         return {

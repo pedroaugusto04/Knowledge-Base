@@ -1,6 +1,5 @@
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
-import type { ProjectBriefPanelResponse } from '../../shared/api/models/project-brief';
 import type { ProjectTimelineCategory, ProjectTimelineItem } from '../../shared/api/models/project-timeline';
 import type { ProjectFolder } from '../../shared/api/models/project-folder';
 import type { Project } from '../../shared/api/models/project';
@@ -9,7 +8,6 @@ import { Panel, Tags } from '../../shared/ui/primitives';
 import { FolderTree } from './FolderTree';
 import { ProjectFolderActionsMenu } from './ProjectFolderActionsMenu';
 import { ProjectTimeline } from './ProjectTimeline';
-import { ProjectBriefPanel } from '../../widgets/projects/ProjectBriefPanel';
 import { type NoteStatus } from '../../shared/api/models/note-status';
 
 type ProjectsBrowserProps = {
@@ -19,11 +17,6 @@ type ProjectsBrowserProps = {
   selectedFolderId: string;
   selectedFolder: ProjectFolder | null;
   timelineItems: ProjectTimelineItem[];
-  briefResponse?: ProjectBriefPanelResponse;
-  briefLoading?: boolean;
-  briefHistoryLoading?: boolean;
-  briefError?: string;
-  briefHistoryError?: string;
   timelineCategory: ProjectTimelineCategory;
   timelineStatus: '' | 'open' | NoteStatus;
   onTimelineStatusChange: (status: '' | 'open' | NoteStatus) => void;
@@ -38,8 +31,6 @@ type ProjectsBrowserProps = {
   onTimelineCategoryChange: (category: ProjectTimelineCategory) => void;
   onTimelinePageChange: (page: number) => void;
   onFolderSelect: (folderId: string) => void;
-  onGenerateBrief: () => void;
-  onShowLatestBrief: () => void;
   onCreateNote: () => void;
   onCreateFolder: () => void;
   onEditFolder: () => void;
@@ -62,11 +53,6 @@ export function ProjectsBrowser({
   selectedFolderId,
   selectedFolder,
   timelineItems,
-  briefResponse,
-  briefLoading = false,
-  briefHistoryLoading = false,
-  briefError = '',
-  briefHistoryError = '',
   timelineCategory,
   timelineStatus,
   timelinePagination,
@@ -74,8 +60,6 @@ export function ProjectsBrowser({
   onTimelineStatusChange,
   onTimelinePageChange,
   onFolderSelect,
-  onGenerateBrief,
-  onShowLatestBrief,
   onCreateNote,
   onCreateFolder,
   onEditFolder,
@@ -142,16 +126,6 @@ export function ProjectsBrowser({
           <button className="icon-button" type="button" onClick={onCreateNote}>New note</button>
         </div>
       </div>
-      <ProjectBriefPanel
-        response={briefResponse}
-        loading={briefLoading}
-        historyLoading={briefHistoryLoading}
-        error={briefError}
-        historyError={briefHistoryError}
-        onGenerate={onGenerateBrief}
-        onShowLatest={onShowLatestBrief}
-        onOpenNote={onOpenNote}
-      />
       <div className="project-browser">
         <aside className="folder-browser">
           <div className="folder-browser-head">

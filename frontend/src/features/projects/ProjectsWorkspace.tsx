@@ -8,16 +8,12 @@ import {
   deleteProject,
   deleteProjectFolder,
   fetchAllProjectsTimeline,
-  fetchLatestProjectBrief,
   fetchProjectFolders,
   fetchProjectTimeline,
-  generateProjectBrief,
   runQuery,
 } from '../../shared/api/client';
-import type { ProjectBriefPanelResponse } from '../../shared/api/models/project-brief';
 import type { NoteSummary } from '../../shared/api/models/note';
 import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
-import { getErrorMessage } from '../../shared/api/error-message';
 import type { ProjectTimelineCategory } from '../../shared/api/models/project-timeline';
 import { type NoteStatus } from '../../shared/api/models/note-status';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
@@ -182,12 +178,6 @@ export function ProjectsWorkspace({
     isPlaceholderData: searchQuery.isPlaceholderData,
   });
 
-  const briefQueryKey = ['project-brief', selected?.projectSlug || ''];
-  const latestBriefQuery = useQuery<ProjectBriefPanelResponse>({
-    queryKey: briefQueryKey,
-    queryFn: () => fetchLatestProjectBrief(selected?.projectSlug || ''),
-    enabled: false,
-  });
   const timelineItems = timelineQuery.data?.timeline || [];
   const selectedProjectDeleteBlockedReason = selected?.projectSlug === 'inbox'
     ? 'Inbox cannot be changed.'
@@ -243,28 +233,6 @@ export function ProjectsWorkspace({
     },
     onError: (error) => notifyGeneralFormError(error, 'Could not delete the note.'),
   });
-  const generateBriefMutation = useMutation({
-    mutationFn: (projectSlug: string) => generateProjectBrief(projectSlug),
-    onSuccess: (response, projectSlug) => {
-      queryClient.setQueryData<ProjectBriefPanelResponse>(['project-brief', projectSlug], response);
-      setHiddenLatestBriefProjects((current) => ({ ...current, [projectSlug]: false }));
-    },
-    onError: (error) => notifyGeneralFormError(error, 'Could not generate the project brief.'),
-  });
-  const showLatestBrief = () => {
-    if (!selected?.projectSlug) return;
-    const currentBrief = latestBriefQuery.data;
-    if (currentBrief && 'source' in currentBrief && currentBrief.source === 'history' && !hiddenLatestBriefProjects[selected.projectSlug]) {
-      setHiddenLatestBriefProjects((current) => ({ ...current, [selected.projectSlug]: true }));
-      return;
-    }
-    setHiddenLatestBriefProjects((current) => ({ ...current, [selected.projectSlug]: false }));
-    if (currentBrief && 'source' in currentBrief && currentBrief.source === 'history') return;
-    void latestBriefQuery.refetch();
-  };
-  const selectedBriefResponse = selected && hiddenLatestBriefProjects[selected.projectSlug] && latestBriefQuery.data && 'source' in latestBriefQuery.data && latestBriefQuery.data.source === 'history'
-    ? undefined
-    : latestBriefQuery.data;
 
   return (
     <>
@@ -303,7 +271,7 @@ export function ProjectsWorkspace({
       />
 
       {/* Search input for filtering notes within the selected project */}
-      <section className="projects-search-box">
+      <section className="search-box projects-search-box">
         <input
           aria-label="Search notes in project"
           autoComplete="off"
@@ -389,15 +357,6 @@ export function ProjectsWorkspace({
               selectedFolderId={selectedFolderId}
               selectedFolder={selectedFolder}
               timelineItems={timelineItems}
-              briefResponse={selectedBriefResponse}
-              briefLoading={generateBriefMutation.isPending && generateBriefMutation.variables === selected.projectSlug}
-              briefHistoryLoading={latestBriefQuery.isFetching}
-              briefError={generateBriefMutation.isError && generateBriefMutation.variables === selected.projectSlug
-                ? getErrorMessage(generateBriefMutation.error, 'Could not generate the project brief.')
-                : ''}
-              briefHistoryError={latestBriefQuery.isError
-                ? getErrorMessage(latestBriefQuery.error, 'Could not load the latest project brief.')
-                : ''}
               timelineCategory={timelineCategory}
               timelineStatus={timelineStatus}
               timelinePagination={timelineQuery.data?.pagination}
@@ -411,8 +370,6 @@ export function ProjectsWorkspace({
                 setSelectedFolderId(folderId);
                 timelinePagination.setPage(1);
               }}
-              onGenerateBrief={() => generateBriefMutation.mutate(selected.projectSlug)}
-              onShowLatestBrief={showLatestBrief}
               onCreateNote={() => setNoteModal({ mode: 'create', projectSlug: selected.projectSlug, folderId: selectedFolderId || undefined })}
               onCreateFolder={() => setFolderModal({ mode: 'create', projectSlug: selected.projectSlug, parentFolderId: selectedFolder?.id })}
               onEditFolder={() => selectedFolder ? setFolderModal({ mode: 'edit', projectSlug: selected.projectSlug, folder: selectedFolder }) : undefined}

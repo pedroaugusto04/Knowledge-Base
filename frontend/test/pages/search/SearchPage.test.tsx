@@ -251,14 +251,132 @@ describe('SearchPage (Ask AI)', () => {
     expect(screen.getByText('Based on 1 source')).toBeInTheDocument();
   });
 
-  it('renders the Project Brief panel', () => {
-    renderSearchPage('/search');
+  it('renders the project brief panel before generation without calling the brief endpoint', async () => {
+    renderSearchPage();
 
-    expect(screen.getByText('Project brief')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /generate brief/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /show latest/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Project brief' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Generate brief' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show latest' })).toBeInTheDocument();
+    expect(apiSpies.fetchLatestProjectBrief).not.toHaveBeenCalled();
+  });
+
+  it('shows the latest saved project brief on demand without generating a new one', async () => {
+    apiSpies.fetchLatestProjectBrief.mockResolvedValue({
+      ok: true,
+      source: 'history',
+      brief: projectBriefResponse().brief,
+    });
+    renderSearchPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show latest' }));
+
+    expect(await screen.findByText('Platform is actively processing deployment work.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Showing the latest saved brief.');
+    expect(screen.getByRole('button', { name: 'Hide latest' })).toBeInTheDocument();
+    expect(apiSpies.generateProjectBrief).not.toHaveBeenCalled();
+    
+    // Check source button rendering
+    const sourceButton = screen.getByRole('button', { name: 'Deploy antigo' });
+    expect(sourceButton).toBeInTheDocument();
+  });
+
+  it('shows an empty saved-brief state when no history exists', async () => {
+    apiSpies.fetchLatestProjectBrief.mockResolvedValue({
+      ok: true,
+      source: 'none',
+      brief: null,
+    });
+    renderSearchPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show latest' }));
+
+    expect(await screen.findByText('No saved brief yet.')).toBeInTheDocument();
+  });
+
+  it('generates and displays a project brief', async () => {
+    apiSpies.generateProjectBrief.mockResolvedValue({
+      ok: true,
+      fallback: false,
+      brief: projectBriefResponse().brief,
+    });
+    renderSearchPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate brief' }));
+
+    expect(await screen.findByText('Platform is actively processing deployment work.')).toBeInTheDocument();
+    expect(screen.getByText('Active with one open rollout item.')).toBeInTheDocument();
+  });
+
+  it('shows loading while generating the project brief', async () => {
+    let resolveBrief: (response: any) => void = () => undefined;
+    const briefPromise = new Promise<any>((resolve) => {
+      resolveBrief = resolve;
+    });
+    apiSpies.generateProjectBrief.mockReturnValue(briefPromise);
+    renderSearchPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate brief' }));
+
+    expect(await screen.findByRole('button', { name: 'Generating...' })).toBeDisabled();
+    resolveBrief({
+      ok: true,
+      fallback: false,
+      brief: projectBriefResponse().brief,
+    });
+    expect(await screen.findByRole('button', { name: 'Generate brief' })).toBeInTheDocument();
+  });
+
+  it('shows stale fallback state when brief generation returns a fallback', async () => {
+    apiSpies.generateProjectBrief.mockResolvedValue({
+      ok: true,
+      fallback: true,
+      fallbackReason: 'generation_failed',
+      brief: projectBriefResponse().brief,
+    });
+    renderSearchPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate brief' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Showing the latest saved brief because generation failed.');
+  });
+
+  it('shows a friendly project brief error when there is no fallback', async () => {
+    apiSpies.generateProjectBrief.mockRejectedValue(new Error('Project brief generation failed.'));
+    renderSearchPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate brief' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not generate the project brief.');
   });
 });
+
+function projectBriefResponse(fallback = false) {
+  return {
+    ok: true,
+    fallback,
+    fallbackReason: fallback ? 'generation_failed' : undefined,
+    brief: {
+      projectSlug: 'all',
+      generatedAt: '2026-05-22T12:00:00.000Z',
+      summary: 'Platform is actively processing deployment work.',
+      status: 'Active with one open rollout item.',
+      recentChanges: ['Deployment note was captured.'],
+      decisions: ['Keep the current rollout path.'],
+      openItems: ['Confirm production rollout.'],
+      risks: ['Release validation is still pending.'],
+      nextSteps: ['Open the deployment note and close the rollout item.'],
+      sources: [{ noteId: 'note-1', title: 'Deploy antigo', path: '20 Inbox/platform/note.md', date: '2026-04-27T00:00:00.000Z' }],
+    },
+  } as const;
+}
+
+function savedProjectBriefResponse(brief = projectBriefResponse().brief) {
+  return {
+    ok: true,
+    source: 'history',
+    brief,
+  } as const;
+}
 
 function renderSearchPage(route = '/search') {
   return renderWithAppProviders(
