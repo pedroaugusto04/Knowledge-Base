@@ -29,8 +29,8 @@ const SEARCH_DEBOUNCE_MS = 350;
 const ASK_HISTORY_PAGE_SIZE = 3;
 
 const statusOptions: Array<{ value: '' | 'open' | NoteStatus; label: string }> = [
-  { value: '', label: 'All' },
   { value: 'open', label: 'Open' },
+  { value: '', label: 'All' },
   ...(['active', 'pending', 'overdue', 'sent', 'resolved', 'archived'] as NoteStatus[]).map((value) => ({
     value,
     label: formatDisplayToken(value),

@@ -9,22 +9,12 @@ import { MobileInfinitePagination, useMobilePaginatedItems } from '../../shared/
 import { PencilIcon, TrashIcon } from '../../shared/ui/icons';
 import { AttachmentIndicator } from '../../widgets/notes/AttachmentIndicator';
 import { QuickNoteStatusActions } from '../../widgets/notes/QuickNoteStatusActions';
-import { Select } from '../../shared/ui/select';
 import { type NoteStatus } from '../../shared/api/models/note-status';
 
 const categoryOptions: Array<{ value: ProjectTimelineCategory; label: string }> = projectTimelineCategoryValues.map((value) => ({
   value,
   label: formatDisplayToken(value),
 }));
-
-const statusOptions: Array<{ value: '' | 'open' | NoteStatus; label: string }> = [
-  { value: '', label: 'All' },
-  { value: 'open', label: 'Open' },
-  ...(['active', 'pending', 'overdue', 'sent', 'resolved', 'archived'] as NoteStatus[]).map((value) => ({
-    value,
-    label: formatDisplayToken(value),
-  })),
-];
 
 export function ProjectTimeline({
   dashboard,
@@ -83,15 +73,6 @@ export function ProjectTimeline({
               {option.label}
             </button>
           ))}
-        </div>
-        <div className="timeline-status-filter" style={{ minWidth: '150px' }}>
-          <Select
-            ariaLabel="Filter by status"
-            className="search-filter search-filter-status"
-            options={statusOptions}
-            value={status}
-            onChange={(nextValue) => onStatusChange(nextValue as '' | NoteStatus)}
-          />
         </div>
       </div>
       {visibleItems.length > 0 ? (

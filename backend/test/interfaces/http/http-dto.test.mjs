@@ -25,7 +25,7 @@ test('query dto normalizes limit and slugs', () => {
     limit: 7,
     workspaceSlug: 'my-workspace',
     projectSlug: 'n8n-automations',
-    status: '',
+    status: 'open',
     page: 1,
     pageSize: 10,
   });

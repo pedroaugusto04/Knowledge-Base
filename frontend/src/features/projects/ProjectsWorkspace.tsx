@@ -18,6 +18,7 @@ import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/int
 import { getErrorMessage } from '../../shared/api/error-message';
 import type { ProjectTimelineCategory } from '../../shared/api/models/project-timeline';
 import { type NoteStatus } from '../../shared/api/models/note-status';
+import { formatDisplayToken } from '../../shared/utils/format';
 import { ensureNoteDetail, invalidateNoteRelatedQueries } from '../../shared/api/note-query';
 import { notifyGeneralFormError } from '../../shared/forms/errors';
 import { notifySuccess } from '../../shared/ui/notifications';
@@ -36,6 +37,15 @@ import type { ConfirmState, FolderModalState, NoteModalState, ProjectModalState 
 import { ProjectTimeline } from './ProjectTimeline';
 import { SideNoteDrawer } from '../../widgets/notes/SideNoteDrawer';
 import { useMediaQuery } from '../../shared/ui/use-media-query';
+
+const statusOptions: Array<{ value: '' | 'open' | NoteStatus; label: string }> = [
+  { value: 'open', label: 'Open' },
+  { value: '', label: 'All' },
+  ...(['active', 'pending', 'overdue', 'sent', 'resolved', 'archived'] as NoteStatus[]).map((value) => ({
+    value,
+    label: formatDisplayToken(value),
+  })),
+];
 
 
 type ProjectsWorkspaceProps = ProjectsPageContext;
@@ -217,6 +227,15 @@ export function ProjectsWorkspace({
               ]}
               value={selected?.projectSlug || ''}
               onChange={openProject}
+            />
+            <label className="sr-only" htmlFor="projects-page-status-select">Filter by status</label>
+            <Select
+              ariaLabel="Filter by status"
+              className="page-head-select"
+              id="projects-page-status-select"
+              options={statusOptions}
+              value={timelineStatus}
+              onChange={(nextValue) => setTimelineStatus(nextValue as '' | 'open' | NoteStatus)}
             />
           </div>
         )}

@@ -22,7 +22,13 @@ export function rankKnowledgeMatches(notes: VaultNoteSummary[], query: Pick<Quer
     .filter((note) =>
       (!query.projectSlug || note.project === query.projectSlug)
       && (!query.workspaceSlug || note.workspace === query.workspaceSlug)
-      && (!('status' in query) || !query.status || note.status.toLowerCase() === query.status),
+      && (
+        !('status' in query) || !query.status || (
+          query.status === 'open'
+            ? !['resolved', 'archived'].includes(note.status.toLowerCase())
+            : note.status.toLowerCase() === query.status
+        )
+      ),
     )
     .map((note) => {
       const score = scoreKnowledgeNote(note, tokens);
