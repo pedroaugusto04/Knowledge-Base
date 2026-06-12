@@ -9,7 +9,8 @@ import { formatDisplayToken, formatUsDate, formatUsDateTime, noteTypeLabel, proj
 import { Badge, EmptyState } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { MobileInfinitePagination, useMobilePaginatedItems } from '../../shared/ui/mobile-infinite-pagination';
-import { PencilIcon, TrashIcon } from '../../shared/ui/icons';
+import { PencilIcon, TrashIcon, ResolveIcon, ArchiveIcon } from '../../shared/ui/icons';
+import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
 import { AttachmentIndicator } from '../../widgets/notes/AttachmentIndicator';
 import { QuickNoteStatusActions } from '../../widgets/notes/QuickNoteStatusActions';
 import { type NoteStatus } from '../../shared/api/models/note-status';
@@ -63,10 +64,10 @@ export function ProjectTimeline({
 
   const queryClient = useQueryClient();
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [confirmBulk, setConfirmBulk] = useState<{ type: 'resolve' | 'archive' } | null>(null);
 
   const handleResolveAll = async () => {
     if (!visibleItems.length) return;
-    if (!window.confirm(`Are you sure you want to resolve all ${visibleItems.length} notes currently listed?`)) return;
     setIsBulkUpdating(true);
     try {
       await Promise.all(
@@ -98,7 +99,6 @@ export function ProjectTimeline({
 
   const handleArchiveAll = async () => {
     if (!visibleItems.length) return;
-    if (!window.confirm(`Are you sure you want to archive all ${visibleItems.length} notes currently listed?`)) return;
     setIsBulkUpdating(true);
     try {
       await Promise.all(
@@ -146,11 +146,13 @@ export function ProjectTimeline({
         </div>
         {visibleItems.length > 0 && (
           <div className="bulk-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button className="link-button" type="button" disabled={isBulkUpdating} onClick={handleResolveAll} style={{ fontSize: '13px', color: 'var(--text-soft)' }}>
+            <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'resolve' })}>
+              <ResolveIcon />
               Resolve all
             </button>
             <span style={{ color: 'var(--line-soft)', fontSize: '12px' }}>|</span>
-            <button className="link-button" type="button" disabled={isBulkUpdating} onClick={handleArchiveAll} style={{ fontSize: '13px', color: 'var(--text-soft)' }}>
+            <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'archive' })}>
+              <ArchiveIcon />
               Archive all
             </button>
           </div>
@@ -230,6 +232,26 @@ export function ProjectTimeline({
           ? <MobileInfinitePagination pagination={pagination} isLoading={isStale || pagination.page > loadedMobilePage} onPageChange={onPageChange} />
           : <Pagination pagination={pagination} onPageChange={onPageChange} />
       ) : null}
+
+      {confirmBulk && (
+        <ConfirmationModal
+          busy={isBulkUpdating}
+          title={confirmBulk.type === 'resolve' ? 'Resolve all items' : 'Archive all items'}
+          description={
+            confirmBulk.type === 'resolve'
+              ? `Are you sure you want to resolve all ${visibleItems.length} notes currently listed?`
+              : `Are you sure you want to archive all ${visibleItems.length} notes currently listed?`
+          }
+          cancelLabel="Cancel"
+          confirmLabel={confirmBulk.type === 'resolve' ? 'Resolve all' : 'Archive all'}
+          tone="default"
+          onCancel={() => setConfirmBulk(null)}
+          onConfirm={async () => {
+            await (confirmBulk.type === 'resolve' ? handleResolveAll() : handleArchiveAll());
+            setConfirmBulk(null);
+          }}
+        />
+      )}
     </div>
   );
 }

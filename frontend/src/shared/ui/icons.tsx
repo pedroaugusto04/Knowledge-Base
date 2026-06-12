@@ -16,3 +16,22 @@ export function TrashIcon() {
     </svg>
   );
 }
+
+export function ResolveIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M5.5 8.1l1.7 1.7 3.4-3.6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+export function ArchiveIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <path d="M2.7 4.1h10.6v7.2a1 1 0 0 1-1 1H3.7a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.2" />
+      <path d="M2.3 3h11.4v2.3H2.3z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.2" />
+      <path d="M6 7.6h4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.2" />
+    </svg>
+  );
+}

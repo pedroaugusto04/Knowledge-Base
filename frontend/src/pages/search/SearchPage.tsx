@@ -23,6 +23,8 @@ import { usePaginationState } from '../../shared/ui/use-pagination-state';
 import { useMediaQuery } from '../../shared/ui/use-media-query';
 import { NoteRow } from '../../widgets/notes/NoteRow';
 import { SideNoteDrawer } from '../../widgets/notes/SideNoteDrawer';
+import { ResolveIcon, ArchiveIcon } from '../../shared/ui/icons';
+import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
 import './SearchPage.css';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -130,10 +132,10 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
   });
 
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [confirmBulk, setConfirmBulk] = useState<{ type: 'resolve' | 'archive' } | null>(null);
 
   const handleResolveAll = async () => {
     if (!paginatedVisibleNotes.length) return;
-    if (!window.confirm(`Are you sure you want to resolve all ${paginatedVisibleNotes.length} notes currently listed?`)) return;
     setIsBulkUpdating(true);
     try {
       await Promise.all(
@@ -165,7 +167,6 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
 
   const handleArchiveAll = async () => {
     if (!paginatedVisibleNotes.length) return;
-    if (!window.confirm(`Are you sure you want to archive all ${paginatedVisibleNotes.length} notes currently listed?`)) return;
     setIsBulkUpdating(true);
     try {
       await Promise.all(
@@ -344,11 +345,13 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
             </div>
             {paginatedVisibleNotes.length > 0 && (
               <div className="bulk-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button className="link-button" type="button" disabled={isBulkUpdating} onClick={handleResolveAll} style={{ fontSize: '13px', color: 'var(--text-soft)' }}>
+                <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'resolve' })}>
+                  <ResolveIcon />
                   Resolve all
                 </button>
                 <span style={{ color: 'var(--line-soft)', fontSize: '12px' }}>|</span>
-                <button className="link-button" type="button" disabled={isBulkUpdating} onClick={handleArchiveAll} style={{ fontSize: '13px', color: 'var(--text-soft)' }}>
+                <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'archive' })}>
+                  <ArchiveIcon />
                   Archive all
                 </button>
               </div>
@@ -392,6 +395,26 @@ export function SearchPage({ dashboard, openNote, editNote, deleteNote }: PageCo
           />
         )}
       </div>
+
+      {confirmBulk && (
+        <ConfirmationModal
+          busy={isBulkUpdating}
+          title={confirmBulk.type === 'resolve' ? 'Resolve all items' : 'Archive all items'}
+          description={
+            confirmBulk.type === 'resolve'
+              ? `Are you sure you want to resolve all ${paginatedVisibleNotes.length} notes currently listed?`
+              : `Are you sure you want to archive all ${paginatedVisibleNotes.length} notes currently listed?`
+          }
+          cancelLabel="Cancel"
+          confirmLabel={confirmBulk.type === 'resolve' ? 'Resolve all' : 'Archive all'}
+          tone="default"
+          onCancel={() => setConfirmBulk(null)}
+          onConfirm={async () => {
+            await (confirmBulk.type === 'resolve' ? handleResolveAll() : handleArchiveAll());
+            setConfirmBulk(null);
+          }}
+        />
+      )}
     </>
   );
 }

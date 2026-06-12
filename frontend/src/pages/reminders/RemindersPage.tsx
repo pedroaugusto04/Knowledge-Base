@@ -13,6 +13,8 @@ import { EmptyState, PageHead, Panel } from '../../shared/ui/primitives';
 import { Select } from '../../shared/ui/select';
 import { usePaginationState } from '../../shared/ui/use-pagination-state';
 import { ReminderRow } from '../../widgets/reminders/ReminderRow';
+import { ResolveIcon, ArchiveIcon } from '../../shared/ui/icons';
+import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
 
 const reminderStatusOptions = [
   { value: 'open', label: 'Open' },
@@ -80,10 +82,10 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
 
   const queryClient = useQueryClient();
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [confirmBulk, setConfirmBulk] = useState<{ type: 'resolve' | 'archive' } | null>(null);
 
   const handleResolveAll = async () => {
     if (!visibleReminders.length) return;
-    if (!window.confirm(`Are you sure you want to resolve all ${visibleReminders.length} reminders currently listed?`)) return;
     setIsBulkUpdating(true);
     try {
       await Promise.all(
@@ -101,7 +103,6 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
 
   const handleArchiveAll = async () => {
     if (!visibleReminders.length) return;
-    if (!window.confirm(`Are you sure you want to archive all ${visibleReminders.length} reminders currently listed?`)) return;
     setIsBulkUpdating(true);
     try {
       await Promise.all(
@@ -145,11 +146,13 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
       />
       {visibleReminders.length > 0 && (
         <div className="bulk-actions" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-          <button className="link-button" type="button" disabled={isBulkUpdating} onClick={handleResolveAll} style={{ fontSize: '13px', color: 'var(--text-soft)' }}>
+          <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'resolve' })}>
+            <ResolveIcon />
             Resolve all
           </button>
           <span style={{ color: 'var(--line-soft)', fontSize: '12px' }}>|</span>
-          <button className="link-button" type="button" disabled={isBulkUpdating} onClick={handleArchiveAll} style={{ fontSize: '13px', color: 'var(--text-soft)' }}>
+          <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'archive' })}>
+            <ArchiveIcon />
             Archive all
           </button>
         </div>
@@ -174,6 +177,26 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
           ? <MobileInfinitePagination pagination={pagination} isLoading={remindersQuery.isFetching || pagination.page > loadedMobilePage} onPageChange={setPage} />
           : <Pagination pagination={pagination} onPageChange={setPage} />
       ) : null}
+
+      {confirmBulk && (
+        <ConfirmationModal
+          busy={isBulkUpdating}
+          title={confirmBulk.type === 'resolve' ? 'Resolve all items' : 'Archive all items'}
+          description={
+            confirmBulk.type === 'resolve'
+              ? `Are you sure you want to resolve all ${visibleReminders.length} reminders currently listed?`
+              : `Are you sure you want to archive all ${visibleReminders.length} reminders currently listed?`
+          }
+          cancelLabel="Cancel"
+          confirmLabel={confirmBulk.type === 'resolve' ? 'Resolve all' : 'Archive all'}
+          tone="default"
+          onCancel={() => setConfirmBulk(null)}
+          onConfirm={async () => {
+            await (confirmBulk.type === 'resolve' ? handleResolveAll() : handleArchiveAll());
+            setConfirmBulk(null);
+          }}
+        />
+      )}
     </>
   );
 }
