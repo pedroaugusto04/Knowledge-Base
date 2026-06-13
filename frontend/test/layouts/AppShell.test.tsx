@@ -505,6 +505,20 @@ describe('AppShell', () => {
       if (url === '/api/integrations?workspaceSlug=default') {
         return Promise.resolve(Response.json({ ok: true, workspaceSlug: 'default', integrations: [] }));
       }
+      if (url.startsWith('/api/projects/timeline')) {
+        return Promise.resolve(Response.json({
+          ok: true,
+          timeline: dashboard.notes.map((note) => ({
+            ...note,
+            folderId: null,
+            attachmentCount: 0,
+            noteId: note.id,
+            category: 'manual',
+            sourceChannel: note.source,
+          })),
+          pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
+        }));
+      }
       return Promise.resolve(new Response(null, { status: 404 }));
     }));
 

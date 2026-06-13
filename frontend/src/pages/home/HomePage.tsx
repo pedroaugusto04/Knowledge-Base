@@ -1,6 +1,6 @@
 import type { PageContext } from '../../app/page-context';
 import type { HomeNavigationTarget, HomePriority } from '../../shared/api/models/dashboard-home';
-import { formatDisplayToken, formatUsDate, formatUsDateTime, noteTypeLabel, projectName, reminderDisplayDateTime } from '../../shared/utils/format';
+import { formatDisplayToken, formatUsDate, formatUsDateTime, noteTypeLabel, projectName, reminderDisplayDateTime, typeIcon } from '../../shared/utils/format';
 import { Badge, EmptyState, PageHead, Panel } from '../../shared/ui/primitives';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Link } from 'react-router-dom';
@@ -184,7 +184,7 @@ export function HomePage({ dashboard, openNote, openProject, createNote }: PageC
             ) : (
               <div className="home-timeline">
                 {timelineItems.map((item) => (
-                  <article className="home-timeline-item" key={item.id}>
+                  <article className="home-timeline-item clickable" key={item.id} onClick={() => openNote(item.noteId)}>
                     <div
                       className="home-timeline-dot"
                       style={{
@@ -196,49 +196,55 @@ export function HomePage({ dashboard, openNote, openProject, createNote }: PageC
                       <div className="home-timeline-meta">
                         <Badge value={formatDisplayToken(item.category)} tone={item.category} />
                         <Badge value={noteTypeLabel(item.type)} tone={item.type} />
-                        <span className="meta">{projectName(dashboard.projects, item.project)}</span>
-                        <span className="meta">{formatUsDate(item.date)}</span>
+                        <Badge value={formatDisplayToken(item.status)} tone={item.status} />
+                        <span className="meta">
+                          {projectName(dashboard.projects, item.project)} / {formatUsDate(item.date)}
+                        </span>
+                        <AttachmentIndicator count={item.attachmentCount || 0} />
                       </div>
-                      <h3 className="home-timeline-title" onClick={() => openNote(item.noteId)}>
+                      <h3 className="home-timeline-title">
                         {item.title}
                       </h3>
                       <p className="home-timeline-summary">{item.summary}</p>
                     </div>
+                    <span className="file-icon">{typeIcon(item.type)}</span>
                   </article>
                 ))}
               </div>
             )}
           </Panel>
 
-          <Panel className="home-panel home-panel-recent-events">
+          <Panel className="home-panel home-panel-projects">
             <div className="panel-head">
-              <h2>Relevant recent events</h2>
+              <h2>Active projects</h2>
               <span className="meta">top 5</span>
             </div>
-            {home.recentInterestingEvents.length ? (
-              <div className="list">
-                {home.recentInterestingEvents.slice(0, 5).map((event) => (
-                  <article className="list-row clickable" key={event.id} onClick={() => openTarget(event.target)}>
-                    <div className="list-row-body">
-                      <div className="meta-row">
-                        <Badge value={formatDisplayToken(event.category)} tone={event.category} />
-                        <Badge value={formatDisplayToken(event.type)} tone={event.type} />
-                        <Badge value={formatDisplayToken(event.status)} tone={event.status} />
-                        <span className="meta">
-                          {projectName(dashboard.projects, event.project)} / {formatUsDate(event.date)}
-                        </span>
-                        <AttachmentIndicator count={event.attachmentCount || 0} />
-                      </div>
-                      <h3>{event.title}</h3>
-                      <p>{event.summary}</p>
-                    </div>
-                    <span className="file-icon">E</span>
-                  </article>
-                ))}
+            {home.activityByProject.length ? (
+              <div className="chart-box compact" aria-label="Activity chart by project">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={home.activityByProject} layout="vertical" margin={{ left: 4, right: 18, top: 8, bottom: 8 }}>
+                    <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
+                    <XAxis type="number" hide allowDecimals={false} />
+                    <YAxis type="category" dataKey="label" tickLine={false} axisLine={false} width={116} stroke="var(--chart-axis)" fontSize={12} />
+                    <Tooltip
+                      contentStyle={{ background: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)', borderRadius: 8, color: 'var(--chart-tooltip-text)' }}
+                      labelStyle={{ color: 'var(--chart-tooltip-text)' }}
+                    />
+                    <Bar dataKey="count" name="Notes" fill="var(--chart-bar-fill)" radius={[0, 6, 6, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             ) : (
-              <EmptyState>No relevant events in this window.</EmptyState>
+              <EmptyState>No recent activity by project.</EmptyState>
             )}
+            <div className="compact-links spaced">
+              {home.activityByProject.slice(0, 5).map((project) => (
+                <button className="home-project-link" type="button" key={project.project} onClick={() => openProject(project.project)}>
+                  <span>{project.label}</span>
+                  <Badge value={project.count} tone="active" />
+                </button>
+              ))}
+            </div>
           </Panel>
         </section>
       </section>

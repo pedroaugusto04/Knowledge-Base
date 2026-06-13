@@ -186,17 +186,37 @@
 
 .home-timeline-item {
   position: relative;
-  padding-bottom: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--surface-1);
+  transition: all 180ms ease;
+  margin-bottom: 12px;
 }
 
 .home-timeline-item:last-child {
-  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.home-timeline-item.clickable {
+  cursor: pointer;
+}
+
+.home-timeline-item.clickable:hover {
+  background: var(--surface-hover-accent);
+  border-color: var(--cyan);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 .home-timeline-dot {
   position: absolute;
-  left: -24px;
-  top: 4px;
+  left: -25px;
+  top: 14px;
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -221,9 +241,9 @@
 }
 
 .home-timeline-content {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 6px;
+  min-width: 0;
 }
 
 .home-timeline-meta {
@@ -238,20 +258,25 @@
 
 .home-timeline-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-strong);
-  cursor: pointer;
-  width: fit-content;
+  line-height: 1.35;
+  transition: color 150ms ease;
 }
 
-.home-timeline-title:hover {
+.home-timeline-item.clickable:hover .home-timeline-title {
   color: var(--cyan);
+}
+
+.home-timeline-item > .file-icon {
+  align-self: start;
+  margin-top: 2px;
 }
 
 .home-timeline-summary {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--text-soft);
 }

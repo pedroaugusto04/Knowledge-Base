@@ -197,28 +197,34 @@ describe('HomePage', () => {
     const timelineHeading = await screen.findByRole('heading', { name: 'Project Activity Timeline' });
     expect(timelineHeading).toBeInTheDocument();
 
-    const eventsPanel = screen.getByRole('heading', { name: 'Relevant recent events' }).closest('.home-panel-recent-events') as HTMLElement;
-    expect(eventsPanel).toHaveTextContent('Manual');
-    expect(eventsPanel).toHaveTextContent('Incident');
-    expect(eventsPanel).toHaveTextContent('Active');
+    const timelineItem = await screen.findByText('Falha no deploy');
+    expect(timelineItem).toBeInTheDocument();
+
+    const timelinePanel = timelineHeading.closest('.home-panel-timeline') as HTMLElement;
+    expect(timelinePanel).toHaveTextContent('Manual');
+    expect(timelinePanel).toHaveTextContent('Incident');
+    expect(timelinePanel).toHaveTextContent('Active');
+
     expect(screen.getAllByText('Pending').length).toBeGreaterThan(0);
     expect(screen.getByText('High')).toBeInTheDocument();
-    expect(screen.getAllByText(/N8N Automations \/ 2026-04-27 09:30:00/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/N8N Automations \/ 2026-04-27/i).length).toBeGreaterThan(0);
     expect(screen.queryByText('Prioridade 6')).not.toBeInTheDocument();
-    expect(screen.getAllByTestId('chart')).toHaveLength(2);
+    expect(screen.getAllByTestId('chart')).toHaveLength(4);
   });
 
   it('navigates from review, note and project entries', async () => {
-    const { openNote } = renderHome();
+    const { openNote, openProject } = renderHome();
 
     const timelineEvent = await screen.findByText('Falha no deploy');
     expect(timelineEvent).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Prioridade 1'));
     fireEvent.click(timelineEvent);
+    fireEvent.click(screen.getByRole('button', { name: /N8N Automations/i }));
 
     expect(openNote).toHaveBeenCalledWith('review-1');
     expect(openNote).toHaveBeenCalledWith('note-1');
+    expect(openProject).toHaveBeenCalledWith('n8n-automations');
   });
 
   it('renders an empty state when there are no priorities', () => {
