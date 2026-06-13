@@ -130,6 +130,15 @@
   line-height: 1.4;
 }
 
+.home-priority-row h3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .home-priority-row h3,
 .home-priority-row p,
 .home-priority-row .meta {
@@ -138,6 +147,12 @@
 
 .home-priority-row p {
   margin-bottom: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .home-project-link {
@@ -263,6 +278,12 @@
   color: var(--text-strong);
   line-height: 1.35;
   transition: color 150ms ease;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .home-timeline-item.clickable:hover .home-timeline-title {
@@ -279,6 +300,12 @@
   font-size: 12px;
   line-height: 1.4;
   color: var(--text-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .timeline-project-select {
