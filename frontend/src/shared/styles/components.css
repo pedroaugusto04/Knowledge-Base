@@ -1092,6 +1092,7 @@
   max-height: calc(100vh - 48px);
   width: 90vw;
   backdrop-filter: blur(16px);
+  z-index: 1001;
 }
 
 .attachment-viewer-panel.image-mode {
