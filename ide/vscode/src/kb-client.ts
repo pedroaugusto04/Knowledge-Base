@@ -1,0 +1,354 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import https from 'node:https';
+import http from 'node:http';
+import type { KbConfig, KbProject, KbNote, KbReminder, KbAskResult, KbCreateNotePayload, KbCreateNoteResult } from './types';
+
+// ---------------------------------------------------------------------------
+// Config (mirrors ~/.config/kb/config.json written by the kb CLI)
+// ---------------------------------------------------------------------------
+
+export type { KbConfig, KbProject, KbNote, KbReminder, KbAskResult, KbCreateNotePayload, KbCreateNoteResult } from './types';
+
+const CONFIG_PATH = path.join(os.homedir(), '.config', 'kb', 'config.json');
+
+export function loadKbConfig(): KbConfig {
+  const defaults: KbConfig = {
+    apiUrl: 'http://localhost:4310',
+    workspaceSlug: 'default',
+    defaultProjectSlug: 'inbox',
+    cookies: {},
+  };
+  try {
+    if (!fs.existsSync(CONFIG_PATH)) return defaults;
+    const raw = fs.readFileSync(CONFIG_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    return { ...defaults, ...parsed, cookies: parsed.cookies ?? {} };
+  } catch {
+    return defaults;
+  }
+}
+
+export function isConfigured(): boolean {
+  if (!fs.existsSync(CONFIG_PATH)) return false;
+  const config = loadKbConfig();
+  return Boolean(config.cookies.kb_access_token || config.cookies.kb_refresh_token);
+}
+
+const CONFIG_DIR = path.dirname(CONFIG_PATH);
+
+export function saveKbConfig(config: Partial<KbConfig>): void {
+  try {
+    if (!fs.existsSync(CONFIG_DIR)) {
+      fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    }
+    const current = loadKbConfig();
+    const updated = {
+      ...current,
+      ...config,
+      cookies: {
+        ...current.cookies,
+        ...(config.cookies || {}),
+      },
+    };
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2), 'utf8');
+    try {
+      fs.chmodSync(CONFIG_PATH, 0o600);
+    } catch {}
+  } catch (error) {
+    // ignore
+  }
+}
+
+// ---------------------------------------------------------------------------
+// HTTP helper — node:https/http without any external deps
+// ---------------------------------------------------------------------------
+
+interface RequestOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+function makeRequest(url: string, options: RequestOptions = {}): Promise<{ status: number; body: string; headers: Record<string, string> }> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const isHttps = parsed.protocol === 'https:';
+    const lib = isHttps ? https : http;
+
+    const req = lib.request(
+      {
+        hostname: parsed.hostname,
+        port: parsed.port || (isHttps ? 443 : 80),
+        path: parsed.pathname + parsed.search,
+        method: options.method ?? 'GET',
+        headers: options.headers ?? {},
+      },
+      (res) => {
+        let body = '';
+        res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        res.on('end', () => {
+          const headers: Record<string, string> = {};
+          for (const [k, v] of Object.entries(res.headers)) {
+            if (typeof v === 'string') headers[k] = v;
+          }
+          resolve({ status: res.statusCode ?? 0, body, headers });
+        });
+      },
+    );
+
+    req.on('error', reject);
+    if (options.body) req.write(options.body);
+    req.end();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// KbClient
+// ---------------------------------------------------------------------------
+
+export class KbClient {
+  private config: KbConfig;
+
+  constructor() {
+    this.config = loadKbConfig();
+  }
+
+  /** Reload config from disk (e.g. after user runs `kb init`) */
+  reload() {
+    this.config = loadKbConfig();
+  }
+
+  get workspaceSlug() { return this.config.workspaceSlug; }
+  get defaultProjectSlug() { return this.config.defaultProjectSlug; }
+  get apiUrl() { return this.config.apiUrl.replace(/\/$/, ''); }
+
+  // -------------------------------------------------------------------------
+  // Auth
+  // -------------------------------------------------------------------------
+
+  private buildCookieHeader(): string {
+    const { kb_access_token, kb_refresh_token } = this.config.cookies;
+    return [
+      kb_access_token && `kb_access_token=${kb_access_token}`,
+      kb_refresh_token && `kb_refresh_token=${kb_refresh_token}`,
+    ]
+      .filter(Boolean)
+      .join('; ');
+  }
+
+  private buildUrl(urlPath: string): string {
+    const apiBase = this.apiUrl;
+    let cleanPath = urlPath;
+    if (apiBase.endsWith('/api') && urlPath.startsWith('/api')) {
+      cleanPath = urlPath.substring(4);
+    }
+    return `${apiBase}/${cleanPath.replace(/^\//, '')}`;
+  }
+
+  private async fetch<T = unknown>(urlPath: string, options: RequestOptions = {}): Promise<T> {
+    const url = this.buildUrl(urlPath);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Cookie: this.buildCookieHeader(),
+      ...options.headers,
+    };
+
+    let response = await makeRequest(url, { ...options, headers });
+
+    // Attempt token refresh on 401
+    if (response.status === 401) {
+      if (this.config.cookies.kb_refresh_token) {
+        const refreshResponse = await makeRequest(this.buildUrl('/api/auth/refresh'), {
+          method: 'POST',
+          headers: { Cookie: this.buildCookieHeader() },
+        });
+        if (refreshResponse.status < 300) {
+          // Parse Set-Cookie and save
+          const setCookie = refreshResponse.headers['set-cookie'] ?? '';
+          this.updateCookiesFromSetCookie(setCookie);
+          headers.Cookie = this.buildCookieHeader();
+          response = await makeRequest(url, { ...options, headers });
+        }
+      }
+    }
+
+    if (response.status === 204) return undefined as T;
+
+    const parsed = JSON.parse(response.body);
+    if (response.status >= 400) {
+      throw new Error(parsed?.message ?? `Request failed with status ${response.status}`);
+    }
+    return parsed as T;
+  }
+
+  private updateCookiesFromSetCookie(setCookie: string) {
+    // Simple parser for Set-Cookie headers
+    for (const part of setCookie.split(',')) {
+      const kv = part.split(';')[0]?.trim().split('=');
+      if (kv && kv.length >= 2) {
+        const key = kv[0].trim();
+        const value = kv.slice(1).join('=').trim();
+        if (key === 'kb_access_token') this.config.cookies.kb_access_token = value;
+        if (key === 'kb_refresh_token') this.config.cookies.kb_refresh_token = value;
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // API methods
+  // -------------------------------------------------------------------------
+
+  async listProjects(): Promise<KbProject[]> {
+    const allProjects: KbProject[] = [];
+    let page = 1;
+    let hasNext = true;
+
+    while (hasNext) {
+      try {
+        const result = await this.fetch<{
+          projects?: KbProject[];
+          items?: KbProject[];
+          pagination?: { hasNext?: boolean };
+        }>(`/api/projects?page=${page}&pageSize=50`);
+
+        const list = result?.projects ?? result?.items ?? [];
+        if (list.length === 0) break;
+        allProjects.push(...list);
+
+        hasNext = result?.pagination?.hasNext ?? false;
+        page++;
+      } catch (err) {
+        // Fallback or break if request fails
+        break;
+      }
+    }
+    return allProjects;
+  }
+
+  async listRecentNotes(projectSlug?: string, limit = 5): Promise<KbNote[]> {
+    const params = new URLSearchParams({ limit: String(limit), page: '1' });
+    if (projectSlug) params.set('projectSlug', projectSlug);
+    const result = await this.fetch<{ notes?: KbNote[]; items?: KbNote[] }>(`/api/notes?${params}`);
+    return result?.notes ?? result?.items ?? [];
+  }
+
+  async listPendingReminders(projectSlug?: string): Promise<KbReminder[]> {
+    const params = new URLSearchParams({ status: 'pending', limit: '5' });
+    if (projectSlug) params.set('projectSlug', projectSlug);
+    // Reminders are notes with pending/overdue status — try reminders endpoint first
+    try {
+      const result = await this.fetch<{ reminders?: KbReminder[]; items?: KbReminder[] }>(`/api/reminders?${params}`);
+      return result?.reminders ?? result?.items ?? [];
+    } catch {
+      // Fallback: filter notes by status
+      const params2 = new URLSearchParams({ status: 'pending,overdue', limit: '5' });
+      if (projectSlug) params2.set('projectSlug', projectSlug);
+      const result = await this.fetch<{ notes?: KbReminder[]; items?: KbReminder[] }>(`/api/notes?${params2}`);
+      return result?.notes ?? result?.items ?? [];
+    }
+  }
+
+  async ask(question: string, projectSlug?: string): Promise<KbAskResult> {
+    return this.fetch<KbAskResult>('/api/ask', {
+      method: 'POST',
+      body: JSON.stringify({
+        question,
+        projectSlug: projectSlug ?? undefined,
+        workspaceSlug: this.config.workspaceSlug,
+      }),
+    });
+  }
+
+  async createNote(payload: KbCreateNotePayload): Promise<KbCreateNoteResult> {
+    return this.fetch<KbCreateNoteResult>('/api/notes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async sendConversationTurn(payload: {
+    messageText: string;
+    senderId: string;
+    chatId: string;
+    messageId: string;
+    hasMedia?: boolean;
+    media?: any;
+  }, workspaceSlug?: string, projectSlug?: string): Promise<{
+    action: 'ask' | 'confirm' | 'cancel' | 'submit';
+    replyText: string;
+    payload: any;
+    ingestResult?: any;
+    agent: any;
+  }> {
+    const ws = workspaceSlug || this.config.workspaceSlug || 'default';
+    const params = new URLSearchParams({ workspaceSlug: ws });
+    if (projectSlug) params.set('projectSlug', projectSlug);
+
+    return this.fetch<any>(`/api/conversation/agent?${params}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async login(email: string, password: string): Promise<void> {
+    this.config.cookies = {};
+    saveKbConfig({ cookies: {} });
+
+    const url = this.buildUrl('/api/auth/login');
+    const headers = { 'Content-Type': 'application/json' };
+    const body = JSON.stringify({ email, password });
+
+    const response = await makeRequest(url, { method: 'POST', headers, body });
+    if (response.status >= 400) {
+      let errorMsg = 'Login failed';
+      try {
+        const parsed = JSON.parse(response.body);
+        errorMsg = parsed?.message ?? errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+
+    const setCookie = response.headers['set-cookie'] ?? '';
+    this.updateCookiesFromSetCookie(setCookie);
+    saveKbConfig({ cookies: this.config.cookies });
+  }
+
+  async logout(): Promise<void> {
+    this.config.cookies = {};
+    try {
+      const current = loadKbConfig();
+      const updated = {
+        ...current,
+        cookies: {},
+      };
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2), 'utf8');
+      try {
+        fs.chmodSync(CONFIG_PATH, 0o600);
+      } catch {}
+    } catch {}
+  }
+
+  async validateAndSetGoogleToken(token: string): Promise<void> {
+    this.config.cookies.kb_access_token = token;
+    saveKbConfig({ cookies: { kb_access_token: token } });
+
+    try {
+      await this.listWorkspaces();
+    } catch (err) {
+      this.config.cookies.kb_access_token = undefined;
+      saveKbConfig({ cookies: { kb_access_token: undefined } });
+      throw err;
+    }
+  }
+
+  async listWorkspaces(): Promise<{ workspaces: Array<{ workspaceSlug: string; displayName?: string }> }> {
+    return this.fetch<{ workspaces: Array<{ workspaceSlug: string; displayName?: string }> }>('/api/workspaces');
+  }
+
+  async saveWorkspaceSelection(workspaceSlug: string): Promise<void> {
+    this.config.workspaceSlug = workspaceSlug;
+    saveKbConfig({ workspaceSlug });
+  }
+}

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
+  <title>KB: Authentication</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --radius: 8px;
+      --font: var(--vscode-font-family, system-ui, sans-serif);
+      --bg: var(--vscode-editor-background);
+      --fg: var(--vscode-foreground);
+      --input-bg: var(--vscode-input-background);
+      --input-fg: var(--vscode-input-foreground);
+      --input-border: var(--vscode-input-border, transparent);
+      --btn-bg: var(--vscode-button-background);
+      --btn-fg: var(--vscode-button-foreground);
+      --btn-hover: var(--vscode-button-hoverBackground);
+      --btn-sec-bg: var(--vscode-button-secondaryBackground, #555);
+      --btn-sec-fg: var(--vscode-button-secondaryForeground, #fff);
+      --error-fg: var(--vscode-inputValidation-errorForeground, #ff6b6b);
+      --error-bg: var(--vscode-inputValidation-errorBackground, #3a1d1d);
+      --error-border: var(--vscode-inputValidation-errorBorder, #f00);
+      --focus-border: var(--vscode-focusBorder);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--fg);
+      background: var(--bg);
+    }
+
+    body {
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      overflow-y: auto;
+    }
+
+    /* ── Logo & Title ───────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .logo {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .logo svg {
+      width: 48px;
+      height: 48px;
+      color: var(--vscode-button-background);
+    }
+    h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    /* ── Tabs ───────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      background: var(--input-bg);
+      border-radius: var(--radius);
+      padding: 2px;
+      margin-bottom: 20px;
+      border: 1px solid var(--input-border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 6px;
+      border: none;
+      background: none;
+      color: var(--fg);
+      opacity: 0.6;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: calc(var(--radius) - 2px);
+      transition: all 0.15s ease-in-out;
+    }
+    .tab-btn:hover {
+      opacity: 0.9;
+    }
+    .tab-btn.active {
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      opacity: 1;
+    }
+
+    /* ── Forms ──────────────────────────────────────── */
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .form-panel {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .form-panel.active {
+      display: flex;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--vscode-descriptionForeground);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    input {
+      padding: 8px 10px;
+      background: var(--input-bg);
+      color: var(--input-fg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 12px;
+    }
+    input:focus {
+      outline: 1px solid var(--focus-border);
+      border-color: var(--focus-border);
+    }
+
+    /* ── Buttons ────────────────────────────────────── */
+    .btn-submit {
+      width: 100%;
+      padding: 10px;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.1s;
+    }
+    .btn-submit:hover {
+      background: var(--btn-hover);
+    }
+    .btn-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ── Instructions ────────────────────────────────── */
+    .instructions {
+      font-size: 12px;
+      line-height: 1.5;
+      background: var(--vscode-textBlockQuote-background, rgba(0,0,0,0.1));
+      border-left: 3px solid var(--vscode-textBlockQuote-border, var(--btn-bg));
+      padding: 10px 12px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin-bottom: 8px;
+    }
+    .instructions p {
+      margin-bottom: 6px;
+    }
+    .instructions a {
+      color: var(--vscode-textLink-foreground, #3794ff);
+      text-decoration: none;
+      word-break: break-all;
+      font-weight: 500;
+    }
+    .instructions a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Messages/Errors ────────────────────────────── */
+    .error-box {
+      font-size: 12px;
+      line-height: 1.4;
+      background: var(--error-bg);
+      color: var(--error-fg);
+      border: 1px solid var(--error-border);
+      padding: 10px;
+      border-radius: var(--radius);
+      display: none;
+      margin-bottom: 12px;
+      word-break: break-word;
+    }
+
+    /* ── Workspaces Step ────────────────────────────── */
+    .workspaces-panel {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .workspaces-panel.active {
+      display: flex;
+    }
+    select {
+      padding: 8px 10px;
+      background: var(--input-bg);
+      color: var(--input-fg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+
+    /* ── Spinner ────────────────────────────────────── */
+    .spinner-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .spinner-overlay.active {
+      display: flex;
+    }
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Spinner -->
+  <div class="spinner-overlay" id="spinner">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="header">
+    <div class="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7a2 2 0 0 1 2-2h4.5a1 1 0 0 1 .7.3l2.1 2.1a1 1 0 0 0 .7.3H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+        <path d="M7 10v6" stroke-width="2" />
+        <path d="M11 10L7 13l4 3" stroke-width="2" />
+        <path d="M13 10.5l2 5.2 2-5.2" stroke-width="2" />
+      </svg>
+    </div>
+    <h2>Knowledge Vault</h2>
+    <div class="subtitle">Connect your account to synchronize notes</div>
+  </div>
+
+  <!-- Error Alert -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- STEP 1: Login forms -->
+  <div id="stepLogin" class="form-container">
+    <div class="tabs">
+      <button class="tab-btn active" id="tabGoogle" data-tab="google">Google</button>
+      <button class="tab-btn" id="tabEmail" data-tab="email">Email</button>
+    </div>
+
+    <!-- Google OAuth Panel -->
+    <div class="form-panel active" id="panelGoogle">
+      <div class="instructions">
+        <p>1. Open this link in your browser to log in with your Google account:</p>
+        <p><a href="https://pedro-duarte.ddns.net/knowledge-base/api/auth/google/start?returnTo=/knowledge-base/auth" target="_blank" id="googleLink">Open Google Login</a></p>
+        <p>2. Copy the value of the cookie <strong>kb_access_token</strong> from your browser's Developer Tools (Application -> Cookies).</p>
+      </div>
+      <div class="form-group">
+        <label for="googleToken">kb_access_token cookie value</label>
+        <input type="password" id="googleToken" placeholder="Paste access token here…" />
+      </div>
+      <button class="btn-submit" id="btnSubmitGoogle">Validate and Connect</button>
+    </div>
+
+    <!-- Email/Password Panel -->
+    <div class="form-panel" id="panelEmail">
+      <div class="form-group">
+        <label for="emailInput">Email Address</label>
+        <input type="email" id="emailInput" placeholder="name@domain.com" />
+      </div>
+      <div class="form-group">
+        <label for="passwordInput">Password</label>
+        <input type="password" id="passwordInput" placeholder="••••••••" />
+      </div>
+      <button class="btn-submit" id="btnSubmitEmail">Login</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Workspace Selection (Hidden by default) -->
+  <div id="stepWorkspaces" class="workspaces-panel">
+    <div class="instructions">
+      <p>Your account is connected successfully! Please select your default workspace to complete the setup.</p>
+    </div>
+    <div class="form-group">
+      <label for="workspaceSelect">Select Workspace</label>
+      <select id="workspaceSelect">
+        <!-- populated dynamically -->
+      </select>
+    </div>
+    <button class="btn-submit" id="btnSubmitWorkspace">Complete Setup</button>
+  </div>
+
+<script nonce="${nonce}">
+  const vscode = acquireVsCodeApi();
+
+  // ── Tab switcher ───────────────────────────────────────────────────────────
+  const tabGoogle = document.getElementById('tabGoogle');
+  const tabEmail = document.getElementById('tabEmail');
+  const panelGoogle = document.getElementById('panelGoogle');
+  const panelEmail = document.getElementById('panelEmail');
+
+  tabGoogle.addEventListener('click', () => {
+    tabGoogle.classList.add('active');
+    tabEmail.classList.remove('active');
+    panelGoogle.classList.add('active');
+    panelEmail.classList.remove('active');
+  });
+
+  tabEmail.addEventListener('click', () => {
+    tabEmail.classList.add('active');
+    tabGoogle.classList.remove('active');
+    panelEmail.classList.add('active');
+    panelGoogle.classList.remove('active');
+  });
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = msg;
+    box.style.display = msg ? 'block' : 'none';
+  }
+
+  function setLoading(loading) {
+    document.getElementById('spinner').classList.toggle('active', loading);
+    document.getElementById('btnSubmitGoogle').disabled = loading;
+    document.getElementById('btnSubmitEmail').disabled = loading;
+    document.getElementById('btnSubmitWorkspace').disabled = loading;
+  }
+
+  // Google validation
+  document.getElementById('btnSubmitGoogle').addEventListener('click', () => {
+    const token = document.getElementById('googleToken').value.trim();
+    if (!token) {
+      showError('Please paste the cookie token value.');
+      return;
+    }
+    showError('');
+    setLoading(true);
+    vscode.postMessage({ type: 'loginGoogle', token });
+  });
+
+  // Email/Password login
+  document.getElementById('btnSubmitEmail').addEventListener('click', () => {
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    if (!email || !password) {
+      showError('Email and Password are required.');
+      return;
+    }
+    showError('');
+    setLoading(true);
+    vscode.postMessage({ type: 'loginEmail', email, password });
+  });
+
+  // Workspace selection
+  document.getElementById('btnSubmitWorkspace').addEventListener('click', () => {
+    const workspaceSlug = document.getElementById('workspaceSelect').value;
+    if (!workspaceSlug) return;
+    setLoading(true);
+    vscode.postMessage({ type: 'selectWorkspace', workspaceSlug });
+  });
+
+  // ── Message handler from host ──────────────────────────────────────────────
+  window.addEventListener('message', ({ data }) => {
+    const msg = data;
+    switch (msg.type) {
+      case 'loading':
+        setLoading(true);
+        break;
+
+      case 'loginSuccess':
+        setLoading(false);
+        showError('');
+        if (msg.workspaces && msg.workspaces.length > 0) {
+          // Switch to workspace selection step
+          document.getElementById('stepLogin').style.display = 'none';
+          const select = document.getElementById('workspaceSelect');
+          select.innerHTML = msg.workspaces.map(w => 
+            `<option value="${w.workspaceSlug}">${w.displayName || w.workspaceSlug}</option>`
+          ).join('');
+          document.getElementById('stepWorkspaces').classList.add('active');
+        }
+        break;
+
+      case 'error':
+        setLoading(false);
+        showError(msg.message);
+        break;
+    }
+  });
+
+  // Tell extension we're ready
+  vscode.postMessage({ type: 'ready' });
+</script>
+</body>
+</html>

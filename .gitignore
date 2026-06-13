@@ -60,3 +60,8 @@ Thumbs.db
 
 # VAPID Keys
 .vapid-keys.json
+
+# VS Code Extension build/release artifacts
+ide/vscode/out/
+ide/vscode/*.vsix
+

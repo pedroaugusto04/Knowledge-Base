@@ -198,7 +198,17 @@ test('RunAskAiUseCase saves only successful web Ask AI answers and dispatches re
   );
   const result = await useCase.execute('How to deploy?', 'user-123', { projectSlug: 'platform' });
 
-  assert.equal(result, askKnowledge.result);
+  assert.deepEqual(result, {
+    ...askKnowledge.result,
+    media: [{
+      noteId: 'note-1',
+      attachmentId: 'att-123',
+      mediaType: 'document',
+      mimeType: 'application/pdf',
+      fileName: 'manual.pdf',
+      mediaBase64: 'dGVzdA==',
+    }],
+  });
   assert.deepEqual(askKnowledge.calls, [{ question: 'How to deploy?', userId: 'user-123', options: { projectSlug: 'platform', workspaceSlug: undefined } }]);
   assert.deepEqual(saved, [{
     userId: 'user-123',

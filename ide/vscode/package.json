@@ -1,0 +1,103 @@
+{
+  "name": "kb-vscode",
+  "displayName": "Knowledge Vault",
+  "description": "Integrate your Knowledge Vault directly into VS Code — search, ask AI, save notes without leaving your editor.",
+  "version": "0.1.3",
+  "publisher": "pedroaugusto04",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pedroaugusto04/knowledge-base"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "knowledge",
+    "ai",
+    "notes",
+    "search",
+    "context"
+  ],
+  "icon": "resources/kb-icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kb-sidebar-container",
+          "title": "Knowledge Vault",
+          "icon": "resources/kb-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "kb-sidebar-container": [
+        {
+          "type": "webview",
+          "id": "kb.sidebarView",
+          "name": "Knowledge Vault"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "kb.openChat",
+        "title": "KB: Open Chat",
+        "category": "Knowledge Vault"
+      },
+      {
+        "command": "kb.ask",
+        "title": "KB: Ask (Quick Input)",
+        "category": "Knowledge Vault"
+      },
+      {
+        "command": "kb.saveSelection",
+        "title": "KB: Save Selection as Note",
+        "category": "Knowledge Vault"
+      },
+      {
+        "command": "kb.refresh",
+        "title": "KB: Refresh Sidebar",
+        "category": "Knowledge Vault"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "kb.ask",
+        "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "kb.saveSelection",
+          "when": "editorHasSelection",
+          "group": "kb@1"
+        },
+        {
+          "command": "kb.openChat",
+          "group": "kb@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc --watch -p tsconfig.json",
+    "vscode:prepublish": "npm run build",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "1.80.0",
+    "typescript": "^5.0.0"
+  }
+}

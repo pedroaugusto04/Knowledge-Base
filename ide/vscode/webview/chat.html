@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
+  <title>KB: Ask AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gap: 10px;
+      --radius: 8px;
+      --font: var(--vscode-font-family, system-ui, sans-serif);
+      --bubble-user-bg: var(--vscode-button-background);
+      --bubble-user-fg: var(--vscode-button-foreground);
+      --bubble-kb-bg: var(--vscode-input-background);
+      --bubble-kb-border: var(--vscode-input-border, transparent);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--vscode-foreground);
+      background: var(--vscode-editor-background);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Messages area ────────────────────────────────── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    /* ── Empty state ─────────────────────────────────── */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--vscode-descriptionForeground);
+      text-align: center;
+      padding: 32px;
+    }
+    .empty-icon {
+      opacity: .5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .empty-icon svg {
+      width: 44px;
+      height: 44px;
+      color: var(--vscode-foreground);
+    }
+    .empty-state h2 { font-size: 14px; font-weight: 600; color: var(--vscode-foreground); }
+    .empty-state p { font-size: 12px; line-height: 1.6; max-width: 280px; }
+    .suggestion-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
+    .chip {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--vscode-button-secondaryBackground, #555);
+      color: var(--vscode-foreground);
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .12s;
+    }
+    .chip:hover { background: var(--vscode-list-hoverBackground); }
+
+    /* ── Message bubbles ──────────────────────────────── */
+    .msg { display: flex; flex-direction: column; max-width: 88%; }
+    .msg.user { align-self: flex-end; align-items: flex-end; }
+    .msg.kb { align-self: flex-start; align-items: flex-start; }
+
+    .msg-sender {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--vscode-descriptionForeground);
+      margin-bottom: 4px;
+      padding: 0 4px;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      line-height: 1.6;
+      font-size: 13px;
+      word-break: break-word;
+    }
+    .msg.user .bubble {
+      background: var(--bubble-user-bg);
+      color: var(--bubble-user-fg);
+      border-radius: var(--radius) var(--radius) 2px var(--radius);
+    }
+    .msg.kb .bubble {
+      background: var(--bubble-kb-bg);
+      border: 1px solid var(--bubble-kb-border);
+      border-radius: 2px var(--radius) var(--radius) var(--radius);
+    }
+
+    /* Markdown inside kb bubble */
+    .bubble strong { font-weight: 600; }
+    .bubble em { font-style: italic; }
+    .bubble code {
+      font-family: var(--vscode-editor-font-family, monospace);
+      font-size: 12px;
+      background: var(--vscode-textCodeBlock-background, #2d2d2d);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    .bubble pre {
+      background: var(--vscode-textCodeBlock-background, #2d2d2d);
+      border-radius: 5px;
+      padding: 10px 12px;
+      margin: 8px 0;
+      overflow-x: auto;
+    }
+    .bubble pre code { background: none; padding: 0; }
+    .bubble ul, .bubble ol { padding-left: 18px; margin: 6px 0; }
+    .bubble li { margin: 2px 0; }
+
+    /* ── Sources ─────────────────────────────────────── */
+    .sources {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--vscode-widget-border, #333);
+    }
+    .sources-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--vscode-descriptionForeground);
+      margin-bottom: 6px;
+    }
+    .source-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .source-chip {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 10px;
+      background: var(--vscode-badge-background);
+      color: var(--vscode-badge-foreground);
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: default;
+    }
+
+    /* ── Actions below bubble ────────────────────────── */
+    .bubble-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      padding: 0 2px;
+    }
+    .action-btn {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--vscode-button-secondaryBackground, #555);
+      background: none;
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .1s;
+    }
+    .action-btn:hover { background: var(--vscode-list-hoverBackground); }
+
+    /* ── Confidence ──────────────────────────────────── */
+    .confidence {
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+      margin-top: 6px;
+      padding: 0 4px;
+    }
+    .conf-high { color: #4ade80; }
+    .conf-medium { color: #facc15; }
+    .conf-low { color: #f87171; }
+
+    /* ── Thinking indicator ──────────────────────────── */
+    .thinking .bubble {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--vscode-descriptionForeground);
+      font-style: italic;
+      font-size: 12px;
+    }
+    .dots span {
+      display: inline-block;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: bounce 1.2s infinite;
+    }
+    .dots span:nth-child(2) { animation-delay: .2s; }
+    .dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+
+    /* ── Error bubble ────────────────────────────────── */
+    .error-bubble {
+      background: var(--vscode-inputValidation-errorBackground);
+      border: 1px solid var(--vscode-inputValidation-errorBorder);
+      color: var(--vscode-errorForeground);
+    }
+
+    /* ── Input area ──────────────────────────────────── */
+    #inputArea {
+      border-top: 1px solid var(--vscode-widget-border, #333);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--vscode-editor-background);
+    }
+
+    #inputRow {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    #questionInput {
+      flex: 1;
+      min-height: 36px;
+      max-height: 120px;
+      padding: 8px 12px;
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border: 1px solid var(--vscode-input-border, transparent);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 13px;
+      resize: none;
+      outline: none;
+      line-height: 1.5;
+      transition: border-color .15s;
+    }
+    #questionInput:focus { border-color: var(--vscode-focusBorder); }
+    #questionInput::placeholder { color: var(--vscode-input-placeholderForeground); }
+
+    #sendBtn {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+      height: 36px;
+    }
+    #sendBtn:hover { opacity: .88; }
+    #sendBtn:disabled { opacity: .45; cursor: not-allowed; }
+
+    #footerRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    #projectSelect {
+      background: var(--vscode-dropdown-background);
+      color: var(--vscode-dropdown-foreground);
+      border: 1px solid var(--vscode-dropdown-border);
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+    }
+    #projectSelect:focus { border-color: var(--vscode-focusBorder); }
+
+    .hint {
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--vscode-sideBar-background);
+      border-bottom: 1px solid var(--vscode-sideBar-border, rgba(127,127,127,0.1));
+      flex-shrink: 0;
+    }
+    .top-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--vscode-foreground);
+    }
+    .top-logo-icon {
+      width: 14px;
+      height: 14px;
+      color: var(--vscode-textLink-foreground);
+    }
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--vscode-textLink-foreground);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    .logout-btn:hover {
+      background: var(--vscode-toolbar-hoverBackground, rgba(127,127,127,0.1));
+      color: var(--vscode-textLink-activeForeground);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span class="top-title">
+      <svg class="top-logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7a2 2 0 0 1 2-2h4.5a1 1 0 0 1 .7.3l2.1 2.1a1 1 0 0 0 .7.3H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+        <path d="M7 10v6" stroke-width="2" />
+        <path d="M11 10L7 13l4 3" stroke-width="2" />
+        <path d="M13 10.5l2 5.2 2-5.2" stroke-width="2" />
+      </svg>
+      Knowledge Vault
+    </span>
+    <button class="logout-btn" id="logoutBtn" title="Logout">Logout</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="messages">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7a2 2 0 0 1 2-2h4.5a1 1 0 0 1 .7.3l2.1 2.1a1 1 0 0 0 .7.3H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+          <path d="M7 10v6" stroke-width="2" />
+          <path d="M11 10L7 13l4 3" stroke-width="2" />
+          <path d="M13 10.5l2 5.2 2-5.2" stroke-width="2" />
+        </svg>
+      </div>
+      <h2>Knowledge Vault</h2>
+      <p>Type normal text to save it as a note, or start with <code>/ask</code> to search your knowledge base.</p>
+      <div class="suggestion-chips">
+        <button class="chip" data-suggestion="/ask How is authentication configured?">/ask Auth Configuration</button>
+        <button class="chip" data-suggestion="/ask What decisions were made?">/ask Decisions</button>
+        <button class="chip" data-suggestion="Task: Remember to deploy database migrations tonight.">Example Note</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div id="inputArea">
+    <div id="inputRow">
+      <textarea
+        id="questionInput"
+        rows="1"
+        placeholder="Type a note to save, or /ask to search… (Enter to send)"
+      ></textarea>
+      <button id="sendBtn">Send</button>
+    </div>
+    <div id="footerRow">
+      <select id="projectSelect" title="Active project">
+        <option value="">Loading…</option>
+      </select>
+      <span class="hint" id="chatHint">Normal text saves note, /ask searches</span>
+    </div>
+  </div>
+
+<script nonce="${nonce}">
+  const vscode = acquireVsCodeApi();
+  let isThinking = false;
+  let lastQuestion = '';
+  let conversationHistory = vscode.getState()?.history ?? [];
+
+  // ── Markdown renderer ─────────────────────────────────────────────────────
+
+  function renderMarkdown(text) {
+    let html = escHtml(text);
+
+    // Code blocks (``` ... ```)
+    html = html.replace(/```[\w]*\n?([\s\S]*?)```/g, (_, code) =>
+      `<pre><code>${code.trim()}</code></pre>`
+    );
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // Bold
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // Unordered list
+    html = html.replace(/^[-•] (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+    // Line breaks (preserve paragraph spacing)
+    html = html.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+
+    return html;
+  }
+
+  function escHtml(s) {
+    return String(s || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Render messages ───────────────────────────────────────────────────────
+
+  function addUserMessage(text) {
+    hideEmpty();
+    const el = document.createElement('div');
+    el.className = 'msg user';
+    el.innerHTML = `
+      <div class="msg-sender">You</div>
+      <div class="bubble">${escHtml(text)}</div>
+    `;
+    document.getElementById('messages').appendChild(el);
+    scrollToBottom();
+  }
+
+  function addThinking() {
+    hideEmpty();
+    const el = document.createElement('div');
+    el.className = 'msg kb thinking';
+    el.id = 'thinkingBubble';
+    el.innerHTML = `
+      <div class="msg-sender">KB</div>
+      <div class="bubble">
+        <span>Searching</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+    `;
+    document.getElementById('messages').appendChild(el);
+    scrollToBottom();
+  }
+
+  function removeThinking() {
+    document.getElementById('thinkingBubble')?.remove();
+  }
+
+  function addKbAnswer(answer, sources, media) {
+    const idx = conversationHistory.length - 1; // for save-as-note reference
+
+    const el = document.createElement('div');
+    el.className = 'msg kb';
+
+    let mediaHtml = '';
+    if (media && media.length > 0) {
+      mediaHtml = `
+        <div class="media-attachments" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+          ${media.map(m => {
+            if (m.mediaType === 'image') {
+              return `
+                <div class="media-item">
+                  <img src="data:${m.mimeType};base64,${m.mediaBase64}" style="max-width: 100%; border-radius: 4px; border: 1px solid var(--vscode-widget-border, #ccc);" />
+                  <div style="font-size: 0.8em; opacity: 0.8; margin-top: 2px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>🖼 ${escHtml(m.fileName)} (${(m.sizeBytes / 1024).toFixed(1)} KB)</span>
+                    <a href="#" class="download-link" data-filename="${escHtml(m.fileName)}" data-base64="${m.mediaBase64}" style="color: var(--vscode-textLink-foreground);">Download</a>
+                  </div>
+                </div>
+              `;
+            } else if (m.mediaType === 'audio') {
+              return `
+                <div class="media-item">
+                  <div style="font-size: 0.8em; opacity: 0.8; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>🔊 ${escHtml(m.fileName)} (${(m.sizeBytes / 1024).toFixed(1)} KB)</span>
+                    <a href="#" class="download-link" data-filename="${escHtml(m.fileName)}" data-base64="${m.mediaBase64}" style="color: var(--vscode-textLink-foreground);">Download</a>
+                  </div>
+                  <audio controls src="data:${m.mimeType};base64,${m.mediaBase64}" style="width: 100%; max-height: 40px; margin-top: 4px;"></audio>
+                </div>
+              `;
+            } else {
+              return `
+                <div class="media-item" style="padding: 6px 8px; background: rgba(0,0,0,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 0.9em; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">📄 ${escHtml(m.fileName)} (${(m.sizeBytes / 1024).toFixed(1)} KB)</span>
+                  <a href="#" class="download-link" data-filename="${escHtml(m.fileName)}" data-base64="${m.mediaBase64}" style="font-size: 0.8em; color: var(--vscode-textLink-foreground); font-weight: bold; margin-left: 8px;">Download</a>
+                </div>
+              `;
+            }
+          }).join('')}
+        </div>
+      `;
+    }
+
+    el.innerHTML = `
+      <div class="msg-sender">Knowledge Vault</div>
+      <div class="bubble">
+        ${renderMarkdown(answer)}
+        ${mediaHtml}
+        ${sources?.length ? `
+          <div class="sources">
+            <div class="sources-label">Sources</div>
+            <div class="source-chips">
+              ${sources.map(s => `<span class="source-chip" title="${escHtml(s.path)}">${escHtml(s.title)}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+      <div class="bubble-actions">
+        <button class="action-btn" data-action="save" data-idx="${idx}">Save as note</button>
+        <button class="action-btn" data-action="copy" data-idx="${idx}">Copy</button>
+      </div>
+    `;
+    document.getElementById('messages').appendChild(el);
+    scrollToBottom();
+  }
+
+  function addError(message) {
+    removeThinking();
+    const el = document.createElement('div');
+    el.className = 'msg kb';
+    el.innerHTML = `
+      <div class="msg-sender">KB</div>
+      <div class="bubble error-bubble">⚠ ${escHtml(message)}</div>
+    `;
+    document.getElementById('messages').appendChild(el);
+    scrollToBottom();
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  function saveAnswer(idx) {
+    const turn = conversationHistory[idx];
+    if (!turn) return;
+    vscode.postMessage({
+      type: 'saveNote',
+      title: `Answer: ${turn.question.slice(0, 60)}`,
+      content: `**Q:** ${turn.question}\n\n**A:** ${turn.answer}`,
+      projectSlug: document.getElementById('projectSelect').value,
+    });
+  }
+
+  function copyAnswer(idx) {
+    const turn = conversationHistory[idx];
+    if (!turn) return;
+    navigator.clipboard?.writeText(turn.answer).catch(() => {});
+  }
+
+  function fillSuggestion(text) {
+    const input = document.getElementById('questionInput');
+    input.value = text;
+    input.focus();
+    autoResize(input);
+  }
+
+  function hideEmpty() {
+    const el = document.getElementById('emptyState');
+    if (el) { el.style.display = 'none'; }
+  }
+
+  function scrollToBottom() {
+    const el = document.getElementById('messages');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ── Send question ─────────────────────────────────────────────────────────
+
+  function sendQuestion() {
+    const input = document.getElementById('questionInput');
+    const rawText = input.value.trim();
+    if (!rawText || isThinking) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+
+    if (rawText.toLowerCase() === '/help') {
+      addUserMessage(rawText);
+      addSystemMessage('💡 Knowledge Vault Commands:\n• Type any normal text to save it as a note in the active project.\n• Type /ask <your question> to search your knowledge base with AI.\n• Type /help to show this command guide.');
+      return;
+    }
+
+    const projectSelect = document.getElementById('projectSelect');
+    const projectSlug = projectSelect.value;
+    const projectName = projectSelect.options[projectSelect.selectedIndex]?.text || projectSlug || 'Inbox';
+
+    if (rawText.toLowerCase().startsWith('/ask')) {
+      // Extract question after "/ask" command
+      const question = rawText.substring(4).trim();
+      if (!question) {
+        addUserMessage(rawText);
+        addSystemMessage('⚠ Please provide a question after the /ask command. Example: /ask How is auth configured?');
+        return;
+      }
+      lastQuestion = question;
+      addUserMessage(rawText);
+      setThinking(true);
+      addThinking();
+      vscode.postMessage({ type: 'ask', question, projectSlug });
+    } else {
+      // Normal note saving via Conversational Agent (same as WhatsApp)
+      addUserMessage(rawText);
+      setThinking(true);
+      addThinking();
+
+      vscode.postMessage({
+        type: 'agentMessage',
+        messageText: rawText,
+        projectSlug
+      });
+    }
+  }
+
+  function setThinking(v) {
+    isThinking = v;
+    document.getElementById('sendBtn').disabled = v;
+    document.getElementById('questionInput').disabled = v;
+  }
+
+  // ── Input helpers ─────────────────────────────────────────────────────────
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendQuestion();
+    }
+  }
+
+  // ── Project selector ──────────────────────────────────────────────────────
+
+  function renderProjects(projects, current) {
+    const sel = document.getElementById('projectSelect');
+    const optionsHtml = projects.map(p =>
+      `<option value="${escHtml(p.projectSlug)}" ${p.projectSlug === current ? 'selected' : ''}>${escHtml(p.displayName)}</option>`
+    ).join('');
+    sel.innerHTML = `<option value="" ${!current ? 'selected' : ''}>All Projects</option>` + optionsHtml;
+  }
+
+  // ── Message handler ───────────────────────────────────────────────────────
+
+  window.addEventListener('message', ({ data }) => {
+    const msg = data;
+    switch (msg.type) {
+      case 'thinking':
+        // already handled locally
+        break;
+
+      case 'answer': {
+        removeThinking();
+        setThinking(false);
+        // Store in history for save/copy
+        conversationHistory.push({ question: lastQuestion, answer: msg.answer });
+        vscode.setState({ history: conversationHistory });
+        addKbAnswer(msg.answer, msg.sources, msg.media);
+        break;
+      }
+
+      case 'projects':
+        renderProjects(msg.projects, '');
+        break;
+
+      case 'setProject':
+        document.getElementById('projectSelect').value = msg.projectSlug;
+        break;
+
+      case 'noteSaved': {
+        setThinking(false);
+        const pName = msg.projectName || 'Inbox';
+        addSystemMessage(`✅ Note saved successfully in project: ${pName}!`);
+        break;
+      }
+
+      case 'agentResponse': {
+        addAgentReply(msg.replyText);
+        if (msg.projectSlug) {
+          document.getElementById('projectSelect').value = msg.projectSlug;
+        }
+        break;
+      }
+
+      case 'error':
+        setThinking(false);
+        addError(msg.message);
+        break;
+    }
+  });
+
+  function addSystemMessage(message) {
+    removeThinking();
+    const el = document.createElement('div');
+    el.className = 'msg kb';
+    el.innerHTML = `
+      <div class="msg-sender">System</div>
+      <div class="bubble" style="background: var(--vscode-textBlockQuote-background, rgba(0,0,0,0.1)); border-left: 3px solid var(--vscode-button-background); padding: 8px 12px; border-radius: 0 4px 4px 0;">
+        ${escHtml(message)}
+      </div>
+    `;
+    document.getElementById('messages').appendChild(el);
+    scrollToBottom();
+  }
+
+  function addAgentReply(replyText) {
+    removeThinking();
+    setThinking(false);
+    const el = document.createElement('div');
+    el.className = 'msg kb';
+    el.innerHTML = `
+      <div class="msg-sender">Knowledge Vault</div>
+      <div class="bubble">
+        ${renderMarkdown(replyText)}
+      </div>
+    `;
+    document.getElementById('messages').appendChild(el);
+    scrollToBottom();
+  }
+
+  // Bind input events
+  const inputEl = document.getElementById('questionInput');
+  inputEl.addEventListener('input', () => autoResize(inputEl));
+  inputEl.addEventListener('keydown', (e) => {
+    handleKey(e);
+  });
+
+  // Bind suggestion chips
+  const chipsContainer = document.querySelector('.suggestion-chips');
+  if (chipsContainer) {
+    chipsContainer.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (chip) {
+        fillSuggestion(chip.getAttribute('data-suggestion'));
+      }
+    });
+  }
+
+  // Bind send button
+  document.getElementById('sendBtn').addEventListener('click', sendQuestion);
+
+  // Bind project selection changes to notify the host
+  document.getElementById('projectSelect').addEventListener('change', (e) => {
+    vscode.postMessage({ type: 'changeProject', projectSlug: e.target.value });
+  });
+
+  // Bind message action button delegation (Save as note / Copy / Download)
+  document.getElementById('messages').addEventListener('click', (e) => {
+    const link = e.target.closest('.download-link');
+    if (link) {
+      e.preventDefault();
+      const fileName = link.getAttribute('data-filename');
+      const mediaBase64 = link.getAttribute('data-base64');
+      vscode.postMessage({ type: 'downloadFile', fileName, mediaBase64 });
+      return;
+    }
+
+    const btn = e.target.closest('.action-btn');
+    if (!btn) return;
+    const action = btn.getAttribute('data-action');
+    const idx = parseInt(btn.getAttribute('data-idx') || '0', 10);
+    if (action === 'save') {
+      saveAnswer(idx);
+    } else if (action === 'copy') {
+      copyAnswer(idx);
+    }
+  });
+
+  // Bind logout button
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    vscode.postMessage({ type: 'logout' });
+  });
+
+  // Init
+  vscode.postMessage({ type: 'ready' });
+</script>
+</body>
+</html>
