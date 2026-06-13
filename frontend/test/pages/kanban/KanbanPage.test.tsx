@@ -88,7 +88,7 @@ describe('KanbanPage', () => {
     expect(screen.getByRole('heading', { name: 'Archived' })).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
-      '/api/reminders/board?workspaceSlug=default&projectSlug=&limitPerColumn=50&columnPage%5Boverdue%5D=1&columnPage%5Bupcoming%5D=1&columnPage%5Bresolved%5D=1&columnPage%5Barchived%5D=1',
+      '/api/reminders/board?workspaceSlug=default&projectSlug=&limitPerColumn=5&columnPage%5Boverdue%5D=1&columnPage%5Bupcoming%5D=1&columnPage%5Bresolved%5D=1&columnPage%5Barchived%5D=1',
       expect.any(Object)
     );
 
@@ -98,7 +98,7 @@ describe('KanbanPage', () => {
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenNthCalledWith(
         2,
-        '/api/reminders/board?workspaceSlug=default&projectSlug=ops&limitPerColumn=50&columnPage%5Boverdue%5D=1&columnPage%5Bupcoming%5D=1&columnPage%5Bresolved%5D=1&columnPage%5Barchived%5D=1',
+        '/api/reminders/board?workspaceSlug=default&projectSlug=ops&limitPerColumn=5&columnPage%5Boverdue%5D=1&columnPage%5Bupcoming%5D=1&columnPage%5Bresolved%5D=1&columnPage%5Barchived%5D=1',
         expect.any(Object)
       );
     });

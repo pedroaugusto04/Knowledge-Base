@@ -13,7 +13,7 @@ import { Select } from '../../shared/ui/select';
 import { MobileInfinitePagination, useMobilePaginatedItems } from '../../shared/ui/mobile-infinite-pagination';
 import { kanbanBoardColumns, type ReminderBoardTargetStatus } from './kanban-board.columns';
 
-const BOARD_LIMIT = 50;
+const BOARD_LIMIT = 5;
 
 const DEFAULT_COLUMN_DATA = {
   items: [] as any[],
