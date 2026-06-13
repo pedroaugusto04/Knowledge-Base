@@ -56,6 +56,7 @@ export async function createApp(): Promise<NestExpressApplication> {
     .setTitle('Knowledge Base API')
     .setDescription('API documentation for Knowledge Base application')
     .setVersion('1.0')
+    .addServer('/knowledge-base', 'Production')
     .addBearerAuth()
     .addCookieAuth('accessToken')
     .addCookieAuth('refreshToken')
