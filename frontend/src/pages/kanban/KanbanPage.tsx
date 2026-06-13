@@ -10,7 +10,7 @@ import { notifyGeneralFormError } from '../../shared/forms/errors';
 import { notifyWarning } from '../../shared/ui/notifications';
 import { Badge, PageHead } from '../../shared/ui/primitives';
 import { Select } from '../../shared/ui/select';
-import { KanbanColumnInfinitePagination, useKanbanColumnPaginatedItems } from '../../shared/ui/kanban-column-infinite-pagination';
+import { MobileInfinitePagination, useMobilePaginatedItems } from '../../shared/ui/mobile-infinite-pagination';
 import { kanbanBoardColumns, type ReminderBoardTargetStatus } from './kanban-board.columns';
 
 const BOARD_LIMIT = 50;
@@ -22,6 +22,7 @@ const DEFAULT_COLUMN_DATA = {
   pageSize: BOARD_LIMIT,
   totalPages: 1,
   hasNext: false,
+  hasPrevious: false,
 };
 
 export function KanbanPage({ dashboard, openNote }: PageContext) {
@@ -105,10 +106,13 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
       <div className="kanban-board" aria-busy={boardQuery.isFetching || statusMutation.isPending}>
         {kanbanBoardColumns.map((column) => {
           const data = board?.[column.key] || DEFAULT_COLUMN_DATA;
-          const { visibleItems } = useKanbanColumnPaginatedItems({
+          const {
+            loadedMobilePage,
+            visibleItems,
+          } = useMobilePaginatedItems({
             items: data.items,
-            columnKey: column.key,
-            resetKey: `${workspaceSlug}:${projectSlug}`,
+            pagination: data,
+            resetKey: `${workspaceSlug}:${projectSlug}:${column.key}`,
             isPlaceholderData: boardQuery.isPlaceholderData,
           });
           return (
@@ -128,7 +132,7 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
                 <span>{data.total}</span>
               </header>
               <div className="kanban-column-list">
-                {visibleItems.map((card) => (
+                {visibleItems.map((card: ReminderBoardCard) => (
                   <KanbanCard
                     card={card}
                     disabled={statusMutation.isPending}
@@ -141,11 +145,10 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
                   />
                 ))}
                 {visibleItems.length === 0 ? <p className="kanban-empty">{column.empty}</p> : null}
-                <KanbanColumnInfinitePagination
-                  columnKey={column.key}
+                <MobileInfinitePagination
                   pagination={data}
-                  isLoading={boardQuery.isFetching}
-                  onPageChange={handleColumnPageChange}
+                  isLoading={boardQuery.isFetching || data.page > loadedMobilePage}
+                  onPageChange={(page) => handleColumnPageChange(column.key, page)}
                 />
               </div>
             </section>

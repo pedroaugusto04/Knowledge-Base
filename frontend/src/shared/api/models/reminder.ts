@@ -25,6 +25,7 @@ export type ReminderBoardColumn = {
   pageSize: number;
   totalPages: number;
   hasNext: boolean;
+  hasPrevious: boolean;
 };
 
 export type ReminderBoardResponse = {
