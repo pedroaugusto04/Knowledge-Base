@@ -71,7 +71,7 @@ interface RequestOptions {
   body?: string;
 }
 
-function makeRequest(url: string, options: RequestOptions = {}): Promise<{ status: number; body: string; headers: Record<string, string> }> {
+function makeRequest(url: string, options: RequestOptions = {}): Promise<{ status: number; body: string; headers: Record<string, string | string[]> }> {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const isHttps = parsed.protocol === 'https:';
@@ -89,9 +89,11 @@ function makeRequest(url: string, options: RequestOptions = {}): Promise<{ statu
         let body = '';
         res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
         res.on('end', () => {
-          const headers: Record<string, string> = {};
+          const headers: Record<string, string | string[]> = {};
           for (const [k, v] of Object.entries(res.headers)) {
-            if (typeof v === 'string') headers[k] = v;
+            if (typeof v === 'string' || Array.isArray(v)) {
+              headers[k] = v;
+            }
           }
           resolve({ status: res.statusCode ?? 0, body, headers });
         });
@@ -183,9 +185,10 @@ export class KbClient {
     return parsed as T;
   }
 
-  private updateCookiesFromSetCookie(setCookie: string) {
+  private updateCookiesFromSetCookie(setCookie: string | string[]) {
     // Simple parser for Set-Cookie headers
-    for (const part of setCookie.split(',')) {
+    const parts = Array.isArray(setCookie) ? setCookie : (setCookie || '').split(',');
+    for (const part of parts) {
       const kv = part.split(';')[0]?.trim().split('=');
       if (kv && kv.length >= 2) {
         const key = kv[0].trim();
