@@ -1078,7 +1078,7 @@
 
 /* Attachment Viewer Panel Modal */
 .attachment-viewer-backdrop {
-  z-index: 50;
+  z-index: 1000;
 }
 
 .attachment-viewer-panel {
