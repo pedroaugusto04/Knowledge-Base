@@ -10,6 +10,7 @@ import { notifyGeneralFormError } from '../../shared/forms/errors';
 import { notifyWarning } from '../../shared/ui/notifications';
 import { Badge, PageHead } from '../../shared/ui/primitives';
 import { Select } from '../../shared/ui/select';
+import { KanbanColumnInfinitePagination, useKanbanColumnPaginatedItems } from '../../shared/ui/kanban-column-infinite-pagination';
 import { kanbanBoardColumns, type ReminderBoardTargetStatus } from './kanban-board.columns';
 
 const BOARD_LIMIT = 50;
@@ -19,6 +20,12 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug || '';
   const [projectSlug, setProjectSlug] = useState('');
   const [draggedId, setDraggedId] = useState('');
+  const [columnPages, setColumnPages] = useState<Record<ReminderBoardColumnKey, number>>({
+    overdue: 1,
+    upcoming: 1,
+    resolved: 1,
+    archived: 1,
+  });
   const projectOptions = useMemo(() => [
     { value: '', label: 'All projects' },
     ...dashboard.projects
@@ -27,8 +34,8 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
   ], [dashboard.projects, workspaceSlug]);
 
   const boardQuery = useQuery({
-    queryKey: ['reminder-board', workspaceSlug, projectSlug],
-    queryFn: () => fetchReminderBoard({ workspaceSlug, projectSlug, limitPerColumn: BOARD_LIMIT }),
+    queryKey: ['reminder-board', workspaceSlug, projectSlug, columnPages],
+    queryFn: () => fetchReminderBoard({ workspaceSlug, projectSlug, limitPerColumn: BOARD_LIMIT, columnPage: columnPages }),
   });
 
   const statusMutation = useMutation({
@@ -53,6 +60,20 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
     statusMutation.mutate({ id: draggedId, status: column.targetStatus });
   }
 
+  function handleColumnPageChange(columnKey: ReminderBoardColumnKey, page: number) {
+    setColumnPages((prev) => ({ ...prev, [columnKey]: page }));
+  }
+
+  function handleProjectChange(newProjectSlug: string) {
+    setProjectSlug(newProjectSlug);
+    setColumnPages({
+      overdue: 1,
+      upcoming: 1,
+      resolved: 1,
+      archived: 1,
+    });
+  }
+
   return (
     <>
       <PageHead
@@ -66,7 +87,7 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
               id="kanban-project-select"
               options={projectOptions}
               value={projectSlug}
-              onChange={setProjectSlug}
+              onChange={handleProjectChange}
             />
           </div>
         )}
@@ -74,8 +95,13 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
       />
       <div className="kanban-board" aria-busy={boardQuery.isFetching || statusMutation.isPending}>
         {kanbanBoardColumns.map((column) => {
-          const data = board?.[column.key] || { items: [], total: 0 };
-          const hiddenCount = Math.max(0, data.total - data.items.length);
+          const data = board?.[column.key] || { items: [], total: 0, page: 1, pageSize: BOARD_LIMIT, totalPages: 1, hasNext: false };
+          const { visibleItems } = useKanbanColumnPaginatedItems({
+            items: data.items,
+            columnKey: column.key,
+            resetKey: `${workspaceSlug}:${projectSlug}`,
+            isPlaceholderData: boardQuery.isPlaceholderData,
+          });
           return (
             <section
               aria-label={column.title}
@@ -93,7 +119,7 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
                 <span>{data.total}</span>
               </header>
               <div className="kanban-column-list">
-                {data.items.map((card) => (
+                {visibleItems.map((card) => (
                   <KanbanCard
                     card={card}
                     disabled={statusMutation.isPending}
@@ -105,8 +131,13 @@ export function KanbanPage({ dashboard, openNote }: PageContext) {
                     projectLabel={projectName(dashboard.projects, card.project)}
                   />
                 ))}
-                {data.items.length === 0 ? <p className="kanban-empty">{column.empty}</p> : null}
-                {hiddenCount > 0 ? <p className="kanban-more">+{hiddenCount} more</p> : null}
+                {visibleItems.length === 0 ? <p className="kanban-empty">{column.empty}</p> : null}
+                <KanbanColumnInfinitePagination
+                  columnKey={column.key}
+                  pagination={data}
+                  isLoading={boardQuery.isFetching}
+                  onPageChange={handleColumnPageChange}
+                />
               </div>
             </section>
           );

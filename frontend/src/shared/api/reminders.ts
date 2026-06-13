@@ -12,12 +12,24 @@ export function fetchReminders(params: { page?: number; pageSize?: number; works
   return request<PaginatedResponse<Reminder, 'reminders'>>(`/api/reminders?${search.toString()}`);
 }
 
-export function fetchReminderBoard(params: { workspaceSlug?: string; projectSlug?: string; limitPerColumn?: number }) {
+export function fetchReminderBoard(params: {
+  workspaceSlug?: string;
+  projectSlug?: string;
+  limitPerColumn?: number;
+  columnPage?: Record<string, number>;
+}) {
   const search = new URLSearchParams({
     workspaceSlug: params.workspaceSlug || '',
     projectSlug: params.projectSlug || '',
     limitPerColumn: String(params.limitPerColumn || 50),
   });
+
+  if (params.columnPage) {
+    Object.entries(params.columnPage).forEach(([key, value]) => {
+      search.append(`columnPage[${key}]`, String(value));
+    });
+  }
+
   return request<ReminderBoardResponse>(`/api/reminders/board?${search.toString()}`);
 }
 

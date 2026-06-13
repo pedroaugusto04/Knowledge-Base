@@ -55,6 +55,14 @@ export const reminderBoardQuerySchema = z.object({
   workspaceSlug: z.string().default(''),
   projectSlug: z.string().default(''),
   limitPerColumn: z.coerce.number().int().min(1).max(50).default(50),
+  columnPage: z.record(z.enum(['overdue', 'upcoming', 'resolved', 'archived']), z.coerce.number().int().min(1).default(1))
+    .default({ overdue: 1, upcoming: 1, resolved: 1, archived: 1 })
+    .transform((val) => ({
+      overdue: val.overdue ?? 1,
+      upcoming: val.upcoming ?? 1,
+      resolved: val.resolved ?? 1,
+      archived: val.archived ?? 1,
+    })),
 }).transform((input) => ({
   ...input,
   workspaceSlug: slugify(input.workspaceSlug),

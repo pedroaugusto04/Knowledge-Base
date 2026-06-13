@@ -16,26 +16,50 @@ export class ListReminderBoardUseCase {
   ) {}
 
   async execute(userId: string, input: ReminderBoardInput): Promise<ReminderBoardResponse> {
-    const columns = emptyColumns();
+    const columns = emptyColumns(input.limitPerColumn);
     const reminders = await this.refreshReminderStatuses.execute(userId, (await this.contentQueryRepository.listReminders(userId))
       .filter((reminder) => !input.workspaceSlug || reminder.workspace === input.workspaceSlug)
       .filter((reminder) => !input.projectSlug || reminder.project === input.projectSlug), { workspaceSlug: input.workspaceSlug });
 
+    const columnItems: Record<ReminderBoardColumnKey, ReminderBoardCard[]> = {
+      overdue: [],
+      upcoming: [],
+      resolved: [],
+      archived: [],
+    };
+
     for (const reminder of sortRemindersBySchedule(reminders)) {
       const columnKey = boardColumnKey(reminder);
-      columns[columnKey].total += 1;
-      if (columns[columnKey].items.length < input.limitPerColumn) {
-        columns[columnKey].items.push(reminder);
-      }
+      columnItems[columnKey].push(reminder);
+    }
+
+    for (const columnKey of reminderBoardColumnKeys) {
+      const items = columnItems[columnKey];
+      const total = items.length;
+      const page = input.columnPage[columnKey] || 1;
+      const pageSize = input.limitPerColumn;
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedItems = items.slice(startIndex, endIndex);
+
+      columns[columnKey] = {
+        items: paginatedItems,
+        total,
+        page,
+        pageSize,
+        totalPages,
+        hasNext: page < totalPages,
+      };
     }
 
     return { columns };
   }
 }
 
-function emptyColumns(): ReminderBoardResponse['columns'] {
+function emptyColumns(limitPerColumn: number): ReminderBoardResponse['columns'] {
   return reminderBoardColumnKeys.reduce((acc, key) => {
-    acc[key] = { items: [], total: 0 };
+    acc[key] = { items: [], total: 0, page: 1, pageSize: limitPerColumn, totalPages: 1, hasNext: false };
     return acc;
   }, {} as ReminderBoardResponse['columns']);
 }

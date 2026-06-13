@@ -293,6 +293,25 @@
   text-align: center;
 }
 
+.kanban-column-infinite-pagination {
+  margin: 8px 2px 0;
+  padding: 8px;
+  text-align: center;
+}
+
+.kanban-column-infinite-pagination-summary {
+  display: block;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.kanban-column-infinite-pagination-loading {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 /* Timelines */
 .timeline {
   display: grid;

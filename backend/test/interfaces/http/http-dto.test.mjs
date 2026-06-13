@@ -63,6 +63,7 @@ test('reminder board dto normalizes filters and status updates', () => {
     workspaceSlug: 'default-workspace',
     projectSlug: 'n8n-automations',
     limitPerColumn: 25,
+    columnPage: { overdue: 1, upcoming: 1, resolved: 1, archived: 1 },
   });
   assert.throws(() => reminderBoardQuerySchema.parse({ limitPerColumn: '100' }));
   assert.deepEqual(updateReminderStatusBodySchema.parse({ status: 'overdue' }), { status: 'overdue' });

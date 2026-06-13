@@ -4,6 +4,7 @@ export type ReminderBoardInput = {
   workspaceSlug?: string;
   projectSlug?: string;
   limitPerColumn: number;
+  columnPage: Record<ReminderBoardColumnKey, number>;
 };
 
 export type UpdateReminderStatusInput = {

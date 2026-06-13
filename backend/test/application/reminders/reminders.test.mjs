@@ -319,7 +319,7 @@ test('reminder board groups reminders by due state and terminal status with per-
     },
   });
 
-  const board = await listBoard.execute(user.id, { workspaceSlug: 'default', projectSlug: 'n8n-automations', limitPerColumn: 1 });
+  const board = await listBoard.execute(user.id, { workspaceSlug: 'default', projectSlug: 'n8n-automations', limitPerColumn: 1, columnPage: { overdue: 1, upcoming: 1, resolved: 1, archived: 1 } });
 
   assert.equal(board.columns.overdue.total, 1);
   assert.deepEqual(board.columns.overdue.items.map((item) => item.id), [overdue.id]);

@@ -21,6 +21,10 @@ export type ReminderBoardCard = ReminderView;
 export type ReminderBoardColumn = {
   items: ReminderBoardCard[];
   total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNext: boolean;
 };
 
 export type ReminderBoardResponse = {
