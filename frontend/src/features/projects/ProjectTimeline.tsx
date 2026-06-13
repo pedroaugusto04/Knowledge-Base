@@ -17,6 +17,8 @@ import { type NoteStatus } from '../../shared/api/models/note-status';
 import { invalidateNoteRelatedQueries } from '../../shared/api/note-query';
 import { notifySuccess } from '../../shared/ui/notifications';
 import { notifyGeneralFormError } from '../../shared/forms/errors';
+import { Select } from '../../shared/ui/select';
+import { useMediaQuery } from '../../shared/ui/use-media-query';
 
 function PinIcon({ active }: { active?: boolean }) {
   return (
@@ -63,6 +65,7 @@ export function ProjectTimeline({
   isStale?: boolean;
   resetKey: string;
 }) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const {
     isMobilePagination,
     loadedMobilePage,
@@ -153,19 +156,32 @@ export function ProjectTimeline({
   return (
     <div className="project-timeline">
       <div className="timeline-filter-row-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <div className="timeline-filter-row" role="group" aria-label="Timeline category" style={{ margin: 0 }}>
-          {categoryOptions.map((option) => (
-            <button
-              aria-pressed={category === option.value}
-              className={category === option.value ? 'active' : ''}
-              key={option.value}
-              type="button"
-              onClick={() => onCategoryChange(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        {isMobile ? (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <label className="sr-only" htmlFor="timeline-category-select">Filter by category</label>
+            <Select
+              ariaLabel="Filter by category"
+              id="timeline-category-select"
+              options={categoryOptions}
+              value={category}
+              onChange={(value) => onCategoryChange(value as ProjectTimelineCategory)}
+            />
+          </div>
+        ) : (
+          <div className="timeline-filter-row" role="group" aria-label="Timeline category" style={{ margin: 0 }}>
+            {categoryOptions.map((option) => (
+              <button
+                aria-pressed={category === option.value}
+                className={category === option.value ? 'active' : ''}
+                key={option.value}
+                type="button"
+                onClick={() => onCategoryChange(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
         {visibleItems.length > 0 && (
           <div className="bulk-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'resolve' })}>
