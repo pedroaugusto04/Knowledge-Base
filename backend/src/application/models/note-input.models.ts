@@ -1,3 +1,5 @@
+import type { SourceChannel } from '../../contracts/enums.js';
+
 export type CreateManualNoteInput = {
   projectSlug: string;
   folderId?: string;
@@ -9,7 +11,7 @@ export type CreateManualNoteInput = {
   reminderDate: string;
   reminderTime: string;
   reminderAt?: string;
-  sourceChannel?: string;
+  sourceChannel?: SourceChannel;
 };
 
 export type UpdateNoteInput = {
