@@ -37,7 +37,7 @@ describe('MarkdownView', () => {
     expect(container.querySelector('.markdown-code-block')).toBeInTheDocument();
     expect(screen.getByText('typescript')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument();
-    expect(screen.getByText('const x = 1;')).toBeInTheDocument();
+    expect(container.querySelector('code')?.textContent).toBe('const x = 1;');
   });
 
   it('renders a code block without language using CodeBlockView with fallback language', () => {
@@ -46,7 +46,7 @@ describe('MarkdownView', () => {
     expect(container.querySelector('.markdown-code-block')).toBeInTheDocument();
     expect(screen.getByText('code')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument();
-    expect(screen.getByText('const x = 1;')).toBeInTheDocument();
+    expect(container.querySelector('code')?.textContent).toBe('const x = 1;');
   });
 
   it('renders inline code as standard code tag', () => {

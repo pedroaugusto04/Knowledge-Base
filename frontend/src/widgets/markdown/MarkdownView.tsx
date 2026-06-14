@@ -1,5 +1,13 @@
-import { useState, type ReactNode, Children, createContext, useContext } from 'react';
+import { useState, type ReactNode, Children, createContext, useContext, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/components/prism-typescript.js';
+import 'prismjs/components/prism-javascript.js';
+import 'prismjs/components/prism-python.js';
+import 'prismjs/components/prism-css.js';
+import 'prismjs/components/prism-json.js';
+import 'prismjs/components/prism-bash.js';
 
 const severityClassNames: Record<string, string> = {
   INFO: 'markdown-severity markdown-severity-info',
@@ -62,6 +70,13 @@ function CodeBlockView({ code, language }: { code: string; language: string }) {
     } catch {}
   };
 
+  const highlightedHtml = useMemo(() => {
+    const cleanLanguage = language.toLowerCase();
+    const grammar = Prism.languages[cleanLanguage] || Prism.languages.clike || Prism.languages.markup;
+    const lang = Prism.languages[cleanLanguage] ? cleanLanguage : 'markup';
+    return Prism.highlight(code, grammar, lang);
+  }, [code, language]);
+
   return (
     <div className="markdown-code-block">
       <div className="markdown-code-block-header">
@@ -70,8 +85,11 @@ function CodeBlockView({ code, language }: { code: string; language: string }) {
           {copied ? '✓ Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="markdown-code-block-content">
-        <code>{code}</code>
+      <pre className={`markdown-code-block-content language-${language}`}>
+        <code
+          className={`language-${language}`}
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+        />
       </pre>
     </div>
   );

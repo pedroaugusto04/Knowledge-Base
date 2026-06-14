@@ -350,7 +350,7 @@
   font-family: var(--mono, 'Fira Code', 'SFMono-Regular', Consolas, monospace) !important;
   font-size: 13px !important;
   line-height: 1.6 !important;
-  color: #e3e3e9 !important;
+  color: #ccc;
   white-space: pre !important;
 }
 
