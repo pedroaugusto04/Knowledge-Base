@@ -16,6 +16,8 @@ export function registerSaveNoteCommand(
       const editor = vscode.window.activeTextEditor;
       const selectedText = editor?.document.getText(editor.selection)?.trim();
       const fileName = editor ? vscode.workspace.asRelativePath(editor.document.fileName) : '';
+      const languageId = editor?.document.languageId || '';
+      const isMarkdown = languageId === 'markdown';
 
       // Prompt for an optional context/title
       const context_ = await vscode.window.showInputBox({
@@ -28,8 +30,9 @@ export function registerSaveNoteCommand(
 
       if (context_ === undefined) return; // user cancelled
 
+      const formattedSelection = isMarkdown ? selectedText : `\`\`\`${languageId}\n${selectedText}\n\`\`\``;
       const rawText = selectedText
-        ? `${context_ ? `${context_}\n\n` : ''}From \`${fileName}\`:\n\`\`\`\n${selectedText}\n\`\`\``
+        ? `${context_ ? `${context_}\n\n` : ''}From \`${fileName}\`:\n${formattedSelection}`
         : context_;
 
       if (!rawText?.trim()) {
@@ -68,6 +71,10 @@ export function registerSaveNoteCommand(
         return;
       }
 
+      const languageId = editor.document.languageId || '';
+      const isMarkdown = languageId === 'markdown';
+      const finalRawText = isMarkdown ? rawText : `\`\`\`${languageId}\n${rawText}\n\`\`\``;
+
       // Infer title from the first header or first line
       let title = 'Unsaved Note';
       const lines = rawText.split('\n');
@@ -97,7 +104,7 @@ export function registerSaveNoteCommand(
         async () => {
           try {
             await client.createNote({
-              rawText,
+              rawText: finalRawText,
               title: confirm || title,
               projectSlug: getProject(),
               sourceChannel,
