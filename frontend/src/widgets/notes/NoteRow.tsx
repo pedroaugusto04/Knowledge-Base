@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
-import { formatDisplayToken, formatUsDate, noteTypeLabel, projectName, typeIcon, getCleanSummary, formatSourceLabel } from '../../shared/utils/format';
+import { formatDisplayToken, formatUsDate, noteTypeLabel, projectName, typeIcon, getCleanSummary, formatSourceLabel, getSourceTagClass } from '../../shared/utils/format';
 import { extractSourceFromText } from '../../shared/utils/text';
 import { Badge } from '../../shared/ui/primitives';
 import { AttachmentIndicator } from './AttachmentIndicator';
@@ -137,24 +137,7 @@ export function NoteRow({
   );
 }
 
-function getSourceTagClass(source: string | null | undefined): string {
-  if (!source) return 'manual';
-  const normalized = source.toLowerCase().trim();
-  if (normalized.includes('whatsapp') || normalized.includes('evolution')) return 'whatsapp';
-  if (normalized.includes('github')) return 'github';
-  if (
-    normalized === 'ai-chat' ||
-    normalized.includes('antigravity') ||
-    normalized.includes('codex') ||
-    normalized.includes('claude') ||
-    normalized.includes('open-code') ||
-    normalized.includes('opencode')
-  ) {
-    return 'ai';
-  }
-  if (normalized.includes('n8n') || normalized.includes('api')) return 'api';
-  return 'manual';
-}
+
 
 
 

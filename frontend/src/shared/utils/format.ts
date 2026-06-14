@@ -156,12 +156,44 @@ export function formatSourceLabel(source: string | null | undefined): string {
   const normalized = source.toLowerCase().trim();
   if (normalized.includes('whatsapp') || normalized.includes('evolution')) return 'WhatsApp';
   if (normalized.includes('github')) return 'GitHub';
-  if (normalized.includes('n8n')) return 'n8n';
-  if (normalized === 'ai-chat') return 'AI';
-  if (normalized === 'open-code' || normalized === 'opencode') return 'Open Code';
-  if (normalized === 'antigravity') return 'Antigravity';
-  if (normalized === 'codex') return 'Codex';
-  if (normalized.includes('claude')) return 'Claude Code';
+  if (
+    normalized === 'ai-chat' ||
+    normalized.includes('antigravity') ||
+    normalized.includes('codex') ||
+    normalized.includes('claude') ||
+    normalized.includes('open-code') ||
+    normalized.includes('opencode')
+  ) {
+    if (normalized === 'ai-chat') return 'AI';
+    if (normalized === 'open-code' || normalized === 'opencode') return 'Open Code';
+    if (normalized === 'antigravity') return 'Antigravity';
+    if (normalized === 'codex') return 'Codex';
+    if (normalized.includes('claude')) return 'Claude Code';
+  }
   if (normalized === 'manual-api' || normalized === 'manual') return 'Manual';
+  if (normalized.includes('n8n') || normalized.includes('api')) {
+    if (normalized.includes('n8n')) return 'n8n';
+    return 'API';
+  }
   return formatDisplayToken(source);
+}
+
+export function getSourceTagClass(source: string | null | undefined): string {
+  if (!source) return 'manual';
+  const normalized = source.toLowerCase().trim();
+  if (normalized.includes('whatsapp') || normalized.includes('evolution')) return 'whatsapp';
+  if (normalized.includes('github')) return 'github';
+  if (
+    normalized === 'ai-chat' ||
+    normalized.includes('antigravity') ||
+    normalized.includes('codex') ||
+    normalized.includes('claude') ||
+    normalized.includes('open-code') ||
+    normalized.includes('opencode')
+  ) {
+    return 'ai';
+  }
+  if (normalized === 'manual-api' || normalized === 'manual') return 'manual';
+  if (normalized.includes('n8n') || normalized.includes('api')) return 'api';
+  return 'manual';
 }

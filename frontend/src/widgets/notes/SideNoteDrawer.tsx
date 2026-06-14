@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 
-import { formatDisplayToken, formatUsDate, noteTypeLabel, projectName, getCleanSummary, formatSourceLabel } from '../../shared/utils/format';
+import { formatDisplayToken, formatUsDate, noteTypeLabel, projectName, getCleanSummary, formatSourceLabel, getSourceTagClass } from '../../shared/utils/format';
 import type { Project } from '../../shared/api/models/project';
 import { noteDetailQueryOptions } from '../../shared/api/note-query';
 import { Badge, EmptyState, InlineMessage, Tags } from '../../shared/ui/primitives';
@@ -155,24 +155,7 @@ function RelatedNotesSection({
   );
 }
 
-function getSourceTagClass(source: string | null | undefined): string {
-  if (!source) return 'manual';
-  const normalized = source.toLowerCase().trim();
-  if (normalized.includes('whatsapp') || normalized.includes('evolution')) return 'whatsapp';
-  if (normalized.includes('github')) return 'github';
-  if (
-    normalized === 'ai-chat' ||
-    normalized.includes('antigravity') ||
-    normalized.includes('codex') ||
-    normalized.includes('claude') ||
-    normalized.includes('open-code') ||
-    normalized.includes('opencode')
-  ) {
-    return 'ai';
-  }
-  if (normalized.includes('n8n') || normalized.includes('api')) return 'api';
-  return 'manual';
-}
+
 
 
 

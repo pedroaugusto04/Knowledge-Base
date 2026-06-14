@@ -5,7 +5,7 @@ import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary, CanonicalNoteType } from '../../shared/api/models/note';
 import { projectTimelineCategoryValues, type ProjectTimelineCategory, type ProjectTimelineItem } from '../../shared/api/models/project-timeline';
 import type { PaginationMeta } from '../../shared/api/models/pagination';
-import { formatDisplayToken, formatUsDate, formatUsDateTime, noteTypeLabel, projectName, formatSourceLabel, getCleanSummary } from '../../shared/utils/format';
+import { formatDisplayToken, formatUsDate, formatUsDateTime, noteTypeLabel, projectName, formatSourceLabel, getCleanSummary, getSourceTagClass } from '../../shared/utils/format';
 import { Badge, EmptyState } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { MobileInfinitePagination, useMobilePaginatedItems } from '../../shared/ui/mobile-infinite-pagination';
@@ -327,21 +327,4 @@ export function ProjectTimeline({
   );
 }
 
-function getSourceTagClass(source: string | null | undefined): string {
-  if (!source) return 'manual';
-  const normalized = source.toLowerCase().trim();
-  if (normalized.includes('whatsapp') || normalized.includes('evolution')) return 'whatsapp';
-  if (normalized.includes('github')) return 'github';
-  if (
-    normalized === 'ai-chat' ||
-    normalized.includes('antigravity') ||
-    normalized.includes('codex') ||
-    normalized.includes('claude') ||
-    normalized.includes('open-code') ||
-    normalized.includes('opencode')
-  ) {
-    return 'ai';
-  }
-  if (normalized.includes('n8n') || normalized.includes('api')) return 'api';
-  return 'manual';
-}
+
