@@ -2,8 +2,9 @@
   "name": "knowledge-base-vscode",
   "displayName": "Knowledge Vault",
   "description": "Integrate your Knowledge Vault directly into VS Code — search, ask AI, save notes without leaving your editor.",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "publisher": "Knowledge-Base",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/pedroaugusto04/knowledge-base"
