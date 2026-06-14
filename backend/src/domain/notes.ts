@@ -107,17 +107,23 @@ function renderReviewFindings(findings: NonNullable<IngestPayload['content']['se
     .join('\n');
 }
 
-export function isAiNote(payload: IngestPayload): boolean {
-  const sourceChannel = payload.source.channel || '';
-  const sourceSystem = String(payload.source.system || '').toLowerCase().trim();
+export function isAiSource(source: string | null | undefined): boolean {
+  if (!source) return false;
+  const normalized = source.toLowerCase().trim();
   return (
-    sourceChannel === 'ai-chat' ||
-    sourceSystem === 'ai-chat' ||
-    sourceSystem.includes('antigravity') ||
-    sourceSystem.includes('codex') ||
-    sourceSystem.includes('claude') ||
-    sourceSystem.includes('open-code') ||
-    sourceSystem.includes('opencode')
+    normalized === 'ai-chat' ||
+    normalized.includes('antigravity') ||
+    normalized.includes('codex') ||
+    normalized.includes('claude') ||
+    normalized.includes('open-code') ||
+    normalized.includes('opencode')
+  );
+}
+
+export function isAiNote(payload: IngestPayload): boolean {
+  return (
+    payload.source.channel === 'ai-chat' ||
+    isAiSource(payload.source.system)
   );
 }
 

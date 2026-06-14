@@ -20,7 +20,7 @@ export class CreateManualNoteUseCase {
     private readonly ingestEntryUseCase: IngestEntryUseCase,
     private readonly environmentProvider: RuntimeEnvironmentProvider,
     private readonly noteEventDispatcher: NoteEventDispatcher,
-  ) {}
+  ) { }
 
   async execute(input: CreateManualNoteInput, userId: string) {
     const workspaces = await this.contentRepository.listWorkspaces(userId);
