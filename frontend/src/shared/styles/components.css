@@ -1369,4 +1369,86 @@
   cursor: not-allowed;
 }
 
+/* Dynamic Source Tags */
+.source-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  line-height: 1.4;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  border: 1px solid transparent;
+  width: fit-content;
+}
+
+.source-tag svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* WhatsApp / Evolution */
+.source-tag.whatsapp {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+:root[data-theme="light"] .source-tag.whatsapp {
+  color: #15803d;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+/* GitHub */
+.source-tag.github {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+:root[data-theme="light"] .source-tag.github {
+  color: #334155;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+/* AI Chat / Assistants */
+.source-tag.ai {
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.1);
+  border-color: rgba(192, 132, 252, 0.2);
+}
+:root[data-theme="light"] .source-tag.ai {
+  color: #7e22ce;
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+
+/* API / Integrations */
+.source-tag.api {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.2);
+}
+:root[data-theme="light"] .source-tag.api {
+  color: #c2410c;
+  background: #fff7ed;
+  border-color: #ffedd5;
+}
+
+/* Manual */
+.source-tag.manual {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+:root[data-theme="light"] .source-tag.manual {
+  color: #475569;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
 

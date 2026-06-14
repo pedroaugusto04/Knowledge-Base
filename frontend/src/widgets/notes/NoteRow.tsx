@@ -71,17 +71,15 @@ export function NoteRow({
           <span className="meta meta-date">
             {formatUsDate(note.date)}
           </span>
-          {activeSource && (
-            <>
-              <span className="meta-separator"> / </span>
-              <span className="meta meta-source" title={`Source: ${formatSourceLabel(activeSource)}`} style={{ display: 'inline-flex', alignItems: 'center', alignSelf: 'center' }}>
-                <SourceIcon source={activeSource} style={{ width: '13px', height: '13px', display: 'inline-block', verticalAlign: 'middle', color: 'var(--muted)' }} />
-              </span>
-            </>
-          )}
           <AttachmentIndicator count={note.attachmentCount || 0} />
         </div>
         <h3>{note.title}</h3>
+        {activeSource && (
+          <span className={`source-tag ${getSourceTagClass(activeSource)}`} title={`Source: ${formatSourceLabel(activeSource)}`}>
+            <SourceIcon source={activeSource} />
+            <span>{formatSourceLabel(activeSource)}</span>
+          </span>
+        )}
         <p>{getCleanSummary(note.summary)}</p>
       </div>
       <button
@@ -137,6 +135,25 @@ export function NoteRow({
       </div>
     </article>
   );
+}
+
+function getSourceTagClass(source: string | null | undefined): string {
+  if (!source) return 'manual';
+  const normalized = source.toLowerCase().trim();
+  if (normalized.includes('whatsapp') || normalized.includes('evolution')) return 'whatsapp';
+  if (normalized.includes('github')) return 'github';
+  if (
+    normalized === 'ai-chat' ||
+    normalized.includes('antigravity') ||
+    normalized.includes('codex') ||
+    normalized.includes('claude') ||
+    normalized.includes('open-code') ||
+    normalized.includes('opencode')
+  ) {
+    return 'ai';
+  }
+  if (normalized.includes('n8n') || normalized.includes('api')) return 'api';
+  return 'manual';
 }
 
 

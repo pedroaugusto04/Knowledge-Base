@@ -220,7 +220,7 @@ describe('NoteRow', () => {
       />,
     );
 
-    const sourceElement = container.querySelector('.meta-source');
+    const sourceElement = container.querySelector('.source-tag');
     expect(sourceElement).toBeInTheDocument();
     expect(sourceElement).toHaveAttribute('title', 'Source: WhatsApp');
     expect(sourceElement?.querySelector('svg')).toBeInTheDocument();
