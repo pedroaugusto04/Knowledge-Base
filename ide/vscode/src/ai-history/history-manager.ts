@@ -131,34 +131,145 @@ export class AiHistoryManager {
   }
 
   async showRecentSessions(client: KbClient) {
-    if (this.recentSessions.length === 0) {
+    // 1. Scan all sessions dynamically from all active providers
+    const allSessions: AiSession[] = [];
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Scanning AI session logs...',
+      cancellable: false
+    }, async () => {
+      for (const provider of this.providers.values()) {
+        try {
+          const enabled = await provider.isEnabled();
+          if (!enabled) continue;
+          const sessions = await provider.getRecentSessions();
+          allSessions.push(...sessions);
+        } catch (err) {
+          console.error(`Failed to load sessions for ${provider.id}:`, err);
+        }
+      }
+    });
+
+    // Sort all sessions by timestamp descending (newest first)
+    allSessions.sort((a, b) => b.timestamp - a.timestamp);
+
+    if (allSessions.length === 0) {
       vscode.window.showInformationMessage('No recent AI sessions detected from Claude Code or Codex.');
       return;
     }
 
-    const items = this.recentSessions.map(session => ({
-      label: session.title,
-      description: this.providers.get(session.providerId)?.name || session.providerId,
-      detail: `Modified: ${new Date(session.timestamp).toLocaleTimeString()}`,
-      session
-    }));
+    interface SessionQuickPickItem extends vscode.QuickPickItem {
+      session?: AiSession;
+      isLoadMore?: boolean;
+    }
 
-    const selected = await vscode.window.showQuickPick(items, {
-      placeHolder: 'Select a recent AI session to import'
+    // 2. Set up QuickPick for pagination / infinite scroll
+    const quickPick = vscode.window.createQuickPick<SessionQuickPickItem>();
+    quickPick.title = 'Select a recent AI session to import';
+    quickPick.placeholder = 'Search by title...';
+    quickPick.matchOnDescription = true;
+    quickPick.matchOnDetail = true;
+
+    const PAGE_SIZE = 20;
+    let displayedCount = PAGE_SIZE;
+
+    // Helper to build list of items
+    const getItems = (filterQuery = '') => {
+      const filtered = filterQuery
+        ? allSessions.filter(s => s.title.toLowerCase().includes(filterQuery.toLowerCase()))
+        : allSessions;
+
+      const slice = filtered.slice(0, displayedCount);
+      const items: SessionQuickPickItem[] = slice.map(session => ({
+        label: session.title,
+        description: this.providers.get(session.providerId)?.name || session.providerId,
+        detail: `Modified: ${new Date(session.timestamp).toLocaleString()}`,
+        session
+      }));
+
+      // Add "Load More" indicator if there are remaining sessions
+      if (filtered.length > displayedCount) {
+        items.push({
+          label: '$(arrow-down) Load More...',
+          description: `Showing ${displayedCount} of ${filtered.length} sessions`,
+          detail: 'Select this item or scroll down to load more',
+          isLoadMore: true
+        });
+      }
+
+      return items;
+    };
+
+    quickPick.items = getItems();
+
+    // 3. Handle infinite scroll / selection change (throttled)
+    let isHandlingActiveChange = false;
+    quickPick.onDidChangeActive(active => {
+      if (isHandlingActiveChange) return;
+      const activeItem = active[0];
+      if (!activeItem) return;
+
+      const items = quickPick.items;
+      const activeIndex = items.indexOf(activeItem);
+
+      // Trigger if active item is "Load More..." or is in the last 2 positions and "Load More" exists
+      if (activeItem.isLoadMore || (activeIndex >= items.length - 2 && items[items.length - 1].isLoadMore)) {
+        isHandlingActiveChange = true;
+        
+        setTimeout(() => {
+          displayedCount += PAGE_SIZE;
+          
+          const query = quickPick.value;
+          quickPick.items = getItems(query);
+          
+          // Re-focus near the previous position
+          const newIndex = Math.min(activeIndex, quickPick.items.length - 1);
+          quickPick.activeItems = [quickPick.items[newIndex]];
+          
+          isHandlingActiveChange = false;
+        }, 150);
+      }
     });
 
-    if (selected) {
-      const action = await vscode.window.showInformationMessage(
-        `Selected session: "${selected.label}"`,
-        'Save directly',
-        'Preview & Edit'
-      );
-      if (action === 'Save directly') {
-        await this.saveSessionToVault(client, selected.session);
-      } else if (action === 'Preview & Edit') {
-        await this.openPreview(selected.session);
+    // Reset page count on filter query change
+    quickPick.onDidChangeValue(value => {
+      displayedCount = PAGE_SIZE;
+      quickPick.items = getItems(value);
+    });
+
+    // Handle item acceptance
+    quickPick.onDidAccept(async () => {
+      const selected = quickPick.selectedItems[0];
+      if (!selected) return;
+
+      if (selected.isLoadMore) {
+        displayedCount += PAGE_SIZE;
+        quickPick.items = getItems(quickPick.value);
+        return;
       }
-    }
+
+      quickPick.hide();
+      quickPick.dispose();
+
+      if (selected.session) {
+        const action = await vscode.window.showInformationMessage(
+          `Selected session: "${selected.label}"`,
+          'Save directly',
+          'Preview & Edit'
+        );
+        if (action === 'Save directly') {
+          await this.saveSessionToVault(client, selected.session);
+        } else if (action === 'Preview & Edit') {
+          await this.openPreview(selected.session);
+        }
+      }
+    });
+
+    quickPick.onDidHide(() => {
+      quickPick.dispose();
+    });
+
+    quickPick.show();
   }
 
   private getMarkdownText(session: AiSession): string {
