@@ -76,8 +76,8 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
     ? undefined
     : latestBriefQuery.data;
 
-  const handleAsk = async () => {
-    const question = questionInput.trim();
+  const handleAsk = async (overrideQuestion?: string) => {
+    const question = (overrideQuestion ?? questionInput).trim();
     if (isAsking) return;
     if (!question) {
       notifyWarning('Type something before asking AI.');
@@ -108,6 +108,11 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
     } finally {
       setIsAsking(false);
     }
+  };
+
+  const handlePromptClick = (promptText: string) => {
+    setQuestionInput(promptText);
+    void handleAsk(promptText);
   };
 
   return (
@@ -154,44 +159,61 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
       </div>
 
       {activeTab === 'ask' ? (
-        <>
-          {/* Question input */}
-          <section className="search-box ask-ai-input-section">
-            <div className="ask-ai-input-row">
-              <AskAiIcon className="ask-ai-input-icon" />
-              <input
-                aria-label="Ask a question"
-                autoComplete="off"
-                enterKeyHint="send"
-                spellCheck={false}
-                type="text"
-                value={questionInput}
-                onChange={(event) => setQuestionInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    handleAsk();
-                  }
-                }}
-                placeholder="Ask anything about your notes..."
-              />
-              <button className="icon-button ask-ai-send-btn" disabled={isAsking} type="button" onClick={handleAsk}>
-                {isAsking ? 'Asking...' : 'Ask'}
-              </button>
-              <button
-                aria-expanded={showHistory}
-                className={`icon-button secondary ask-ai-history-toggle ${showHistory ? 'active' : ''}`}
-                type="button"
-                onClick={() => setShowHistory((current) => !current)}
-              >
-                {showHistory ? 'Hide history' : 'Show history'}
-              </button>
-            </div>
-          </section>
+        <div className={`ask-ai-workspace ${showHistory ? 'has-history' : ''}`}>
+          <div className="ask-ai-main-pane">
+            {/* Question input */}
+            <section className="search-box ask-ai-input-section">
+              <div className="ask-ai-input-row">
+                <AskAiIcon className="ask-ai-input-icon" />
+                <input
+                  aria-label="Ask a question"
+                  autoComplete="off"
+                  enterKeyHint="send"
+                  spellCheck={false}
+                  type="text"
+                  value={questionInput}
+                  onChange={(event) => setQuestionInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      handleAsk();
+                    }
+                  }}
+                  placeholder="Ask anything about your notes..."
+                />
+                <button className="icon-button ask-ai-send-btn" disabled={isAsking} type="button" onClick={() => handleAsk()}>
+                  {isAsking ? 'Asking...' : 'Ask'}
+                </button>
+                <button
+                  aria-expanded={showHistory}
+                  className={`icon-button secondary ask-ai-history-toggle ${showHistory ? 'active' : ''}`}
+                  type="button"
+                  onClick={() => setShowHistory((current) => !current)}
+                >
+                  {showHistory ? 'Hide history' : 'Show history'}
+                </button>
+              </div>
+            </section>
 
-          {/* History inline */}
+            {/* AI Answer */}
+            {isAsking ? <AskAnswerSkeleton question={questionInput.trim()} projectLabel={selectedProjectLabel} /> : null}
+
+            {!isAsking && askAnswer ? (
+              <Panel className="ai-answer-card-panel">
+                <AskAnswerCard item={askAnswer} openNote={openNote} projects={dashboard.projects} />
+              </Panel>
+            ) : null}
+
+            {!isAsking && !askAnswer ? (
+              <AskWaitingState onPromptClick={handlePromptClick} />
+            ) : null}
+
+            {askError ? <InlineMessage className="ask-error-message" tone="error">{askError}</InlineMessage> : null}
+          </div>
+
+          {/* History Panel */}
           {showHistory ? (
-            <div>
+            <div className="ask-ai-history-pane">
               <AskHistoryInline
                 historyQuery={historyQuery}
                 projects={dashboard.projects}
@@ -209,22 +231,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
               />
             </div>
           ) : null}
-
-          {/* AI Answer */}
-          {isAsking ? <AskAnswerSkeleton question={questionInput.trim()} projectLabel={selectedProjectLabel} /> : null}
-
-          {!isAsking && askAnswer ? (
-            <Panel className="ai-answer-card-panel">
-              <AskAnswerCard item={askAnswer} openNote={openNote} projects={dashboard.projects} />
-            </Panel>
-          ) : null}
-
-          {!isAsking && !askAnswer && !showHistory ? (
-            <AskWaitingState />
-          ) : null}
-
-          {askError ? <InlineMessage className="ask-error-message" tone="error">{askError}</InlineMessage> : null}
-        </>
+        </div>
       ) : (
         /* Project Brief */
         <Panel className="ask-ai-brief-panel">
@@ -300,8 +307,14 @@ function AskHistoryInline({
           <div className={`ask-history-list ${historyQuery.isPlaceholderData ? 'stale-data' : ''}`}>
             {history.map((item) => (
               <button className="ask-history-item" key={item.id} type="button" onClick={() => onSelect(item)}>
-                <span className="ask-history-question">{item.question}</span>
-                <span className="ask-history-project">{projectLabel(item.projectSlug, projects)}</span>
+                <div className="ask-history-item-header">
+                  <span className="ask-history-question">{item.question}</span>
+                  <span className={`confidence-dot ${item.confidence || 'medium'}`} title={`Confidence: ${item.confidence || 'medium'}`} />
+                </div>
+                <div className="ask-history-item-meta">
+                  <span className="ask-history-project">{projectLabel(item.projectSlug, projects)}</span>
+                  <span className="ask-history-date">{formatDate(item.createdAt)}</span>
+                </div>
                 <span className="ask-history-answer">{item.answer}</span>
               </button>
             ))}
@@ -315,7 +328,14 @@ function AskHistoryInline({
   );
 }
 
-function AskWaitingState() {
+function AskWaitingState({ onPromptClick }: { onPromptClick: (text: string) => void }) {
+  const SUGGESTED_PROMPTS = [
+    'Summarize my recent notes',
+    'What are my action items?',
+    'What is the status of platform?',
+    'Review key decisions made',
+  ];
+
   return (
     <div className="ask-waiting-card">
       <div className="ask-waiting-visual">
@@ -329,10 +349,31 @@ function AskWaitingState() {
         </div>
       </div>
       <div className="ask-waiting-text">
-        <h3>Waiting</h3>
-        <p>Ask a question to get started.</p>
+        <h3>Ask AI Assistant</h3>
+        <p>Ask questions, query your notes, or get summaries instantly using neural search.</p>
+      </div>
+      <div className="ask-suggested-prompts">
+        <span className="suggested-title">Suggested Prompts</span>
+        <div className="suggested-grid">
+          {SUGGESTED_PROMPTS.map((prompt, i) => (
+            <button
+              key={i}
+              className="suggested-chip"
+              type="button"
+              onClick={() => onPromptClick(prompt)}
+            >
+              <span className="chip-text">{prompt}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
+}
+
+function formatDate(dateStr?: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
 }
 

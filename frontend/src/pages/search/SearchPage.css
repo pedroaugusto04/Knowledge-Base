@@ -1,129 +1,278 @@
-/* ─── Ask AI Input Section ─── */
+/* ─── Ask AI Workspace Layout ─── */
+.ask-ai-workspace {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  align-items: flex-start;
+  position: relative;
+}
+
+.ask-ai-main-pane {
+  flex: 1;
+  min-width: 0;
+}
+
+.ask-ai-history-pane {
+  flex: 0 0 320px;
+  width: 320px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  border-radius: 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow);
+  padding: 2px;
+}
+
+/* Custom Scrollbar for History Pane */
+.ask-ai-history-pane::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ask-ai-history-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ask-ai-history-pane::-webkit-scrollbar-thumb {
+  background: var(--line-soft);
+  border-radius: 4px;
+}
+
+.ask-ai-history-pane::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* ─── Ask AI Input Section (Restructured & Glowing) ─── */
 .ask-ai-input-section {
-  margin-bottom: 18px;
-  max-width: 760px;
+  margin-bottom: 20px;
+  max-width: 100%;
   padding: 0 !important;
 }
 
 .ask-ai-input-row {
   display: flex;
-  align-items: stretch;
-  gap: 10px;
-  margin-bottom: 10px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 6px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+  box-shadow: var(--shadow);
+}
+
+.ask-ai-input-row:focus-within {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--surface-hover-accent), var(--shadow);
 }
 
 .ask-ai-input-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
-  align-self: center;
-  color: var(--muted);
+  color: var(--cyan);
+  filter: drop-shadow(0 0 4px rgba(83, 199, 222, 0.4));
 }
 
 .ask-ai-input-row input {
   flex: 1;
   min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text-strong);
+}
+
+.ask-ai-input-row input:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .ask-ai-send-btn {
-  min-height: 48px;
-  min-width: 120px;
-  padding: 0 32px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  min-height: 38px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface-hover-accent);
+  border: 1px solid var(--accent-border);
+  color: var(--active-text);
+  cursor: pointer;
+  transition: all 140ms ease;
 }
 
-.ask-ai-filters {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.ask-ai-send-btn:hover:not(:disabled) {
+  background: var(--surface-active);
+  transform: translateY(-1px);
 }
 
-.ask-ai-filter {
-  width: 180px;
+.ask-ai-send-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .ask-ai-history-toggle {
-  white-space: nowrap;
-  flex-shrink: 0;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-hover);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.ask-ai-history-toggle:hover {
+  background: var(--surface-hover-strong);
+  color: var(--text);
+  border-color: var(--line);
 }
 
 .ask-ai-history-toggle.active {
-  background: var(--surface-hover-strong);
+  background: var(--surface-hover-accent);
   border-color: var(--accent-border);
+  color: var(--active-text);
 }
 
 /* ─── AI Answer Panel ─── */
 .ai-answer-card-panel {
-  margin-bottom: 18px;
-}
-
-.ai-answer-action-icon {
-  width: 15px;
-  height: 15px;
-  flex: 0 0 auto;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow);
 }
 
 .ask-error-message {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
-/* ─── Ask History Inline Panel ─── */
+/* ─── Ask History Panel (Inside Sidebar Drawer) ─── */
 .ask-ai-history-panel {
-  margin-bottom: 18px;
+  border: none !important;
+  background: transparent !important;
+  padding: 16px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .ask-ai-history-panel h2 {
-  margin-bottom: 14px;
+  font-size: 14px;
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .ask-history-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .ask-history-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--line-soft);
   border-radius: 8px;
   background: var(--surface-2);
-  color: var(--text);
+  color: var(--text-soft);
   text-align: left;
-  transition: border-color 140ms ease, background 140ms ease;
+  cursor: pointer;
+  transition: all 140ms ease;
 }
 
 .ask-history-item:hover {
   border-color: var(--accent-border);
   background: var(--surface-hover-strong);
+  color: var(--text-strong);
+  transform: translateY(-1px);
+}
+
+.ask-history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
 .ask-history-question {
+  flex: 1;
   min-width: 0;
   color: var(--text-strong);
   font-weight: 600;
+  font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ask-history-project {
-  color: var(--faint);
-  font-family: var(--mono);
+/* Confidence Glowing Dots */
+.confidence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.confidence-dot.high {
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+.confidence-dot.medium {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+
+.confidence-dot.low {
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+}
+
+.ask-history-item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
   font-size: 11px;
+  font-family: var(--mono);
+  color: var(--faint);
+}
+
+.ask-history-project {
+  color: var(--cyan);
   text-transform: uppercase;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ask-history-date {
+  color: var(--faint);
 }
 
 .ask-history-answer {
-  grid-column: 1 / -1;
   display: -webkit-box;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.4;
   overflow: hidden;
   -webkit-box-orient: vertical;
@@ -132,41 +281,10 @@
 
 /* ─── Brief Panel inside Ask AI ─── */
 .ask-ai-brief-panel {
-  margin-bottom: 18px;
-}
-
-/* ─── Projects Search Box ─── */
-.projects-search-box {
-  margin-bottom: 14px;
-}
-
-.projects-search-box input {
-  width: 100%;
-}
-
-/* ─── Matching Notes (shared with Projects search results) ─── */
-.matching-notes-panel {
-  margin-bottom: 14px;
-}
-
-.matching-notes-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.matching-notes-heading h2 {
-  margin-bottom: 4px;
-}
-
-.matching-notes-count {
-  color: var(--faint);
-  font-family: var(--mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow);
 }
 
 /* ─── Compact Pagination overrides inside Ask History Panel ─── */
@@ -176,7 +294,7 @@
   border: none !important;
   box-shadow: none !important;
   margin: 0 !important;
-  padding: 8px 0 0 0 !important;
+  padding: 12px 0 0 0 !important;
   border-top: 1px solid var(--line-soft) !important;
   border-radius: 0 !important;
   backdrop-filter: none !important;
@@ -187,10 +305,11 @@
 }
 
 .ask-ai-history-panel .pagination-summary {
-  font-size: 11px !important;
-  padding: 2px 6px !important;
+  font-size: 10px !important;
+  padding: 3px 6px !important;
   min-height: auto !important;
   background: var(--surface-3) !important;
+  color: var(--muted) !important;
   border-radius: 4px !important;
   border: 1px solid var(--line-soft) !important;
 }
@@ -201,64 +320,44 @@
 
 .ask-ai-history-panel .pagination-button,
 .ask-ai-history-panel .pagination-number {
-  min-width: 32px !important;
-  min-height: 32px !important;
-  height: 32px !important;
-  padding: 0 8px !important;
-  font-size: 13px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  height: 28px !important;
+  padding: 0 6px !important;
+  font-size: 12px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: 6px !important;
 }
 
-@media (max-width: 720px) {
-  .ask-ai-input-row {
-    flex-direction: column;
-  }
-
-  .ask-ai-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .ask-ai-filter {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .matching-notes-heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-}
-
-/* ─── Ask AI Waiting State (Modern Neural Idle) ─── */
+/* ─── Ask AI Waiting State (Neural Center Dashboard) ─── */
 .ask-waiting-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 48px 24px;
-  background: var(--surface-1);
-  border: 1px dashed var(--line-soft);
-  border-radius: 12px;
-  min-height: 420px;
+  padding: 40px 24px;
+  background: linear-gradient(145deg, var(--surface-1), var(--surface-3));
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  min-height: 440px;
   margin-top: 14px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 .ask-waiting-visual {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 /* AI Neural core pulsing ring animation */
 .ai-core-pulse {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,8 +365,8 @@
 
 .core-center {
   z-index: 2;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   background: var(--surface-hover-accent);
   border: 1px solid var(--accent-border);
   border-radius: 50%;
@@ -275,70 +374,162 @@
   align-items: center;
   justify-content: center;
   color: var(--cyan);
-  box-shadow: 0 0 15px rgba(0, 180, 216, 0.25);
+  box-shadow: 0 0 20px rgba(0, 180, 216, 0.35);
+  animation: waitingRotate 10s infinite linear;
 }
 
 .waiting-ai-icon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
 .core-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(0, 180, 216, 0.15);
-  animation: core-pulsate 3.5s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 1px solid rgba(0, 180, 216, 0.2);
+  animation: core-pulsate 3s infinite cubic-bezier(0.215, 0.610, 0.355, 1);
 }
 
 .ring-1 {
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   animation-delay: 0s;
 }
 
 .ring-2 {
-  width: 84px;
-  height: 84px;
-  animation-delay: 1.1s;
+  width: 90px;
+  height: 90px;
+  animation-delay: 0.9s;
 }
 
 .ring-3 {
-  width: 110px;
-  height: 110px;
-  animation-delay: 2.2s;
+  width: 120px;
+  height: 120px;
+  animation-delay: 1.8s;
 }
 
 @keyframes core-pulsate {
   0% {
-    transform: scale(0.85);
+    transform: scale(0.8);
     opacity: 0.1;
   }
   50% {
     transform: scale(1.1);
-    opacity: 0.6;
-    border-color: rgba(0, 180, 216, 0.3);
-    box-shadow: inset 0 0 10px rgba(0, 180, 216, 0.1);
+    opacity: 0.7;
+    border-color: rgba(0, 180, 216, 0.45);
+    box-shadow: inset 0 0 15px rgba(0, 180, 216, 0.15);
   }
   100% {
-    transform: scale(1.3);
+    transform: scale(1.4);
     opacity: 0;
   }
 }
 
+@keyframes waitingRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .ask-waiting-text h3 {
   font-family: var(--mono);
-  font-size: 15px;
+  font-size: 16px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cyan);
   margin: 0 0 8px 0;
-  text-shadow: 0 0 8px rgba(0, 180, 216, 0.15);
+  text-shadow: 0 0 10px rgba(0, 180, 216, 0.25);
 }
 
 .ask-waiting-text p {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
-  margin: 0;
+  margin: 0 0 28px 0;
   max-width: 440px;
+}
+
+/* ─── Suggested Prompt Chips ─── */
+.ask-suggested-prompts {
+  width: 100%;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.suggested-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--faint);
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.suggested-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.suggested-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 140ms ease;
+  color: var(--text-soft);
+}
+
+.suggested-chip:hover {
+  border-color: var(--accent-border);
+  background: var(--surface-hover-strong);
+  color: var(--text-strong);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.chip-text {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* ─── Responsive Media Queries ─── */
+@media (max-width: 1024px) {
+  .ask-ai-workspace {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ask-ai-history-pane {
+    flex: none;
+    width: 100%;
+    position: static;
+    max-height: 480px;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 720px) {
+  .ask-ai-input-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .ask-ai-input-row input {
+    padding: 4px 0;
+  }
+
+  .suggested-grid {
+    grid-template-columns: 1fr;
+  }
 }
