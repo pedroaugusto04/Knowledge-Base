@@ -42,6 +42,7 @@ import {
 import { queryRequestSchema, type QueryRequest } from '../../dto/query.dto.js';
 import { askHistoryQuerySchema, askRequestSchema, type AskHistoryQuery, type AskRequest } from '../../dto/ask.dto.js';
 import { ZodValidationPipe } from '../../zod-validation.pipe.js';
+import { paginatedResponse } from '../../http-helpers.js';
 
 @ApiTags('Dashboard')
 @Controller('api')
@@ -216,8 +217,4 @@ export class DashboardController {
   ) {
     return { ok: true, ...paginatedResponse('history', await this.listAskHistoryUseCase.execute(user.id, query)) };
   }
-}
-
-function paginatedResponse<T>(key: string, value: { items: T[]; pagination: unknown }) {
-  return { [key]: value.items, pagination: value.pagination };
 }

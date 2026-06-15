@@ -6,3 +6,7 @@ export function inlineContentDisposition(fileName: string): string {
   const encodedFileName = encodeURIComponent(sanitizedFileName);
   return `inline; filename="${sanitizedFileName}"; filename*=UTF-8''${encodedFileName}`;
 }
+
+export function paginatedResponse<T>(key: string, value: { items: T[]; pagination: unknown }) {
+  return { [key]: value.items, pagination: value.pagination };
+}

@@ -233,7 +233,7 @@ export class DefaultAudioTranscriptionGateway extends AudioTranscriptionGateway 
         endpoint,
         status: response.status,
         statusText: response.statusText,
-        responseBody: responseText.slice(0, 1000),
+        responseBody: truncateForLog(responseText, 1000),
         cause: error,
       });
     }
