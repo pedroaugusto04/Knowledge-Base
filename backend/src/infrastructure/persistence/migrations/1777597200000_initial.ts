@@ -117,7 +117,6 @@ export async function up(pgm: MigrationBuilder) {
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     );
-    create unique index if not exists kb_notes_user_path_idx on kb_notes (user_id, path);
     create index if not exists kb_notes_user_project_idx on kb_notes (user_id, project_slug);
     create index if not exists kb_notes_user_workspace_idx on kb_notes (user_id, workspace_slug);
 

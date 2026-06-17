@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 import { Injectable } from '@nestjs/common';
 
 import { slugify } from '../../domain/strings.js';
@@ -20,8 +22,8 @@ function safeFileName(fileName: string): string {
   return safeExtension ? `${safeStem}.${safeExtension}` : safeStem;
 }
 
-function noteStorageKey(userId: string, workspaceSlug: string, notePath: string): string {
-  return `users/${userId}/workspaces/${workspaceSlug || 'default'}/notes/${normalizedObjectPath(notePath)}`;
+function noteStorageKey(userId: string, workspaceSlug: string, noteId: string): string {
+  return `users/${userId}/workspaces/${workspaceSlug || 'default'}/notes/${noteId}`;
 }
 
 function attachmentStorageKey(userId: string, workspaceSlug: string, noteId: string, fileName: string): string {
@@ -40,7 +42,7 @@ export class ContentObjectStorageService {
 
   async saveNoteMarkdown(userId: string, input: SaveNoteInput): Promise<string> {
     const markdownStorageKey = input.
-    markdownStorageKey || noteStorageKey(userId, input.workspaceSlug, input.path);
+    markdownStorageKey || noteStorageKey(userId, input.workspaceSlug, input.id || crypto.randomUUID());
     await this.objectStorage.put({
       key: markdownStorageKey,
       body: input.markdown,

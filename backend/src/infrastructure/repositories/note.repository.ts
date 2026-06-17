@@ -180,11 +180,6 @@ export class PostgresNoteRepository {
     return Promise.all(notes.map((n) => this.hydrateMarkdown(n)));
   }
 
-  async getByPath(userId: string, path: string) {
-    const result = await this.database.getPool().query('select * from kb_notes where user_id = $1 and path = $2 limit 1', [userId, path]);
-    return result.rows[0] ? noteFromRow(result.rows[0]) : null;
-  }
-
   async getBySourceAndSessionId(userId: string, source: string, sessionId: string) {
     const result = await this.database.getPool().query(
       `select * from kb_notes 
