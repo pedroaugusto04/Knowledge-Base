@@ -101,7 +101,7 @@ export const projects = pgTable('kb_projects', {
   aliases: jsonb('aliases').notNull().default('[]'),
   defaultTags: jsonb('default_tags').notNull().default('[]'),
   enabled: boolean('enabled').notNull().default(true),
-  favorite: boolean('favorite').default(false),
+  isFavorite: boolean('is_favorite').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
@@ -126,6 +126,7 @@ export const notes = pgTable('kb_notes', {
   markdownStorageKey: text('markdown_storage_key').notNull().default(''),
   frontmatter: jsonb('frontmatter').notNull().default('{}'),
   metadata: jsonb('metadata').notNull().default('{}'),
+  source: text('source').notNull().default(''),
   sessionId: text('session_id').notNull().default(''),
   reminderDate: text('reminder_date').notNull().default(''),
   reminderAt: text('reminder_at').notNull().default(''),

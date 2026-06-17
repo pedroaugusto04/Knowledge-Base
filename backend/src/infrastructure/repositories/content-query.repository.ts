@@ -162,7 +162,7 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
       ))
       .where(and(
         inArray(notes.status, reminderDispatchEligibleStatuses as any),
-        sql`(n.reminder_date <> '' or n.reminder_at <> '')`,
+        sql`(${notes.reminderDate} <> '' or ${notes.reminderAt} <> '')`,
         sql`coalesce(${recipientField}, '') <> ''`
       ));
 

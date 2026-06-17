@@ -22,15 +22,18 @@ function nowIso(value: unknown): string {
 }
 
 function askHistoryFromRow(row: Row): AskHistoryItem {
+  const projectSlug = row.projectSlug;
+  const relatedNotes = row.relatedNotes;
+  const createdAt = row.createdAt;
   return {
     id: String(row.id || ''),
     question: String(row.question || ''),
     answer: String(row.answer || ''),
     confidence: row.confidence === 'high' || row.confidence === 'medium' ? row.confidence : 'low',
-    projectSlug: String(row.project_slug || ''),
+    projectSlug: String(projectSlug || ''),
     sources: Array.isArray(row.sources) ? row.sources as AskHistorySource[] : [],
-    relatedNotes: Array.isArray(row.related_notes) ? row.related_notes as AskHistoryRelatedNote[] : [],
-    createdAt: nowIso(row.created_at),
+    relatedNotes: Array.isArray(relatedNotes) ? relatedNotes as AskHistoryRelatedNote[] : [],
+    createdAt: nowIso(createdAt),
   };
 }
 

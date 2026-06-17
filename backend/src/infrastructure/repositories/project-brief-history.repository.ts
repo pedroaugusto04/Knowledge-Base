@@ -18,17 +18,17 @@ function nowIso(value: unknown): string {
 function projectBriefHistoryFromRow(row: Row): ProjectBriefHistoryRecord {
   return {
     id: String(row.id || ''),
-    userId: String(row.user_id || ''),
-    workspaceSlug: String(row.workspace_slug || ''),
-    projectSlug: String(row.project_slug || ''),
+    userId: String(row.userId ?? ''),
+    workspaceSlug: String(row.workspaceSlug ?? ''),
+    projectSlug: String(row.projectSlug ?? ''),
     brief: row.brief as ProjectBriefHistoryRecord['brief'],
     sourceRefs: Array.isArray(row.source_refs) ? row.source_refs as ProjectBriefHistoryRecord['sourceRefs'] : [],
-    contextHash: String(row.context_hash || ''),
-    contextWindow: Number(row.context_window || 30),
+    contextHash: String(row.contextHash ?? ''),
+    contextWindow: Number(row.contextWindow ?? 30),
     provider: String(row.provider || ''),
     model: String(row.model || ''),
-    generatedAt: nowIso(row.generated_at),
-    createdAt: nowIso(row.created_at),
+    generatedAt: nowIso(row.generatedAt),
+    createdAt: nowIso(row.createdAt),
   };
 }
 

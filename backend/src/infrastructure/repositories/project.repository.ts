@@ -119,7 +119,7 @@ export class PostgresProjectRepository {
     const db = this.database.getDb();
     const result = await db
       .update(projects)
-      .set({ favorite: favorite, updatedAt: new Date() })
+      .set({ isFavorite: favorite, updatedAt: new Date() })
       .where(and(eq(projects.userId, userId), eq(projects.projectSlug, projectSlug)))
       .returning();
     

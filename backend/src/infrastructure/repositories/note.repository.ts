@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
-import { eq, and, count, desc, sql, inArray } from 'drizzle-orm';
+import { eq, and, count, desc, sql, inArray, notInArray } from 'drizzle-orm';
 
 import type { ListNotesInput } from '../../application/models/note-list.models.js';
 import type { ListProjectKnowledgeMapInput } from '../../application/models/project-knowledge-map.models.js';
@@ -81,7 +81,7 @@ export class PostgresNoteRepository {
     }
     if (input.status) {
       if (input.status === 'open') {
-        conditions.push(sql`n.status not in ('resolved', 'archived')`);
+        conditions.push(notInArray(notes.status, ['resolved', 'archived']));
       } else {
         conditions.push(eq(notes.status, input.status as any));
       }
@@ -262,7 +262,7 @@ export class PostgresNoteRepository {
         folderId: input.folderId,
         status: input.status as any,
         tags: input.tags,
-        occurredAt: input.occurredAt,
+        occurredAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),
         sourceChannel: input.sourceChannel,
         summary: input.summary,
         markdownStorageKey,
@@ -272,7 +272,7 @@ export class PostgresNoteRepository {
         sessionId: input.sessionId ?? '',
         reminderDate: input.reminderDate ?? '',
         reminderAt: input.reminderAt ?? '',
-      } as any)
+      } as typeof notes.$inferInsert)
       .returning();
     
     return this.hydrateMarkdown(noteFromRow(result[0]));
@@ -393,9 +393,11 @@ export class PostgresNoteRepository {
       .from(notes)
       .where(and(
         whereCondition,
-        sql`(n.is_pinned and not ${note.isPinned}::boolean)
-           or (n.is_pinned = ${note.isPinned}::boolean and n.occurred_at > ${note.occurredAt})
-           or (n.is_pinned = ${note.isPinned}::boolean and n.occurred_at = ${note.occurredAt} and n.title <= ${note.title})`
+        sql`(
+          (${notes.isPinned} = true and ${note.isPinned} = false)
+          or (${notes.isPinned} = ${note.isPinned} and ${notes.occurredAt} > ${note.occurredAt})
+          or (${notes.isPinned} = ${note.isPinned} and ${notes.occurredAt} = ${note.occurredAt} and ${notes.title} <= ${note.title})
+        )`
       ));
     
     const index = Number(result[0]?.idx || 0);
