@@ -311,7 +311,7 @@ export class AiHistoryManager {
         'Save Now'
       );
       if (choice === 'Save Now') {
-        vscode.commands.executeCommand('kb.saveActiveFile');
+        vscode.commands.executeCommand('kb.saveActiveFile', session.sessionId, session.providerId);
       }
     } catch (err: any) {
       vscode.window.showErrorMessage(`Failed to open preview: ${err.message || err}`);

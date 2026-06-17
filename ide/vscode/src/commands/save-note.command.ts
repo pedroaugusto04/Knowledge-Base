@@ -60,7 +60,7 @@ export function registerSaveNoteCommand(
       );
     }),
 
-    vscode.commands.registerCommand('kb.saveActiveFile', async () => {
+    vscode.commands.registerCommand('kb.saveActiveFile', async (sessionIdParam?: string, providerIdParam?: string) => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         vscode.window.showWarningMessage('No active editor open.');
@@ -97,30 +97,9 @@ export function registerSaveNoteCommand(
 
       if (confirm === undefined) return;
 
-      let source = 'open-code';
-      let sourceChannel: string | undefined = undefined;
-      let sessionId: string | undefined = undefined;
-      const lowerText = rawText.toLowerCase();
-      if (lowerText.includes('source:')) {
-        if (lowerText.includes('source: claude') || lowerText.includes('source: claudecode')) {
-          source = 'claude-code';
-          sourceChannel = 'ai-chat';
-        } else if (lowerText.includes('source: codex')) {
-          source = 'codex-cli';
-          sourceChannel = 'ai-chat';
-        } else if (lowerText.includes('source: antigravity')) {
-          source = 'antigravity';
-          sourceChannel = 'ai-chat';
-        } else if (lowerText.includes('source: opencode') || lowerText.includes('source: open-code')) {
-          source = 'open-code';
-          sourceChannel = 'ai-chat';
-        }
-      }
-
-      const sessionMatch = rawText.match(/^[Ss]ession:\s*([^\r\n]+)/m);
-      if (sessionMatch) {
-        sessionId = sessionMatch[1].trim();
-      }
+      let source = providerIdParam || 'open-code';
+      let sourceChannel: string | undefined = providerIdParam ? 'ai-chat' : undefined;
+      let sessionId: string | undefined = sessionIdParam;
 
       await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: 'Saving note…', cancellable: false },
