@@ -8,8 +8,6 @@ import type { ListProjectsInput } from '../../application/models/project-list.mo
 import { ContentObjectStorageService } from '../../application/services/content-object-storage.service.js';
 import { ContentRepository } from '../../application/ports/notes/content.repository.js';
 import type {
-  AttachmentRecord,
-  NoteRecord,
   SaveAttachmentInput,
   SaveNoteInput,
   SaveProjectFolderInput,
