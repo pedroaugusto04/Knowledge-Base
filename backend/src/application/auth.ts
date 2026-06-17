@@ -188,9 +188,7 @@ function toAuthenticatedUser(user: KbUser): AuthenticatedUser {
     email: user.email,
     displayName: user.displayName,
     role: user.role,
-    avatarUrl: user.avatarStorageKey && user.avatarUpdatedAt
-      ? `/api/auth/avatar/content?v=${encodeURIComponent(user.avatarUpdatedAt)}`
-      : null,
+    avatarUrl: user.avatar ? `/api/auth/avatar/content` : null,
   };
 }
 
@@ -359,7 +357,7 @@ export class AuthService implements OnModuleInit {
     if (input.sizeBytes > avatarMaxSizeBytes || input.buffer.length > avatarMaxSizeBytes) throw new BadRequestException('avatar_file_too_large');
 
     const storage = requireAvatarStorage(this.objectStorage);
-    const previousStorageKey = user.avatarStorageKey;
+    const previousStorageKey = user.avatar || null;
     const storageKey = avatarStorageKey(user.id, input.mimeType);
     await storage.put({ key: storageKey, body: input.buffer, contentType: input.mimeType });
     await getStoredAvatarWithRetry(storage, storageKey);
@@ -381,8 +379,8 @@ export class AuthService implements OnModuleInit {
     if (!user) throw new UnauthorizedException('user_not_found');
     const updated = await this.users.clearUserAvatar(user.id);
     if (!updated) throw new UnauthorizedException('user_not_found');
-    if (user.avatarStorageKey) {
-      await requireAvatarStorage(this.objectStorage).delete(user.avatarStorageKey).catch(() => undefined);
+    if (user.avatar) {
+      await requireAvatarStorage(this.objectStorage).delete(user.avatar).catch(() => undefined);
     }
     return toAuthenticatedUser(updated);
   }
@@ -390,10 +388,14 @@ export class AuthService implements OnModuleInit {
   async getAvatarContent(userId: string): Promise<AvatarContent> {
     const user = await this.users.findUserById(userId);
     if (!user) throw new UnauthorizedException('user_not_found');
-    if (!user.avatarStorageKey || !user.avatarMimeType) throw new NotFoundException('avatar_not_found');
+    if (!user.avatar) throw new NotFoundException('avatar_not_found');
     try {
-      const body = await getStoredAvatarWithRetry(requireAvatarStorage(this.objectStorage), user.avatarStorageKey);
-      return { body, mimeType: user.avatarMimeType };
+      const body = await getStoredAvatarWithRetry(requireAvatarStorage(this.objectStorage), user.avatar);
+      // Infer mime type from storage key extension
+      const extension = user.avatar.split('.').pop()?.toLowerCase() || 'png';
+      const mimeTypeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
+      const mimeType = mimeTypeMap[extension] || 'image/png';
+      return { body, mimeType };
     } catch (error) {
       if (error instanceof ObjectStorageMissingContentError) throw new NotFoundException('avatar_not_found');
       throw error;
