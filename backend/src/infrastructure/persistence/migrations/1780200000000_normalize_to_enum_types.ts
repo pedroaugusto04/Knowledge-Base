@@ -41,7 +41,9 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(`ALTER TABLE kb_ask_history ALTER COLUMN confidence TYPE text USING confidence::text;`);
   pgm.sql(`ALTER TABLE kb_ask_history ALTER COLUMN confidence SET DEFAULT 'low'::text;`);
 
+  pgm.sql(`ALTER TABLE kb_integration_credentials ALTER COLUMN status DROP DEFAULT;`);
   pgm.sql(`ALTER TABLE kb_integration_credentials ALTER COLUMN status TYPE text USING status::text;`);
+  pgm.sql(`ALTER TABLE kb_integration_credentials ALTER COLUMN status SET DEFAULT 'connected'::text;`);
 
   // Recreate CHECK constraints
   pgm.sql(`
