@@ -2,7 +2,7 @@ import type { MigrationBuilder } from 'node-pg-migrate';
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   // Create ENUM types
-  pgm.sql(`CREATE TYPE note_status_enum AS ENUM ('active', 'pending', 'resolved', 'archived');`);
+  pgm.sql(`CREATE TYPE note_status_enum AS ENUM ('active', 'pending', 'resolved', 'archived', 'sent', 'overdue');`);
   pgm.sql(`CREATE TYPE note_type_enum AS ENUM ('event', 'decision', 'knowledge', 'incident', 'followup');`);
   pgm.sql(`CREATE TYPE ask_confidence_enum AS ENUM ('low', 'medium', 'high');`);
   pgm.sql(`CREATE TYPE credential_status_enum AS ENUM ('connected', 'revoked');`);
@@ -31,7 +31,7 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(`
     ALTER TABLE kb_notes
     ADD CONSTRAINT check_note_status
-    CHECK (status IN ('active', 'pending', 'resolved', 'archived'));
+    CHECK (status IN ('active', 'pending', 'resolved', 'archived', 'sent', 'overdue'));
   `);
   pgm.sql(`
     ALTER TABLE kb_notes
