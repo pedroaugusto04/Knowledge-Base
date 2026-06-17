@@ -253,6 +253,7 @@ export class PostgresNoteRepository {
     const result = await db
       .insert(notes)
       .values({
+        id: crypto.randomUUID(),
         userId,
         path: input.path,
         type: input.type as any,

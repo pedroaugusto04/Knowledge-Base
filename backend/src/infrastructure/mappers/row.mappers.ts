@@ -29,7 +29,7 @@ function fieldString(row: Row, snake: string, camel: string, fallback = ''): str
   return value == null ? fallback : String(value);
 }
 
-function nowIso(value: unknown): string {
+function toIsoTimestamp(value: unknown): string {
   if (value instanceof Date) {
     if (isNaN(value.getTime())) {
       return new Date().toISOString();
@@ -51,8 +51,8 @@ export function userFromRow(row: Row): KbUser {
     passwordHash: field(row, 'password_hash', 'passwordHash') == null ? null : String(field(row, 'password_hash', 'passwordHash')),
     role: String(row.role),
     avatar: fieldString(row, 'avatar', 'avatar'),
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -66,8 +66,8 @@ export function authIdentityFromRow(row: Row): AuthIdentityRecord {
     emailVerified: field(row, 'email_verified', 'emailVerified') === true,
     displayName: fieldString(row, 'display_name', 'displayName'),
     metadata: (row.metadata || {}) as Record<string, unknown>,
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -80,9 +80,9 @@ export function credentialFromRow(row: Row): IntegrationCredentialRecord {
     status: String(row.status) === CredentialRecordStatus.Revoked ? CredentialRecordStatus.Revoked : CredentialRecordStatus.Connected,
     encryptedConfig: field(row, 'encrypted_config', 'encryptedConfig'),
     publicMetadata: (field(row, 'public_metadata', 'publicMetadata') || {}) as Record<string, unknown>,
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
-    revokedAt: field(row, 'revoked_at', 'revokedAt') ? nowIso(field(row, 'revoked_at', 'revokedAt')) : null,
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
+    revokedAt: field(row, 'revoked_at', 'revokedAt') ? toIsoTimestamp(field(row, 'revoked_at', 'revokedAt')) : null,
   };
 }
 
@@ -95,11 +95,11 @@ export function identityFromRow(row: Row): ExternalIdentityRecord {
     identityType: fieldString(row, 'identity_type', 'identityType', 'external_id'),
     externalId: fieldString(row, 'external_id', 'externalId'),
     credentialId: field(row, 'credential_id', 'credentialId') ? String(field(row, 'credential_id', 'credentialId')) : null,
-    verifiedAt: field(row, 'verified_at', 'verifiedAt') ? nowIso(field(row, 'verified_at', 'verifiedAt')) : null,
+    verifiedAt: field(row, 'verified_at', 'verifiedAt') ? toIsoTimestamp(field(row, 'verified_at', 'verifiedAt')) : null,
     metadata: (row.metadata || {}) as Record<string, unknown>,
     publicMetadata: (field(row, 'public_metadata', 'publicMetadata') || {}) as Record<string, unknown>,
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -113,10 +113,10 @@ export function connectionSessionFromRow(row: Row): IntegrationConnectionSession
     verificationCodeHash: fieldString(row, 'verification_code_hash', 'verificationCodeHash'),
     status: fieldString(row, 'status', 'status', 'pending'),
     metadata: (row.metadata || {}) as Record<string, unknown>,
-    expiresAt: nowIso(field(row, 'expires_at', 'expiresAt')),
-    consumedAt: field(row, 'consumed_at', 'consumedAt') ? nowIso(field(row, 'consumed_at', 'consumedAt')) : null,
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    expiresAt: toIsoTimestamp(field(row, 'expires_at', 'expiresAt')),
+    consumedAt: field(row, 'consumed_at', 'consumedAt') ? toIsoTimestamp(field(row, 'consumed_at', 'consumedAt')) : null,
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -127,8 +127,8 @@ export function workspaceFromRow(row: Row): WorkspaceRecord {
     displayName: String(field(row, 'display_name', 'displayName') || workspaceSlug),
     whatsappChatJid: fieldString(row, 'whatsapp_chat_jid', 'whatsappChatJid'),
     telegramChatId: fieldString(row, 'telegram_chat_id', 'telegramChatId'),
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -141,8 +141,8 @@ export function repositoryFromRow(row: Row): RepositoryRecord {
     htmlUrl: field(row, 'html_url', 'htmlUrl') ? String(field(row, 'html_url', 'htmlUrl')) : null,
     description: row.description ? String(row.description) : null,
     defaultBranch: field(row, 'default_branch', 'defaultBranch') ? String(field(row, 'default_branch', 'defaultBranch')) : null,
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -160,8 +160,8 @@ export function projectFromRow(row: Row): ProjectRecord {
       htmlUrl: (r.html_url || r.htmlUrl) ? String(r.html_url || r.htmlUrl) : null,
       description: r.description ? String(r.description) : null,
       defaultBranch: (r.default_branch || r.defaultBranch) ? String(r.default_branch || r.defaultBranch) : null,
-      createdAt: nowIso(r.created_at || r.createdAt || new Date().toISOString()),
-      updatedAt: nowIso(r.updated_at || r.updatedAt || new Date().toISOString()),
+      createdAt: toIsoTimestamp(r.created_at || r.createdAt || new Date().toISOString()),
+      updatedAt: toIsoTimestamp(r.updated_at || r.updatedAt || new Date().toISOString()),
     })),
     defaultTags: stringArray(field(row, 'default_tags', 'defaultTags')),
     enabled: row.enabled !== false,
@@ -178,8 +178,8 @@ export function projectFolderFromRow(row: Row): ProjectFolderRecord {
     displayName: fieldString(row, 'display_name', 'displayName'),
     folderSlug: fieldString(row, 'folder_slug', 'folderSlug'),
     fullSlugPath: fieldString(row, 'full_slug_path', 'fullSlugPath'),
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -194,7 +194,7 @@ export function noteFromRow(row: Row): NoteRecord {
     folderId: field(row, 'folder_id', 'folderId') ? String(field(row, 'folder_id', 'folderId')) : null,
     status: fieldString(row, 'status', 'status', 'active'),
     tags: stringArray(row.tags),
-    occurredAt: nowIso(field(row, 'occurred_at', 'occurredAt')),
+    occurredAt: toIsoTimestamp(field(row, 'occurred_at', 'occurredAt')),
     sourceChannel: fieldString(row, 'source_channel', 'sourceChannel'),
     summary: fieldString(row, 'summary', 'summary'),
     markdown: fieldString(row, 'markdown', 'markdown'),
@@ -221,8 +221,8 @@ export function webhookEventFromRow(row: Row): WebhookEventRecord {
     rawHeaders: (field(row, 'raw_headers', 'rawHeaders') || {}) as Record<string, unknown>,
     rawPayload: field(row, 'raw_payload', 'rawPayload') || {},
     error: fieldString(row, 'error', 'error'),
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -237,7 +237,7 @@ export function attachmentFromRow(row: Row): AttachmentRecord {
     storageKey: fieldString(row, 'storage_key', 'storageKey'),
     checksumSha256: fieldString(row, 'checksum_sha256', 'checksumSha256'),
     metadata: (row.metadata || {}) as Record<string, unknown>,
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
   };
 }
 
@@ -247,7 +247,7 @@ export function conversationStateFromRow(row: Row): ConversationStateRecord {
     workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug'),
     conversationKey: fieldString(row, 'conversation_key', 'conversationKey'),
     state: row.state || {},
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -263,8 +263,8 @@ export function webhookSubscriptionFromRow(row: Row): WebhookSubscriptionRecord 
       Object.values(WebhookTrigger).includes(e as WebhookTrigger),
     ),
     enabled: row.enabled !== false,
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
@@ -275,7 +275,7 @@ export function pushSubscriptionFromRow(row: Row): PushSubscriptionRecord {
     endpoint: String(row.endpoint),
     p256dh: String(row.p256dh),
     auth: String(row.auth),
-    createdAt: nowIso(field(row, 'created_at', 'createdAt')),
-    updatedAt: nowIso(field(row, 'updated_at', 'updatedAt')),
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
