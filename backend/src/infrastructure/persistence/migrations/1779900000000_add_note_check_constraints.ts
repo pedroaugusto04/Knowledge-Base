@@ -4,7 +4,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(`
     ALTER TABLE kb_notes
     ADD CONSTRAINT check_note_status
-    CHECK (status IN ('active', 'pending', 'resolved', 'archived'));
+    CHECK (status IN ('active', 'pending', 'resolved', 'archived', 'sent', 'overdue'));
   `);
 
   pgm.sql(`
