@@ -2,6 +2,10 @@
 
 **Knowledge Vault** centralizes your team's operational knowledge and decisions in one place, preventing knowledge fragmentation and accelerating the integration of new team members into your workflow.
 
+## License
+
+See [LICENSE](LICENSE) for terms of use.
+
 ![Home Overview](docs/screenshots/home-overview.png)
 
 ---
@@ -159,82 +163,4 @@ Save code snippets and get AI help without leaving your editor. The extension br
 **Installation:** Search for "Knowledge Vault" in the VS Code Extension Marketplace.
 
 For complete extension documentation, see [ide/vscode/README.md](ide/vscode/README.md).
-
----
-
-## Getting Started with Docker
-
-### 1. Configure Environment Variables
-Create a `.env` file in the project root with the necessary credentials based on `.env.example`.
-
-### 2. Start Services
-Launch all required containers (PostgreSQL, RabbitMQ, API, and Frontend):
-```bash
-docker compose up
-```
-
-### 3. Run Database Migrations
-With containers running, execute migrations:
-```bash
-docker compose exec api npm run migrate
-```
-
-The application will be available at:
-* **Frontend:** [http://localhost:4311](http://localhost:4311)
-* **API:** [http://localhost:4310](http://localhost:4310)
-
----
-
-## Testing
-
-### Unit and Integration Tests
-The project includes tests for API, CLI, and frontend:
-
-```bash
-# Run all tests (fast, no real browser)
-npm test
-
-# Run API tests only
-npm run test:api
-
-# Run CLI tests only
-npm run test:cli
-
-# Run frontend tests only
-npm run test:frontend
-
-# Run integration tests only (fast, no real browser)
-npm run test:integration
-```
-
-### E2E Tests (End-to-End)
-E2E tests use Playwright and cover critical application flows. These are slower as they use a real browser:
-
-```bash
-# Install Playwright browsers (first time only)
-npx playwright install
-
-# Run E2E tests in headless mode (Chromium only)
-npm run test:e2e
-
-# Run E2E tests with visual interface
-npm run test:e2e:ui
-
-# Run E2E tests in debug mode
-npm run test:e2e:debug
-
-# Run E2E tests with visible browser
-npm run test:e2e:headed
-```
-
-**Test Strategy:**
-- **Integration Tests (Vitest):** Fast, no real browser, covers most functionality
-- **E2E Tests (Playwright):** Slower, uses real browser (Chromium), for critical flows and cross-browser validation
-
-**Covered Functionality:**
-- Operational Dashboard: navigation and main elements
-- Contextual Search: search functionality and filters
-- Ask AI: AI chat interface
-- Projects and Notes: project and vault management
-- Integrations: integration configuration (WhatsApp, Telegram, GitHub)
 

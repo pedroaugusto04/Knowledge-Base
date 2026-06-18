@@ -97,33 +97,7 @@ The extension adds context menu items when you have text selected:
 - **KB: Save Selection as Note**: Save selected text as a note
 - **KB: Open Chat**: Open the AI chat sidebar
 
-## Configuration
 
-### Settings
-
-Configure the extension in VS Code Settings (`Ctrl+,`):
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `knowledgeVault.apiUrl` | Your Knowledge Vault API URL | - |
-| `knowledgeVault.apiKey` | Your API authentication key | - |
-| `knowledgeVault.defaultProject` | Default project for saving notes | - |
-| `knowledgeVault.autoSyncAiSessions` | Auto-sync local AI CLI sessions | `true` |
-| `knowledgeVault.aiSessionPaths` | Paths to monitor for AI sessions | `["~/.claude/sessions", "~/.codex/sessions"]` |
-
-### Environment Variables
-
-You can also use environment variables:
-
-- `KB_API_URL`: Knowledge Vault API URL
-- `KB_API_KEY`: API authentication key
-- `KB_DEFAULT_PROJECT`: Default project name
-
-## Requirements
-
-- VS Code 1.80.0 or higher
-- Knowledge Vault instance (self-hosted or cloud)
-- API credentials for your Knowledge Vault
 
 ## Supported AI Tools
 
@@ -159,48 +133,7 @@ The extension can automatically sync sessions from:
 - Search and reference previous AI conversations
 - Build a searchable history of AI interactions
 
-## Troubleshooting
 
-### Connection Issues
-
-If you can't connect to your Knowledge Vault:
-
-1. Check that your API URL is correct
-2. Verify your API credentials
-3. Ensure your Knowledge Vault instance is running
-4. Check network connectivity and firewall settings
-
-### Save Failures
-
-If saving notes fails:
-
-1. Verify you have write permissions for the project
-2. Check that your API key has sufficient permissions
-3. Ensure the file content is within size limits
-4. Check the VS Code output panel for error details
-
-### AI Session Sync Issues
-
-If AI sessions aren't syncing:
-
-1. Check that the session paths are correct
-2. Verify file permissions for session directories
-3. Enable debug logging in settings
-4. Check the output panel for sync errors
-
-## FAQ
-
-**Q: Do I need a Knowledge Vault instance?**  
-A: Yes, this extension requires a running Knowledge Vault instance. You can self-host or use a cloud instance.
-
-**Q: Can I use multiple Knowledge Vault instances?**  
-A: Currently, the extension connects to one instance at a time. You can switch instances in settings.
-
-**Q: Is my code sent to external services?**  
-A: Code is only sent to your configured Knowledge Vault instance. No external services are involved unless your Knowledge Vault uses external AI providers.
-
-**Q: Can I work offline?**  
-A: The extension requires an active connection to your Knowledge Vault instance. Some features may be limited offline.
 
 ## Changelog
 
@@ -211,4 +144,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 - [Main Project Documentation](../../README.md)
 - [CLI Documentation](../../cli/README.md)
 - [Knowledge Vault Repository](https://github.com/pedroaugusto04/knowledge-base)
-- [Report Issues](https://github.com/pedroaugusto04/knowledge-base/issues)
+
+## License
+
+See [LICENSE](../../LICENSE) for terms of use.

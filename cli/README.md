@@ -143,32 +143,13 @@ Preserve valuable AI-assisted development sessions:
 kb sync-ai --session-path ~/.claude/sessions --project development-history
 ```
 
-## Configuration
-
-Configuration is stored in `~/.kb-config.json`:
-
-```json
-{
-  "apiUrl": "https://your-vault.example.com",
-  "apiKey": "your-api-key",
-  "defaultProject": "default"
-}
-```
-
-You can also use environment variables:
-
-- `KB_API_URL`: Knowledge Vault API URL
-- `KB_API_KEY`: API authentication key
-- `KB_DEFAULT_PROJECT`: Default project name
-
-## Requirements
-
-- Node.js 18 or higher
-- npm or yarn
-- Knowledge Vault instance (self-hosted or cloud)
 
 ## Links
 
 - [Main Project Documentation](../README.md)
 - [VS Code Extension](../ide/vscode/README.md)
 - [Knowledge Vault Repository](https://github.com/pedroaugusto04/knowledge-base)
+
+## License
+
+See [LICENSE](../LICENSE) for terms of use.
