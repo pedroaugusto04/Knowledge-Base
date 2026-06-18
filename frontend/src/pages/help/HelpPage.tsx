@@ -124,7 +124,7 @@ const sections: HelpSection[] = [
   {
     id: 'messaging-integrations',
     label: 'Messaging',
-    icon: <IconPlug />,
+    icon: <IconWhatsApp />,
     title: 'Messaging Integrations',
     description: 'Connect WhatsApp and Telegram to capture knowledge where your team communicates — audio messages, alerts, and quick queries.',
     items: [
@@ -190,18 +190,15 @@ const sections: HelpSection[] = [
     items: [
       {
         title: 'Review AI',
-        body: 'Automatically analyzes your code changes when you push to GitHub, providing summaries, impact analysis, and risk assessments.',
-        tip: 'This is typically configured by your administrator. Contact them if code reviews are not working.',
+        body: 'Automatically analyzes your code changes when you push to GitHub, providing summaries, impact analysis, and risk assessments.'
       },
       {
         title: 'Conversation AI',
-        body: 'Powers the Ask AI feature, understanding your questions and finding relevant answers from your knowledge base.',
-        tip: 'This is typically configured by your administrator. Contact them if AI responses are not working.',
+        body: 'Powers the Ask AI feature, understanding your questions and finding relevant answers from your knowledge base.'
       },
       {
         title: 'Project Brief AI',
-        body: 'Generates comprehensive project summaries that highlight recent activity, key decisions, and important context.',
-        tip: 'This is typically configured by your administrator. Contact them if project briefs are not generating.',
+        body: 'Generates comprehensive project summaries that highlight recent activity, key decisions, and important context.'
       },
     ],
   },
@@ -209,28 +206,53 @@ const sections: HelpSection[] = [
     id: 'webhooks',
     label: 'Webhooks',
     icon: <IconPlug />,
-    title: 'Webhook Endpoints',
-    description: 'Webhooks allow external tools and services to send data directly to your knowledge base automatically.',
+    title: 'Webhooks',
+    description: 'Configure webhooks to automatically notify external systems when notes are created, updated, or deleted in your knowledge base.',
     items: [
       {
-        title: 'GitHub Integration',
-        body: 'Automatically captures code changes, commits, and push events from your GitHub repositories.',
-        tip: 'Set up the GitHub App integration in Settings to enable automatic code capture.',
+        title: 'What are webhooks?',
+        body: 'Webhooks allow you to send automatic notifications to external services when specific events occur in Knowledge Vault. For example, you can notify a Slack channel when a new note is created, trigger a deployment when a decision is recorded, or sync data with other tools.',
       },
       {
-        title: 'Custom Integrations',
-        body: 'Connect tools like n8n, Zapier, or custom workflows to send data to your knowledge base.',
-        tip: 'Contact your administrator for webhook URLs and setup instructions.',
+        title: 'Available events',
+        body: 'You can configure webhooks for the following events:',
+        steps: [
+          'Note created - triggered when a new note is added',
+          'Note updated - triggered when an existing note is modified',
+          'Note deleted - triggered when a note is permanently removed',
+        ],
       },
       {
-        title: 'WhatsApp Integration',
-        body: 'Receives messages and status updates from WhatsApp to capture conversations and voice notes.',
-        tip: 'This is configured automatically when you connect WhatsApp in Settings.',
+        title: 'Webhook request format',
+        body: 'Webhooks are sent as POST requests with JSON payload. The request includes headers for event identification and optional signature verification.',
+        code: `Headers:
+  Content-Type: application/json
+  X-KB-Event: note.created (or note.updated, note.deleted)
+  X-KB-Delivery-Id: unique-delivery-identifier
+  X-KB-Signature-256: sha256=... (if secret is configured)
+
+Body:
+{
+  "event": "note.created",
+  "noteId": "uuid",
+  "userId": "uuid",
+  "workspaceSlug": "workspace-name",
+  "projectSlug": "project-name",
+  "title": "Note title",
+  "content": "Note content",
+  "occurredAt": "2024-01-01T00:00:00Z"
+}`,
       },
       {
-        title: 'External Queries',
-        body: 'Allows other systems to search and retrieve information from your knowledge base.',
-        tip: 'Contact your administrator if you need to set up external system access.',
+        title: 'Setting up a webhook',
+        body: 'Create webhook subscriptions in Settings to define which events trigger notifications and where they should be sent.',
+        steps: [
+          'Go to Settings → Integrations → Webhook Subscriptions',
+          'Click "New subscription" to create a webhook',
+          'Enter a label, your endpoint URL, and select the events you want to track',
+          'Optionally add a secret for signature verification',
+        ],
+        tip: 'Use a secret to verify that webhook requests are genuinely from Knowledge Vault by checking the X-KB-Signature-256 header.',
       },
     ],
   },
@@ -253,8 +275,7 @@ const sections: HelpSection[] = [
       },
       {
         title: 'Reminder Notifications',
-        body: 'Receive browser notifications when your note reminders are due, so you never miss important follow-ups.',
-        tip: 'Works great for time-sensitive tasks and deadlines.',
+        body: 'Receive browser notifications when your note reminders are due, so you never miss important follow-ups.'
       },
       {
         title: 'System Updates',
