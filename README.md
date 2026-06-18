@@ -43,7 +43,7 @@ Automatically capture knowledge when you push to GitHub. AI analyzes commits and
 ### AI-Powered Conversations
 
 <p align="center">
-  <img src="docs/screenshots/ask-ai-overview.png" alt="Ask AI" width="80%">
+  <img src="docs/screenshots/ask-ai-overview.png" alt="Ask AI" width="100%" style="max-height: 600px;">
   <br><em>Chat interface to ask questions about your knowledge base with project-specific filters.</em>
 </p>
 
@@ -53,31 +53,31 @@ understands your context and provides relevant responses based on your actual da
 ### Project Management & Notes
 
 <p align="center">
-  <img src="docs/screenshots/project-notes-overview.png" alt="Project Notes" width="80%">
+  <img src="docs/screenshots/project-notes-overview.png" alt="Project Notes" width="100%" style="max-height: 600px;">
   <br><em>Organize notes within projects with clean, structured views.</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/note-details-example.png" alt="Note Details" width="80%">
+  <img src="docs/screenshots/note-details-example.png" alt="Note Details" width="100%" style="max-height: 600px;">
   <br><em>Detailed note view with metadata, tags, and rich content.</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/project-brief-overview.png" alt="Project Brief" width="80%">
+  <img src="docs/screenshots/project-brief-overview.png" alt="Project Brief" width="100%" style="max-height: 600px;">
   <br><em>AI-generated summaries of project activity and key decisions.</em>
 </p>
 
 ### Knowledge Map
 
 <p align="center">
-  <img src="docs/screenshots/map-overview.png" alt="Knowledge Map" width="80%">
+  <img src="docs/screenshots/map-overview.png" alt="Knowledge Map" width="100%" style="max-height: 600px;">
   <br><em>Visual graph showing connections between notes, projects, and topics.</em>
 </p>
 
 ### Integrations
 
 <p align="center">
-  <img src="docs/screenshots/integrations-setup.png" alt="Integrations Setup" width="80%">
+  <img src="docs/screenshots/integrations-setup.png" alt="Integrations Setup" width="100%" style="max-height: 600px;">
   <br><em>Guided setup panel for connecting WhatsApp, Telegram, and GitHub.</em>
 </p>
 
@@ -94,19 +94,19 @@ Connect your existing tools to capture knowledge where your team already works.
 ### CLI Tool (`kb`)
 
 <p align="center">
-  <img src="docs/screenshots/cli-commands.png" alt="CLI Commands" width="80%">
+  <img src="docs/screenshots/cli-commands.png" alt="CLI Commands" width="100%" style="max-height: 600px;">
   <br><em>Command-line interface for syncing files and interacting with Knowledge Vault.</em>
 </p>
 
 Sync AI sessions (Claude Code, Codex, Antigravity, OpenCode) and files from your terminal.
 
 <p align="center">
-  <img src="docs/screenshots/cli-sync-ai-command.png" alt="CLI Sync AI" width="80%">
+  <img src="docs/screenshots/cli-sync-ai-command.png" alt="CLI Sync AI" width="100%" style="max-height: 600px;">
   <br><em>Example of syncing AI session history to central vault.</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/ai-conversation-example.png" alt="AI Conversation" width="80%">
+  <img src="docs/screenshots/ai-conversation-example.png" alt="AI Conversation" width="100%" style="max-height: 600px;">
   <br><em>Example note created from syncing an AI session to your knowledge base.</em>
 </p>
 
@@ -128,7 +128,7 @@ For complete CLI documentation, see [cli/README.md](cli/README.md).
 ### VS Code Extension
 
 <p align="center">
-  <img src="docs/screenshots/vscode-extension.png" alt="VS Code Extension" width="80%">
+  <img src="docs/screenshots/vscode-extension.png" alt="VS Code Extension" width="100%" style="max-height: 600px;">
   <br><em>Integrated sidebar with AI chat and quick-save commands for code selections.</em>
 </p>
 

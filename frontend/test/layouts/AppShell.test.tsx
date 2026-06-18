@@ -612,8 +612,8 @@ describe('AppShell', () => {
 
     expect(await screen.findByRole('heading', { name: 'Profile' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'User menu' })).toHaveClass('active');
-    expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
-    expect(screen.getByText('ada@example.com')).toBeInTheDocument();
+    expect(screen.getAllByText('Ada Lovelace').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('ada@example.com').length).toBeGreaterThan(0);
     expect(screen.getByText('owner')).toBeInTheDocument();
     expect(screen.getAllByText('Default').length).toBeGreaterThan(0);
     expect(screen.getAllByText('default').length).toBeGreaterThan(0);

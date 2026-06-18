@@ -16,7 +16,7 @@ Integrate your Knowledge Vault directly into VS Code — search, ask AI, save no
 ## Screenshots
 
 <p align="center">
-  <img src="../../docs/screenshots/vscode-extension.png" alt="VS Code Extension" width="100%">
+  <img src="../../docs/screenshots/vscode-extension.png" alt="VS Code Extension" width="100%" style="max-height: 600px;">
   <br><em>Integrated sidebar with AI chat and quick-save commands for code selections.</em>
 </p>
 
