@@ -1,163 +1,240 @@
 # Knowledge Vault
 
-O **Knowledge Vault** centraliza o conhecimento operacional e as decisões do seu time em um único lugar, evitando a fragmentação do conhecimento e acelerando a integração de novas pessoas no fluxo de trabalho.
+**Knowledge Vault** centralizes your team's operational knowledge and decisions in one place, preventing knowledge fragmentation and accelerating the integration of new team members into your workflow.
 
-![Dashboard Overview](docs/screenshots/home-overview.png)
-
----
-
-## Benefícios
-* **Zero Perda de Contexto:** Histórico completo de decisões, rotinas e exceções operacionais.
-* **Onboarding Acelerado:** Novos membros encontram todo o histórico do projeto em segundos.
-* **Captura Invisível:** O conhecimento é registrado onde o trabalho já acontece (WhatsApp, Telegram, GitHub).
+![Home Overview](docs/screenshots/home-overview.png)
 
 ---
 
-## Funcionalidades Principais
-* **Dashboard Operacional:** Visão unificada das atividades recentes, prioridades e lembretes ativos.
-* **Kanban de Lembretes:** Quadro operacional para cartões pendentes, atrasados, resolvidos e arquivados.
-* **Busca Contextual:** Encontre respostas instantaneamente em todo o histórico da organização.
-* **Ask AI & Histórico:** Interface de chat com IA integrada, incluindo filtros por projeto e paginação do histórico de perguntas por usuário.
-* **Briefing de Projeto:** Resumos técnicos operacionais gerados automaticamente por IA a partir dos últimos itens do projeto.
-* **Extensão para VS Code:** Interação completa com o Knowledge Vault, chat na barra lateral, busca rápida por atalhos e salvamento de trechos de código/arquivos diretamente do editor.
+## Why Knowledge Vault?
+
+* **Zero Context Loss:** Complete history of decisions, routines, and operational exceptions.
+* **Faster Onboarding:** New team members find the entire project history in seconds.
+* **Invisible Capture:** Knowledge is recorded where work already happens (WhatsApp, Telegram, GitHub).
 
 ---
 
-## Integrações
-* **WhatsApp:** Envie áudios ou textos para gerar notas estruturadas por IA. Receba lembretes automáticos integrados via *WhatsApp*.
-* **Telegram:** Receba alertas de falhas em pipelines, resumos de revisões e interaja diretamente com o bot.
-* **GitHub Push:** Captura eventos de `git push`, analisa commits/diffs por IA e envia um resumo técnico acessível para o canal do Telegram e para a base.
+## Core Features
+
+* **GitHub Push Integration:** Capture `git push` events, analyze commits/diffs with AI, and automatically send technical summaries to your knowledge base and team channels.
+* **AI-Powered Conversations:** Integrated chat interface to ask questions about your knowledge base with project filters and conversation history.
+* **CLI Tool:** Command-line interface for syncing local files and AI session histories directly from your terminal.
+* **VS Code Extension:** Complete Knowledge Vault integration with sidebar chat, quick shortcuts, and direct code/file saving from your editor.
+* **Contextual Search:** Find answers instantly across your entire organizational history.
+* **Project Briefs:** AI-generated operational technical summaries from the latest project items.
 
 ---
 
-## CLI & Sincronização Local (`kb`)
-O CLI oficial permite interagir com o Knowledge Vault diretamente do terminal e sincronizar arquivos locais.
+## Feature Deep Dives
 
-### Instalação e Inicialização
+### GitHub Push Integration
+
+Capture knowledge automatically as you code. When you push to GitHub, Knowledge Vault analyzes your commits and diffs with AI, creating accessible technical summaries that flow into your knowledge base and team communication channels.
+
+* **Automatic Capture:** No manual documentation required—knowledge is captured as part of your existing workflow
+* **AI Analysis:** Commits and diffs are analyzed to extract key decisions and technical context
+* **Team Visibility:** Summaries are sent to your team channels (Telegram) and stored in your knowledge base
+* **Searchable History:** Every push becomes part of your searchable organizational memory
+
+### AI-Powered Conversations
+
+<p align="center">
+  <img src="docs/screenshots/ask-ai-overview.png" alt="Ask AI" width="80%">
+  <br><em>Chat interface to ask questions about your knowledge base with project-specific filters.</em>
+</p>
+
+Get instant answers from your team's collective knowledge without searching manually. The AI understands your context and provides relevant responses based on your actual data.
+
+<p align="center">
+  <img src="docs/screenshots/ai-conversation-example.png" alt="AI Conversation" width="80%">
+  <br><em>Real conversation example showing how AI contextualizes responses from your data.</em>
+</p>
+
+Natural language interface makes knowledge accessible to everyone on your team, regardless of their technical background.
+
+### Project Management & Notes
+
+<p align="center">
+  <img src="docs/screenshots/project-notes-overview.png" alt="Project Notes" width="80%">
+  <br><em>Organize notes within projects with clean, structured views.</em>
+</p>
+
+Keep related knowledge together and easily navigable. Each project becomes a living documentation hub that grows with your team.
+
+<p align="center">
+  <img src="docs/screenshots/note-details-example.png" alt="Note Details" width="80%">
+  <br><em>Detailed note view with metadata, tags, and rich content.</em>
+</p>
+
+Full context for each piece of knowledge with proper attribution, making it easy to understand who contributed what and when.
+
+<p align="center">
+  <img src="docs/screenshots/project-brief-overview.png" alt="Project Brief" width="80%">
+  <br><em>AI-generated summaries of project activity and key decisions.</em>
+</p>
+
+Quickly catch up on project status without reading every update. Perfect for getting new team members up to speed or refreshing your memory after time away.
+
+### Knowledge Map
+
+<p align="center">
+  <img src="docs/screenshots/map-overview.png" alt="Knowledge Map" width="80%">
+  <br><em>Visual graph showing connections between notes, projects, and topics.</em>
+</p>
+
+Discover relationships and patterns in your knowledge that aren't obvious in lists. The knowledge map helps you see the bigger picture and find unexpected connections.
+
+### Integrations
+
+<p align="center">
+  <img src="docs/screenshots/integrations-setup.png" alt="Integrations Setup" width="80%">
+  <br><em>Guided setup panel for connecting WhatsApp, Telegram, and GitHub.</em>
+</p>
+
+Capture knowledge where your team already works without changing habits. Connect your existing tools and let knowledge flow naturally into your vault.
+
+* **WhatsApp:** Send audio or text messages to generate AI-structured notes. Receive automatic reminders integrated via WhatsApp.
+* **Telegram:** Get pipeline failure alerts, review summaries, and interact directly with the bot.
+* **GitHub Push:** Capture `git push` events, analyze commits/diffs with AI, and send accessible technical summaries to your Telegram channel and knowledge base.
+
+---
+
+## Developer Tools
+
+### CLI Tool (`kb`)
+
+The official CLI lets you interact with Knowledge Vault directly from your terminal and sync local files.
+
+<p align="center">
+  <img src="docs/screenshots/cli-commands.png" alt="CLI Commands" width="80%">
+  <br><em>Command-line interface for syncing files and interacting with Knowledge Vault.</em>
+</p>
+
+Automate knowledge capture from your development workflow. Perfect for CI/CD pipelines and local development scripts.
+
+<p align="center">
+  <img src="docs/screenshots/cli-sync-ai-command.png" alt="CLI Sync AI" width="80%">
+  <br><em>Example of syncing AI session history (Claude Code, Codex CLI) to central vault.</em>
+</p>
+
+Preserve AI-assisted development sessions as searchable knowledge. Never lose valuable insights from your AI interactions.
+
+**Installation:**
 ```bash
 npm install -g @pedroaugusto04/kb-cli
 kb init
 ```
 
-### Principais Comandos
-* **Sincronizar Diretório ou Arquivo:**
-  ```bash
-  kb sync --dir ./docs --project meu-projeto
-  kb sync --dir ./README.md --project meu-projeto
-  ```
-* **Flags Úteis:**
-  * `--watch` ou `-w`: Monitoramento e sincronização em tempo real.
-  * `--dry-run`: Simula a sincronização sem realizar alterações no servidor.
+**Key Commands:**
+```bash
+# Sync AI session history (primary feature)
+kb sync-ai
+
+# Optional: Sync directory or file
+kb sync --dir ./docs --project my-project
+kb sync --file ./README.md --project my-project
+
+# Optional: Useful flags
+--watch or -w: Real-time monitoring and sync
+--dry-run: Simulate sync without server changes
+```
+
+For complete CLI documentation, see [cli/README.md](cli/README.md).
+
+### VS Code Extension
+
+<p align="center">
+  <img src="docs/screenshots/vscode-extension.png" alt="VS Code Extension" width="80%">
+  <br><em>Integrated sidebar with AI chat and quick-save commands for code selections.</em>
+</p>
+
+Save code snippets and get AI help without leaving your editor. The extension brings Knowledge Vault directly into your development environment.
+
+**Key Features:**
+* **Dedicated Sidebar:** Interactive AI chat and manual note saving
+* **Save Code Selection:** Right-click any code selection and choose "KB: Save Selection as Note"
+* **Save Active File:** Run "KB: Save Active File as Note" from the command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+* **Local AI History Import:** Sync and monitor AI CLI session histories (Claude Code, Codex CLI) in real-time
+
+**Installation:** Search for "Knowledge Vault" in the VS Code Extension Marketplace.
+
+For complete extension documentation, see [ide/vscode/README.md](ide/vscode/README.md).
 
 ---
 
-## Extensão para VS Code (`knowledge-base-vscode`)
-A extensão oficial para VS Code integra o Knowledge Vault diretamente no seu ambiente de desenvolvimento, facilitando o acesso ao conhecimento e o registro de novos aprendizados.
+## Getting Started with Docker
 
-### Principais Funcionalidades
-* **Barra Lateral Dedicada:** Chat interativo com a IA e salvamento manual de notas de forma integrada.
-* **Salvar Seleção de Código:** Selecione qualquer trecho de código, clique com o botão direito e escolha a opção **KB: Save Selection as Note** para salvá-lo instantaneamente como uma nota em seu projeto.
-* **Salvar Arquivo Ativo:** Salve arquivos abertos por completo no Knowledge Vault executando o comando **KB: Save Active File as Note** na paleta de comandos do VS Code (`Ctrl+Shift+P` / `Cmd+Shift+P`).
-* **Importação do Histórico de IA Local:** Sincroniza e monitora em tempo real históricos de sessões de ferramentas CLI locais de IA como o *Claude Code* e *Codex CLI*, arquivando-os de forma centralizada.
+### 1. Configure Environment Variables
+Create a `.env` file in the project root with the necessary credentials based on `.env.example`.
 
----
-
-## Executando com Docker
-
-### 1. Configurar variáveis de ambiente
-Crie um arquivo `.env` na raiz do projeto contendo as credenciais necessárias baseado no `.env.example`.
-
-### 2. Iniciar os serviços
-Suba todos os containers necessários (PostgreSQL, RabbitMQ, API e Frontend):
+### 2. Start Services
+Launch all required containers (PostgreSQL, RabbitMQ, API, and Frontend):
 ```bash
 docker compose up
 ```
 
-### 3. Rodar as migrações do banco
-Com os containers ativos, execute as migrações:
+### 3. Run Database Migrations
+With containers running, execute migrations:
 ```bash
 docker compose exec api npm run migrate
 ```
 
-A aplicação estará disponível em:
+The application will be available at:
 * **Frontend:** [http://localhost:4311](http://localhost:4311)
 * **API:** [http://localhost:4310](http://localhost:4310)
 
 ---
 
-## Testes
+## Testing
 
-### Testes Unitários e de Integração
-O projeto possui testes para API, CLI e frontend:
+### Unit and Integration Tests
+The project includes tests for API, CLI, and frontend:
 
 ```bash
-# Rodar todos os testes (rápido, sem navegador real)
+# Run all tests (fast, no real browser)
 npm test
 
-# Rodar apenas testes da API
+# Run API tests only
 npm run test:api
 
-# Rodar apenas testes do CLI
+# Run CLI tests only
 npm run test:cli
 
-# Rodar apenas testes do frontend
+# Run frontend tests only
 npm run test:frontend
 
-# Rodar apenas testes de integração (rápido, sem navegador real)
+# Run integration tests only (fast, no real browser)
 npm run test:integration
 ```
 
-### Testes E2E (End-to-End)
-Testes E2E são executados usando Playwright e cobrem fluxos críticos da aplicação. Estes testes são mais lentos pois usam navegador real:
+### E2E Tests (End-to-End)
+E2E tests use Playwright and cover critical application flows. These are slower as they use a real browser:
 
 ```bash
-# Instalar navegadores do Playwright (primeira vez apenas)
+# Install Playwright browsers (first time only)
 npx playwright install
 
-# Rodar testes E2E em modo headless (apenas Chromium)
+# Run E2E tests in headless mode (Chromium only)
 npm run test:e2e
 
-# Rodar testes E2E com interface visual
+# Run E2E tests with visual interface
 npm run test:e2e:ui
 
-# Rodar testes E2e em modo debug
+# Run E2E tests in debug mode
 npm run test:e2e:debug
 
-# Rodar testes E2E com navegador visível
+# Run E2E tests with visible browser
 npm run test:e2e:headed
 ```
 
-**Estratégia de Testes:**
-- **Testes de Integração (Vitest):** Rápidos, executam sem navegador real, cobrem a maioria das funcionalidades
-- **Testes E2E (Playwright):** Mais lentos, usam navegador real (Chromium), para fluxos críticos e validação cross-browser
+**Test Strategy:**
+- **Integration Tests (Vitest):** Fast, no real browser, covers most functionality
+- **E2E Tests (Playwright):** Slower, uses real browser (Chromium), for critical flows and cross-browser validation
 
-**Funcionalidades cobertas pelos testes:**
-- Dashboard Operacional: navegação e elementos principais
-- Busca Contextual: funcionalidade de busca e filtros
-- Ask AI: interface de chat com IA
-- Projetos e Notas: gerenciamento de projetos e vault
-- Integrações: configuração de integrações (WhatsApp, Telegram, GitHub)
+**Covered Functionality:**
+- Operational Dashboard: navigation and main elements
+- Contextual Search: search functionality and filters
+- Ask AI: AI chat interface
+- Projects and Notes: project and vault management
+- Integrations: integration configuration (WhatsApp, Telegram, GitHub)
 
----
-
-## Capturas de Tela
-
-<p align="center">
-  <img src="docs/screenshots/dashboard-overview.png" alt="Dashboard" width="80%">
-  <br><em>Dashboard operacional com atividades recentes e projetos ativos.</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/integrations-setup.png" alt="Configuração de Integrações" width="80%">
-  <br><em>Painel de configuração guiada de integrações.</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/projects-overview.png" alt="Visão Geral de Projetos" width="80%">
-  <br><em>Visualização e organização de notas dentro do workspace.</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/vscode-extension.png" alt="Extensão do VS Code" width="80%">
-  <br><em>Extensão do VS Code integrada com barra lateral, chat de IA e acesso a atalhos rápidos.</em>
-</p>
