@@ -22,6 +22,7 @@ const ProjectKnowledgeMapPage = lazy(() => import('../features/projects/knowledg
 const ProfilePage = lazy(() => import('../pages/profile/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const SetupPage = lazy(() => import('../pages/setup/SetupPage').then(m => ({ default: m.SetupPage })));
 const AuthPage = lazy(() => import('../pages/auth/AuthPage').then(m => ({ default: m.AuthPage })));
+const HelpPage = lazy(() => import('../pages/help/HelpPage').then(m => ({ default: m.HelpPage })));
 import { flattenFolders } from '../features/projects/projects.helpers';
 import { ProjectNoteModal } from '../features/projects/modals/ProjectNoteModal';
 import type { ConfirmState, NoteModalState } from '../features/projects/projects.types';
@@ -47,6 +48,7 @@ function activeView(pathname: string): View {
   if (pathname.startsWith('/reminders')) return 'reminders';
   if (pathname.startsWith('/profile')) return 'profile';
   if (pathname.startsWith('/settings/integrations')) return 'integrations';
+  if (pathname.startsWith('/help')) return 'help';
   return 'home';
 }
 
@@ -108,7 +110,9 @@ export function AppShell() {
       ? 'Profile'
       : view === 'integrations'
         ? 'Integrations'
-        : activeNavItem?.label || 'Home';
+        : view === 'help'
+          ? 'Documentation'
+          : activeNavItem?.label || 'Home';
   const routeNoteQuery = useQuery(noteDetailQueryOptions(routeNoteId));
   const cachedRouteNote = getCachedNoteDetail(queryClient, routeNoteId);
   const activeRouteNote = routeNoteQuery.data || cachedRouteNote;
@@ -526,6 +530,9 @@ export function AppShell() {
                   <Link className="profile-menu-link" role="menuitem" to={routes.integrations}>
                     Integrations
                   </Link>
+                  <Link className="profile-menu-link" role="menuitem" to={routes.help}>
+                    Documentation
+                  </Link>
                 </div>
               ) : null}
             </div>
@@ -560,6 +567,7 @@ export function AppShell() {
               <Route path="/reminders" element={<RemindersPage {...pageContext} />} />
               <Route path="/profile" element={<ProfilePage workspace={activeWorkspace} />} />
               <Route path="/settings/integrations" element={<IntegrationsPage workspaceSlug={activeWorkspace.workspaceSlug} />} />
+              <Route path="/help" element={<HelpPage />} />
               <Route path="*" element={<HomePage {...pageContext} />} />
             </Routes>
           </Suspense>

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../ide/vscode/resources/kb-icon.svg" alt="kb-cli Logo" width="120" height="120">
+</p>
+
 # kb-cli
 
 CLI client for the Knowledge Base AI system - interact with your Knowledge Vault directly from the terminal.
@@ -15,6 +19,14 @@ npm install -g @pedroaugusto04/kb-cli
 ```
 
 ## Quick Start
+
+### Get Help
+
+```bash
+kb
+# or use
+kb --help
+```
 
 ### Initialize Configuration
 

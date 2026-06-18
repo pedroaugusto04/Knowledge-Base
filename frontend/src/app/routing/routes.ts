@@ -13,9 +13,10 @@ export const routes = {
   reminders: '/reminders',
   profile: '/profile',
   integrations: '/settings/integrations',
+  help: '/help',
 } as const;
 
-export type View = 'home' | 'map' | 'projects' | 'note' | 'search' | 'kanban' | 'reminders' | 'profile' | 'integrations';
+export type View = 'home' | 'map' | 'projects' | 'note' | 'search' | 'kanban' | 'reminders' | 'profile' | 'integrations' | 'help';
 
 export const navItems: Array<{ view: View; label: string; path: string }> = [
   { view: 'home', label: 'Home', path: routes.home },
