@@ -133,7 +133,6 @@ const sections: HelpSection[] = [
         code: `/kb connect <token>   ← send this to @${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'kb_notes_bot'}`,
         tip: 'Go to Settings → Integrations → Telegram. A token will be shown — copy the command and send it to the bot. Click "Open Telegram bot" to open the chat directly.',
       },
-      { title: 'GitHub Push', body: 'On every push, the system analyzes commits and diffs with AI, stores summaries, and sends WhatsApp alerts for relevant issues.', code: '# Add webhook in your GitHub repo settings:\n# URL: https://your-app.com/api/github/webhook\n# Content type: application/json\n# Events: Push' },
     ],
   },
   {
@@ -146,7 +145,7 @@ const sections: HelpSection[] = [
       { title: 'Installation', body: 'Install the CLI globally via npm and initialize it with your API token.', code: 'npm install -g @pedroaugusto04/kb-cli\nkb init' },
       { title: 'Syncing AI sessions', body: 'Sync AI assistant sessions (Claude Code, Codex, Antigravity, OpenCode) to your knowledge base.', code: 'kb sync-ai' },
       { title: 'Syncing files and directories', body: 'Send individual files or entire directories to the knowledge base.', code: 'kb sync --file ./README.md\nkb sync --dir ./docs' },
-      { title: 'Finding your API token', body: 'Go to Profile → API Tokens in the app to generate a personal access token. Use it when running kb init.', tip: 'Never commit tokens to version control.' },
+      { title: 'Finding your API token', body: 'Go to Profile → CLI & VS Code Connection in the app to generate a unified connection token. This token authenticates both the VS Code extension and CLI.'},
     ],
   },
   {

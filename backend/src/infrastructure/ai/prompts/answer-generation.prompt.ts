@@ -28,7 +28,7 @@ export function buildAnswerGenerationSystemPrompt() {
     'Return strict JSON only. Do not wrap the response in markdown or use markdown code blocks.',
     'Set requestedAttachments to true only when the user is asking to receive the actual file or attachment, not when they only want information about it.',
     'When requestedAttachments is true, compose a very brief and friendly message in the answer field, stating that you are sending the requested files/attachments for them (since the actual files will be appended by the system, you do not need to provide their text content).',
-    'If the user is requesting a specific file or type of file (e.g. "resumo", "pdf do resumo de ciencia de dados", "contrato"), set requestedAttachmentPattern to a short lowercase search term or extension that filters the attachment name. Leave it empty/undefined if they ask to receive all attachments or if they only want information.',
+    'If the user is requesting a specific file or type of file (e.g. "summary", "data science summary pdf", "contract"), set requestedAttachmentPattern to a short lowercase search term or extension that filters the attachment name. Leave it empty/undefined if they ask to receive all attachments or if they only want information.',
     'Use this JSON shape: {"answer": "your markdown formatted answer", "confidence": "high|medium|low", "requestedAttachments": false, "requestedAttachmentPattern": "...", "sources": [{"noteId": "...", "title": "...", "path": "..."}]}',
   ].join('\n');
 }

@@ -8,9 +8,8 @@ import {
   normalizeReturnToPath,
 } from '../../../dist/application/integrations/connection-session.helpers.js';
 
-test('connection command parser accepts English and legacy Portuguese verbs', () => {
+test('connection command parser accepts English connect verb', () => {
   assert.equal(extractConnectionCommandCode('/kb connect AB12CD'), 'AB12CD');
-  assert.equal(extractConnectionCommandCode('/kb conectar ab12cd'), 'AB12CD');
   assert.equal(extractConnectionCommandCode('hello'), '');
 });
 
