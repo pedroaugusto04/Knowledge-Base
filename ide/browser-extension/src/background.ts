@@ -57,14 +57,17 @@ async function saveClippedNote(clip: ClipPayload, tags: string[] = [], projectSl
     'defaultProject',
   ]);
 
-  const resolvedApiUrl = apiUrl || 'https://pedro-duarte.ddns.net/knowledge-base/api';
+  const resolvedApiUrl = apiUrl || 'https://pedro-duarte.ddns.net/knowledge-base';
 
   if (!connectionToken) {
     throw new Error('Connection Token not configured. Please open extension settings.');
   }
 
   const project = projectSlugOverride || defaultProject || 'inbox';
-  const cleanApiUrl = resolvedApiUrl.replace(/\/$/, '');
+  let cleanApiUrl = resolvedApiUrl.trim().replace(/\/$/, '');
+  if (cleanApiUrl.endsWith('/api')) {
+    cleanApiUrl = cleanApiUrl.slice(0, -4);
+  }
 
   // Convert HTML to Markdown in the Background service worker
   const htmlToConvert = clip.selectedHtml || clip.contentHtml || '';
@@ -124,7 +127,7 @@ async function saveClippedNote(clip: ClipPayload, tags: string[] = [], projectSl
     try {
       const errData = await response.json();
       errorMsg = errData.message || errorMsg;
-    } catch {}
+    } catch { }
     throw new Error(errorMsg);
   }
 

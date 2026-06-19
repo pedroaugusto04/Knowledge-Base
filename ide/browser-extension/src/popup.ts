@@ -31,8 +31,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load stored configuration
   const config = await chrome.storage.local.get(['apiUrl', 'connectionToken', 'defaultProject']);
-  const defaultApiUrl = 'https://pedro-duarte.ddns.net/knowledge-base/api';
-  const apiUrl = config.apiUrl || defaultApiUrl;
+  const defaultApiUrl = 'https://pedro-duarte.ddns.net/knowledge-base';
+  let apiUrl = config.apiUrl || defaultApiUrl;
+
+  apiUrl = apiUrl.trim().replace(/\/$/, '');
+  if (apiUrl.endsWith('/api')) {
+    apiUrl = apiUrl.slice(0, -4);
+  }
 
   inputApiUrl.value = apiUrl;
 
@@ -56,12 +61,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Save Settings Click
   btnSaveSettings.addEventListener('click', async () => {
-    const url = inputApiUrl.value.trim().replace(/\/$/, '');
+    let url = inputApiUrl.value.trim().replace(/\/$/, '');
     const token = inputToken.value.trim();
 
     if (!url || !token) {
       showStatus('Enter API URL and Connection Token.', 'error');
       return;
+    }
+
+    if (url.endsWith('/api')) {
+      url = url.slice(0, -4);
     }
 
     btnSaveSettings.disabled = true;
@@ -231,7 +240,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load Projects list from backend
   async function loadProjects() {
     const config = await chrome.storage.local.get(['apiUrl', 'connectionToken']);
-    const currentApiUrl = config.apiUrl || 'https://pedro-duarte.ddns.net/knowledge-base/api';
+    let currentApiUrl = config.apiUrl || 'https://pedro-duarte.ddns.net/knowledge-base';
+    currentApiUrl = currentApiUrl.trim().replace(/\/$/, '');
+    if (currentApiUrl.endsWith('/api')) {
+      currentApiUrl = currentApiUrl.slice(0, -4);
+    }
     if (!config.connectionToken) return;
 
     try {
