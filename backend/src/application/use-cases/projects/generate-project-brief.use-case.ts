@@ -135,7 +135,7 @@ function toContextItem(note: NoteRecord): ProjectBriefContextItem {
     noteId: note.id,
     title: note.title,
     summary: note.summary,
-    type: note.type,
+    type: note.categories[0]?.name || 'event',
     status: note.status,
     sourceChannel: note.sourceChannel,
     tags: note.tags,

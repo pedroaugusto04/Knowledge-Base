@@ -10,6 +10,7 @@ import type {
   SaveProjectInput,
   SaveWorkspaceInput,
   RepositoryRecord,
+  CategoryRecord,
 } from '../../models/repository-records.models.js';
 import type { ListNotesInput, PaginatedNotes } from '../../models/note-list.models.js';
 import type { ListProjectKnowledgeMapInput } from '../../models/project-knowledge-map.models.js';
@@ -19,6 +20,11 @@ import type { ReviewView } from '../../models/review.models.js';
 import type { VaultNoteDetail, VaultNoteSummary } from '../../models/vault-note.models.js';
 
 export abstract class ContentRepository {
+  abstract listCategories(userId: string, workspaceSlug: string): Promise<CategoryRecord[]>;
+  abstract getCategoryById(userId: string, categoryId: string): Promise<CategoryRecord | null>;
+  abstract createCategory(userId: string, workspaceSlug: string, input: { name: string; color?: string; icon?: string }): Promise<CategoryRecord>;
+  abstract findCategoryByName(userId: string, workspaceSlug: string, name: string): Promise<CategoryRecord | null>;
+
   abstract listWorkspaces(userId: string): Promise<SaveWorkspaceInput[]>;
   abstract upsertWorkspace(userId: string, input: SaveWorkspaceInput): Promise<SaveWorkspaceInput>;
   abstract listRepositories(userId: string, workspaceSlug: string): Promise<RepositoryRecord[]>;

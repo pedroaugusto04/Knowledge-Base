@@ -14,6 +14,7 @@ import type {
   WebhookEventRecord,
   WorkspaceRecord,
   PushSubscriptionRecord,
+  CategoryRecord,
 } from '../../application/models/repository-records.models.js';
 import type { WebhookSubscriptionRecord } from '../../application/models/webhook-subscription.models.js';
 
@@ -197,13 +198,30 @@ export function projectFolderFromRow(row: Row): ProjectFolderRecord {
   };
 }
 
+export function categoryFromRow(row: Row): CategoryRecord {
+  return {
+    id: String(row.id),
+    userId: fieldString(row, 'user_id', 'userId'),
+    workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),
+    name: fieldString(row, 'name', 'name'),
+    color: fieldString(row, 'color', 'color', '#9e9e9e'),
+    icon: fieldString(row, 'icon', 'icon', ''),
+    isSystem: field(row, 'is_system', 'isSystem') === true,
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
+  };
+}
+
 export function noteFromRow(row: Row): NoteRecord {
   const projectSlug = fieldString(row, 'project_slug', 'projectSlug', '');
   const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
+  const categoriesList = Array.isArray(row.categories)
+    ? row.categories.map((c: any) => categoryFromRow(c))
+    : [];
   return {
     id: String(row.id),
     path: fieldString(row, 'path', 'path'),
-    type: fieldString(row, 'type', 'type', 'event'),
+    categories: categoriesList,
     title: fieldString(row, 'title', 'title'),
     projectId: fieldString(row, 'project_id', 'projectId'),
     workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),

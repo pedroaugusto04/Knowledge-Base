@@ -118,10 +118,22 @@ export type ProjectFolderRecord = {
   updatedAt: string;
 };
 
+export type CategoryRecord = {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  name: string;
+  color: string;
+  icon: string;
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type NoteRecord = {
   id: string;
   path: string;
-  type: string;
+  categories: CategoryRecord[];
   title: string;
   projectId: string;
   workspaceId: string;
@@ -170,7 +182,12 @@ export type SaveProjectFolderInput = ProjectFolderRecord;
 
 export type SaveWorkspaceInput = WorkspaceRecord;
 
-export type SaveNoteInput = Omit<NoteRecord, 'id' | 'markdownStorageKey'> & { id?: string; markdownStorageKey?: string };
+export type SaveNoteInput = Omit<NoteRecord, 'id' | 'markdownStorageKey' | 'categories'> & {
+  id?: string;
+  markdownStorageKey?: string;
+  categoryIds?: string[];
+  categories?: CategoryRecord[];
+};
 
 export type SaveAttachmentInput = Omit<AttachmentRecord, 'id' | 'userId' | 'createdAt' | 'storageKey'> & {
   id?: string;

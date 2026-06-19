@@ -2,6 +2,7 @@ export { BuildDashboardUseCase, buildDashboardHome } from './dashboard/build-das
 export { LogApplicationAccessUseCase } from './observability/log-application-access.use-case.js';
 export { CreateWorkspaceUseCase } from './workspaces/create-workspace.use-case.js';
 export { ListWorkspaceRepositoriesUseCase } from './workspaces/list-workspace-repositories.use-case.js';
+export { ListWorkspaceCategoriesUseCase } from './workspaces/list-workspace-categories.use-case.js';
 export { CreateProjectUseCase } from './projects/create-project.use-case.js';
 export { DeleteProjectUseCase } from './projects/delete-project.use-case.js';
 export { ListProjectFoldersUseCase } from './projects/list-project-folders.use-case.js';

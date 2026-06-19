@@ -62,7 +62,13 @@ export function NoteRow({
               <PinIcon active /> Pinned
             </span>
           )}
-          <Badge value={noteTypeLabel(note.type)} tone={note.type} />
+          {note.categories && note.categories.length > 0 ? (
+            note.categories.map((category) => (
+              <Badge key={category.id} value={category.name} tone={category.name} />
+            ))
+          ) : (
+            <Badge value={noteTypeLabel(note.type)} tone={note.type} />
+          )}
           <Badge value={formatDisplayToken(note.status)} tone={note.status} />
           <span className="meta meta-project">
             {projectName(dashboard.projects, note.project)}

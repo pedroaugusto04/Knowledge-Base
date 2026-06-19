@@ -19,6 +19,7 @@ import { PostgresProjectRepository } from './project.repository.js';
 import { PostgresNoteRepository } from './note.repository.js';
 import { PostgresFolderRepository } from './folder.repository.js';
 import { PostgresAttachmentRepository } from './attachment.repository.js';
+import { PostgresCategoryRepository } from './category.repository.js';
 
 @Injectable()
 export class PostgresContentRepository extends ContentRepository {
@@ -28,9 +29,26 @@ export class PostgresContentRepository extends ContentRepository {
     private readonly noteRepository: PostgresNoteRepository,
     private readonly folderRepository: PostgresFolderRepository,
     private readonly attachmentRepository: PostgresAttachmentRepository,
+    private readonly categoryRepository: PostgresCategoryRepository,
     private readonly contentObjectStorage: ContentObjectStorageService,
   ) {
     super();
+  }
+
+  async listCategories(userId: string, workspaceSlug: string) {
+    return this.categoryRepository.list(userId, workspaceSlug);
+  }
+
+  async getCategoryById(userId: string, categoryId: string) {
+    return this.categoryRepository.getById(userId, categoryId);
+  }
+
+  async createCategory(userId: string, workspaceSlug: string, input: { name: string; color?: string; icon?: string }) {
+    return this.categoryRepository.create(userId, workspaceSlug, input);
+  }
+
+  async findCategoryByName(userId: string, workspaceSlug: string, name: string) {
+    return this.categoryRepository.findByName(userId, workspaceSlug, name);
   }
 
   async listWorkspaces(userId: string) {

@@ -1,6 +1,9 @@
+import type { CategoryRecord } from './repository-records.models.js';
+
 export type VaultNoteSummary = {
   id: string;
   path: string;
+  categories: CategoryRecord[];
   type: string;
   title: string;
   project: string;

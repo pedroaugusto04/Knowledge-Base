@@ -29,6 +29,7 @@ export type CreateNoteParams = {
   tags?: string[];
   status?: QuickNoteStatus;
   canonicalType?: CanonicalNoteType;
+  categoryIds?: string[];
   reminderDate?: string;
   reminderTime?: string;
   reminderAt?: string;
@@ -77,6 +78,7 @@ export type UpdateNoteParams = {
   tags?: string[];
   status?: QuickNoteStatus;
   canonicalType?: CanonicalNoteType;
+  categoryIds?: string[];
   reminderDate?: string;
   reminderTime?: string;
   reminderAt?: string;

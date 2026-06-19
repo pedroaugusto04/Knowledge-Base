@@ -35,6 +35,7 @@ import { PostgresProjectRepository } from '../repositories/project.repository.js
 import { PostgresNoteRepository } from '../repositories/note.repository.js';
 import { PostgresFolderRepository } from '../repositories/folder.repository.js';
 import { PostgresAttachmentRepository } from '../repositories/attachment.repository.js';
+import { PostgresCategoryRepository } from '../repositories/category.repository.js';
 
 const repositories = [
   PostgresDatabase,
@@ -48,6 +49,7 @@ const repositories = [
   PostgresNoteRepository,
   PostgresFolderRepository,
   PostgresAttachmentRepository,
+  PostgresCategoryRepository,
   PostgresContentRepository,
   PostgresContentQueryRepository,
   PostgresNoteEmbeddingRepository,

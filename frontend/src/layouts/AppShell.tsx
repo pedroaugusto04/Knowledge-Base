@@ -593,6 +593,7 @@ export function AppShell() {
           projectSlug={noteModal.mode === 'edit' ? noteModal.note.project : noteModal.projectSlug}
           initialFolderId={noteModal.mode === 'edit' ? noteModal.note.folderId || undefined : undefined}
           projects={dashboard.projects}
+          workspaceSlug={workspaceSlug}
         />
       ) : null}
       {confirmState?.kind === 'note' ? (

@@ -22,7 +22,8 @@ export function noteSummary(record: NoteRecord): VaultNoteSummary {
   return {
     id: record.id,
     path: record.path,
-    type: record.type,
+    categories: record.categories,
+    type: record.categories[0]?.name || 'event',
     title: record.title,
     project: record.projectSlug || '',
     workspace: record.workspaceSlug || '',
@@ -56,7 +57,7 @@ export function noteDetail(record: NoteRecord, attachments: AttachmentRecord[] =
     markdown: record.markdown,
     frontmatter: {
       id: record.id,
-      type: record.type,
+      categories: record.categories.map((c) => c.name),
       workspace: record.workspaceSlug || '',
       source_channel: record.sourceChannel,
       event_type: String(record.metadata.eventType || ''),
@@ -71,7 +72,8 @@ export function noteDetail(record: NoteRecord, attachments: AttachmentRecord[] =
 }
 
 export function reviewFromNote(record: NoteRecord): ReviewView | null {
-  if (record.type !== 'event' && record.metadata.eventType !== 'code_review') return null;
+  const hasEventCategory = record.categories.some((c) => c.name === 'event');
+  if (!hasEventCategory && record.metadata.eventType !== 'code_review') return null;
   if (record.metadata.eventType !== 'code_review' && record.sourceChannel !== 'github-push') return null;
   const findings = Array.isArray(record.metadata.reviewFindings) ? record.metadata.reviewFindings : [];
   return {

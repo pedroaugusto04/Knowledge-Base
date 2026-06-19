@@ -13,7 +13,7 @@ import { reminderDispatchEligibleStatuses } from '../../domain/note-status.js';
 import { noteDetail, noteSummary, reminderFromNote, reviewFromNote } from '../mappers/content-query.mappers.js';
 import { noteFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
-import { notes, attachments, workspaces, projects } from '../persistence/schema/index.js';
+import { notes, attachments, workspaces, projects, categories, noteCategories } from '../persistence/schema/index.js';
 
 @Injectable()
 export class PostgresContentQueryRepository extends ContentQueryRepository {
@@ -35,7 +35,6 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         id: notes.id,
         userId: notes.userId,
         path: notes.path,
-        type: notes.type,
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
@@ -56,6 +55,22 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
         attachmentCount: count(attachments.id).as('attachment_count'),
+        categories: sql<any[]>`COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${categories.id},
+              'user_id', ${categories.userId},
+              'workspace_id', ${categories.workspaceId},
+              'name', ${categories.name},
+              'color', ${categories.color},
+              'icon', ${categories.icon},
+              'is_system', ${categories.isSystem},
+              'created_at', ${categories.createdAt},
+              'updated_at', ${categories.updatedAt}
+            )
+          ) FILTER (WHERE ${categories.id} IS NOT NULL),
+          '[]'::json
+        )`.as('categories'),
       })
       .from(notes)
       .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
@@ -64,6 +79,8 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         eq(attachments.userId, notes.userId),
         eq(attachments.noteId, notes.id)
       ))
+      .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
+      .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(eq(notes.userId, userId))
       .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .orderBy(desc(notes.occurredAt), notes.title);
@@ -82,7 +99,6 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         id: notes.id,
         userId: notes.userId,
         path: notes.path,
-        type: notes.type,
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
@@ -103,6 +119,22 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
         attachmentCount: count(attachments.id).as('attachment_count'),
+        categories: sql<any[]>`COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${categories.id},
+              'user_id', ${categories.userId},
+              'workspace_id', ${categories.workspaceId},
+              'name', ${categories.name},
+              'color', ${categories.color},
+              'icon', ${categories.icon},
+              'is_system', ${categories.isSystem},
+              'created_at', ${categories.createdAt},
+              'updated_at', ${categories.updatedAt}
+            )
+          ) FILTER (WHERE ${categories.id} IS NOT NULL),
+          '[]'::json
+        )`.as('categories'),
       })
       .from(notes)
       .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
@@ -111,6 +143,8 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         eq(attachments.userId, notes.userId),
         eq(attachments.noteId, notes.id)
       ))
+      .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
+      .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(and(eq(notes.userId, userId), eq(notes.id, id)))
       .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .limit(1);
@@ -130,7 +164,6 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         id: notes.id,
         userId: notes.userId,
         path: notes.path,
-        type: notes.type,
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
@@ -150,11 +183,30 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         isPinned: notes.isPinned,
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
+        categories: sql<any[]>`COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${categories.id},
+              'user_id', ${categories.userId},
+              'workspace_id', ${categories.workspaceId},
+              'name', ${categories.name},
+              'color', ${categories.color},
+              'icon', ${categories.icon},
+              'is_system', ${categories.isSystem},
+              'created_at', ${categories.createdAt},
+              'updated_at', ${categories.updatedAt}
+            )
+          ) FILTER (WHERE ${categories.id} IS NOT NULL),
+          '[]'::json
+        )`.as('categories'),
       })
       .from(notes)
       .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
       .leftJoin(projects, eq(projects.id, notes.projectId))
+      .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
+      .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(and(eq(notes.userId, userId), eq(notes.id, id)))
+      .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .limit(1);
     
     return result[0] ? reviewFromNote(noteFromRow(result[0])) : null;

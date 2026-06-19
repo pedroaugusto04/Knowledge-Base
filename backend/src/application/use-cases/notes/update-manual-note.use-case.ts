@@ -27,7 +27,10 @@ export class UpdateNoteUseCase {
     };
     const updated = await this.contentRepository.updateNote(
       userId,
-      buildUpdatedNote(note, previousFolder, nextFolder, normalizedInput, reminderTimeZone),
+      {
+        ...buildUpdatedNote(note, previousFolder, nextFolder, normalizedInput, reminderTimeZone),
+        categoryIds: input.categoryIds,
+      },
     );
 
     try {

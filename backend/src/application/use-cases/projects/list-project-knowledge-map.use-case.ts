@@ -152,7 +152,7 @@ export function buildProjectKnowledgeMap(
   };
 }
 
-export function projectKnowledgeMapCategory(record: Pick<NoteRecord, 'type' | 'metadata' | 'source' | 'sourceChannel' | 'reminderDate' | 'reminderAt'>): ProjectKnowledgeMapNoteCategory {
+export function projectKnowledgeMapCategory(record: Pick<NoteRecord, 'metadata' | 'source' | 'sourceChannel' | 'reminderDate' | 'reminderAt'>): ProjectKnowledgeMapNoteCategory {
   if (hasReminder(record)) return 'reminder';
   if (record.sourceChannel === 'github-push') return 'github-push';
   if (record.sourceChannel === 'whatsapp') return 'whatsapp';

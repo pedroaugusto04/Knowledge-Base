@@ -4,13 +4,11 @@ import { pgTable as pgTableV2 } from 'drizzle-orm/pg-core';
 
 // Enums
 export const noteStatusEnum = pgEnum('note_status_enum', ['active', 'pending', 'resolved', 'archived', 'sent', 'overdue']);
-export const noteTypeEnum = pgEnum('note_type_enum', ['event', 'decision', 'knowledge', 'incident', 'followup']);
 export const askConfidenceEnum = pgEnum('ask_confidence_enum', ['low', 'medium', 'high']);
 export const credentialStatusEnum = pgEnum('credential_status_enum', ['connected', 'revoked']);
 
 // Enum value types for type-safe inserts and updates
 export type NoteStatus = typeof noteStatusEnum.enumValues[number];
-export type NoteType = typeof noteTypeEnum.enumValues[number];
 export type AskConfidence = typeof askConfidenceEnum.enumValues[number];
 export type CredentialStatus = typeof credentialStatusEnum.enumValues[number];
 
@@ -114,7 +112,6 @@ export const notes = pgTable('kb_notes', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   path: text('path').notNull(),
-  type: noteTypeEnum('type').notNull(),
   title: text('title').notNull(),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
@@ -371,6 +368,29 @@ export const authIdentities = pgTable('kb_auth_identities', {
   userIdProviderIdx: index('kb_auth_identities_user_id_provider_idx').on(table.userId, table.provider),
 }));
 
+// Categories
+export const categories = pgTable('kb_categories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  color: text('color').notNull().default('#9e9e9e'),
+  icon: text('icon').notNull().default(''),
+  isSystem: boolean('is_system').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  workspaceNameIdx: index('kb_categories_workspace_name_idx').on(table.workspaceId, table.name),
+}));
+
+// Note Categories
+export const noteCategories = pgTable('kb_note_categories', {
+  noteId: uuid('note_id').notNull().references(() => notes.id, { onDelete: 'cascade' }),
+  categoryId: uuid('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
+}, (table) => ({
+  pk: index('kb_note_categories_pk').on(table.noteId, table.categoryId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   integrationCredentials: many(integrationCredentials),
@@ -388,6 +408,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   pushSubscriptions: many(pushSubscriptions),
   askHistory: many(askHistory),
   webhookSubscriptions: many(webhookSubscriptions),
+  categories: many(categories),
 }));
 
 export const notesRelations = relations(notes, ({ one, many }) => ({
@@ -401,4 +422,28 @@ export const notesRelations = relations(notes, ({ one, many }) => ({
   }),
   attachments: many(attachments),
   noteLinks: many(noteLinks),
+  noteCategories: many(noteCategories),
+}));
+
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+  user: one(users, {
+    fields: [categories.userId],
+    references: [users.id],
+  }),
+  workspace: one(workspaces, {
+    fields: [categories.workspaceId],
+    references: [workspaces.id],
+  }),
+  noteCategories: many(noteCategories),
+}));
+
+export const noteCategoriesRelations = relations(noteCategories, ({ one }) => ({
+  note: one(notes, {
+    fields: [noteCategories.noteId],
+    references: [notes.id],
+  }),
+  category: one(categories, {
+    fields: [noteCategories.categoryId],
+    references: [categories.id],
+  }),
 }));

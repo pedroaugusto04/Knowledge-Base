@@ -105,6 +105,7 @@ export class CreateManualNoteUseCase {
     return this.ingestEntryUseCase.execute(withDerivedReminderAt(payload, reminderTimeZone), userId, workspace.workspaceSlug, {
       folderId: input.folderId,
       existingNoteId,
+      categoryIds: input.categoryIds,
     }).then((result) => {
       this.noteEventDispatcher.dispatch({
         event: WebhookTrigger.NoteCreated,

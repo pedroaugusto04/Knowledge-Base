@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 
 import { formatDisplayToken, reminderInputDate, reminderInputTime } from '../../../shared/utils/format';
 import { UI_MESSAGES } from '../../../shared/constants/ui.constants';
-import { createNote, updateNote, fetchProjectFolders } from '../../../shared/api/client';
+import { createNote, updateNote, fetchProjectFolders, fetchWorkspaceCategories } from '../../../shared/api/client';
 import type { NoteDetail } from '../../../shared/api/models/note';
 import type { Project } from '../../../shared/api/models/project';
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../../shared/forms/errors';
@@ -33,6 +33,7 @@ type ProjectNoteModalProps = {
   projectSlug: string;
   initialFolderId?: string;
   projects?: Project[];
+  workspaceSlug: string;
 };
 
 export function ProjectNoteModal({
@@ -44,6 +45,7 @@ export function ProjectNoteModal({
   projectSlug,
   initialFolderId,
   projects,
+  workspaceSlug,
 }: ProjectNoteModalProps) {
   const globalLoading = useGlobalLoading();
   const formRef = useRef<HTMLFormElement>(null);
@@ -55,6 +57,12 @@ export function ProjectNoteModal({
     queryKey: ['project-folders', 'modal', selectedProjectSlug],
     queryFn: () => fetchProjectFolders(selectedProjectSlug),
     enabled: Boolean(selectedProjectSlug) && (!folders || selectedProjectSlug !== projectSlug),
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ['workspace-categories', workspaceSlug],
+    queryFn: () => fetchWorkspaceCategories(workspaceSlug),
+    enabled: Boolean(workspaceSlug),
   });
 
   const modalFolders = useMemo(
@@ -75,6 +83,7 @@ export function ProjectNoteModal({
     defaultValues: {
       folderId: note?.folderId || initialFolderId || '',
       canonicalType: note?.type === 'decision' || note?.type === 'followup' || note?.type === 'incident' || note?.type === 'knowledge' ? note.type : 'event',
+      categoryIds: note?.categories?.map((c) => c.id) || [],
       title: note?.title || '',
       rawText: note?.editor?.rawText || '',
       tags: note?.tags.join(', ') || '',
@@ -88,6 +97,7 @@ export function ProjectNoteModal({
       const payload = {
         folderId: values.folderId || undefined,
         canonicalType: values.canonicalType,
+        categoryIds: values.categoryIds,
         title: values.title,
         rawText: values.rawText,
         tags: parseCommaSeparatedList(values.tags),
@@ -184,24 +194,67 @@ export function ProjectNoteModal({
                 />
               )}
             </FormField>
-            <FormField name="canonicalType" label="Type" error={errors.canonicalType?.message} required>
+            <input type="hidden" {...register('canonicalType')} />
+            <FormField name="categoryIds" label="Categories" error={errors.categoryIds?.message} optional>
               {(fieldProps) => (
                 <Controller
                   control={control}
-                  name="canonicalType"
+                  name="categoryIds"
                   render={({ field }) => (
-                    <Select
-                      ariaDescribedBy={fieldProps['aria-describedby']}
-                      ariaInvalid={fieldProps['aria-invalid']}
-                      ariaRequired={fieldProps['aria-required']}
-                      dataField={fieldProps['data-field']}
-                      id={fieldProps.id}
-                      options={canonicalTypeOptions}
-                      required={fieldProps.required}
-                      value={field.value}
-                      onBlur={field.onBlur}
-                      onChange={field.onChange}
-                    />
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px 0' }}>
+                      {categoriesQuery.data?.map((category) => {
+                        const checked = field.value?.includes(category.id);
+                        return (
+                          <label
+                            key={category.id}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '6px 12px',
+                              borderRadius: '20px',
+                              border: checked ? '1px solid var(--text)' : '1px solid var(--border)',
+                              cursor: 'pointer',
+                              backgroundColor: checked ? 'var(--bg-accent)' : 'var(--bg)',
+                              transition: 'all 0.2s ease',
+                              userSelect: 'none',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              value={category.id}
+                              style={{ display: 'none' }}
+                              onChange={() => {
+                                const nextValue = checked
+                                  ? (field.value || []).filter((id) => id !== category.id)
+                                  : [...(field.value || []), category.id];
+                                field.onChange(nextValue);
+
+                                // Automatically sync canonicalType for legacy compatibility/behavior
+                                const firstCategory = categoriesQuery.data?.find((c) => nextValue.includes(c.id));
+                                if (firstCategory) {
+                                  const name = firstCategory.name;
+                                  if (['event', 'decision', 'followup', 'incident', 'knowledge'].includes(name)) {
+                                    setValue('canonicalType', name as any);
+                                  }
+                                } else {
+                                  setValue('canonicalType', 'event');
+                                }
+                              }}
+                            />
+                            <span style={{
+                              display: 'inline-block',
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: category.color || '#cccccc'
+                            }} />
+                            <span>{formatDisplayToken(category.name)}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   )}
                 />
               )}

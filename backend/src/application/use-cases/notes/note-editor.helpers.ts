@@ -27,7 +27,7 @@ export function buildUpdatedNote(
   const title = trimText(input.title, note.title || input.rawText);
   const rawText = stripTitleHeader(normalizeMultiline(input.rawText), title);
   const tags = [...new Set(input.tags.map((tag) => tag.trim()).filter(Boolean))];
-  const noteType = normalizeCanonicalType(input.canonicalType, note.type);
+  const noteType = normalizeCanonicalType(input.canonicalType, note.categories[0]?.name || 'event');
   const reminderFields = buildUtcReminderFields({
     reminderDate: input.reminderDate,
     reminderTime: input.reminderTime,

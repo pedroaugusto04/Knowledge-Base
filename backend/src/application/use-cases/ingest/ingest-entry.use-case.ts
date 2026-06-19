@@ -18,6 +18,7 @@ type IngestExecutionOptions = {
   folderId?: string;
   existingNoteId?: string;
   existingNotePath?: string;
+  categoryIds?: string[];
 };
 
 @Injectable()
@@ -179,12 +180,26 @@ async function saveIngestedNote(
       favorite: project.favorite,
     });
   }
+  const categoryName = payload.classification.canonicalType || 'event';
+  let categoryIds = options.categoryIds;
+  if (!categoryIds || categoryIds.length === 0) {
+    let category = await contentRepository.findCategoryByName(userId, workspaceSlug, categoryName);
+    if (!category) {
+      category = await contentRepository.createCategory(userId, workspaceSlug, {
+        name: categoryName,
+        color: '#9e9e9e',
+        icon: '',
+      });
+    }
+    categoryIds = [category.id];
+  }
+
   const note = await contentRepository.upsertNote(userId, {
     id: options.existingNoteId || undefined,
     projectId,
     workspaceId,
     path: options.existingNotePath || paths.eventRelativePath.replace(/\\/g, '/'),
-    type: payload.classification.canonicalType,
+    categoryIds,
     title,
     projectSlug: project.projectSlug,
     workspaceSlug,
@@ -238,7 +253,7 @@ async function saveIngestedNote(
     note: {
       id: note.id,
       title: note.title,
-      type: hasReminder({ reminderDate, reminderAt }) ? 'reminder' : note.type,
+      type: hasReminder({ reminderDate, reminderAt }) ? 'reminder' : (note.categories[0]?.name || 'event'),
       status: note.status,
       projectSlug: project.projectSlug,
       projectName: project.displayName || project.projectSlug,

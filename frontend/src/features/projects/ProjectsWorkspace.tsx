@@ -441,7 +441,7 @@ export function ProjectsWorkspace({
           projectSlug={folderModal.projectSlug}
         />
       ) : null}
-      {noteModal ? (
+       {noteModal ? (
         <ProjectNoteModal
           folders={flatFolders}
           mode={noteModal.mode}
@@ -457,6 +457,7 @@ export function ProjectsWorkspace({
           }}
           projectSlug={noteModal.mode === 'edit' ? noteModal.note.project : noteModal.projectSlug}
           initialFolderId={noteModal.mode === 'edit' ? noteModal.note.folderId || undefined : noteModal.folderId}
+          workspaceSlug={workspaceSlug}
         />
       ) : null}
       {confirmState ? (

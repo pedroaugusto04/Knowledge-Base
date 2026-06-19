@@ -16,7 +16,7 @@ import { buildPaginationMeta } from '../../contracts/pagination.js';
 import { noteSummary } from '../mappers/content-query.mappers.js';
 import { noteFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
-import { notes, attachments, NoteStatus, NoteType, projects, workspaces } from '../persistence/schema/index.js';
+import { notes, attachments, NoteStatus, projects, workspaces, categories, noteCategories } from '../persistence/schema/index.js';
 
 @Injectable()
 export class PostgresNoteRepository {
@@ -64,7 +64,6 @@ export class PostgresNoteRepository {
         id: notes.id,
         userId: notes.userId,
         path: notes.path,
-        type: notes.type,
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
@@ -85,6 +84,22 @@ export class PostgresNoteRepository {
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
         attachmentCount: count(attachments.id).as('attachment_count'),
+        categories: sql<any[]>`COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${categories.id},
+              'user_id', ${categories.userId},
+              'workspace_id', ${categories.workspaceId},
+              'name', ${categories.name},
+              'color', ${categories.color},
+              'icon', ${categories.icon},
+              'is_system', ${categories.isSystem},
+              'created_at', ${categories.createdAt},
+              'updated_at', ${categories.updatedAt}
+            )
+          ) FILTER (WHERE ${categories.id} IS NOT NULL),
+          '[]'::json
+        )`.as('categories'),
       })
       .from(notes)
       .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
@@ -93,6 +108,8 @@ export class PostgresNoteRepository {
         eq(attachments.userId, notes.userId),
         eq(attachments.noteId, notes.id)
       ))
+      .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
+      .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(eq(notes.userId, userId))
       .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .orderBy(desc(notes.isPinned), desc(notes.occurredAt), notes.title);
@@ -155,7 +172,6 @@ export class PostgresNoteRepository {
         id: notes.id,
         userId: notes.userId,
         path: notes.path,
-        type: notes.type,
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
@@ -176,6 +192,22 @@ export class PostgresNoteRepository {
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
         attachmentCount: count(attachments.id).as('attachment_count'),
+        categories: sql<any[]>`COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${categories.id},
+              'user_id', ${categories.userId},
+              'workspace_id', ${categories.workspaceId},
+              'name', ${categories.name},
+              'color', ${categories.color},
+              'icon', ${categories.icon},
+              'is_system', ${categories.isSystem},
+              'created_at', ${categories.createdAt},
+              'updated_at', ${categories.updatedAt}
+            )
+          ) FILTER (WHERE ${categories.id} IS NOT NULL),
+          '[]'::json
+        )`.as('categories'),
       })
       .from(notes)
       .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
@@ -184,6 +216,8 @@ export class PostgresNoteRepository {
         eq(attachments.userId, notes.userId),
         eq(attachments.noteId, notes.id)
       ))
+      .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
+      .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(whereCondition)
       .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .orderBy(desc(notes.isPinned), desc(notes.occurredAt), notes.title)
@@ -229,10 +263,28 @@ export class PostgresNoteRepository {
     const pagination = buildPaginationMeta({ page: input.page, pageSize: input.pageSize }, total);
     
     const result = await this.database.getPool().query(
-      `select n.*, p.project_slug, w.workspace_slug, count(a.id)::int as attachment_count
+      `select n.*, p.project_slug, w.workspace_slug, count(distinct a.id)::int as attachment_count,
+              coalesce(
+                json_agg(
+                  json_build_object(
+                    'id', cat.id,
+                    'user_id', cat.user_id,
+                    'workspace_id', cat.workspace_id,
+                    'name', cat.name,
+                    'color', cat.color,
+                    'icon', cat.icon,
+                    'is_system', cat.is_system,
+                    'created_at', cat.created_at,
+                    'updated_at', cat.updated_at
+                  )
+                ) filter (where cat.id is not null),
+                '[]'::json
+              ) as categories
        from kb_notes n
        ${joinSql}
        left join kb_attachments a on a.user_id = n.user_id and a.note_id = n.id
+       left join kb_note_categories nc on nc.note_id = n.id
+       left join kb_categories cat on cat.id = nc.category_id
        where ${where}
        group by n.id, p.project_slug, w.workspace_slug
        order by n.is_pinned desc, n.occurred_at desc, n.title asc
@@ -254,11 +306,29 @@ export class PostgresNoteRepository {
     const where = clauses.join(' and ');
     
     const result = await this.database.getPool().query(
-      `select n.*, p.project_slug, w.workspace_slug, count(a.id)::int as attachment_count
+      `select n.*, p.project_slug, w.workspace_slug, count(distinct a.id)::int as attachment_count,
+              coalesce(
+                json_agg(
+                  json_build_object(
+                    'id', cat.id,
+                    'user_id', cat.user_id,
+                    'workspace_id', cat.workspace_id,
+                    'name', cat.name,
+                    'color', cat.color,
+                    'icon', cat.icon,
+                    'is_system', cat.is_system,
+                    'created_at', cat.created_at,
+                    'updated_at', cat.updated_at
+                  )
+                ) filter (where cat.id is not null),
+                '[]'::json
+              ) as categories
        from kb_notes n
        left join kb_projects p on p.id = n.project_id
        join kb_workspaces w on w.id = n.workspace_id
        left join kb_attachments a on a.user_id = n.user_id and a.note_id = n.id
+       left join kb_note_categories nc on nc.note_id = n.id
+       left join kb_categories cat on cat.id = nc.category_id
        where ${where}
        group by n.id, p.project_slug, w.workspace_slug
        order by n.is_pinned desc, n.occurred_at desc, n.title asc
@@ -276,7 +346,6 @@ export class PostgresNoteRepository {
         id: notes.id,
         userId: notes.userId,
         path: notes.path,
-        type: notes.type,
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
@@ -296,11 +365,30 @@ export class PostgresNoteRepository {
         isPinned: notes.isPinned,
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
+        categories: sql<any[]>`COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${categories.id},
+              'user_id', ${categories.userId},
+              'workspace_id', ${categories.workspaceId},
+              'name', ${categories.name},
+              'color', ${categories.color},
+              'icon', ${categories.icon},
+              'is_system', ${categories.isSystem},
+              'created_at', ${categories.createdAt},
+              'updated_at', ${categories.updatedAt}
+            )
+          ) FILTER (WHERE ${categories.id} IS NOT NULL),
+          '[]'::json
+        )`.as('categories'),
       })
       .from(notes)
       .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
       .leftJoin(projects, eq(projects.id, notes.projectId))
+      .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
+      .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(and(eq(notes.userId, userId), eq(notes.id, id)))
+      .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .limit(1);
     
     return result[0] ? this.hydrateMarkdown(noteFromRow(result[0])) : null;
@@ -314,7 +402,6 @@ export class PostgresNoteRepository {
         id: notes.id,
         userId: notes.userId,
         path: notes.path,
-        type: notes.type,
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
@@ -334,11 +421,30 @@ export class PostgresNoteRepository {
         isPinned: notes.isPinned,
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
+        categories: sql<any[]>`COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${categories.id},
+              'user_id', ${categories.userId},
+              'workspace_id', ${categories.workspaceId},
+              'name', ${categories.name},
+              'color', ${categories.color},
+              'icon', ${categories.icon},
+              'is_system', ${categories.isSystem},
+              'created_at', ${categories.createdAt},
+              'updated_at', ${categories.updatedAt}
+            )
+          ) FILTER (WHERE ${categories.id} IS NOT NULL),
+          '[]'::json
+        )`.as('categories'),
       })
       .from(notes)
       .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
       .leftJoin(projects, eq(projects.id, notes.projectId))
-      .where(and(eq(notes.userId, userId), inArray(notes.id, ids)));
+      .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
+      .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
+      .where(and(eq(notes.userId, userId), inArray(notes.id, ids)))
+      .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug);
     
     const noteRecords = result.map(noteFromRow);
     return Promise.all(noteRecords.map((n) => this.hydrateMarkdown(n)));
@@ -351,7 +457,6 @@ export class PostgresNoteRepository {
         id: notes.id,
         userId: notes.userId,
         path: notes.path,
-        type: notes.type,
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
@@ -371,15 +476,34 @@ export class PostgresNoteRepository {
         isPinned: notes.isPinned,
         createdAt: notes.createdAt,
         updatedAt: notes.updatedAt,
+        categories: sql<any[]>`COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ${categories.id},
+              'user_id', ${categories.userId},
+              'workspace_id', ${categories.workspaceId},
+              'name', ${categories.name},
+              'color', ${categories.color},
+              'icon', ${categories.icon},
+              'is_system', ${categories.isSystem},
+              'created_at', ${categories.createdAt},
+              'updated_at', ${categories.updatedAt}
+            )
+          ) FILTER (WHERE ${categories.id} IS NOT NULL),
+          '[]'::json
+        )`.as('categories'),
       })
       .from(notes)
       .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
       .leftJoin(projects, eq(projects.id, notes.projectId))
+      .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
+      .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(and(
         eq(notes.userId, userId),
         eq(notes.source, source),
         eq(notes.sessionId, sessionId)
       ))
+      .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .limit(1);
     
     return result[0] ? this.hydrateMarkdown(noteFromRow(result[0])) : null;
@@ -397,14 +521,26 @@ export class PostgresNoteRepository {
     
     const db = this.database.getDb();
     const { projectId, workspaceId } = await this.resolveIds(userId, input.projectSlug ?? null, input.workspaceSlug ?? 'default');
+    const noteId = crypto.randomUUID();
 
-    const result = await db
+    let categoryIds = input.categoryIds || [];
+    if (categoryIds.length === 0) {
+      const defaultCat = await db
+        .select({ id: categories.id })
+        .from(categories)
+        .where(and(eq(categories.workspaceId, workspaceId), eq(categories.name, 'event')))
+        .limit(1);
+      if (defaultCat.length > 0) {
+        categoryIds = [defaultCat[0].id];
+      }
+    }
+
+    await db
       .insert(notes)
       .values({
-        id: crypto.randomUUID(),
+        id: noteId,
         userId,
         path: input.path,
-        type: input.type as NoteType,
         title: input.title,
         projectId,
         workspaceId,
@@ -420,29 +556,36 @@ export class PostgresNoteRepository {
         sessionId: input.sessionId ?? '',
         reminderDate: input.reminderDate ?? '',
         reminderAt: input.reminderAt ?? '',
-      } as typeof notes.$inferInsert)
-      .returning();
+      } as typeof notes.$inferInsert);
+
+    if (categoryIds.length > 0) {
+      await db.insert(noteCategories).values(
+        categoryIds.map((catId) => ({
+          noteId,
+          categoryId: catId,
+        }))
+      );
+    }
     
-    return this.hydrateMarkdown(noteFromRow({
-      ...result[0],
-      projectSlug: input.projectSlug,
-      workspaceSlug: input.workspaceSlug,
-    }));
+    const created = await this.getById(userId, noteId);
+    if (!created) {
+      throw new Error(`Note not found after creation: ${noteId}`);
+    }
+    return created;
   }
 
   async update(userId: string, input: SaveNoteInput) {
     const existing = await this.getById(userId, String(input.id || ''));
     const markdownStorageKey = await this.contentObjectStorage.saveNoteMarkdown(userId, input);
-    const result = await this.updateWithClient(this.database.getPool(), userId, input, markdownStorageKey);
+    await this.updateWithClient(this.database.getPool(), userId, input, markdownStorageKey);
     if (existing?.markdownStorageKey && existing.markdownStorageKey !== markdownStorageKey) {
       await this.contentObjectStorage.deleteObjects([existing.markdownStorageKey]);
     }
-    return { 
-      ...noteFromRow(result.rows[0]), 
-      projectSlug: input.projectSlug,
-      workspaceSlug: input.workspaceSlug,
-      markdown: input.markdown 
-    };
+    const updated = await this.getById(userId, String(input.id || ''));
+    if (!updated) {
+      throw new Error(`Note not found after update: ${input.id}`);
+    }
+    return updated;
   }
 
   async updateReminderStatus(userId: string, id: string, status: string) {
@@ -497,25 +640,24 @@ export class PostgresNoteRepository {
       }
     }
 
-    return client.query(
+    const updateResult = await client.query(
       `update kb_notes
        set path = $3,
-           type = $4::note_type_enum,
-           title = $5,
-           project_id = $6,
-           workspace_id = $7,
-           folder_id = $8,
-           status = $9::note_status_enum,
-           tags = $10::jsonb,
-           occurred_at = $11,
-           source_channel = $12,
-           summary = $13,
-           markdown_storage_key = $14,
-           metadata = $15::jsonb,
-           source = $16,
-           session_id = $17,
-           reminder_date = $18,
-           reminder_at = $19,
+           title = $4,
+           project_id = $5,
+           workspace_id = $6,
+           folder_id = $7,
+           status = $8::note_status_enum,
+           tags = $9::jsonb,
+           occurred_at = $10,
+           source_channel = $11,
+           summary = $12,
+           markdown_storage_key = $13,
+           metadata = $14::jsonb,
+           source = $15,
+           session_id = $16,
+           reminder_date = $17,
+           reminder_at = $18,
            updated_at = now()
        where user_id = $1 and id = $2
        returning *`,
@@ -523,7 +665,6 @@ export class PostgresNoteRepository {
         userId,
         input.id,
         input.path,
-        input.type,
         input.title,
         projectId || null,
         workspaceId,
@@ -541,6 +682,18 @@ export class PostgresNoteRepository {
         input.reminderAt ?? '',
       ]
     );
+
+    if (input.categoryIds) {
+      await client.query('delete from kb_note_categories where note_id = $1', [input.id]);
+      for (const catId of input.categoryIds) {
+        await client.query(
+          'insert into kb_note_categories (note_id, category_id) values ($1, $2) on conflict do nothing',
+          [input.id, catId]
+        );
+      }
+    }
+
+    return updateResult;
   }
 
   private async resolveNotePage(input: ListNotesInput, whereCondition: any) {
@@ -585,7 +738,7 @@ function projectTimelineItem(record: NoteRecord) {
   };
 }
 
-function projectTimelineCategory(record: Pick<NoteRecord, 'type' | 'metadata' | 'source' | 'sourceChannel' | 'reminderDate' | 'reminderAt'>): ProjectTimelineFilterCategory {
+function projectTimelineCategory(record: Pick<NoteRecord, 'metadata' | 'source' | 'sourceChannel' | 'reminderDate' | 'reminderAt'>): ProjectTimelineFilterCategory {
   if (hasTimelineReminder(record)) return 'reminder';
   if (record.sourceChannel === 'github-push') return 'github-push';
   if (record.sourceChannel === 'whatsapp') return 'whatsapp';
