@@ -166,6 +166,7 @@ export function ProjectsWorkspace({
       ...match,
       attachmentCount: match.attachmentCount || 0,
       folderId: null,
+      categories: [],
     }));
   }, [searchQuery.data?.matches]);
 
