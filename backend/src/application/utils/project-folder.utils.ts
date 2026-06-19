@@ -16,8 +16,8 @@ export function buildProjectFolderTree(folders: ProjectFolderRecord[]): ProjectF
   for (const folder of folders) {
     nodes.set(folder.id, {
       id: folder.id,
-      projectSlug: folder.projectSlug,
-      workspaceSlug: folder.workspaceSlug,
+      projectSlug: folder.projectSlug || '',
+      workspaceSlug: folder.workspaceSlug || '',
       parentFolderId: folder.parentFolderId,
       displayName: folder.displayName,
       folderSlug: folder.folderSlug,

@@ -96,7 +96,7 @@ export class HandleGithubPushUseCase {
     });
     try {
       const repoFullName = String(body.repository?.full_name || '').trim();
-      const projectSlug = await this.findSelectedProjectSlug(repoFullName, identity.userId, identity.workspaceSlug);
+      const projectSlug = await this.findSelectedProjectSlug(repoFullName, identity.userId, identity.workspaceSlug || '');
       if (!projectSlug) {
         await this.webhookEvents.recordWebhookEvent({
           provider: IntegrationProvider.GithubApp,
@@ -115,7 +115,7 @@ export class HandleGithubPushUseCase {
         };
       }
       const aiCredential = this.credentials
-        ? await this.credentials.findCredential(identity.userId, identity.workspaceSlug, IntegrationProvider.AiReview)
+        ? await this.credentials.findCredential(identity.userId, identity.workspaceSlug || '', IntegrationProvider.AiReview)
         : null;
       const aiEnabled = Boolean(aiCredential && aiCredential.status === CredentialRecordStatus.Connected && !aiCredential.revokedAt);
       const payload = await buildGithubReviewEvent(
@@ -127,11 +127,11 @@ export class HandleGithubPushUseCase {
         },
       );
       const resolvedPayload = this.resolvePayloadProject(payload, projectSlug);
-      const ingestResult = await this.ingestEntryUseCase.execute(resolvedPayload, identity.userId, identity.workspaceSlug);
+      const ingestResult = await this.ingestEntryUseCase.execute(resolvedPayload, identity.userId, identity.workspaceSlug || '');
       const whatsappNotification = await this.notifyWhatsappOnHighSeverityFindings(
         resolvedPayload,
         identity.userId,
-        identity.workspaceSlug,
+        identity.workspaceSlug || '',
         ingestResult.noteId,
         environment.publicBaseUrl,
       );

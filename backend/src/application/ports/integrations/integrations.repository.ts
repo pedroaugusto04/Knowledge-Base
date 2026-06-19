@@ -3,7 +3,9 @@ import type { ExternalIdentityRecord, IntegrationConnectionSessionRecord, Integr
 export abstract class CredentialRepository {
   abstract listCredentials(userId: string, workspaceSlug: string): Promise<IntegrationCredentialRecord[]>;
   abstract upsertCredential(
-    input: Pick<IntegrationCredentialRecord, 'userId' | 'workspaceSlug' | 'provider' | 'status' | 'encryptedConfig' | 'publicMetadata'>,
+    input: Omit<IntegrationCredentialRecord, 'id' | 'workspaceId' | 'createdAt' | 'updatedAt' | 'revokedAt'> & {
+      workspaceSlug: string;
+    },
   ): Promise<IntegrationCredentialRecord>;
   abstract revokeCredential(userId: string, workspaceSlug: string, provider: string, encryptedConfig: unknown): Promise<IntegrationCredentialRecord | null>;
   abstract findCredential(userId: string, workspaceSlug: string, provider: string): Promise<IntegrationCredentialRecord | null>;

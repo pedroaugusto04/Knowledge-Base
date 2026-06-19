@@ -49,6 +49,10 @@ export class GithubRepositoryResolutionService {
   }): Promise<RepositoryRecord[]> {
     if (input.repositoryIds.length === 0) return [];
 
+    const workspaces = await this.contentRepository.listWorkspaces(input.userId);
+    const workspace = workspaces[0];
+    if (!workspace) throw new NotFoundException('workspace_not_found');
+
     const availableRepositories = await this.listAccessibleRepositories({
       userId: input.userId,
       workspaceSlug: input.workspaceSlug,
@@ -67,6 +71,7 @@ export class GithubRepositoryResolutionService {
     return Promise.all(uniqueRepositoryIds.map(async (repositoryId) => {
       const repository = repositoryById.get(repositoryId);
       return this.contentRepository.upsertRepository({
+        workspaceId: workspace.id,
         workspaceSlug: input.workspaceSlug,
         externalId: String(repository?.id || repositoryId),
         fullName: repository?.fullName || '',

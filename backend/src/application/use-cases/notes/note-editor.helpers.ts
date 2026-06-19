@@ -42,10 +42,9 @@ export function buildUpdatedNote(
   });
   const structuredNote = parseStructuredNoteMarkdown(note.markdown, note.title);
   const frontmatter = {
-    ...note.frontmatter,
     type: noteType,
-    workspace: note.workspaceSlug,
-    project: note.projectSlug,
+    workspace: note.workspaceSlug || '',
+    project: note.projectSlug || '',
     status: nextStatus,
     tags,
     occurred_at: note.occurredAt,
@@ -58,11 +57,13 @@ export function buildUpdatedNote(
 
   return {
     id: note.id,
-    path: relocateNotePath(note.path, note.projectSlug, previousFolder?.fullSlugPath || '', nextFolder?.fullSlugPath || ''),
+    projectId: note.projectId,
+    workspaceId: note.workspaceId,
+    path: relocateNotePath(note.path, note.projectSlug || '', previousFolder?.fullSlugPath || '', nextFolder?.fullSlugPath || ''),
     type: noteType,
     title,
-    projectSlug: note.projectSlug,
-    workspaceSlug: note.workspaceSlug,
+    projectSlug: note.projectSlug || '',
+    workspaceSlug: note.workspaceSlug || '',
     folderId: nextFolder?.id || null,
     status: nextStatus,
     tags,
@@ -72,7 +73,6 @@ export function buildUpdatedNote(
     markdown: structuredNote
       ? renderStructuredMarkdown(frontmatter, title, rawText, structuredNote)
       : renderEditableMarkdown(frontmatter, title, rawText),
-    frontmatter,
     metadata,
     source: note.source,
     sessionId: note.sessionId,

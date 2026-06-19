@@ -3,7 +3,7 @@ import type { WebhookTrigger } from '../../contracts/enums.js';
 export type WebhookSubscriptionRecord = {
   id: string;
   userId: string;
-  workspaceSlug: string;
+  workspaceId: string;
   label: string;
   url: string;
   secret: string | null;

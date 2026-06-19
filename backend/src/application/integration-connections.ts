@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException, Optional } from '@nestjs/common';
+import crypto from 'node:crypto';
 
 import { CredentialRecordStatus, ExternalIdentityProvider, IntegrationProvider, ExternalIdentityType, ExternalIdKey, WorkspaceBindingField, ConnectionCallbackStatus, MissingCredentialError } from '../contracts/enums.js';
 import { slugify } from '../domain/strings.js';
@@ -132,7 +133,7 @@ export class IntegrationConnectionService {
       await this.assertExternalIdentityAvailable(ExternalIdentityProvider.GithubApp, 'installation_id', installationId, input.userId);
       const credential = await this.upsertConnectedCredential({
         userId: input.userId,
-        workspaceSlug: session.workspaceSlug,
+        workspaceSlug: session.workspaceSlug || '',
         provider: IntegrationProvider.GithubApp,
         encryptedConfig: { installationId, accountLogin },
         publicMetadata: {
@@ -142,7 +143,7 @@ export class IntegrationConnectionService {
       });
       await this.upsertExternalIdentity({
         userId: input.userId,
-        workspaceSlug: session.workspaceSlug,
+        workspaceSlug: session.workspaceSlug || '',
         provider: ExternalIdentityProvider.GithubApp,
         identityType: 'installation_id',
         externalId: installationId,
@@ -227,6 +228,7 @@ export class IntegrationConnectionService {
     const workspaceSlug = workspace.workspaceSlug;
     const now = new Date().toISOString();
     await this.content.upsertWorkspace(input.userId, {
+      id: workspace.id,
       workspaceSlug,
       displayName: workspace.displayName,
       whatsappChatJid: workspace.whatsappChatJid,
@@ -245,8 +247,10 @@ export class IntegrationConnectionService {
       const repositoryName = repo.fullName.split('/').pop() || repo.fullName;
       const projectSlug = slugify(repositoryName) || 'inbox';
       return this.content.upsertProject(input.userId, {
+        id: crypto.randomUUID(),
         projectSlug,
         displayName: repositoryName,
+        workspaceId: workspace.id,
         workspaceSlug,
         repositories: [repo],
         defaultTags: [],
@@ -406,7 +410,7 @@ export class IntegrationConnectionService {
     await this.assertExternalIdentityAvailable(input.spec.externalProvider, input.spec.identityType, externalId, session.userId, session.workspaceSlug);
     const credential = await this.upsertConnectedCredential({
       userId: session.userId,
-      workspaceSlug: session.workspaceSlug,
+      workspaceSlug: session.workspaceSlug || '',
       provider: input.spec.provider,
       encryptedConfig: { [input.spec.externalIdKey]: externalId },
       publicMetadata: {
@@ -416,14 +420,14 @@ export class IntegrationConnectionService {
     });
     await this.upsertExternalIdentity({
       userId: session.userId,
-      workspaceSlug: session.workspaceSlug,
+      workspaceSlug: session.workspaceSlug || '',
       provider: input.spec.externalProvider,
       identityType: input.spec.identityType,
       externalId,
       credentialId: credential.id,
       publicMetadata: { [input.spec.externalIdKey]: externalId },
     });
-    await this.upsertWorkspaceBinding(session.userId, session.workspaceSlug, input.spec.workspaceBinding, externalId);
+    await this.upsertWorkspaceBinding(session.userId, session.workspaceSlug || '', input.spec.workspaceBinding, externalId);
     const consumed = await this.consumeSessionAsConnected(session.id, { connectedAccount: externalId });
 
     try {
@@ -547,7 +551,7 @@ export class IntegrationConnectionService {
     const base = buildConnectionBrowserRedirectUrl(origin || environment.publicBaseUrl || '', returnToPath);
     base.searchParams.set('integration', IntegrationProvider.GithubApp);
     base.searchParams.set('status', status);
-    base.searchParams.set('workspaceSlug', session.workspaceSlug);
+    base.searchParams.set('workspaceSlug', session.workspaceSlug || '');
     return origin ? base.toString() : `${base.pathname}${base.search}${base.hash}`;
   }
 

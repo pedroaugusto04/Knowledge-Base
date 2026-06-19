@@ -4,6 +4,8 @@ import type { CreateProjectFolderInput } from '../../models/project-folder-input
 import { buildFolderFullSlugPath, folderSlugFromDisplayName } from '../../utils/project-folder.utils.js';
 import { ContentRepository } from '../../ports/notes/content.repository.js';
 
+import crypto from 'node:crypto';
+
 @Injectable()
 export class CreateProjectFolderUseCase {
   constructor(private readonly contentRepository: ContentRepository) {}
@@ -26,16 +28,18 @@ export class CreateProjectFolderUseCase {
       });
     }
 
+    const now = new Date().toISOString();
     const folder = await this.contentRepository.upsertProjectFolder(userId, {
-      id: '',
+      id: crypto.randomUUID(),
+      projectId: project.id,
       projectSlug: project.projectSlug,
       workspaceSlug: project.workspaceSlug,
       parentFolderId: parentFolder?.id || null,
       displayName: input.displayName,
       folderSlug,
       fullSlugPath: buildFolderFullSlugPath(parentFolder?.fullSlugPath || '', folderSlug),
-      createdAt: '',
-      updatedAt: '',
+      createdAt: now,
+      updatedAt: now,
     });
 
     return { ok: true as const, folder };

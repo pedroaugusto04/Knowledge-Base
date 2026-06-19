@@ -29,7 +29,8 @@ export type AuthIdentityRecord = {
 export type IntegrationCredentialRecord = {
   id: string;
   userId: string;
-  workspaceSlug: string;
+  workspaceId: string;
+  workspaceSlug?: string;
   provider: string;
   status: CredentialRecordStatus;
   encryptedConfig: unknown;
@@ -42,14 +43,13 @@ export type IntegrationCredentialRecord = {
 export type ExternalIdentityRecord = {
   id: string;
   userId: string;
-  workspaceSlug: string;
+  workspaceId: string;
+  workspaceSlug?: string;
   provider: string;
   identityType: string;
   externalId: string;
   credentialId: string | null;
   verifiedAt: string | null;
-  metadata: Record<string, unknown>;
-  publicMetadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 };
@@ -57,7 +57,8 @@ export type ExternalIdentityRecord = {
 export type IntegrationConnectionSessionRecord = {
   id: string;
   userId: string;
-  workspaceSlug: string;
+  workspaceId: string;
+  workspaceSlug?: string;
   provider: string;
   stateHash: string;
   verificationCodeHash: string;
@@ -70,6 +71,7 @@ export type IntegrationConnectionSessionRecord = {
 };
 
 export type WorkspaceRecord = {
+  id: string;
   workspaceSlug: string;
   displayName: string;
   whatsappChatJid: string;
@@ -80,7 +82,8 @@ export type WorkspaceRecord = {
 
 export type RepositoryRecord = {
   id: string;
-  workspaceSlug: string;
+  workspaceId: string;
+  workspaceSlug?: string;
   externalId: string;
   fullName: string;
   htmlUrl: string | null;
@@ -91,9 +94,11 @@ export type RepositoryRecord = {
 };
 
 export type ProjectRecord = {
+  id: string;
   projectSlug: string;
   displayName: string;
-  workspaceSlug: string;
+  workspaceId: string;
+  workspaceSlug?: string;
   repositories: RepositoryRecord[];
   defaultTags: string[];
   enabled: boolean;
@@ -102,8 +107,9 @@ export type ProjectRecord = {
 
 export type ProjectFolderRecord = {
   id: string;
-  projectSlug: string;
-  workspaceSlug: string;
+  projectId: string;
+  projectSlug?: string;
+  workspaceSlug?: string;
   parentFolderId: string | null;
   displayName: string;
   folderSlug: string;
@@ -117,8 +123,10 @@ export type NoteRecord = {
   path: string;
   type: string;
   title: string;
-  projectSlug: string;
-  workspaceSlug: string;
+  projectId: string;
+  workspaceId: string;
+  projectSlug?: string;
+  workspaceSlug?: string;
   folderId: string | null;
   status: string;
   tags: string[];
@@ -127,7 +135,6 @@ export type NoteRecord = {
   summary: string;
   markdown: string;
   markdownStorageKey: string;
-  frontmatter: Record<string, unknown>;
   metadata: Record<string, unknown>;
   source: string;
   sessionId: string;
@@ -146,13 +153,13 @@ export type AttachmentRecord = {
   sizeBytes: number;
   storageKey: string;
   checksumSha256: string;
-  metadata: Record<string, unknown>;
   createdAt: string;
 };
 
 export type ConversationStateRecord = {
   userId: string;
-  workspaceSlug: string;
+  workspaceId: string;
+  workspaceSlug?: string;
   conversationKey: string;
   state: unknown;
   updatedAt: string;

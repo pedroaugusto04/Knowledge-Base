@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { ListNotesInput } from '../../application/models/note-list.models.js';
 import type { ListProjectKnowledgeMapInput } from '../../application/models/project-knowledge-map.models.js';
 import type { ListProjectTimelineInput } from '../../application/models/project-timeline.models.js';
-import type { ListProjectsInput } from '../../application/models/project-list.models.js';
+import type { ListProjectsInput, PaginatedProjects } from '../../application/models/project-list.models.js';
+import type { Project } from '../../domain/projects.js';
 import { ContentObjectStorageService } from '../../application/services/content-object-storage.service.js';
 import { ContentRepository } from '../../application/ports/notes/content.repository.js';
 import type {
@@ -52,8 +53,30 @@ export class PostgresContentRepository extends ContentRepository {
     return this.projectRepository.list(userId);
   }
 
-  async listProjectsPage(userId: string, input: ListProjectsInput) {
-    return this.projectRepository.listPage(userId, input);
+  async listProjectsPage(userId: string, input: ListProjectsInput): Promise<PaginatedProjects> {
+    const pageResult = await this.projectRepository.listPage(userId, input);
+    return {
+      pagination: pageResult.pagination,
+      items: pageResult.items.map((record) => ({
+        projectSlug: record.projectSlug,
+        displayName: record.displayName,
+        workspaceSlug: record.workspaceSlug || '',
+        repositories: record.repositories.map((repo) => ({
+          id: repo.id,
+          workspaceSlug: repo.workspaceSlug || record.workspaceSlug || '',
+          externalId: repo.externalId,
+          fullName: repo.fullName,
+          htmlUrl: repo.htmlUrl,
+          description: repo.description,
+          defaultBranch: repo.defaultBranch,
+          createdAt: repo.createdAt,
+          updatedAt: repo.updatedAt,
+        })),
+        defaultTags: record.defaultTags,
+        enabled: record.enabled,
+        favorite: record.favorite,
+      })),
+    };
   }
 
   async getProjectBySlug(userId: string, projectSlug: string) {

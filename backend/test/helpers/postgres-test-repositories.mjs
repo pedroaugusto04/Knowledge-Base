@@ -124,21 +124,22 @@ async function dropSchema(targetUrl, schemaName) {
 }
 
 async function ensureBaseSchema(targetUrl) {
-  const pool = new Pool({ connectionString: targetUrl.toString() });
+  const adminPool = new Pool({ connectionString: targetUrl.toString() });
   try {
-    // Check if base schema exists
-    const existing = await pool.query(
-      `select 1 from information_schema.schemata where schema_name = $1`,
-      [BASE_SCHEMA_NAME]
-    );
+    await adminPool.query(`drop schema if exists ${quoteIdent(BASE_SCHEMA_NAME)} cascade`);
+    await adminPool.query(`create schema ${quoteIdent(BASE_SCHEMA_NAME)}`);
+  } finally {
+    await adminPool.end();
+  }
 
-    if (!existing.rows[0]) {
-      // Create base schema and run migrations once
-      await pool.query(`create schema ${quoteIdent(BASE_SCHEMA_NAME)}`);
-      const database = createDatabase(pool);
-      const schemaMigrator = new PostgresSchemaMigrator(database);
-      await schemaMigrator.migrate();
-    }
+  const pool = new Pool({
+    connectionString: targetUrl.toString(),
+    options: `-c search_path=${BASE_SCHEMA_NAME}`,
+  });
+  try {
+    const database = createDatabase(pool);
+    const schemaMigrator = new PostgresSchemaMigrator(database);
+    await schemaMigrator.migrate();
   } finally {
     await pool.end();
   }

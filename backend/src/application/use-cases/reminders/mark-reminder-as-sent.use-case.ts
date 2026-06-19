@@ -21,14 +21,7 @@ export class MarkReminderAsSentUseCase {
       const note = await this.contentRepository.getNoteById(userId, id);
       if (!note || (!note.reminderDate.trim() && !note.reminderAt.trim())) return;
       if (note.status !== KnowledgeStatus.Pending && note.status !== KnowledgeStatus.Overdue && note.status !== KnowledgeStatus.Sent) return;
-      await this.contentRepository.updateNote(userId, {
-        ...note,
-        status: KnowledgeStatus.Sent,
-        frontmatter: {
-          ...note.frontmatter,
-          status: KnowledgeStatus.Sent,
-        },
-      });
+      await this.contentRepository.updateReminderStatus(userId, id, KnowledgeStatus.Sent);
     }));
     return { ok: true, marked: uniqueIds.length };
   }

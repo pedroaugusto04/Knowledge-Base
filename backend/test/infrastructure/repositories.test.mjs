@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 
 import { NestFactory } from '@nestjs/core';
 
@@ -19,7 +20,32 @@ import { createPostgresTestRepositories } from '../helpers/postgres-test-reposit
 test('postgres repositories share state across content query and workflow ports', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
+
+  const workspace = await repositories.contentRepository.upsertWorkspace(user.id, {
+    id: crypto.randomUUID(),
+    workspaceSlug: 'default',
+    displayName: 'Default',
+    whatsappChatJid: '120363@g.us',
+    telegramChatId: 'telegram-chat-1',
+    createdAt: '2026-04-28T00:00:00.000Z',
+    updatedAt: '2026-04-28T00:00:00.000Z',
+  });
+
+  const project = await repositories.contentRepository.upsertProject(user.id, {
+    id: crypto.randomUUID(),
+    projectSlug: 'acme',
+    displayName: 'Acme',
+    workspaceId: workspace.id,
+    workspaceSlug: 'default',
+    repositories: [],
+    defaultTags: [],
+    enabled: true,
+    favorite: false,
+  });
+
   const note = await repositories.contentRepository.upsertNote(user.id, {
+    projectId: project.id,
+    workspaceId: workspace.id,
     path: '20 Inbox/acme/2026/04/item.md',
     type: 'event',
     title: 'Shared state',
@@ -45,15 +71,6 @@ test('postgres repositories share state across content query and workflow ports'
   assert.equal(reminders.length, 1);
   assert.equal(reminders[0].id, note.id);
   assert.equal(reminders[0].relativePath, note.path);
-
-  await repositories.contentRepository.upsertWorkspace(user.id, {
-    workspaceSlug: 'default',
-    displayName: 'Default',
-    whatsappChatJid: '120363@g.us',
-    telegramChatId: 'telegram-chat-1',
-    createdAt: '2026-04-28T00:00:00.000Z',
-    updatedAt: '2026-04-28T00:00:00.000Z',
-  });
   const dueWhatsappReminders = await repositories.contentQueryRepository.listDueRemindersByChannel(ReminderDeliveryChannel.Whatsapp, '2026-04-28T12:00:00.000Z');
   assert.equal(dueWhatsappReminders.length, 1);
   assert.equal(dueWhatsappReminders[0].reminderId, note.id);

@@ -32,7 +32,7 @@ export const users = pgTable('kb_users', {
 export const integrationCredentials = pgTable('kb_integration_credentials', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  workspaceSlug: text('workspace_slug').notNull(),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   provider: text('provider').notNull(),
   status: credentialStatusEnum('status').notNull().default('connected'),
   encryptedConfig: jsonb('encrypted_config').notNull().default('{}'),
@@ -41,21 +41,19 @@ export const integrationCredentials = pgTable('kb_integration_credentials', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   revokedAt: timestamp('revoked_at'),
 }, (table) => ({
-  scopeIdx: index('kb_integration_credentials_scope_idx').on(table.userId, table.workspaceSlug, table.provider),
+  scopeIdx: index('kb_integration_credentials_scope_idx').on(table.userId, table.workspaceId, table.provider),
 }));
 
 // External Identities
 export const externalIdentities = pgTable('kb_external_identities', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  workspaceSlug: text('workspace_slug').notNull().default('default'),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   provider: text('provider').notNull(),
   identityType: text('identity_type').notNull().default('external_id'),
   externalId: text('external_id').notNull(),
   credentialId: uuid('credential_id').references(() => integrationCredentials.id, { onDelete: 'set null' }),
   verifiedAt: timestamp('verified_at'),
-  metadata: jsonb('metadata').notNull().default('{}'),
-  publicMetadata: jsonb('public_metadata').notNull().default('{}'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
@@ -66,7 +64,7 @@ export const externalIdentities = pgTable('kb_external_identities', {
 export const integrationConnectionSessions = pgTable('kb_integration_connection_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  workspaceSlug: text('workspace_slug').notNull().default('default'),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   provider: text('provider').notNull(),
   stateHash: text('state_hash').notNull(),
   verificationCodeHash: text('verification_code_hash').notNull(),
@@ -79,7 +77,7 @@ export const integrationConnectionSessions = pgTable('kb_integration_connection_
 }, (table) => ({
   stateIdx: index('kb_integration_connection_sessions_state_idx').on(table.provider, table.stateHash, table.status, table.expiresAt),
   codeIdx: index('kb_integration_connection_sessions_code_idx').on(table.provider, table.verificationCodeHash, table.status, table.expiresAt),
-  userIdx: index('kb_integration_connection_sessions_user_idx').on(table.userId, table.workspaceSlug, table.provider, table.createdAt),
+  userIdx: index('kb_integration_connection_sessions_user_idx').on(table.userId, table.workspaceId, table.provider, table.createdAt),
 }));
 
 // Workspaces
@@ -102,7 +100,7 @@ export const projects = pgTable('kb_projects', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   projectSlug: text('project_slug').notNull(),
   displayName: text('display_name').notNull(),
-  workspaceSlug: text('workspace_slug').notNull().default(''),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   enabled: boolean('enabled').notNull().default(true),
   isFavorite: boolean('is_favorite').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -118,8 +116,8 @@ export const notes = pgTable('kb_notes', {
   path: text('path').notNull(),
   type: noteTypeEnum('type').notNull(),
   title: text('title').notNull(),
-  projectSlug: text('project_slug'),
-  workspaceSlug: text('workspace_slug').notNull().default(''),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   folderId: uuid('folder_id'),
   status: noteStatusEnum('status').notNull().default('active'),
   tags: jsonb('tags').notNull().default('[]'),
@@ -127,7 +125,6 @@ export const notes = pgTable('kb_notes', {
   sourceChannel: text('source_channel').notNull().default(''),
   summary: text('summary').notNull().default(''),
   markdownStorageKey: text('markdown_storage_key').notNull().default(''),
-  frontmatter: jsonb('frontmatter').notNull().default('{}'),
   metadata: jsonb('metadata').notNull().default('{}'),
   source: text('source').notNull().default(''),
   sessionId: text('session_id').notNull().default(''),
@@ -137,9 +134,9 @@ export const notes = pgTable('kb_notes', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
-  userProjectIdx: index('kb_notes_user_project_idx').on(table.userId, table.projectSlug),
-  userWorkspaceIdx: index('kb_notes_user_workspace_idx').on(table.userId, table.workspaceSlug),
-  userProjectFolderIdx: index('kb_notes_user_project_folder_idx').on(table.userId, table.projectSlug, table.folderId),
+  userProjectIdx: index('kb_notes_user_project_idx').on(table.userId, table.projectId),
+  userWorkspaceIdx: index('kb_notes_user_workspace_idx').on(table.userId, table.workspaceId),
+  userProjectFolderIdx: index('kb_notes_user_project_folder_idx').on(table.userId, table.projectId, table.folderId),
   userSourceSessionIdx: index('kb_notes_user_source_session_idx').on(table.userId, table.source, table.sessionId),
   reminderAtIdx: index('kb_notes_reminder_at_idx').on(table.reminderAt),
   reminderDateIdx: index('kb_notes_reminder_date_idx').on(table.reminderDate),
@@ -167,7 +164,6 @@ export const attachments = pgTable('kb_attachments', {
   sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull().default(0),
   storageKey: text('storage_key').notNull().default(''),
   checksumSha256: text('checksum_sha256').notNull().default(''),
-  metadata: jsonb('metadata').notNull().default('{}'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   userNoteIdx: index('kb_attachments_user_note_idx').on(table.userId, table.noteId),
@@ -176,30 +172,30 @@ export const attachments = pgTable('kb_attachments', {
 // Conversation States
 export const conversationStates = pgTable('kb_conversation_states', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  workspaceSlug: text('workspace_slug').notNull(),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   conversationKey: text('conversation_key').notNull(),
   state: jsonb('state').notNull().default('{}'),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
-  pk: index('kb_conversation_states_pk').on(table.userId, table.workspaceSlug, table.conversationKey),
+  pk: index('kb_conversation_states_pk').on(table.userId, table.workspaceId, table.conversationKey),
 }));
 
 // Reminder Dispatch State
 export const reminderDispatchState = pgTable('kb_reminder_dispatch_state', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  workspaceSlug: text('workspace_slug').notNull(),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   mode: text('mode').notNull(),
   dispatchKey: text('dispatch_key').notNull(),
   reminderId: uuid('reminder_id').notNull(),
   sentAt: timestamp('sent_at').notNull().defaultNow(),
 }, (table) => ({
-  pk: index('kb_reminder_dispatch_state_pk').on(table.userId, table.workspaceSlug, table.mode, table.dispatchKey, table.reminderId),
+  pk: index('kb_reminder_dispatch_state_pk').on(table.userId, table.workspaceId, table.mode, table.dispatchKey, table.reminderId),
 }));
 
 // Reminder Dispatch Failures
 export const reminderDispatchFailures = pgTable('kb_reminder_dispatch_failures', {
   userId: uuid('user_id').notNull(),
-  workspaceSlug: text('workspace_slug').notNull(),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   mode: text('mode').notNull(),
   dispatchKey: text('dispatch_key').notNull(),
   reminderId: uuid('reminder_id').notNull(),
@@ -209,15 +205,14 @@ export const reminderDispatchFailures = pgTable('kb_reminder_dispatch_failures',
   lastError: text('last_error').notNull().default(''),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
-  pk: index('kb_reminder_dispatch_failures_pk').on(table.userId, table.workspaceSlug, table.mode, table.dispatchKey, table.reminderId, table.channel),
+  pk: index('kb_reminder_dispatch_failures_pk').on(table.userId, table.workspaceId, table.mode, table.dispatchKey, table.reminderId, table.channel),
 }));
 
 // Project Brief History
 export const projectBriefHistory = pgTable('kb_project_brief_history', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull(),
-  workspaceSlug: text('workspace_slug').notNull(),
-  projectSlug: text('project_slug').notNull(),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   brief: jsonb('brief').notNull(),
   sourceRefs: jsonb('source_refs').notNull().default('[]'),
   contextHash: text('context_hash').notNull(),
@@ -228,7 +223,7 @@ export const projectBriefHistory = pgTable('kb_project_brief_history', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   userIdx: index('idx_project_brief_history_user').on(table.userId),
-  projectIdx: index('idx_project_brief_history_project').on(table.userId, table.workspaceSlug, table.projectSlug),
+  projectIdx: index('idx_project_brief_history_project').on(table.userId, table.projectId),
 }));
 
 // Webhook Events
@@ -251,7 +246,7 @@ export const webhookEvents = pgTable('kb_webhook_events', {
 // Repositories
 export const repositories = pgTable('kb_repositories', {
   id: uuid('id').primaryKey().defaultRandom(),
-  workspaceSlug: text('workspace_slug').notNull(),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   externalId: bigint('external_id', { mode: 'number' }).notNull(),
   fullName: text('full_name').notNull(),
   htmlUrl: text('html_url'),
@@ -260,7 +255,7 @@ export const repositories = pgTable('kb_repositories', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
-  workspaceExternalIdx: index('kb_repositories_workspace_slug_external_id_idx').on(table.workspaceSlug, table.externalId),
+  workspaceExternalIdx: index('kb_repositories_workspace_slug_external_id_idx').on(table.workspaceId, table.externalId),
 }));
 
 // Project Repositories
@@ -275,8 +270,7 @@ export const projectRepositories = pgTable('kb_project_repositories', {
 export const projectFolders = pgTable('kb_project_folders', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  workspaceSlug: text('workspace_slug').notNull(),
-  projectSlug: text('project_slug').notNull(),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   parentFolderId: uuid('parent_folder_id'),
   displayName: text('display_name').notNull(),
   folderSlug: text('folder_slug').notNull(),
@@ -284,9 +278,9 @@ export const projectFolders = pgTable('kb_project_folders', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
-  siblingSlugIdx: index('kb_project_folders_sibling_slug_idx').on(table.userId, table.projectSlug, table.parentFolderId, table.folderSlug),
-  fullPathIdx: index('kb_project_folders_full_path_idx').on(table.userId, table.projectSlug, table.fullSlugPath),
-  parentIdx: index('kb_project_folders_parent_idx').on(table.userId, table.projectSlug, table.parentFolderId),
+  siblingSlugIdx: index('kb_project_folders_sibling_slug_idx').on(table.userId, table.projectId, table.parentFolderId, table.folderSlug),
+  fullPathIdx: index('kb_project_folders_full_path_idx').on(table.userId, table.projectId, table.fullSlugPath),
+  parentIdx: index('kb_project_folders_parent_idx').on(table.userId, table.projectId, table.parentFolderId),
 }));
 
 export const projectFoldersRelations = relations(projectFolders, ({ one, many }) => ({
@@ -336,7 +330,7 @@ export const askHistory = pgTable('kb_ask_history', {
 export const webhookSubscriptions = pgTable('kb_webhook_subscriptions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  workspaceSlug: text('workspace_slug').notNull(),
+  workspaceId: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   label: text('label').notNull().default(''),
   url: text('url').notNull(),
   secret: text('secret'),

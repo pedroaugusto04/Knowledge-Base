@@ -4,6 +4,8 @@ import type { CreateProjectInput } from '../../models/project-input.models.js';
 import { ContentRepository } from '../../ports/notes/content.repository.js';
 import { GithubRepositoryResolutionService } from '../../services/github-repository-resolution.service.js';
 
+import crypto from 'node:crypto';
+
 @Injectable()
 export class CreateProjectUseCase {
   constructor(
@@ -31,8 +33,10 @@ export class CreateProjectUseCase {
     });
 
     const project = await this.contentRepository.upsertProject(userId, {
+      id: crypto.randomUUID(),
       projectSlug: input.projectSlug,
       displayName: input.displayName,
+      workspaceId: workspace.id,
       workspaceSlug: workspace.workspaceSlug,
       repositories: selectedRepositories,
       defaultTags: input.defaultTags,

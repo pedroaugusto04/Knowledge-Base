@@ -7,7 +7,7 @@ import { WebhookSubscriptionRepository } from '../../application/ports/webhooks/
 import type { WebhookSubscriptionRecord } from '../../application/models/webhook-subscription.models.js';
 import { webhookSubscriptionFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
-import { webhookSubscriptions } from '../persistence/schema/index.js';
+import { webhookSubscriptions, workspaces } from '../persistence/schema/index.js';
 
 @Injectable()
 export class PostgresWebhookSubscriptionRepository extends WebhookSubscriptionRepository {
@@ -15,12 +15,39 @@ export class PostgresWebhookSubscriptionRepository extends WebhookSubscriptionRe
     super();
   }
 
+  private async resolveWorkspaceId(userId: string, workspaceSlug: string): Promise<string> {
+    const db = this.database.getDb();
+    const result = await db
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(and(eq(workspaces.userId, userId), eq(workspaces.workspaceSlug, workspaceSlug)))
+      .limit(1);
+    
+    if (result.length === 0) {
+      throw new Error(`Workspace not found for slug: ${workspaceSlug}`);
+    }
+    return result[0].id;
+  }
+
   async list(userId: string, workspaceSlug: string): Promise<WebhookSubscriptionRecord[]> {
     const db = this.database.getDb();
     const result = await db
-      .select()
+      .select({
+        id: webhookSubscriptions.id,
+        userId: webhookSubscriptions.userId,
+        workspaceId: webhookSubscriptions.workspaceId,
+        workspaceSlug: workspaces.workspaceSlug,
+        label: webhookSubscriptions.label,
+        url: webhookSubscriptions.url,
+        secret: webhookSubscriptions.secret,
+        events: webhookSubscriptions.events,
+        enabled: webhookSubscriptions.enabled,
+        createdAt: webhookSubscriptions.createdAt,
+        updatedAt: webhookSubscriptions.updatedAt,
+      })
       .from(webhookSubscriptions)
-      .where(and(eq(webhookSubscriptions.userId, userId), eq(webhookSubscriptions.workspaceSlug, workspaceSlug)))
+      .innerJoin(workspaces, eq(workspaces.id, webhookSubscriptions.workspaceId))
+      .where(and(eq(webhookSubscriptions.userId, userId), eq(workspaces.workspaceSlug, workspaceSlug)))
       .orderBy(webhookSubscriptions.createdAt);
     
     return result.map(webhookSubscriptionFromRow);
@@ -29,22 +56,45 @@ export class PostgresWebhookSubscriptionRepository extends WebhookSubscriptionRe
   async findById(userId: string, id: string): Promise<WebhookSubscriptionRecord | null> {
     const db = this.database.getDb();
     const result = await db
-      .select()
+      .select({
+        id: webhookSubscriptions.id,
+        userId: webhookSubscriptions.userId,
+        workspaceId: webhookSubscriptions.workspaceId,
+        workspaceSlug: workspaces.workspaceSlug,
+        label: webhookSubscriptions.label,
+        url: webhookSubscriptions.url,
+        secret: webhookSubscriptions.secret,
+        events: webhookSubscriptions.events,
+        enabled: webhookSubscriptions.enabled,
+        createdAt: webhookSubscriptions.createdAt,
+        updatedAt: webhookSubscriptions.updatedAt,
+      })
       .from(webhookSubscriptions)
+      .innerJoin(workspaces, eq(workspaces.id, webhookSubscriptions.workspaceId))
       .where(and(eq(webhookSubscriptions.id, id), eq(webhookSubscriptions.userId, userId)))
       .limit(1);
     
     return result[0] ? webhookSubscriptionFromRow(result[0]) : null;
   }
 
-  async create(input: Omit<WebhookSubscriptionRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<WebhookSubscriptionRecord> {
+  async create(input: Omit<WebhookSubscriptionRecord, 'id' | 'workspaceId' | 'createdAt' | 'updatedAt'> & {
+    workspaceId?: string;
+    workspaceSlug?: string;
+  }): Promise<WebhookSubscriptionRecord> {
     const db = this.database.getDb();
+    let workspaceId = input.workspaceId;
+    if (!workspaceId && input.workspaceSlug) {
+      workspaceId = await this.resolveWorkspaceId(input.userId, input.workspaceSlug);
+    }
+    if (!workspaceId) {
+      throw new Error('workspaceId or workspaceSlug is required');
+    }
     const result = await db
       .insert(webhookSubscriptions)
       .values({
         id: crypto.randomUUID(),
         userId: input.userId,
-        workspaceSlug: input.workspaceSlug,
+        workspaceId,
         label: input.label,
         url: input.url,
         secret: input.secret,
@@ -53,7 +103,10 @@ export class PostgresWebhookSubscriptionRepository extends WebhookSubscriptionRe
       })
       .returning();
     
-    return webhookSubscriptionFromRow(result[0]);
+    return webhookSubscriptionFromRow({
+      ...result[0],
+      workspace_slug: input.workspaceSlug
+    });
   }
 
   async update(
@@ -91,14 +144,13 @@ export class PostgresWebhookSubscriptionRepository extends WebhookSubscriptionRe
     setClauses.push(`updated_at = now()`);
     params.push(id, userId);
 
-    const result = await this.database.getPool().query(
+    await this.database.getPool().query(
       `UPDATE kb_webhook_subscriptions
        SET ${setClauses.join(', ')}
-       WHERE id = $${paramIndex++} AND user_id = $${paramIndex}
-       RETURNING *`,
+       WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
       params,
     );
-    return result.rows[0] ? webhookSubscriptionFromRow(result.rows[0]) : null;
+    return this.findById(userId, id);
   }
 
   async delete(userId: string, id: string): Promise<boolean> {
@@ -114,13 +166,26 @@ export class PostgresWebhookSubscriptionRepository extends WebhookSubscriptionRe
   async findByEvent(userId: string, workspaceSlug: string, event: string): Promise<WebhookSubscriptionRecord[]> {
     const db = this.database.getDb();
     const result = await db
-      .select()
+      .select({
+        id: webhookSubscriptions.id,
+        userId: webhookSubscriptions.userId,
+        workspaceId: webhookSubscriptions.workspaceId,
+        workspaceSlug: workspaces.workspaceSlug,
+        label: webhookSubscriptions.label,
+        url: webhookSubscriptions.url,
+        secret: webhookSubscriptions.secret,
+        events: webhookSubscriptions.events,
+        enabled: webhookSubscriptions.enabled,
+        createdAt: webhookSubscriptions.createdAt,
+        updatedAt: webhookSubscriptions.updatedAt,
+      })
       .from(webhookSubscriptions)
+      .innerJoin(workspaces, eq(workspaces.id, webhookSubscriptions.workspaceId))
       .where(and(
         eq(webhookSubscriptions.userId, userId),
-        eq(webhookSubscriptions.workspaceSlug, workspaceSlug),
+        eq(workspaces.workspaceSlug, workspaceSlug),
         eq(webhookSubscriptions.enabled, true),
-        sql`${event} = ANY(events)`
+        sql`${event} = ANY(${webhookSubscriptions.events})`
       ));
     
     return result.map(webhookSubscriptionFromRow);

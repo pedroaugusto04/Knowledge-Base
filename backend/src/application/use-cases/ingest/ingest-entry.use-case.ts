@@ -88,7 +88,29 @@ async function saveIngestedNote(
   const existingProject = (await contentRepository.listProjects(userId)).find(
     (item) => item.enabled && item.workspaceSlug === workspaceSlug && item.projectSlug === parsed.event.projectSlug,
   );
-  const project = existingProject || projectFromPayload(parsed, workspaceSlug);
+  const projectId = existingProject ? existingProject.id : crypto.randomUUID();
+  const workspaceId = workspace.id;
+  const project: Project = existingProject
+    ? {
+        projectSlug: existingProject.projectSlug,
+        displayName: existingProject.displayName,
+        workspaceSlug: existingProject.workspaceSlug || workspaceSlug,
+        repositories: existingProject.repositories.map((repo) => ({
+          id: repo.id,
+          workspaceSlug: repo.workspaceSlug || workspaceSlug,
+          externalId: repo.externalId,
+          fullName: repo.fullName,
+          htmlUrl: repo.htmlUrl,
+          description: repo.description,
+          defaultBranch: repo.defaultBranch,
+          createdAt: repo.createdAt,
+          updatedAt: repo.updatedAt,
+        })),
+        defaultTags: existingProject.defaultTags,
+        enabled: existingProject.enabled,
+        favorite: existingProject.favorite,
+      }
+    : projectFromPayload(parsed, workspaceSlug);
   const normalizedStatus = normalizeManualNoteStatus({
     requestedStatus: parsed.classification.status,
     currentStatus: KnowledgeStatus.Active,
@@ -121,6 +143,7 @@ async function saveIngestedNote(
     if (project.repositories.length > 0) {
       const repo = project.repositories[0];
       const savedRepo = await contentRepository.upsertRepository({
+        workspaceId,
         workspaceSlug: repo.workspaceSlug,
         externalId: repo.externalId,
         fullName: repo.fullName,
@@ -128,12 +151,38 @@ async function saveIngestedNote(
         description: repo.description,
         defaultBranch: repo.defaultBranch,
       });
-      project.repositories[0] = savedRepo;
+      project.repositories[0] = {
+        ...savedRepo,
+        workspaceSlug: savedRepo.workspaceSlug || workspaceSlug,
+      };
     }
-    await contentRepository.upsertProject(userId, project);
+    await contentRepository.upsertProject(userId, {
+      id: projectId,
+      projectSlug: project.projectSlug,
+      displayName: project.displayName,
+      workspaceId,
+      workspaceSlug: project.workspaceSlug,
+      repositories: project.repositories.map((repo) => ({
+        id: repo.id,
+        workspaceId,
+        workspaceSlug: repo.workspaceSlug,
+        externalId: repo.externalId,
+        fullName: repo.fullName,
+        htmlUrl: repo.htmlUrl,
+        description: repo.description,
+        defaultBranch: repo.defaultBranch,
+        createdAt: repo.createdAt,
+        updatedAt: repo.updatedAt,
+      })),
+      defaultTags: project.defaultTags,
+      enabled: project.enabled,
+      favorite: project.favorite,
+    });
   }
   const note = await contentRepository.upsertNote(userId, {
     id: options.existingNoteId || undefined,
+    projectId,
+    workspaceId,
     path: options.existingNotePath || paths.eventRelativePath.replace(/\\/g, '/'),
     type: payload.classification.canonicalType,
     title,
@@ -146,17 +195,6 @@ async function saveIngestedNote(
     sourceChannel: payload.source.channel,
     summary: payload.content.sections.summary || payload.content.rawText,
     markdown,
-    frontmatter: {
-      id: payload.source.correlationId,
-      type: payload.classification.canonicalType,
-      workspace: workspaceSlug,
-      source_channel: payload.source.channel,
-      event_type: payload.event.type,
-      project: project.projectSlug,
-      status: payload.classification.status,
-      tags: payload.classification.tags,
-      occurred_at: payload.event.occurredAt,
-    },
     metadata: {
       ...payload.metadata,
       eventType: payload.event.type,
@@ -178,7 +216,6 @@ async function saveIngestedNote(
         sizeBytes: attachment.sizeBytes,
         dataBase64: attachment.dataBase64,
         checksumSha256: crypto.createHash('sha256').update(attachment.dataBase64 || '', 'base64').digest('hex'),
-        metadata: { sourceCorrelationId: payload.source.correlationId },
       }),
     ),
   );

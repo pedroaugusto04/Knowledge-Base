@@ -67,6 +67,11 @@ export class BuildDashboardUseCase {
       }));
       return {
         ...project,
+        workspaceSlug: project.workspaceSlug || '',
+        repositories: project.repositories.map((repo) => ({
+          ...repo,
+          workspaceSlug: repo.workspaceSlug || '',
+        })),
         activitySparkline,
       };
     });

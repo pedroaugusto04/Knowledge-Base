@@ -22,7 +22,7 @@ export class GetProjectBriefUseCase {
     } else {
       const project = await this.contentRepository.getProjectBySlug(userId, projectSlug);
       if (!project || !project.enabled) throw new NotFoundException('project_not_found');
-      workspaceSlug = project.workspaceSlug;
+      workspaceSlug = project.workspaceSlug || '';
     }
 
     const latest = await this.historyRepository.findLatest({

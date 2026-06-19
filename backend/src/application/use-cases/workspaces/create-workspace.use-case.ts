@@ -8,6 +8,8 @@ import { ContentRepository } from '../../ports/notes/content.repository.js';
 import { CredentialRepository } from '../../ports/integrations/integrations.repository.js';
 import { RuntimeEnvironmentProvider } from '../../ports/observability/runtime-environment.port.js';
 
+import crypto from 'node:crypto';
+
 @Injectable()
 export class CreateWorkspaceUseCase {
   constructor(
@@ -28,6 +30,7 @@ export class CreateWorkspaceUseCase {
     const now = new Date().toISOString();
     const workspaceSlug = slugify(input.workspaceSlug) || 'inbox';
     const workspace = await this.contentRepository.upsertWorkspace(userId, {
+      id: crypto.randomUUID(),
       workspaceSlug,
       displayName: input.displayName,
       whatsappChatJid: '',
@@ -36,10 +39,12 @@ export class CreateWorkspaceUseCase {
       updatedAt: now,
     });
     const initialProject = await this.contentRepository.upsertProject(userId, {
+      id: crypto.randomUUID(),
       projectSlug: 'inbox',
       displayName: 'Inbox',
-      repositories: [],
+      workspaceId: workspace.id,
       workspaceSlug,
+      repositories: [],
       defaultTags: [],
       enabled: true,
       favorite: false,

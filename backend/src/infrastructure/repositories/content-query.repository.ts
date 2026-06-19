@@ -13,7 +13,7 @@ import { reminderDispatchEligibleStatuses } from '../../domain/note-status.js';
 import { noteDetail, noteSummary, reminderFromNote, reviewFromNote } from '../mappers/content-query.mappers.js';
 import { noteFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
-import { notes, attachments, workspaces } from '../persistence/schema/index.js';
+import { notes, attachments, workspaces, projects } from '../persistence/schema/index.js';
 
 @Injectable()
 export class PostgresContentQueryRepository extends ContentQueryRepository {
@@ -37,8 +37,10 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         path: notes.path,
         type: notes.type,
         title: notes.title,
-        projectSlug: notes.projectSlug,
-        workspaceSlug: notes.workspaceSlug,
+        projectId: notes.projectId,
+        workspaceId: notes.workspaceId,
+        projectSlug: projects.projectSlug,
+        workspaceSlug: workspaces.workspaceSlug,
         folderId: notes.folderId,
         status: notes.status,
         tags: notes.tags,
@@ -46,7 +48,6 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         sourceChannel: notes.sourceChannel,
         summary: notes.summary,
         markdownStorageKey: notes.markdownStorageKey,
-        frontmatter: notes.frontmatter,
         metadata: notes.metadata,
         sessionId: notes.sessionId,
         reminderDate: notes.reminderDate,
@@ -57,12 +58,14 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         attachmentCount: count(attachments.id).as('attachment_count'),
       })
       .from(notes)
+      .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
+      .leftJoin(projects, eq(projects.id, notes.projectId))
       .leftJoin(attachments, and(
         eq(attachments.userId, notes.userId),
         eq(attachments.noteId, notes.id)
       ))
       .where(eq(notes.userId, userId))
-      .groupBy(notes.id)
+      .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .orderBy(desc(notes.occurredAt), notes.title);
     
     return result.map(noteFromRow);
@@ -81,8 +84,10 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         path: notes.path,
         type: notes.type,
         title: notes.title,
-        projectSlug: notes.projectSlug,
-        workspaceSlug: notes.workspaceSlug,
+        projectId: notes.projectId,
+        workspaceId: notes.workspaceId,
+        projectSlug: projects.projectSlug,
+        workspaceSlug: workspaces.workspaceSlug,
         folderId: notes.folderId,
         status: notes.status,
         tags: notes.tags,
@@ -90,7 +95,6 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         sourceChannel: notes.sourceChannel,
         summary: notes.summary,
         markdownStorageKey: notes.markdownStorageKey,
-        frontmatter: notes.frontmatter,
         metadata: notes.metadata,
         sessionId: notes.sessionId,
         reminderDate: notes.reminderDate,
@@ -101,12 +105,14 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         attachmentCount: count(attachments.id).as('attachment_count'),
       })
       .from(notes)
+      .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
+      .leftJoin(projects, eq(projects.id, notes.projectId))
       .leftJoin(attachments, and(
         eq(attachments.userId, notes.userId),
         eq(attachments.noteId, notes.id)
       ))
       .where(and(eq(notes.userId, userId), eq(notes.id, id)))
-      .groupBy(notes.id)
+      .groupBy(notes.id, workspaces.workspaceSlug, projects.projectSlug)
       .limit(1);
     
     const note = result[0] ? await this.hydrateMarkdown(noteFromRow(result[0])) : null;
@@ -120,8 +126,34 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
   async getReviewById(userId: string, id: string) {
     const db = this.database.getDb();
     const result = await db
-      .select()
+      .select({
+        id: notes.id,
+        userId: notes.userId,
+        path: notes.path,
+        type: notes.type,
+        title: notes.title,
+        projectId: notes.projectId,
+        workspaceId: notes.workspaceId,
+        projectSlug: projects.projectSlug,
+        workspaceSlug: workspaces.workspaceSlug,
+        folderId: notes.folderId,
+        status: notes.status,
+        tags: notes.tags,
+        occurredAt: notes.occurredAt,
+        sourceChannel: notes.sourceChannel,
+        summary: notes.summary,
+        markdownStorageKey: notes.markdownStorageKey,
+        metadata: notes.metadata,
+        sessionId: notes.sessionId,
+        reminderDate: notes.reminderDate,
+        reminderAt: notes.reminderAt,
+        isPinned: notes.isPinned,
+        createdAt: notes.createdAt,
+        updatedAt: notes.updatedAt,
+      })
       .from(notes)
+      .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
+      .leftJoin(projects, eq(projects.id, notes.projectId))
       .where(and(eq(notes.userId, userId), eq(notes.id, id)))
       .limit(1);
     
@@ -143,10 +175,10 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
     const result = await db
       .select({
         userId: notes.userId,
-        workspaceSlug: notes.workspaceSlug,
+        workspaceSlug: workspaces.workspaceSlug,
         reminderId: notes.id,
         title: notes.title,
-        projectSlug: notes.projectSlug,
+        projectSlug: projects.projectSlug,
         path: notes.path,
         status: notes.status,
         summary: notes.summary,
@@ -156,10 +188,8 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
         recipientId: recipientField,
       })
       .from(notes)
-      .innerJoin(workspaces, and(
-        eq(workspaces.userId, notes.userId),
-        eq(workspaces.workspaceSlug, notes.workspaceSlug)
-      ))
+      .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
+      .leftJoin(projects, eq(projects.id, notes.projectId))
       .where(and(
         inArray(notes.status, reminderDispatchEligibleStatuses as any),
         sql`(${notes.reminderDate} <> '' or ${notes.reminderAt} <> '')`,

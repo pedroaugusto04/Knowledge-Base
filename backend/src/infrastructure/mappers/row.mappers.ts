@@ -72,10 +72,12 @@ export function authIdentityFromRow(row: Row): AuthIdentityRecord {
 }
 
 export function credentialFromRow(row: Row): IntegrationCredentialRecord {
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
     id: String(row.id),
     userId: fieldString(row, 'user_id', 'userId'),
-    workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug'),
+    workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     provider: String(row.provider),
     status: String(row.status) === CredentialRecordStatus.Revoked ? CredentialRecordStatus.Revoked : CredentialRecordStatus.Connected,
     encryptedConfig: field(row, 'encrypted_config', 'encryptedConfig'),
@@ -87,27 +89,29 @@ export function credentialFromRow(row: Row): IntegrationCredentialRecord {
 }
 
 export function identityFromRow(row: Row): ExternalIdentityRecord {
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
     id: String(row.id),
     userId: fieldString(row, 'user_id', 'userId'),
-    workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug', 'default'),
+    workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     provider: String(row.provider),
     identityType: fieldString(row, 'identity_type', 'identityType', 'external_id'),
     externalId: fieldString(row, 'external_id', 'externalId'),
     credentialId: field(row, 'credential_id', 'credentialId') ? String(field(row, 'credential_id', 'credentialId')) : null,
     verifiedAt: field(row, 'verified_at', 'verifiedAt') ? toIsoTimestamp(field(row, 'verified_at', 'verifiedAt')) : null,
-    metadata: (row.metadata || {}) as Record<string, unknown>,
-    publicMetadata: (field(row, 'public_metadata', 'publicMetadata') || {}) as Record<string, unknown>,
     createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
     updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
   };
 }
 
 export function connectionSessionFromRow(row: Row): IntegrationConnectionSessionRecord {
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
     id: String(row.id),
     userId: fieldString(row, 'user_id', 'userId'),
-    workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug', 'default'),
+    workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     provider: String(row.provider),
     stateHash: fieldString(row, 'state_hash', 'stateHash'),
     verificationCodeHash: fieldString(row, 'verification_code_hash', 'verificationCodeHash'),
@@ -123,6 +127,7 @@ export function connectionSessionFromRow(row: Row): IntegrationConnectionSession
 export function workspaceFromRow(row: Row): WorkspaceRecord {
   const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug');
   return {
+    id: String(row.id),
     workspaceSlug,
     displayName: String(field(row, 'display_name', 'displayName') || workspaceSlug),
     whatsappChatJid: fieldString(row, 'whatsapp_chat_jid', 'whatsappChatJid'),
@@ -133,9 +138,11 @@ export function workspaceFromRow(row: Row): WorkspaceRecord {
 }
 
 export function repositoryFromRow(row: Row): RepositoryRecord {
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
     id: String(row.id),
-    workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug'),
+    workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     externalId: String(field(row, 'external_id', 'externalId') ?? '0'),
     fullName: fieldString(row, 'full_name', 'fullName'),
     htmlUrl: field(row, 'html_url', 'htmlUrl') ? String(field(row, 'html_url', 'htmlUrl')) : null,
@@ -147,14 +154,18 @@ export function repositoryFromRow(row: Row): RepositoryRecord {
 }
 
 export function projectFromRow(row: Row): ProjectRecord {
-  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug');
+  const workspaceId = fieldString(row, 'workspace_id', 'workspaceId');
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
+    id: String(row.id),
     projectSlug: fieldString(row, 'project_slug', 'projectSlug'),
     displayName: String(field(row, 'display_name', 'displayName') || field(row, 'project_slug', 'projectSlug')),
-    workspaceSlug,
+    workspaceId,
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     repositories: (Array.isArray(row.repositories) ? row.repositories : []).map((r: any) => ({
       id: String(r.id),
-      workspaceSlug: String(r.workspace_slug || r.workspaceSlug || workspaceSlug),
+      workspaceId: String(r.workspace_id || r.workspaceId || workspaceId),
+      workspaceSlug: String(r.workspace_slug || r.workspaceSlug || workspaceSlug || ''),
       externalId: String(r.external_id ?? r.externalId ?? '0'),
       fullName: String(r.full_name ?? r.fullName ?? ''),
       htmlUrl: (r.html_url || r.htmlUrl) ? String(r.html_url || r.htmlUrl) : null,
@@ -170,10 +181,13 @@ export function projectFromRow(row: Row): ProjectRecord {
 }
 
 export function projectFolderFromRow(row: Row): ProjectFolderRecord {
+  const projectSlug = fieldString(row, 'project_slug', 'projectSlug', '');
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
     id: String(row.id),
-    projectSlug: fieldString(row, 'project_slug', 'projectSlug'),
-    workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug'),
+    projectId: fieldString(row, 'project_id', 'projectId'),
+    ...(projectSlug ? { projectSlug } : {}),
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     parentFolderId: field(row, 'parent_folder_id', 'parentFolderId') ? String(field(row, 'parent_folder_id', 'parentFolderId')) : null,
     displayName: fieldString(row, 'display_name', 'displayName'),
     folderSlug: fieldString(row, 'folder_slug', 'folderSlug'),
@@ -184,13 +198,17 @@ export function projectFolderFromRow(row: Row): ProjectFolderRecord {
 }
 
 export function noteFromRow(row: Row): NoteRecord {
+  const projectSlug = fieldString(row, 'project_slug', 'projectSlug', '');
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
     id: String(row.id),
     path: fieldString(row, 'path', 'path'),
     type: fieldString(row, 'type', 'type', 'event'),
     title: fieldString(row, 'title', 'title'),
-    projectSlug: fieldString(row, 'project_slug', 'projectSlug'),
-    workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug'),
+    projectId: fieldString(row, 'project_id', 'projectId'),
+    workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),
+    ...(projectSlug ? { projectSlug } : {}),
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     folderId: field(row, 'folder_id', 'folderId') ? String(field(row, 'folder_id', 'folderId')) : null,
     status: fieldString(row, 'status', 'status', 'active'),
     tags: stringArray(row.tags),
@@ -199,7 +217,6 @@ export function noteFromRow(row: Row): NoteRecord {
     summary: fieldString(row, 'summary', 'summary'),
     markdown: fieldString(row, 'markdown', 'markdown'),
     markdownStorageKey: fieldString(row, 'markdown_storage_key', 'markdownStorageKey'),
-    frontmatter: (row.frontmatter || {}) as Record<string, unknown>,
     metadata: (row.metadata || {}) as Record<string, unknown>,
     source: String(field(row, 'source', 'source') || field(row, 'source_channel', 'sourceChannel') || ''),
     sessionId: fieldString(row, 'session_id', 'sessionId'),
@@ -236,15 +253,16 @@ export function attachmentFromRow(row: Row): AttachmentRecord {
     sizeBytes: Number(field(row, 'size_bytes', 'sizeBytes') || 0),
     storageKey: fieldString(row, 'storage_key', 'storageKey'),
     checksumSha256: fieldString(row, 'checksum_sha256', 'checksumSha256'),
-    metadata: (row.metadata || {}) as Record<string, unknown>,
     createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
   };
 }
 
 export function conversationStateFromRow(row: Row): ConversationStateRecord {
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
     userId: fieldString(row, 'user_id', 'userId'),
-    workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug'),
+    workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     conversationKey: fieldString(row, 'conversation_key', 'conversationKey'),
     state: row.state || {},
     updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
@@ -252,10 +270,12 @@ export function conversationStateFromRow(row: Row): ConversationStateRecord {
 }
 
 export function webhookSubscriptionFromRow(row: Row): WebhookSubscriptionRecord {
+  const workspaceSlug = fieldString(row, 'workspace_slug', 'workspaceSlug', '');
   return {
     id: String(row.id),
     userId: fieldString(row, 'user_id', 'userId'),
-    workspaceSlug: fieldString(row, 'workspace_slug', 'workspaceSlug'),
+    workspaceId: fieldString(row, 'workspace_id', 'workspaceId'),
+    ...(workspaceSlug ? { workspaceSlug } : {}),
     label: fieldString(row, 'label', 'label'),
     url: fieldString(row, 'url', 'url'),
     secret: row.secret == null ? null : String(row.secret),

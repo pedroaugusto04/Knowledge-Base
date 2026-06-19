@@ -239,7 +239,7 @@ export class EmbeddingWorker implements OnModuleInit, OnModuleDestroy {
     const chunks = this.chunkingService.chunkNote({
       title: note.title,
       body: note.markdown,
-      projectSlug: note.projectSlug,
+      projectSlug: note.projectSlug || '',
       attachments: attachments.map((attachment) => ({
         fileName: attachment.fileName,
         mimeType: attachment.mimeType,

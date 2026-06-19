@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import crypto from 'node:crypto';
 
 import {
   agentConversationStateSchema,
@@ -309,9 +310,15 @@ export class ProcessAgentConversationUseCase {
     const existing = await this.contentRepository.getProjectBySlug(userId, normalizedProjectSlug);
     if (existing?.enabled) return;
 
+    const workspaces = await this.contentRepository.listWorkspaces(userId);
+    const workspace = workspaces[0];
+    if (!workspace) return;
+
     await this.contentRepository.upsertProject(userId, {
+      id: crypto.randomUUID(),
       projectSlug: normalizedProjectSlug,
       displayName: displayNameFromProjectSlug(normalizedProjectSlug),
+      workspaceId: workspace.id,
       workspaceSlug,
       repositories: [],
       defaultTags: [],

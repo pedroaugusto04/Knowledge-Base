@@ -17,7 +17,7 @@ export class UpdateProjectUseCase {
 
     const selectedRepositories = await this.githubRepositoryResolution.resolveSelectedRepositories({
       userId,
-      workspaceSlug: project.workspaceSlug,
+      workspaceSlug: project.workspaceSlug || '',
       repositoryIds: input.repositoryIds,
     });
 

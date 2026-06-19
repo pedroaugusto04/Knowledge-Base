@@ -60,13 +60,19 @@ export class PostgresProjectRepository {
     const client = await this.database.getPool().connect();
     try {
       await client.query('BEGIN');
+      const wsResult = await client.query('select id from kb_workspaces where user_id = $1 and workspace_slug = $2 limit 1', [userId, input.workspaceSlug]);
+      if (wsResult.rows.length === 0) {
+        throw new Error(`Workspace not found for slug: ${input.workspaceSlug}`);
+      }
+      const workspaceId = wsResult.rows[0].id;
+
       const result = await client.query(
-        `insert into kb_projects (id, user_id, project_slug, display_name, workspace_slug, enabled, is_favorite)
+        `insert into kb_projects (id, user_id, project_slug, display_name, workspace_id, enabled, is_favorite)
          values ($1, $2, $3, $4, $5, $6, $7)
          on conflict (user_id, project_slug)
          do update set
            display_name = excluded.display_name,
-           workspace_slug = excluded.workspace_slug,
+           workspace_id = excluded.workspace_id,
            enabled = excluded.enabled,
            is_favorite = excluded.is_favorite,
            updated_at = now()
@@ -76,7 +82,7 @@ export class PostgresProjectRepository {
           userId,
           input.projectSlug,
           input.displayName,
-          input.workspaceSlug,
+          workspaceId,
           input.enabled,
           input.favorite ?? false,
         ]
@@ -104,6 +110,7 @@ export class PostgresProjectRepository {
       await client.query('COMMIT');
       return projectFromRow({ 
         ...project, 
+        workspace_slug: input.workspaceSlug,
         default_tags: defaultTags, 
         repositories
       });
@@ -142,22 +149,41 @@ export class PostgresProjectRepository {
       .select()
       .from(repositories)
       .innerJoin(workspaces, and(
-        eq(workspaces.workspaceSlug, repositories.workspaceSlug),
+        eq(workspaces.id, repositories.workspaceId),
         eq(workspaces.userId, userId)
       ))
-      .where(and(eq(workspaces.userId, userId), eq(repositories.workspaceSlug, workspaceSlug)))
+      .where(and(eq(workspaces.userId, userId), eq(workspaces.workspaceSlug, workspaceSlug)))
       .orderBy(repositories.fullName);
     
-    return result.map((row) => repositoryFromRow(row.kb_repositories));
+    return result.map((row) => repositoryFromRow({
+      ...row.kb_repositories,
+      workspace_slug: row.kb_workspaces.workspaceSlug
+    }));
   }
 
   async upsertRepository(input: Omit<RepositoryRecord, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) {
     const db = this.database.getDb();
+    
+    let workspaceId = input.workspaceId;
+    if (!workspaceId && input.workspaceSlug) {
+      const wsResult = await db
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(eq(workspaces.workspaceSlug, input.workspaceSlug))
+        .limit(1);
+      if (wsResult.length > 0) {
+        workspaceId = wsResult[0].id;
+      }
+    }
+    if (!workspaceId) {
+      throw new Error(`Workspace not found for slug: ${input.workspaceSlug}`);
+    }
+
     const result = await db
       .insert(repositories)
       .values({
         id: input.id || crypto.randomUUID(),
-        workspaceSlug: input.workspaceSlug,
+        workspaceId: workspaceId,
         externalId: typeof input.externalId === 'string' ? Number(input.externalId) : input.externalId,
         fullName: input.fullName,
         htmlUrl: input.htmlUrl,
@@ -165,7 +191,7 @@ export class PostgresProjectRepository {
         defaultBranch: input.defaultBranch,
       })
       .onConflictDoUpdate({
-        target: [repositories.workspaceSlug, repositories.externalId],
+        target: [repositories.workspaceId, repositories.externalId],
         set: {
           fullName: input.fullName,
           htmlUrl: input.htmlUrl,
@@ -176,7 +202,10 @@ export class PostgresProjectRepository {
       })
       .returning();
     
-    return repositoryFromRow(result[0]);
+    return repositoryFromRow({
+      ...result[0],
+      workspace_slug: input.workspaceSlug
+    });
   }
 
   private async resolveProjectPage(userId: string, selectedSlug: string, pageSize: number) {

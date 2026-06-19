@@ -8,7 +8,7 @@ import type { AttachmentRecord, SaveAttachmentInput } from '../../application/mo
 import { ContentObjectStorageService } from '../../application/services/content-object-storage.service.js';
 import { attachmentFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
-import { attachments, notes } from '../persistence/schema/index.js';
+import { attachments, notes, workspaces } from '../persistence/schema/index.js';
 
 @Injectable()
 export class PostgresAttachmentRepository {
@@ -21,8 +21,9 @@ export class PostgresAttachmentRepository {
     const attachmentId = input.id || crypto.randomUUID();
     const db = this.database.getDb();
     const noteResult = await db
-      .select({ workspaceSlug: notes.workspaceSlug })
+      .select({ workspaceSlug: workspaces.workspaceSlug })
       .from(notes)
+      .innerJoin(workspaces, eq(workspaces.id, notes.workspaceId))
       .where(and(eq(notes.userId, userId), eq(notes.id, input.noteId)))
       .limit(1);
     
@@ -40,7 +41,6 @@ export class PostgresAttachmentRepository {
         sizeBytes,
         storageKey,
         checksumSha256: input.checksumSha256,
-        metadata: input.metadata || {},
       })
       .returning();
     

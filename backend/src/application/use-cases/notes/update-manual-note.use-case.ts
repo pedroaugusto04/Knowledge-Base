@@ -39,8 +39,8 @@ export class UpdateNoteUseCase {
         event: WebhookTrigger.NoteUpdated,
         noteId: updated.id,
         userId,
-        workspaceSlug: note.workspaceSlug,
-        projectSlug: note.projectSlug,
+        workspaceSlug: note.workspaceSlug || '',
+        projectSlug: note.projectSlug || '',
         title: normalizedInput.title || note.title,
         content: updated.markdown,
         occurredAt: new Date().toISOString(),
@@ -54,7 +54,7 @@ export class UpdateNoteUseCase {
     const note = await this.contentRepository.getNoteById(userId, noteId);
     if (!note) throw new NotFoundException('note_not_found');
 
-    const project = await this.contentRepository.getProjectBySlug(userId, note.projectSlug);
+    const project = await this.contentRepository.getProjectBySlug(userId, note.projectSlug || '');
     if (!project || !project.enabled) throw new NotFoundException('project_not_found');
     const previousFolder = note.folderId
       ? await this.contentRepository.getProjectFolderById(userId, project.projectSlug, note.folderId)

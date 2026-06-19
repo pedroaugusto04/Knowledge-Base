@@ -278,10 +278,29 @@ export class BuildIntegrationsUseCase {
       this.contentRepository.listProjects(userId),
       this.pushSubscriptionRepository.listByUserId(userId),
     ]);
+    const mappedProjects: Project[] = projects.map((p) => ({
+      projectSlug: p.projectSlug,
+      displayName: p.displayName,
+      workspaceSlug: p.workspaceSlug || '',
+      repositories: p.repositories.map((repo) => ({
+        id: repo.id,
+        workspaceSlug: repo.workspaceSlug || '',
+        externalId: repo.externalId,
+        fullName: repo.fullName,
+        htmlUrl: repo.htmlUrl,
+        description: repo.description,
+        defaultBranch: repo.defaultBranch,
+        createdAt: repo.createdAt,
+        updatedAt: repo.updatedAt,
+      })),
+      defaultTags: p.defaultTags,
+      enabled: p.enabled,
+      favorite: p.favorite,
+    }));
     return buildIntegrationStatuses({
       environment: this.environmentProvider.read(),
       workspaces,
-      projects,
+      projects: mappedProjects,
       hasPushSubscription: pushSubs.length > 0,
     });
   }

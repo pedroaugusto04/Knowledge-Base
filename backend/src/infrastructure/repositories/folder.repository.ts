@@ -7,7 +7,7 @@ import { eq, and } from 'drizzle-orm';
 import type { SaveProjectFolderInput } from '../../application/models/repository-records.models.js';
 import { projectFolderFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
-import { projectFolders } from '../persistence/schema/index.js';
+import { projectFolders, projects, workspaces } from '../persistence/schema/index.js';
 
 @Injectable()
 export class PostgresFolderRepository {
@@ -16,9 +16,22 @@ export class PostgresFolderRepository {
   async list(userId: string, projectSlug: string) {
     const db = this.database.getDb();
     const result = await db
-      .select()
+      .select({
+        id: projectFolders.id,
+        projectId: projectFolders.projectId,
+        parentFolderId: projectFolders.parentFolderId,
+        displayName: projectFolders.displayName,
+        folderSlug: projectFolders.folderSlug,
+        fullSlugPath: projectFolders.fullSlugPath,
+        createdAt: projectFolders.createdAt,
+        updatedAt: projectFolders.updatedAt,
+        projectSlug: projects.projectSlug,
+        workspaceSlug: workspaces.workspaceSlug,
+      })
       .from(projectFolders)
-      .where(and(eq(projectFolders.userId, userId), eq(projectFolders.projectSlug, projectSlug)))
+      .innerJoin(projects, and(eq(projects.id, projectFolders.projectId), eq(projects.userId, userId)))
+      .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
+      .where(and(eq(projectFolders.userId, userId), eq(projects.projectSlug, projectSlug)))
       .orderBy(projectFolders.fullSlugPath);
     
     return result.map(projectFolderFromRow);
@@ -27,11 +40,24 @@ export class PostgresFolderRepository {
   async getById(userId: string, projectSlug: string, folderId: string) {
     const db = this.database.getDb();
     const result = await db
-      .select()
+      .select({
+        id: projectFolders.id,
+        projectId: projectFolders.projectId,
+        parentFolderId: projectFolders.parentFolderId,
+        displayName: projectFolders.displayName,
+        folderSlug: projectFolders.folderSlug,
+        fullSlugPath: projectFolders.fullSlugPath,
+        createdAt: projectFolders.createdAt,
+        updatedAt: projectFolders.updatedAt,
+        projectSlug: projects.projectSlug,
+        workspaceSlug: workspaces.workspaceSlug,
+      })
       .from(projectFolders)
+      .innerJoin(projects, and(eq(projects.id, projectFolders.projectId), eq(projects.userId, userId)))
+      .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
       .where(and(
         eq(projectFolders.userId, userId),
-        eq(projectFolders.projectSlug, projectSlug),
+        eq(projects.projectSlug, projectSlug),
         eq(projectFolders.id, folderId)
       ))
       .limit(1);
@@ -41,13 +67,28 @@ export class PostgresFolderRepository {
 
   async upsert(userId: string, input: SaveProjectFolderInput) {
     const db = this.database.getDb();
+    
+    let projectId = input.projectId;
+    if (!projectId && input.projectSlug) {
+      const projResult = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(and(eq(projects.userId, userId), eq(projects.projectSlug, input.projectSlug)))
+        .limit(1);
+      if (projResult.length > 0) {
+        projectId = projResult[0].id;
+      }
+    }
+    if (!projectId) {
+      throw new Error(`Project not found for slug: ${input.projectSlug}`);
+    }
+
     const result = await db
       .insert(projectFolders)
       .values({
         id: input.id || crypto.randomUUID(),
         userId,
-        workspaceSlug: input.workspaceSlug,
-        projectSlug: input.projectSlug,
+        projectId,
         parentFolderId: input.parentFolderId,
         displayName: input.displayName,
         folderSlug: input.folderSlug,
@@ -56,8 +97,7 @@ export class PostgresFolderRepository {
       .onConflictDoUpdate({
         target: projectFolders.id,
         set: {
-          workspaceSlug: input.workspaceSlug,
-          projectSlug: input.projectSlug,
+          projectId,
           parentFolderId: input.parentFolderId,
           displayName: input.displayName,
           folderSlug: input.folderSlug,
@@ -67,16 +107,30 @@ export class PostgresFolderRepository {
       })
       .returning();
     
-    return projectFolderFromRow(result[0]);
+    return projectFolderFromRow({
+      ...result[0],
+      projectSlug: input.projectSlug,
+      workspaceSlug: input.workspaceSlug
+    });
   }
 
   async delete(userId: string, projectSlug: string, folderId: string) {
     const db = this.database.getDb();
+    
+    const projResult = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(and(eq(projects.userId, userId), eq(projects.projectSlug, projectSlug)))
+      .limit(1);
+    
+    if (projResult.length === 0) return false;
+    const projectId = projResult[0].id;
+
     const result = await db
       .delete(projectFolders)
       .where(and(
         eq(projectFolders.userId, userId),
-        eq(projectFolders.projectSlug, projectSlug),
+        eq(projectFolders.projectId, projectId),
         eq(projectFolders.id, folderId)
       ))
       .returning();
@@ -85,15 +139,25 @@ export class PostgresFolderRepository {
   }
 
   async upsertWithClient(client: PoolClient, userId: string, input: SaveProjectFolderInput) {
+    let projectId = input.projectId;
+    if (!projectId && input.projectSlug) {
+      const projResult = await client.query('select id from kb_projects where user_id = $1 and project_slug = $2 limit 1', [userId, input.projectSlug]);
+      if (projResult.rows.length > 0) {
+        projectId = projResult.rows[0].id;
+      }
+    }
+    if (!projectId) {
+      throw new Error(`Project not found for slug: ${input.projectSlug}`);
+    }
+
     const result = await client.query(
       `insert into kb_project_folders (
-         id, user_id, workspace_slug, project_slug, parent_folder_id, display_name, folder_slug, full_slug_path
+         id, user_id, project_id, parent_folder_id, display_name, folder_slug, full_slug_path
        )
-       values ($1, $2, $3, $4, $5, $6, $7, $8)
+       values ($1, $2, $3, $4, $5, $6, $7)
        on conflict (id)
        do update set
-         workspace_slug = excluded.workspace_slug,
-         project_slug = excluded.project_slug,
+         project_id = excluded.project_id,
          parent_folder_id = excluded.parent_folder_id,
          display_name = excluded.display_name,
          folder_slug = excluded.folder_slug,
@@ -103,14 +167,17 @@ export class PostgresFolderRepository {
       [
         input.id || crypto.randomUUID(),
         userId,
-        input.workspaceSlug,
-        input.projectSlug,
+        projectId,
         input.parentFolderId,
         input.displayName,
         input.folderSlug,
         input.fullSlugPath,
       ]
     );
-    return result.rows[0];
+    return {
+      ...result.rows[0],
+      project_slug: input.projectSlug,
+      workspace_slug: input.workspaceSlug
+    };
   }
 }

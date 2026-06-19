@@ -54,7 +54,7 @@ export function publicSession(session: IntegrationConnectionSessionRecord): Conn
     id: session.id,
     provider: session.provider,
     status,
-    workspaceSlug: session.workspaceSlug,
+    workspaceSlug: session.workspaceSlug || '',
     expiresAt: session.expiresAt,
     consumedAt: session.consumedAt,
     connectedAccount: typeof metadata.connectedAccount === 'string' ? metadata.connectedAccount : undefined,

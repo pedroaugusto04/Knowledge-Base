@@ -86,27 +86,9 @@ export class UpdateProjectFolderUseCase {
   }
 }
 
-function noteInputWithPath(note: NoteRecord, path: string) {
+function noteInputWithPath(note: NoteRecord, path: string): NoteRecord {
   return {
-    id: note.id,
+    ...note,
     path,
-    type: note.type,
-    title: note.title,
-    projectSlug: note.projectSlug,
-    workspaceSlug: note.workspaceSlug,
-    folderId: note.folderId,
-    status: note.status,
-    tags: note.tags,
-    occurredAt: note.occurredAt,
-    sourceChannel: note.sourceChannel,
-    summary: note.summary,
-    markdown: note.markdown,
-    markdownStorageKey: note.markdownStorageKey,
-    frontmatter: note.frontmatter,
-    metadata: note.metadata,
-    source: note.source,
-    sessionId: note.sessionId,
-    reminderDate: note.reminderDate,
-    reminderAt: note.reminderAt,
   };
 }

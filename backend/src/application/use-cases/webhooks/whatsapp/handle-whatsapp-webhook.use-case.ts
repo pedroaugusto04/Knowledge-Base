@@ -109,12 +109,12 @@ export class HandleWhatsappWebhookUseCase {
       throw new NotFoundException('identity_not_found');
     }
 
-    const active = await this.isWhatsappIntegrationActive(identity.userId, identity.workspaceSlug);
+    const active = await this.isWhatsappIntegrationActive(identity.userId, identity.workspaceSlug || '');
     if (!active) {
       this.logger?.info('whatsapp.webhook.integration_inactive', {
         externalId: context.externalIdentity.externalId,
         resolvedUserId: identity.userId,
-        workspaceSlug: identity.workspaceSlug,
+        workspaceSlug: identity.workspaceSlug || '',
       });
       return { ok: true, processed: false, ignored: 'whatsapp_integration_inactive' };
     }
@@ -126,7 +126,7 @@ export class HandleWhatsappWebhookUseCase {
 
     const rateLimit = this.rateLimiter.consume({
       userId: identity.userId,
-      workspaceSlug: identity.workspaceSlug,
+      workspaceSlug: identity.workspaceSlug || '',
       chatId: command.input.chatId,
       senderId: command.input.senderId,
     });
@@ -142,8 +142,8 @@ export class HandleWhatsappWebhookUseCase {
 
     try {
       return await this.conversationQueue.enqueue(
-        this.conversationQueueKey(identity.userId, identity.workspaceSlug, command.input),
-        () => this.handleEvolutionMessage(context, identity.userId, identity.workspaceSlug, command.input),
+        this.conversationQueueKey(identity.userId, identity.workspaceSlug || '', command.input),
+        () => this.handleEvolutionMessage(context, identity.userId, identity.workspaceSlug || '', command.input),
       );
     } catch (error) {
       await this.failed(context, identity.userId, error);

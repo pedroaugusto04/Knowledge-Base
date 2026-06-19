@@ -113,13 +113,17 @@ export class PostgresNoteEmbeddingRepository extends NoteEmbeddingRepository {
       minSimilarity,
       options.limit,
     ];
+    
+    let joinSql = '';
     if (workspaceFilter) {
+      joinSql += ' JOIN kb_workspaces w ON w.id = n.workspace_id';
       values.push(workspaceFilter);
-      optionalClauses.push(`AND n.workspace_slug = $${values.length}`);
+      optionalClauses.push(`AND w.workspace_slug = $${values.length}`);
     }
     if (projectFilter) {
+      joinSql += ' LEFT JOIN kb_projects p ON p.id = n.project_id';
       values.push(projectFilter);
-      optionalClauses.push(`AND n.project_slug = $${values.length}`);
+      optionalClauses.push(`AND p.project_slug = $${values.length}`);
     }
 
     const result = await this.database.getPool().query(
@@ -127,6 +131,7 @@ export class PostgresNoteEmbeddingRepository extends NoteEmbeddingRepository {
               1 - (e.embedding <=> $2::vector) AS similarity
        FROM kb_note_embeddings e
        JOIN kb_notes n ON n.id = e.note_id AND n.user_id = e.user_id
+       ${joinSql}
        WHERE e.user_id = $1
          AND 1 - (e.embedding <=> $2::vector) >= $3
          ${optionalClauses.join('\n         ')}

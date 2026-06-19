@@ -5,7 +5,10 @@ export abstract class WebhookSubscriptionRepository {
 
   abstract findById(userId: string, id: string): Promise<WebhookSubscriptionRecord | null>;
 
-  abstract create(input: Omit<WebhookSubscriptionRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<WebhookSubscriptionRecord>;
+  abstract create(input: Omit<WebhookSubscriptionRecord, 'id' | 'workspaceId' | 'createdAt' | 'updatedAt'> & {
+    workspaceId?: string;
+    workspaceSlug?: string;
+  }): Promise<WebhookSubscriptionRecord>;
 
   abstract update(
     userId: string,
