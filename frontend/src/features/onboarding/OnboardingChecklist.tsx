@@ -150,8 +150,8 @@ export function OnboardingChecklist({
   const integrations = integrationsQuery.data?.integrations ?? [];
 
   const completed = useMemo(
-    () => getCompletedItems(integrations, dashboard),
-    [integrations, dashboard],
+    () => getCompletedItems(integrations, dashboard, storage.askAiTested),
+    [integrations, dashboard, storage.askAiTested],
   );
 
   const visibleItems = useMemo(
