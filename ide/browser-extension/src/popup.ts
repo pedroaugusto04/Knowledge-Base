@@ -31,16 +31,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load stored configuration
   const config = await chrome.storage.local.get(['apiUrl', 'connectionToken', 'defaultProject']);
-  
-  if (config.apiUrl && config.connectionToken) {
-    // Already configured, show clipper
+  const defaultApiUrl = 'https://pedro-duarte.ddns.net/knowledge-base/api';
+  const apiUrl = config.apiUrl || defaultApiUrl;
+
+  inputApiUrl.value = apiUrl;
+
+  if (config.connectionToken) {
+    // Already configured (we have the token), show clipper
     panelSettings.classList.add('hidden');
     panelClipper.classList.remove('hidden');
-    inputApiUrl.value = config.apiUrl;
     inputToken.value = config.connectionToken;
     await initializeClipper();
   } else {
-    // Not configured, force settings view
+    // Not configured, force settings view (but API URL is already prefilled)
     panelSettings.classList.remove('hidden');
     panelClipper.classList.add('hidden');
   }
@@ -169,7 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (response && response.success) {
         showStatus('Note saved successfully!', 'success');
-        noteUrl = `${config.apiUrl}/vault/${response.noteId}`;
+        noteUrl = `${apiUrl}/vault/${response.noteId}`;
         btnClipText.textContent = 'Open Note';
         btnClip.className = 'btn btn-full btn-success';
       } else {
@@ -228,7 +231,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load Projects list from backend
   async function loadProjects() {
     const config = await chrome.storage.local.get(['apiUrl', 'connectionToken']);
-    if (!config.apiUrl || !config.connectionToken) return;
+    const currentApiUrl = config.apiUrl || 'https://pedro-duarte.ddns.net/knowledge-base/api';
+    if (!config.connectionToken) return;
 
     try {
       let accessToken = config.connectionToken;
@@ -244,7 +248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      const res = await fetch(`${config.apiUrl}/api/projects?page=1&pageSize=100`, {
+      const res = await fetch(`${currentApiUrl}/api/projects?page=1&pageSize=100`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

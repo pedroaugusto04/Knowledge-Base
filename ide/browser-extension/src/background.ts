@@ -51,18 +51,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Helper function to save note via backend API
 async function saveClippedNote(clip: ClipPayload, tags: string[] = [], projectSlugOverride?: string): Promise<any> {
-  const { apiUrl, connectionToken, defaultProject } = await chrome.storage.local.get([
+  let { apiUrl, connectionToken, defaultProject } = await chrome.storage.local.get([
     'apiUrl',
     'connectionToken',
     'defaultProject',
   ]);
 
-  if (!apiUrl || !connectionToken) {
-    throw new Error('API URL or Connection Token not configured. Please open extension settings.');
+  const resolvedApiUrl = apiUrl || 'https://pedro-duarte.ddns.net/knowledge-base/api';
+
+  if (!connectionToken) {
+    throw new Error('Connection Token not configured. Please open extension settings.');
   }
 
   const project = projectSlugOverride || defaultProject || 'inbox';
-  const cleanApiUrl = apiUrl.replace(/\/$/, '');
+  const cleanApiUrl = resolvedApiUrl.replace(/\/$/, '');
 
   // Convert HTML to Markdown in the Background service worker
   const htmlToConvert = clip.selectedHtml || clip.contentHtml || '';
