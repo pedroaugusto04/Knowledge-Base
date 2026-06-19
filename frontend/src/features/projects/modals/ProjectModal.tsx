@@ -1,15 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { createProject, updateProject } from '../../../shared/api/client';
+import { fetchProjectTemplates, applyProjectTemplate } from '../../../shared/api/project-templates';
 import type { GithubIntegrationRepository } from '../../../shared/api/models/integration';
 import type { Project } from '../../../shared/api/models/project';
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../../shared/forms/errors';
 import { FormActions, FormField } from '../../../shared/forms/fields';
 import { parseCommaSeparatedList } from '../../../shared/forms/normalizers';
 import { ConfirmationModal } from '../../../shared/ui/confirmation-modal';
+import { Select } from '../../../shared/ui/select';
 import { discardChangesConfirmationCopy, useModalCloseGuard } from '../../../shared/ui/use-modal-close-guard';
 import { useGlobalLoading } from '../../../app/global-loading';
 import { projectFormSchema, type ProjectFormValues } from '../projects.forms';
@@ -21,6 +23,7 @@ type ProjectModalProps = {
   project?: Project;
   onClose: () => void;
   onSaved: (projectSlug: string, mode: 'create' | 'edit') => void | Promise<void>;
+  workspaceSlug?: string;
 };
 
 export function ProjectModal({
@@ -30,15 +33,42 @@ export function ProjectModal({
   project,
   onClose,
   onSaved,
+  workspaceSlug,
 }: ProjectModalProps) {
   const globalLoading = useGlobalLoading();
   const formRef = useRef<HTMLFormElement>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+
+  const templatesQuery = useQuery({
+    queryKey: ['project-templates', workspaceSlug],
+    queryFn: () => workspaceSlug ? fetchProjectTemplates(workspaceSlug) : null,
+    enabled: mode === 'create' && Boolean(workspaceSlug),
+  });
+
+  const applyTemplateMutation = useMutation({
+    mutationFn: (templateId: string) => {
+      if (!workspaceSlug) throw new Error('Missing workspace');
+      return applyProjectTemplate({
+        templateId,
+        displayName: '',
+        projectSlug: '',
+        repositoryIds: [],
+      });
+    },
+    onSuccess: (result) => {
+      const { projectInput } = result;
+      setValue('displayName', projectInput.displayName);
+      setValue('defaultTags', projectInput.defaultTags.join(', '));
+    },
+  });
+
   const {
     control,
     formState: { errors, isDirty },
     handleSubmit,
     register,
     setError,
+    setValue,
   } = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
     shouldFocusError: false,
@@ -100,6 +130,35 @@ export function ProjectModal({
               (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
             )}
           >
+            {mode === 'create' && templatesQuery.data?.templates && templatesQuery.data.templates.length > 0 && (
+              <FormField name="template" label="Template" optional>
+                {(fieldProps) => (
+                  <Select
+                    ariaDescribedBy={fieldProps['aria-describedby']}
+                    ariaInvalid={fieldProps['aria-invalid']}
+                    ariaRequired={fieldProps['aria-required']}
+                    dataField={fieldProps['data-field']}
+                    id={fieldProps.id}
+                    options={[
+                      { value: '', label: 'None' },
+                      ...templatesQuery.data.templates.map((template) => ({
+                        value: template.id,
+                        label: template.name,
+                      })),
+                    ]}
+                    required={fieldProps.required}
+                    value={selectedTemplateId}
+                    onChange={(val) => {
+                      setSelectedTemplateId(val);
+                      if (val) {
+                        applyTemplateMutation.mutate(val);
+                      }
+                    }}
+                  />
+                )}
+              </FormField>
+            )}
+
             <div className="form-grid">
               <FormField name="displayName" label="Name" error={errors.displayName?.message} required>
                 {(fieldProps) => <input {...fieldProps} {...register('displayName')} />}

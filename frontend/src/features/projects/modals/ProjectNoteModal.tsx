@@ -5,8 +5,10 @@ import { Controller, useForm } from 'react-hook-form';
 
 import { formatDisplayToken, reminderInputDate, reminderInputTime } from '../../../shared/utils/format';
 import { createNote, updateNote, fetchProjectFolders } from '../../../shared/api/client';
+import { fetchNoteTemplates, applyNoteTemplate } from '../../../shared/api/note-templates';
 import type { NoteDetail } from '../../../shared/api/models/note';
 import type { Project } from '../../../shared/api/models/project';
+import type { NoteTemplate } from '../../../shared/api/models/note-template';
 import { applyBackendFieldErrors, fieldNamesFromErrors, focusFirstFormError, notifyGeneralFormError } from '../../../shared/forms/errors';
 import { FormActions, FormField } from '../../../shared/forms/fields';
 import { parseCommaSeparatedList } from '../../../shared/forms/normalizers';
@@ -32,6 +34,7 @@ type ProjectNoteModalProps = {
   projectSlug: string;
   initialFolderId?: string;
   projects?: Project[];
+  workspaceSlug?: string;
 };
 
 export function ProjectNoteModal({
@@ -43,17 +46,43 @@ export function ProjectNoteModal({
   projectSlug,
   initialFolderId,
   projects,
+  workspaceSlug,
 }: ProjectNoteModalProps) {
   const globalLoading = useGlobalLoading();
   const formRef = useRef<HTMLFormElement>(null);
   const [selectedProjectSlug, setSelectedProjectSlug] = useState(
     mode === 'edit' && note ? note.project : projectSlug
   );
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   const foldersQuery = useQuery({
     queryKey: ['project-folders', 'modal', selectedProjectSlug],
     queryFn: () => fetchProjectFolders(selectedProjectSlug),
     enabled: Boolean(selectedProjectSlug) && (!folders || selectedProjectSlug !== projectSlug),
+  });
+
+  const templatesQuery = useQuery({
+    queryKey: ['note-templates', workspaceSlug],
+    queryFn: () => workspaceSlug ? fetchNoteTemplates(workspaceSlug) : null,
+    enabled: mode === 'create' && Boolean(workspaceSlug),
+  });
+
+  const applyTemplateMutation = useMutation({
+    mutationFn: (templateId: string) => {
+      if (!workspaceSlug || !selectedProjectSlug) throw new Error('Missing workspace or project');
+      return applyNoteTemplate({
+        templateId,
+        projectSlug: selectedProjectSlug,
+        folderId: undefined,
+      });
+    },
+    onSuccess: (result) => {
+      const { noteInput } = result;
+      setValue('title', noteInput.title);
+      setValue('rawText', noteInput.rawText);
+      setValue('tags', noteInput.tags.join(', '));
+      if (noteInput.canonicalType) setValue('canonicalType', noteInput.canonicalType);
+    },
   });
 
   const modalFolders = useMemo(
@@ -149,6 +178,36 @@ export function ProjectNoteModal({
                     onChange={(val) => {
                       setSelectedProjectSlug(val);
                       setValue('folderId', '');
+                      setSelectedTemplateId('');
+                    }}
+                  />
+                )}
+              </FormField>
+            )}
+
+            {mode === 'create' && templatesQuery.data?.templates && templatesQuery.data.templates.length > 0 && (
+              <FormField name="template" label="Template" optional>
+                {(fieldProps) => (
+                  <Select
+                    ariaDescribedBy={fieldProps['aria-describedby']}
+                    ariaInvalid={fieldProps['aria-invalid']}
+                    ariaRequired={fieldProps['aria-required']}
+                    dataField={fieldProps['data-field']}
+                    id={fieldProps.id}
+                    options={[
+                      { value: '', label: 'None' },
+                      ...templatesQuery.data.templates.map((template) => ({
+                        value: template.id,
+                        label: template.name,
+                      })),
+                    ]}
+                    required={fieldProps.required}
+                    value={selectedTemplateId}
+                    onChange={(val) => {
+                      setSelectedTemplateId(val);
+                      if (val) {
+                        applyTemplateMutation.mutate(val);
+                      }
                     }}
                   />
                 )}

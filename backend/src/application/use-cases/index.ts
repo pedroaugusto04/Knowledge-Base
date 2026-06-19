@@ -57,5 +57,15 @@ export {
 } from './push/push-subscription.use-cases.js';
 export { SetNotePinnedUseCase } from './notes/set-note-pinned.use-case.js';
 export { FindRelatedNotesUseCase } from './notes/find-related-notes.use-case.js';
+export { CreateNoteTemplateUseCase } from './templates/create-note-template.use-case.js';
+export { ListNoteTemplatesUseCase } from './templates/list-note-templates.use-case.js';
+export { UpdateNoteTemplateUseCase } from './templates/update-note-template.use-case.js';
+export { DeleteNoteTemplateUseCase } from './templates/delete-note-template.use-case.js';
+export { ApplyNoteTemplateUseCase } from './templates/apply-note-template.use-case.js';
+export { CreateProjectTemplateUseCase } from './templates/create-project-template.use-case.js';
+export { ListProjectTemplatesUseCase } from './templates/list-project-templates.use-case.js';
+export { UpdateProjectTemplateUseCase } from './templates/update-project-template.use-case.js';
+export { DeleteProjectTemplateUseCase } from './templates/delete-project-template.use-case.js';
+export { ApplyProjectTemplateUseCase } from './templates/apply-project-template.use-case.js';
 
 

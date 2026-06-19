@@ -380,6 +380,39 @@ export const authIdentities = pgTable('kb_auth_identities', {
   userIdProviderIdx: index('kb_auth_identities_user_id_provider_idx').on(table.userId, table.provider),
 }));
 
+// Note Templates
+export const noteTemplates = pgTable('kb_note_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceSlug: text('workspace_slug').notNull(),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  canonicalType: text('canonical_type'),
+  defaultTags: jsonb('default_tags').notNull().default('[]'),
+  defaultStatus: text('default_status'),
+  sections: jsonb('sections').notNull().default('[]'),
+  isDefault: boolean('is_default').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  workspaceIdx: index('kb_note_templates_workspace_idx').on(table.workspaceSlug),
+}));
+
+// Project Templates
+export const projectTemplates = pgTable('kb_project_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceSlug: text('workspace_slug').notNull(),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  fields: jsonb('fields').notNull().default('[]'),
+  folders: jsonb('folders').notNull().default('[]'),
+  defaultTags: jsonb('default_tags').notNull().default('[]'),
+  isDefault: boolean('is_default').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  workspaceIdx: index('kb_project_templates_workspace_idx').on(table.workspaceSlug),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   integrationCredentials: many(integrationCredentials),

@@ -61,6 +61,7 @@ export function ProjectsWorkspace({
   selectedProject,
   openProject,
   openNote,
+  createNote,
 }: ProjectsWorkspaceProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const params = useParams();
@@ -268,7 +269,16 @@ export function ProjectsWorkspace({
           </div>
         )}
         subtitle=""
-        action={<button className="icon-button" type="button" onClick={() => setProjectModal({ mode: 'create' })}>New project</button>}
+        action={
+          <>
+            {createNote ? (
+              <button className="icon-button" type="button" onClick={() => createNote()}>
+                Quick note
+              </button>
+            ) : null}
+            <button className="icon-button" type="button" onClick={() => setProjectModal({ mode: 'create' })}>New project</button>
+          </>
+        }
       />
 
       {/* Search input for filtering notes within the selected project */}

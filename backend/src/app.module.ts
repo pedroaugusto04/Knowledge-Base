@@ -16,6 +16,7 @@ import { RemindersModule } from './infrastructure/modules/reminders.module.js';
 import { PushSubscriptionsModule } from './infrastructure/modules/push-subscriptions.module.js';
 import { OperationsModule } from './infrastructure/modules/operations.module.js';
 import { IntegrationsModule } from './infrastructure/modules/integrations.module.js';
+import { TemplatesModule } from './infrastructure/modules/templates.module.js';
 
 import { HealthController } from './interfaces/http/controllers/index.js';
 import { GlobalRateLimitGuard } from './interfaces/http/auth.guards.js';
@@ -37,6 +38,7 @@ import { GlobalRateLimitGuard } from './interfaces/http/auth.guards.js';
     PushSubscriptionsModule,
     OperationsModule,
     IntegrationsModule,
+    TemplatesModule,
   ],
   controllers: [HealthController],
   providers: [

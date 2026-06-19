@@ -15,5 +15,5 @@ export type PageContext = {
 
 export type ProjectsPageContext = Pick<
   PageContext,
-  'dashboard' | 'selectedProject' | 'openProject' | 'openNote' | 'editNote' | 'deleteNote'
+  'dashboard' | 'selectedProject' | 'openProject' | 'openNote' | 'editNote' | 'deleteNote' | 'createNote'
 >;
