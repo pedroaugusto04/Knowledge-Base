@@ -9,6 +9,7 @@ import {
   generateProjectBrief,
   runAsk,
 } from '../../shared/api/client';
+import { markAskAiTested } from '../../features/onboarding/OnboardingChecklist';
 import { getErrorMessage } from '../../shared/api/error-message';
 import type { AskHistoryResponse } from '../../shared/api/models/ask';
 import type {
@@ -103,6 +104,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
         setAskError(null);
         setHistoryPage(1);
         await queryClient.invalidateQueries({ queryKey: ['ask-history'] });
+        markAskAiTested();
       } else {
         setAskError('Could not generate an answer. Please try again.');
       }
