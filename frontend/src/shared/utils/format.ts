@@ -195,3 +195,9 @@ export function formatSourceLabel(source: string | null | undefined): string {
 export function getSourceTagClass(source: string | null | undefined): string {
   return getSourceConfig(source).tagClass;
 }
+
+export function formatDateIso(dateStr?: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+}

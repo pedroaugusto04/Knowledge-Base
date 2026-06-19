@@ -14,6 +14,7 @@ import {
 } from '../../shared/api/client';
 import { markAskAiTested } from '../../features/onboarding/OnboardingChecklist';
 import { getErrorMessage } from '../../shared/api/error-message';
+import { formatDateIso } from '../../shared/utils/format';
 import type { AskHistoryResponse } from '../../shared/api/models/ask';
 import type {
   ProjectBriefPanelResponse,
@@ -23,6 +24,7 @@ import type {
 import type { AskAnswerCardItem } from '../../widgets/ask/ask-answer-card.models';
 import { AskAnswerCard, projectLabel } from '../../widgets/ask/AskAnswerCard';
 import { AskAiIcon } from '../../widgets/ask/AskAiIcon';
+import { AskAnswerSkeleton } from '../../widgets/ask/AskAnswerSkeleton';
 import { ProjectBriefPanel } from '../../widgets/projects/ProjectBriefPanel';
 import { EmptyState, InlineMessage, PageHead, Panel } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
@@ -286,30 +288,6 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
   );
 }
 
-function AskAnswerSkeleton({ question, projectLabel: selectedProjectLabel }: { question: string; projectLabel: string }) {
-  return (
-    <div className="ask-qa-card skeleton-card">
-      <div className="ask-question-bubble">
-        <span className="question-text">{question}</span>
-        <span className="ask-project-chip">{selectedProjectLabel}</span>
-      </div>
-      <div className="ask-answer-container">
-        <div className="ask-answer-header">
-          <div className="ask-ai-identity">
-            <AskAiIcon className="ask-ai-identity-icon ask-ai-pulse" />
-            <strong>{SEARCH_MESSAGES.SKELETON.THINKING}</strong>
-          </div>
-        </div>
-        <div className="ask-skeleton-lines">
-          <div className="skeleton-line line-1"></div>
-          <div className="skeleton-line line-2"></div>
-          <div className="skeleton-line line-3"></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function BriefHistoryInline({
   historyQuery,
   setPage,
@@ -345,7 +323,7 @@ function BriefHistoryInline({
                 </div>
                 <div className="ask-history-item-meta">
                   <span className="ask-history-project">{item.model}</span>
-                  <span className="ask-history-date">{formatDate(item.generatedAt)}</span>
+                  <span className="ask-history-date">{formatDateIso(item.generatedAt)}</span>
                 </div>
                 <span className="ask-history-answer">{item.brief.status}</span>
               </button>
@@ -394,7 +372,7 @@ function AskHistoryInline({
                 </div>
                 <div className="ask-history-item-meta">
                   <span className="ask-history-project">{projectLabel(item.projectSlug, projects)}</span>
-                  <span className="ask-history-date">{formatDate(item.createdAt)}</span>
+                  <span className="ask-history-date">{formatDateIso(item.createdAt)}</span>
                 </div>
                 <span className="ask-history-answer">{item.answer}</span>
               </button>
@@ -444,10 +422,3 @@ function AskWaitingState({ onPromptClick }: { onPromptClick: (text: string) => v
     </div>
   );
 }
-
-function formatDate(dateStr?: string) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
-}
-
