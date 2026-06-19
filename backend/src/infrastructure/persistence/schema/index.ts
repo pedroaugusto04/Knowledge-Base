@@ -355,9 +355,6 @@ export const webhookIdempotencyKeys = pgTable('kb_webhook_idempotency_keys', {
   eventType: text('event_type').notNull(),
   idempotencyKey: text('idempotency_key').notNull(),
   resolvedUserId: uuid('resolved_user_id'),
-  externalIdentity: jsonb('external_identity').notNull().default('{}'),
-  rawHeaders: jsonb('raw_headers').notNull().default('{}'),
-  rawPayload: jsonb('raw_payload').notNull().default('{}'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   pk: index('kb_webhook_idempotency_keys_pk').on(table.provider, table.eventType, table.idempotencyKey),

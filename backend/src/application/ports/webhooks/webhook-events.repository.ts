@@ -6,9 +6,6 @@ export abstract class WebhookEventRepository {
     eventType: string;
     idempotencyKey: string;
     resolvedUserId?: string | null;
-    externalIdentity?: Record<string, unknown>;
-    rawHeaders?: Record<string, unknown>;
-    rawPayload?: unknown;
   }): Promise<boolean>;
 
   abstract recordWebhookEvent(input: {

@@ -446,9 +446,6 @@ export class HandleWhatsappWebhookUseCase {
       eventType,
       idempotencyKey,
       resolvedUserId,
-      externalIdentity: context.externalIdentity,
-      rawHeaders: context.headers,
-      rawPayload: context.body,
     });
     if (!claimed) {
       this.logger?.info('whatsapp.webhook.duplicate', {

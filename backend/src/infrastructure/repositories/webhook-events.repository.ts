@@ -20,9 +20,6 @@ export class PostgresWebhookEventRepository extends WebhookEventRepository {
     eventType: string;
     idempotencyKey: string;
     resolvedUserId?: string | null;
-    externalIdentity?: Record<string, unknown>;
-    rawHeaders?: Record<string, unknown>;
-    rawPayload?: unknown;
   }) {
     const db = this.database.getDb();
     const result = await db
@@ -32,13 +29,10 @@ export class PostgresWebhookEventRepository extends WebhookEventRepository {
         eventType: input.eventType,
         idempotencyKey: input.idempotencyKey,
         resolvedUserId: input.resolvedUserId || null,
-        externalIdentity: input.externalIdentity || {},
-        rawHeaders: sanitizeWebhookHeaders(input.rawHeaders || {}),
-        rawPayload: sanitizeWebhookValue(input.rawPayload || {}),
       })
       .onConflictDoNothing()
       .returning();
-    
+
     return result.length > 0;
   }
 
