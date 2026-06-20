@@ -173,7 +173,6 @@ export function OnboardingChecklist({
     queryKey: ['integrations', workspaceSlug],
     queryFn: () => fetchIntegrations(workspaceSlug),
     enabled: Boolean(workspaceSlug),
-    staleTime: 30_000,
   });
 
   const integrations = integrationsQuery.data?.integrations ?? [];
