@@ -5,7 +5,7 @@ import type { KbClient } from '../kb-client';
 export class AiHistoryManager {
   private providers = new Map<string, AiHistoryProvider>();
   private activeDisposables: vscode.Disposable[] = [];
-  private knownSessionTimes = new Map<string, number>(); // track last modified timestamps to avoid duplicates
+  private knownSessionHashes = new Map<string, string>(); // track content hashes to detect real changes
   private recentSessions: AiSession[] = []; // store in memory to allow viewing/importing later
   private context?: vscode.ExtensionContext;
   private savedSessions = new Map<string, number>(); // key -> timestamp "providerId:sessionId"
@@ -19,6 +19,18 @@ export class AiHistoryManager {
     this.providers.set(provider.id, provider);
   }
 
+  private computeSessionHash(session: AiSession): string {
+    // Create a hash based on the number of turns and their content
+    const content = session.turns.map(t => `${t.role}:${t.content}`).join('|');
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash.toString(36);
+  }
+
   async startWatching(client: KbClient, context: vscode.ExtensionContext) {
     this.context = context;
 
@@ -28,12 +40,12 @@ export class AiHistoryManager {
     }
     this.activeDisposables = [];
 
-    // Load persisted known session times
+    // Load persisted known session hashes
     try {
-      const persistedTimes = context.globalState.get<[string, number][]>('kb.knownSessionTimes') || [];
-      this.knownSessionTimes = new Map(persistedTimes);
+      const persistedHashes = context.globalState.get<[string, string][]>('kb.knownSessionHashes') || [];
+      this.knownSessionHashes = new Map(persistedHashes);
     } catch {
-      this.knownSessionTimes = new Map();
+      this.knownSessionHashes = new Map();
     }
 
     // Load persisted recent sessions
@@ -70,12 +82,10 @@ export class AiHistoryManager {
         for (const s of initial) {
           this.addOrUpdateRecentSession(s, true);
           
-          // Record the timestamp of existing sessions so they don't trigger prompts
+          // Record the hash of existing sessions so they don't trigger prompts
           const key = `${provider.id}:${s.sessionId}`;
-          const currentKnownTime = this.knownSessionTimes.get(key) || 0;
-          if (s.timestamp > currentKnownTime) {
-            this.knownSessionTimes.set(key, s.timestamp);
-          }
+          const hash = this.computeSessionHash(s);
+          this.knownSessionHashes.set(key, hash);
         }
       } catch (err) {
         console.error(`Failed to load initial sessions for ${provider.id}:`, err);
@@ -91,11 +101,15 @@ export class AiHistoryManager {
 
         const disposable = provider.watchSessions(async (session) => {
           const key = `${provider.id}:${session.sessionId}`;
-          const lastTime = this.knownSessionTimes.get(key) || 0;
-          if (session.timestamp <= lastTime) {
-            return; // Already processed this or newer version
+          const hash = this.computeSessionHash(session);
+          const lastHash = this.knownSessionHashes.get(key);
+          
+          // Only trigger popup if content has actually changed
+          if (lastHash === hash) {
+            return; // Already processed this exact content
           }
-          this.knownSessionTimes.set(key, session.timestamp);
+          
+          this.knownSessionHashes.set(key, hash);
           this.addOrUpdateRecentSession(session);
 
           // If the session is already saved (auto-save enabled)
@@ -201,8 +215,8 @@ export class AiHistoryManager {
   private saveState() {
     if (!this.context) return;
     try {
-      const timesArray = Array.from(this.knownSessionTimes.entries());
-      this.context.globalState.update('kb.knownSessionTimes', timesArray);
+      const hashesArray = Array.from(this.knownSessionHashes.entries());
+      this.context.globalState.update('kb.knownSessionHashes', hashesArray);
       this.context.globalState.update('kb.recentSessions', this.recentSessions);
       this.context.globalState.update('kb.savedSessionsMap', Array.from(this.savedSessions.entries()));
       this.context.globalState.update('kb.ignoredSessionsMap', Array.from(this.ignoredSessions.entries()));
