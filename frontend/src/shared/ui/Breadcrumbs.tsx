@@ -9,85 +9,95 @@ type BreadcrumbsProps = {
   projects: Project[];
 };
 
+type BreadcrumbItem = { label: string; to?: string };
+
+type BreadcrumbNote = {
+  project: string;
+  title: string;
+};
+
+function projectDisplayName(projects: Project[], projectSlug: string) {
+  return projects.find((project) => project.projectSlug === projectSlug)?.displayName || projectSlug;
+}
+
+function pathSlug(pathname: string, route: string) {
+  const match = pathname.match(new RegExp(`^${route}/([^/]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function fallbackBreadcrumbs(pathname: string): BreadcrumbItem[] {
+  return pathname.split('/').filter(Boolean).map((part, index, parts) => {
+    const label = part.charAt(0).toUpperCase() + part.slice(1);
+    const isLast = index === parts.length - 1;
+    const to = `/${parts.slice(0, index + 1).join('/')}`;
+    return { label, to: isLast ? undefined : to };
+  });
+}
+
+function buildProjectBreadcrumbs(pathname: string, projects: Project[]): BreadcrumbItem[] {
+  const projectSlug = pathSlug(pathname, routes.projects);
+  if (!projectSlug) return [{ label: UI_MESSAGES.PROJECTS }];
+  return [
+    { label: UI_MESSAGES.PROJECTS, to: routes.projects },
+    { label: projectDisplayName(projects, projectSlug) },
+  ];
+}
+
+function buildKnowledgeMapBreadcrumbs(pathname: string, projects: Project[]): BreadcrumbItem[] {
+  const projectSlug = pathSlug(pathname, routes.map);
+  if (!projectSlug) return [{ label: UI_MESSAGES.KNOWLEDGE_MAP }];
+  return [
+    { label: UI_MESSAGES.KNOWLEDGE_MAP, to: routes.map },
+    { label: projectDisplayName(projects, projectSlug) },
+  ];
+}
+
+function buildVaultBreadcrumbs(note: BreadcrumbNote | undefined, projects: Project[]): BreadcrumbItem[] {
+  const items: BreadcrumbItem[] = [{ label: UI_MESSAGES.PROJECTS, to: routes.projects }];
+  if (!note) return [...items, { label: UI_MESSAGES.NOTE }];
+
+  const project = projects.find((item) => item.projectSlug === note.project);
+  if (project) {
+    items.push({
+      label: project.displayName,
+      to: routes.project(project.projectSlug),
+    });
+  }
+  items.push({ label: note.title });
+  return items;
+}
+
+function buildBreadcrumbItems(pathname: string, projects: Project[], note: BreadcrumbNote | undefined): BreadcrumbItem[] {
+  const home = { label: UI_MESSAGES.HOME, to: routes.home };
+
+  if (pathname.startsWith(routes.projects)) return [home, ...buildProjectBreadcrumbs(pathname, projects)];
+  if (pathname.startsWith(routes.map)) return [home, ...buildKnowledgeMapBreadcrumbs(pathname, projects)];
+  if (pathname.startsWith(routes.vault)) return [home, ...buildVaultBreadcrumbs(note, projects)];
+  if (pathname === routes.search) return [home, { label: UI_MESSAGES.SEARCH }];
+  if (pathname === routes.kanban) return [home, { label: UI_MESSAGES.KANBAN }];
+  if (pathname === routes.reminders) return [home, { label: UI_MESSAGES.REMINDERS }];
+  if (pathname === routes.profile) return [home, { label: UI_MESSAGES.PROFILE }];
+  if (pathname.startsWith(routes.integrations)) {
+    return [home, { label: UI_MESSAGES.SETTINGS, to: routes.profile }, { label: UI_MESSAGES.INTEGRATIONS }];
+  }
+
+  return [home, ...fallbackBreadcrumbs(pathname)];
+}
+
 export function Breadcrumbs({ projects }: BreadcrumbsProps) {
   const { pathname } = useLocation();
 
-  // Detect if we are on a note detail page
-  const matchVault = pathname.match(new RegExp(`^${routes.vault}/([^/]+)`));
-  const noteId = matchVault ? decodeURIComponent(matchVault[1]) : null;
+  const noteId = pathSlug(pathname, routes.vault);
   const noteQuery = useQuery({
     ...noteDetailQueryOptions(noteId || ''),
     enabled: !!noteId,
   });
 
-  // If path is exactly "/" (home page), we don't render breadcrumbs
   if (pathname === routes.home || pathname === '') {
     return null;
   }
 
-  // Generate breadcrumb items
-  const items: { label: string; to?: string }[] = [];
-
-  // Always start with Home
-  items.push({ label: UI_MESSAGES.HOME, to: routes.home });
-
-  if (pathname.startsWith(routes.projects)) {
-    const matchProject = pathname.match(new RegExp(`^${routes.projects}/([^/]+)`));
-    const projectSlug = matchProject ? decodeURIComponent(matchProject[1]) : null;
-
-    if (projectSlug) {
-      items.push({ label: UI_MESSAGES.PROJECTS, to: routes.projects });
-      const project = projects.find((p) => p.projectSlug === projectSlug);
-      items.push({ label: project ? project.displayName : projectSlug });
-    } else {
-      items.push({ label: UI_MESSAGES.PROJECTS });
-    }
-  } else if (pathname.startsWith(routes.map)) {
-    const matchMapProject = pathname.match(new RegExp(`^${routes.map}/([^/]+)`));
-    const projectSlug = matchMapProject ? decodeURIComponent(matchMapProject[1]) : null;
-
-    if (projectSlug) {
-      items.push({ label: UI_MESSAGES.KNOWLEDGE_MAP, to: routes.map });
-      const project = projects.find((p) => p.projectSlug === projectSlug);
-      items.push({ label: project ? project.displayName : projectSlug });
-    } else {
-      items.push({ label: UI_MESSAGES.KNOWLEDGE_MAP });
-    }
-  } else if (pathname.startsWith(routes.vault)) {
-    items.push({ label: UI_MESSAGES.PROJECTS, to: routes.projects });
-    if (noteQuery.data) {
-      const project = projects.find((p) => p.projectSlug === noteQuery.data.project);
-      if (project) {
-        items.push({
-          label: project.displayName,
-          to: routes.project(project.projectSlug),
-        });
-      }
-      items.push({ label: noteQuery.data.title });
-    } else {
-      items.push({ label: UI_MESSAGES.NOTE });
-    }
-  } else if (pathname === routes.search) {
-    items.push({ label: UI_MESSAGES.SEARCH });
-  } else if (pathname === routes.kanban) {
-    items.push({ label: UI_MESSAGES.KANBAN });
-  } else if (pathname === routes.reminders) {
-    items.push({ label: UI_MESSAGES.REMINDERS });
-  } else if (pathname === routes.profile) {
-    items.push({ label: UI_MESSAGES.PROFILE });
-  } else if (pathname.startsWith(routes.integrations)) {
-    items.push({ label: UI_MESSAGES.SETTINGS, to: routes.profile });
-    items.push({ label: UI_MESSAGES.INTEGRATIONS });
-  } else {
-    // Fallback: split the path
-    const parts = pathname.split('/').filter(Boolean);
-    parts.forEach((part, index) => {
-      const label = part.charAt(0).toUpperCase() + part.slice(1);
-      const isLast = index === parts.length - 1;
-      const to = '/' + parts.slice(0, index + 1).join('/');
-      items.push({ label, to: isLast ? undefined : to });
-    });
-  }
+  const items = buildBreadcrumbItems(pathname, projects, noteQuery.data);
 
   return (
     <nav className="global-breadcrumbs" aria-label={UI_MESSAGES.BREADCRUMBS}>

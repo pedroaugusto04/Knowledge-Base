@@ -152,39 +152,69 @@ export function formatFileSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+type SourceConfig = { label: string; tagClass: string };
+type SourceRule = SourceConfig & { matches: (normalizedSource: string) => boolean };
+
+const sourceRules: SourceRule[] = [
+  {
+    label: 'WhatsApp',
+    tagClass: 'whatsapp',
+    matches: (source) => source.includes('whatsapp') || source.includes('evolution'),
+  },
+  {
+    label: 'GitHub',
+    tagClass: 'github',
+    matches: (source) => source.includes('github'),
+  },
+  {
+    label: 'Open Code',
+    tagClass: 'ai',
+    matches: (source) => source.includes('open-code') || source.includes('opencode'),
+  },
+  {
+    label: 'Antigravity',
+    tagClass: 'ai',
+    matches: (source) => source.includes('antigravity'),
+  },
+  {
+    label: 'Codex',
+    tagClass: 'ai',
+    matches: (source) => source.includes('codex'),
+  },
+  {
+    label: 'Claude Code',
+    tagClass: 'ai',
+    matches: (source) => source.includes('claude'),
+  },
+  {
+    label: 'AI',
+    tagClass: 'ai',
+    matches: (source) => source === 'ai-chat',
+  },
+  {
+    label: 'Manual',
+    tagClass: 'manual',
+    matches: (source) => source === 'manual-api' || source === 'manual',
+  },
+  {
+    label: 'n8n',
+    tagClass: 'api',
+    matches: (source) => source.includes('n8n'),
+  },
+  {
+    label: 'API',
+    tagClass: 'api',
+    matches: (source) => source.includes('api'),
+  },
+];
+
 export function getSourceConfig(source: string | null | undefined): { label: string; tagClass: string } {
   if (!source) {
     return { label: '', tagClass: 'manual' };
   }
   const normalized = source.toLowerCase().trim();
-  if (normalized.includes('whatsapp') || normalized.includes('evolution')) {
-    return { label: 'WhatsApp', tagClass: 'whatsapp' };
-  }
-  if (normalized.includes('github')) {
-    return { label: 'GitHub', tagClass: 'github' };
-  }
-  if (
-    normalized === 'ai-chat' ||
-    normalized.includes('antigravity') ||
-    normalized.includes('codex') ||
-    normalized.includes('claude') ||
-    normalized.includes('open-code') ||
-    normalized.includes('opencode')
-  ) {
-    let label = 'AI';
-    if (normalized.includes('open-code') || normalized.includes('opencode')) label = 'Open Code';
-    else if (normalized.includes('antigravity')) label = 'Antigravity';
-    else if (normalized.includes('codex')) label = 'Codex';
-    else if (normalized.includes('claude')) label = 'Claude Code';
-    return { label, tagClass: 'ai' };
-  }
-  if (normalized === 'manual-api' || normalized === 'manual') {
-    return { label: 'Manual', tagClass: 'manual' };
-  }
-  if (normalized.includes('n8n') || normalized.includes('api')) {
-    const label = normalized.includes('n8n') ? 'n8n' : 'API';
-    return { label, tagClass: 'api' };
-  }
+  const matchingRule = sourceRules.find((rule) => rule.matches(normalized));
+  if (matchingRule) return { label: matchingRule.label, tagClass: matchingRule.tagClass };
   return { label: formatDisplayToken(source), tagClass: 'manual' };
 }
 

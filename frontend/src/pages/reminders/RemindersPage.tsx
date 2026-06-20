@@ -26,6 +26,61 @@ const reminderStatusOptions = [
   })),
 ];
 
+type BulkReminderAction = 'resolve' | 'archive';
+type ReminderStatus = 'resolved' | 'archived';
+
+const bulkActionConfig: Record<BulkReminderAction, {
+  nextStatus: ReminderStatus;
+  title: string;
+  confirmLabel: string;
+  description: (count: number) => string;
+  errorMessage: string;
+}> = {
+  resolve: {
+    nextStatus: 'resolved',
+    title: 'Resolve all items',
+    confirmLabel: 'Resolve all',
+    description: (count) => `Are you sure you want to resolve all ${count} reminders currently listed?`,
+    errorMessage: 'Failed to resolve some reminders.',
+  },
+  archive: {
+    nextStatus: 'archived',
+    title: 'Archive all items',
+    confirmLabel: 'Archive all',
+    description: (count) => `Are you sure you want to archive all ${count} reminders currently listed?`,
+    errorMessage: 'Failed to archive some reminders.',
+  },
+};
+
+function matchesReminderStatus(reminder: Reminder, status: string) {
+  const statusFilter = status || 'open';
+  if (statusFilter === 'all') return true;
+  if (statusFilter === 'open') return reminder.status !== 'resolved' && reminder.status !== 'archived';
+  return reminder.status === statusFilter;
+}
+
+function buildInitialReminderPage(reminders: Reminder[], workspaceSlug: string, status: string) {
+  const filteredReminders = sortRemindersForList(
+    reminders
+      .filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug)
+      .filter((reminder) => matchesReminderStatus(reminder, status)),
+    status,
+  );
+
+  return {
+    ok: true as const,
+    reminders: filteredReminders.slice(0, DEFAULT_PAGE_SIZE),
+    pagination: {
+      page: 1,
+      pageSize: DEFAULT_PAGE_SIZE,
+      total: filteredReminders.length,
+      totalPages: Math.max(1, Math.ceil(filteredReminders.length / DEFAULT_PAGE_SIZE)),
+      hasNext: filteredReminders.length > DEFAULT_PAGE_SIZE,
+      hasPrevious: false,
+    },
+  };
+}
+
 export function RemindersPage({ dashboard, openNote }: PageContext) {
   const workspaceSlug = dashboard.workspaces[0]?.workspaceSlug || '';
   const [status, setStatus] = useState('open');
@@ -36,36 +91,7 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
     queryFn: () => fetchReminders({ page, workspaceSlug, status }),
     placeholderData: keepPreviousData,
     initialData: dashboard.reminders
-      ? (() => {
-          const filteredReminders = sortRemindersForList(
-            dashboard.reminders
-              .filter((reminder) => !workspaceSlug || reminder.workspace === workspaceSlug)
-              .filter((reminder) => {
-                const statusFilter = status || 'open';
-                if (statusFilter === 'all') return true;
-                if (statusFilter === 'open') {
-                  return reminder.status !== 'resolved' && reminder.status !== 'archived';
-                }
-                return reminder.status === statusFilter;
-              }),
-            status,
-          );
-          return {
-          ok: true as const,
-          reminders: filteredReminders.slice(0, DEFAULT_PAGE_SIZE),
-          pagination: {
-            page: 1,
-            pageSize: DEFAULT_PAGE_SIZE,
-            total: filteredReminders.length,
-            totalPages: Math.max(
-              1,
-              Math.ceil(filteredReminders.length / DEFAULT_PAGE_SIZE),
-            ),
-            hasNext: filteredReminders.length > DEFAULT_PAGE_SIZE,
-            hasPrevious: false,
-          },
-        };
-        })()
+      ? buildInitialReminderPage(dashboard.reminders, workspaceSlug, status)
       : undefined,
   });
   const pagination = remindersQuery.data?.pagination;
@@ -82,37 +108,21 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
 
   const queryClient = useQueryClient();
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
-  const [confirmBulk, setConfirmBulk] = useState<{ type: 'resolve' | 'archive' } | null>(null);
+  const [confirmBulk, setConfirmBulk] = useState<BulkReminderAction | null>(null);
 
-  const handleResolveAll = async () => {
+  const handleBulkUpdate = async (action: BulkReminderAction) => {
     if (!visibleReminders.length) return;
+    const config = bulkActionConfig[action];
     setIsBulkUpdating(true);
     try {
       await Promise.all(
-        visibleReminders.map((reminder) => updateReminderStatus(reminder.id, 'resolved'))
+        visibleReminders.map((reminder) => updateReminderStatus(reminder.id, config.nextStatus))
       );
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     } catch (err) {
       console.error(err);
-      alert('Failed to resolve some reminders.');
-    } finally {
-      setIsBulkUpdating(false);
-    }
-  };
-
-  const handleArchiveAll = async () => {
-    if (!visibleReminders.length) return;
-    setIsBulkUpdating(true);
-    try {
-      await Promise.all(
-        visibleReminders.map((reminder) => updateReminderStatus(reminder.id, 'archived'))
-      );
-      queryClient.invalidateQueries({ queryKey: ['reminders'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-    } catch (err) {
-      console.error(err);
-      alert('Failed to archive some reminders.');
+      alert(config.errorMessage);
     } finally {
       setIsBulkUpdating(false);
     }
@@ -146,12 +156,12 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
       />
       {visibleReminders.length > 0 && (
         <div className="bulk-actions" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-          <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'resolve' })}>
+          <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk('resolve')}>
             <ResolveIcon />
             Resolve all
           </button>
           <span style={{ color: 'var(--line-soft)', fontSize: '12px' }}>|</span>
-          <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk({ type: 'archive' })}>
+          <button className="bulk-action-btn" type="button" disabled={isBulkUpdating} onClick={() => setConfirmBulk('archive')}>
             <ArchiveIcon />
             Archive all
           </button>
@@ -181,18 +191,14 @@ export function RemindersPage({ dashboard, openNote }: PageContext) {
       {confirmBulk && (
         <ConfirmationModal
           busy={isBulkUpdating}
-          title={confirmBulk.type === 'resolve' ? 'Resolve all items' : 'Archive all items'}
-          description={
-            confirmBulk.type === 'resolve'
-              ? `Are you sure you want to resolve all ${visibleReminders.length} reminders currently listed?`
-              : `Are you sure you want to archive all ${visibleReminders.length} reminders currently listed?`
-          }
+          title={bulkActionConfig[confirmBulk].title}
+          description={bulkActionConfig[confirmBulk].description(visibleReminders.length)}
           cancelLabel="Cancel"
-          confirmLabel={confirmBulk.type === 'resolve' ? 'Resolve all' : 'Archive all'}
+          confirmLabel={bulkActionConfig[confirmBulk].confirmLabel}
           tone="default"
           onCancel={() => setConfirmBulk(null)}
           onConfirm={async () => {
-            await (confirmBulk.type === 'resolve' ? handleResolveAll() : handleArchiveAll());
+            await handleBulkUpdate(confirmBulk);
             setConfirmBulk(null);
           }}
         />

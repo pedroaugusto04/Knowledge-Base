@@ -298,7 +298,6 @@ export class AiHistoryManager {
       return;
     }
 
-    this.rememberSessionHash(key, hash);
     this.promptingSessions.add(key);
     try {
       const action = await this.askSessionAction(provider);
@@ -306,14 +305,14 @@ export class AiHistoryManager {
       if (action === 'Auto-save') {
         this.markSessionAsSaved(provider.id, session.sessionId);
         const saved = await this.saveSessionToVault(client, session);
-        if (!saved) {
-          this.forgetSessionHash(key);
-        }
+        if (saved) this.rememberSessionHash(key, hash);
       } else if (action === 'Preview & Edit') {
         await this.openPreview(session);
       } else if (action === 'Ignore') {
         this.markSessionAsIgnored(provider.id, session.sessionId);
+        this.rememberSessionHash(key, hash);
       } else if (action === 'Timed out') {
+        this.forgetSessionHash(key);
         return;
       }
 
@@ -516,7 +515,7 @@ export class AiHistoryManager {
         'Save Now'
       );
       if (choice === 'Save Now') {
-        vscode.commands.executeCommand('kb.saveActiveFile', session.sessionId, session.providerId);
+        await vscode.commands.executeCommand('kb.saveActiveFile', session.sessionId, session.providerId);
       }
     } catch (err: any) {
       vscode.window.showErrorMessage(`Failed to open preview: ${err.message || err}`);
@@ -559,6 +558,7 @@ export class AiHistoryManager {
       });
 
       vscode.commands.executeCommand('kb.refresh');
+      vscode.window.showInformationMessage(`AI session auto-saved to Knowledge Vault — project: ${session.projectSlug || client.defaultProjectSlug || 'inbox'}.`);
       return true;
     } catch (err: any) {
       logInfo('AI History', `Failed to auto-save note: ${toMessage(err)}`);
