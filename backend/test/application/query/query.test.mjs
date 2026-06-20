@@ -4,12 +4,37 @@ import assert from 'node:assert/strict';
 import { QueryKnowledgeUseCase } from '../../../dist/application/use-cases/index.js';
 import { createPostgresTestRepositories } from '../../helpers/postgres-test-repositories.mjs';
 
+async function seedDefaultWorkspace(repositories, userId) {
+  await repositories.contentRepository.upsertWorkspace(userId, {
+    workspaceSlug: 'default',
+    displayName: 'Default',
+    whatsappChatJid: '',
+    telegramChatId: '',
+    githubRepos: [],
+    projectSlugs: ['n8n-automations'],
+    createdAt: '2026-04-27T10:00:00.000Z',
+    updatedAt: '2026-04-27T10:00:00.000Z',
+  });
+  await repositories.contentRepository.upsertProject(userId, {
+    projectSlug: 'n8n-automations',
+    displayName: 'N8N Automations',
+    repositories: [],
+    workspaceSlug: 'default',
+    defaultTags: [],
+    enabled: true,
+  });
+}
+
 test('query returns ranked matches from the authenticated user repository scope', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
   const otherUser = await repositories.createTestUser();
   const queryRepository = repositories.contentQueryRepository;
-  await repositories.contentRepository.upsertNote(user.id, {
+  await seedDefaultWorkspace(repositories, user.id);
+  await seedDefaultWorkspace(repositories, otherUser.id);
+  const categories = await repositories.contentRepository.listCategories(user.id, 'default');
+  const noteCategory = categories.find((category) => category.name === 'event') || categories[0];
+  const deployNote = await repositories.contentRepository.upsertNote(user.id, {
     path: '20 Inbox/n8n-automations/2026/04/deploy.md',
     type: 'event',
     title: 'Deploy rollout',
@@ -26,7 +51,9 @@ test('query returns ranked matches from the authenticated user repository scope'
     origin: 'postgres',
     source: 'test',
     links: [],
+    categoryIds: noteCategory ? [noteCategory.id] : [],
   });
+  await repositories.contentRepository.setNotePinned(user.id, deployNote.id, true);
   await repositories.contentRepository.upsertNote(user.id, {
     path: '20 Inbox/n8n-automations/2026/04/deploy-resolved.md',
     type: 'event',
@@ -73,12 +100,17 @@ test('query returns ranked matches from the authenticated user repository scope'
   assert.equal(result.matches.length, 2);
   assert.deepEqual(result.matches.map((match) => match.title).sort(), ['Deploy rollout', 'Deploy rollout resolvido']);
   assert.equal(result.matches.some((match) => match.title === 'Other Deploy'), false);
+  const pinnedMatch = result.matches.find((match) => match.title === 'Deploy rollout');
+  assert.equal(pinnedMatch?.isPinned, true);
+  assert.equal(pinnedMatch?.folderId, null);
+  assert.deepEqual(pinnedMatch?.categories.map((category) => category.id), noteCategory ? [noteCategory.id] : []);
   assert.match(result.answer.answer, /I found 2 relevant note/);
 });
 
 test('query filters textual matches by note status', async (t) => {
   const repositories = await createPostgresTestRepositories(t);
   const user = await repositories.createTestUser();
+  await seedDefaultWorkspace(repositories, user.id);
   await repositories.contentRepository.upsertNote(user.id, {
     path: '20 Inbox/n8n-automations/2026/04/active.md',
     type: 'event',

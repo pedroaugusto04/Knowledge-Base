@@ -1,5 +1,6 @@
 import type { PaginationMeta } from './pagination';
 import type { NoteStatus } from './note-status';
+import type { CategoryRecord } from './category';
 
 export type QueryResponse = {
   ok: boolean;
@@ -12,6 +13,8 @@ export type QueryResponse = {
     type: string;
     project: string;
     workspace: string;
+    folderId: string | null;
+    categories: CategoryRecord[];
     tags: string[];
     date: string;
     status: NoteStatus;
@@ -21,5 +24,6 @@ export type QueryResponse = {
     score: number;
     snippet: string;
     attachmentCount?: number;
+    isPinned?: boolean;
   }>;
 };

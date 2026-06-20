@@ -10,7 +10,7 @@ export class AiHistoryManager {
   private context?: vscode.ExtensionContext;
   private savedSessions = new Map<string, number>(); // key -> timestamp "providerId:sessionId"
   private ignoredSessions = new Map<string, number>(); // key -> timestamp "providerId:sessionId"
-  private promptedSessions = new Set<string>(); // in-memory set to prevent duplicate popups during active session
+  private promptingSessions = new Set<string>(); // prevent overlapping popups for the same active session
   private readonly MAX_SAVED_SESSIONS = 200; // Maximum number of saved sessions to track
   private readonly MAX_IGNORED_SESSIONS = 500; // Maximum number of ignored sessions to track
   private readonly SESSION_TTL_DAYS = 60; // Remove sessions older than 60 days
@@ -109,27 +109,30 @@ export class AiHistoryManager {
             return;
           }
 
-          // If we have already prompted the user for this session in this runtime session, do not prompt again
-          if (this.promptedSessions.has(key)) {
+          // If a popup is already open for this session, do not open another one.
+          if (this.promptingSessions.has(key)) {
             return;
           }
 
-          this.promptedSessions.add(key);
+          this.promptingSessions.add(key);
+          try {
+            const action = await vscode.window.showInformationMessage(
+              `KB: New AI session detected from ${provider.name}. Do you want to save it as a note?`,
+              'Auto-save',
+              'Preview & Edit',
+              'Ignore'
+            );
 
-          const action = await vscode.window.showInformationMessage(
-            `KB: New AI session detected from ${provider.name}. Do you want to save it as a note?`,
-            'Auto-save',
-            'Preview & Edit',
-            'Ignore'
-          );
-
-          if (action === 'Auto-save') {
-            this.markSessionAsSaved(provider.id, session.sessionId);
-            await this.saveSessionToVault(client, session);
-          } else if (action === 'Preview & Edit') {
-            await this.openPreview(session);
-          } else if (action === 'Ignore') {
-            this.markSessionAsIgnored(provider.id, session.sessionId);
+            if (action === 'Auto-save') {
+              this.markSessionAsSaved(provider.id, session.sessionId);
+              await this.saveSessionToVault(client, session);
+            } else if (action === 'Preview & Edit') {
+              await this.openPreview(session);
+            } else if (action === 'Ignore') {
+              this.markSessionAsIgnored(provider.id, session.sessionId);
+            }
+          } finally {
+            this.promptingSessions.delete(key);
           }
         });
 
@@ -459,4 +462,3 @@ export class AiHistoryManager {
     }
   }
 }
-

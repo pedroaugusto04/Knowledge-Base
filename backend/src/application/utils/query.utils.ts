@@ -39,6 +39,8 @@ export function rankKnowledgeMatches(notes: VaultNoteSummary[], query: Pick<Quer
         type: note.type,
         project: note.project,
         workspace: note.workspace,
+        folderId: note.folderId,
+        categories: note.categories,
         tags: note.tags,
         date: note.date,
         status: note.status,
@@ -48,6 +50,7 @@ export function rankKnowledgeMatches(notes: VaultNoteSummary[], query: Pick<Quer
         score,
         snippet: note.summary || note.title,
         attachmentCount: note.attachmentCount,
+        isPinned: note.isPinned,
       };
     })
     .filter((match) => match.score > 0)

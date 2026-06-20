@@ -169,8 +169,8 @@ export function ProjectsWorkspace({
       summary: match.summary,
       project: match.project,
       workspace: match.workspace,
-      folderId: null,
-      categories: [],
+      folderId: match.folderId,
+      categories: match.categories,
       type: match.type,
       category: deriveTimelineCategory(match.source) as ProjectTimelineItemCategory,
       status: match.status,
@@ -180,7 +180,7 @@ export function ProjectsWorkspace({
       tags: match.tags,
       path: match.path,
       attachmentCount: match.attachmentCount || 0,
-      isPinned: false,
+      isPinned: match.isPinned,
     }));
   }, [searchQuery.data?.matches]);
 
