@@ -178,6 +178,8 @@ export function ProjectModal({
                         value={field.value}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
+                        maxTags={20}
+                        maxTagLength={50}
                       />
                     )}
                   />
