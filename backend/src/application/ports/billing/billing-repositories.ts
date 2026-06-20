@@ -3,6 +3,8 @@ import {
   type BillingCustomerRecord,
   type BillingPaymentRecord,
   type GatewayWebhookEventRecord,
+  type WebhookEventCreateParams,
+  type WebhookEventCreateResult,
 } from '../../models/billing.models.js';
 
 export abstract class BillingCustomerRepository {
@@ -32,6 +34,7 @@ export abstract class BillingPaymentRepository {
 
 export abstract class BillingWebhookEventRepository {
   abstract getWebhookEventById(id: string): Promise<GatewayWebhookEventRecord | null>;
+  abstract createWebhookEventOnce(params: WebhookEventCreateParams): Promise<WebhookEventCreateResult>;
   abstract markWebhookEventProcessing(id: string, maxAttempts: number): Promise<boolean>;
   abstract markWebhookEventDone(id: string): Promise<void>;
   abstract markWebhookEventFailed(id: string, error: string): Promise<void>;

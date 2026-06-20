@@ -90,3 +90,19 @@ export interface UserSubscriptionRecord {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface WebhookEventCreateParams {
+  gateway: PaymentGateway;
+  dedupKey: string;
+  eventType: string;
+  gatewayEventId?: string | null;
+  gatewayPaymentId?: string | null;
+  gatewaySubscriptionId?: string | null;
+  payload: any;
+}
+
+export interface WebhookEventCreateResult {
+  id: string;
+  created: boolean;
+  status: 'pending' | 'processing' | 'done' | 'failed';
+}

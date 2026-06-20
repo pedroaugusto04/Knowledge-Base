@@ -11,6 +11,8 @@ import {
   type BillingCustomerRecord,
   type BillingPaymentRecord,
   type GatewayWebhookEventRecord,
+  type WebhookEventCreateParams,
+  type WebhookEventCreateResult,
 } from '../../application/models/billing.models.js';
 import { PostgresDatabase } from '../persistence/database.js';
 import {
@@ -246,6 +248,60 @@ export class PostgresBillingPaymentRepository extends BillingPaymentRepository {
 export class PostgresBillingWebhookEventRepository extends BillingWebhookEventRepository {
   constructor(private readonly database: PostgresDatabase) {
     super();
+  }
+
+  async createWebhookEventOnce(params: WebhookEventCreateParams): Promise<WebhookEventCreateResult> {
+    const db = this.database.getDb();
+    try {
+      const result = await db
+        .insert(gatewayWebhookEvents)
+        .values({
+          id: crypto.randomUUID(),
+          gateway: params.gateway,
+          dedupKey: params.dedupKey,
+          eventType: params.eventType,
+          gatewayEventId: params.gatewayEventId,
+          gatewayPaymentId: params.gatewayPaymentId,
+          gatewaySubscriptionId: params.gatewaySubscriptionId,
+          payload: params.payload,
+          status: 'pending',
+          attempts: 0,
+        })
+        .returning();
+      
+      const row = result[0];
+      return {
+        id: row.id,
+        created: true,
+        status: row.status as 'pending' | 'processing' | 'done' | 'failed',
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      if (errorMsg.includes('unique constraint') || (err && typeof err === 'object' && 'code' in err && err.code === '23505')) {
+        const existing = await db
+          .select({
+            id: gatewayWebhookEvents.id,
+            status: gatewayWebhookEvents.status,
+          })
+          .from(gatewayWebhookEvents)
+          .where(
+            and(
+              eq(gatewayWebhookEvents.gateway, params.gateway),
+              eq(gatewayWebhookEvents.dedupKey, params.dedupKey)
+            )
+          )
+          .limit(1);
+        
+        if (existing.length > 0) {
+          return {
+            id: existing[0].id,
+            created: false,
+            status: existing[0].status as 'pending' | 'processing' | 'done' | 'failed',
+          };
+        }
+      }
+      throw err;
+    }
   }
 
   async getWebhookEventById(id: string): Promise<GatewayWebhookEventRecord | null> {
