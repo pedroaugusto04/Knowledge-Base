@@ -7,6 +7,9 @@ import type { CreateWorkspaceInput } from '../../models/workspace-input.models.j
 import { ContentRepository } from '../../ports/notes/content.repository.js';
 import { CredentialRepository } from '../../ports/integrations/integrations.repository.js';
 import { RuntimeEnvironmentProvider } from '../../ports/observability/runtime-environment.port.js';
+import { QuotaService } from '../../services/quota.service.js';
+import { QuotaResourceType } from '../../../domain/enums/plans.enums.js';
+import { QuotaExceededException } from '../../../interfaces/http/quota-exceeded.exception.js';
 
 import crypto from 'node:crypto';
 
@@ -16,15 +19,13 @@ export class CreateWorkspaceUseCase {
     private readonly contentRepository: ContentRepository,
     private readonly credentialRepository: CredentialRepository,
     private readonly runtimeEnvironmentProvider: RuntimeEnvironmentProvider,
+    private readonly quotaService: QuotaService,
   ) {}
 
   async execute(input: CreateWorkspaceInput, userId: string) {
-    const existing = await this.contentRepository.listWorkspaces(userId);
-    if (existing.length > 0) {
-      throw new ConflictException({
-        code: 'workspace_already_exists',
-        details: { fieldErrors: { workspaceSlug: 'This user already has a workspace.' } },
-      });
+    const quotaResult = await this.quotaService.checkQuota(userId, QuotaResourceType.WORKSPACE, 1);
+    if (!quotaResult.allowed) {
+      throw new QuotaExceededException('workspace', quotaResult.limit, quotaResult.current);
     }
 
     const now = new Date().toISOString();

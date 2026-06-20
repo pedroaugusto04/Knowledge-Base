@@ -396,7 +396,7 @@ export const noteCategories = pgTable('kb_note_categories', {
 }));
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   integrationCredentials: many(integrationCredentials),
   externalIdentities: many(externalIdentities),
   integrationConnectionSessions: many(integrationConnectionSessions),
@@ -413,6 +413,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   askHistory: many(askHistory),
   webhookSubscriptions: many(webhookSubscriptions),
   categories: many(categories),
+  subscription: one(userSubscriptions, {
+    fields: [users.id],
+    references: [userSubscriptions.userId],
+  }),
+  quotaUsageEvents: many(quotaUsageEvents),
+  quotaAdjustments: many(quotaAdjustments),
 }));
 
 export const notesRelations = relations(notes, ({ one, many }) => ({
@@ -449,5 +455,94 @@ export const noteCategoriesRelations = relations(noteCategories, ({ one }) => ({
   category: one(categories, {
     fields: [noteCategories.categoryId],
     references: [categories.id],
+  }),
+}));
+
+// Plans table
+export const plans = pgTable('kb_plans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  slug: text('slug').notNull(), // 'free', 'pro', 'enterprise'
+  displayName: text('display_name').notNull(),
+  description: text('description').notNull().default(''),
+  maxStorageBytes: bigint('max_storage_bytes', { mode: 'number' }).notNull(),
+  maxAiRequestsPerMonth: integer('max_ai_requests_per_month').notNull(),
+  maxWorkspaces: integer('max_workspaces').notNull(),
+  maxProjectsPerWorkspace: integer('max_projects_per_workspace').notNull(),
+  priceCents: integer('price_cents').notNull().default(0),
+  billingPeriod: text('billing_period').notNull().default('monthly'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  slugUniqueIdx: uniqueIndex('kb_plans_slug_idx').on(table.slug),
+}));
+
+// User Subscriptions table
+export const userSubscriptions = pgTable('kb_user_subscriptions', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  planId: uuid('plan_id').notNull().references(() => plans.id),
+  status: text('status').notNull().default('active'), // active, trialing, past_due, canceled
+  currentPeriodStart: timestamp('current_period_start').notNull().defaultNow(),
+  currentPeriodEnd: timestamp('current_period_end').notNull().defaultNow(),
+  gatewayName: text('gateway_name').notNull().default('asaas'), // 'asaas', 'stripe', etc.
+  gatewaySubscriptionId: text('gateway_subscription_id'),
+  gatewayCustomerId: text('gateway_customer_id'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Quota Usage Events table
+export const quotaUsageEvents = pgTable('kb_quota_usage_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'ai_request', 'transcription', etc.
+  amount: integer('amount').notNull().default(1),
+  description: text('description'),
+  metadata: jsonb('metadata').notNull().default('{}'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  userIdTypeCreatedIdx: index('kb_quota_usage_events_user_type_created_idx').on(table.userId, table.type, table.createdAt),
+}));
+
+// Quota Adjustments table
+export const quotaAdjustments = pgTable('kb_quota_adjustments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'storage', 'ai_request', etc.
+  amount: bigint('amount', { mode: 'number' }).notNull(), // positive for additions, negative for reductions
+  description: text('description'),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  userIdTypeIdx: index('kb_quota_adjustments_user_type_idx').on(table.userId, table.type),
+}));
+
+// New Relations definitions
+export const plansRelations = relations(plans, ({ many }) => ({
+  subscriptions: many(userSubscriptions),
+}));
+
+export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [userSubscriptions.userId],
+    references: [users.id],
+  }),
+  plan: one(plans, {
+    fields: [userSubscriptions.planId],
+    references: [plans.id],
+  }),
+}));
+
+export const quotaUsageEventsRelations = relations(quotaUsageEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [quotaUsageEvents.userId],
+    references: [users.id],
+  }),
+}));
+
+export const quotaAdjustmentsRelations = relations(quotaAdjustments, ({ one }) => ({
+  user: one(users, {
+    fields: [quotaAdjustments.userId],
+    references: [users.id],
   }),
 }));

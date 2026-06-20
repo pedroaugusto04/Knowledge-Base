@@ -219,3 +219,62 @@ export type PushSubscriptionRecord = {
   updatedAt: string;
 };
 
+export type PlanRecord = {
+  id: string;
+  slug: string;
+  displayName: string;
+  description: string;
+  maxStorageBytes: number;
+  maxAiRequestsPerMonth: number;
+  maxWorkspaces: number;
+  maxProjectsPerWorkspace: number;
+  priceCents: number;
+  billingPeriod: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UserSubscriptionRecord = {
+  userId: string;
+  planId: string;
+  status: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  gatewayName: string;
+  gatewaySubscriptionId: string | null;
+  gatewayCustomerId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UserSubscriptionWithPlan = UserSubscriptionRecord & {
+  plan: PlanRecord;
+};
+
+export type QuotaUsageEventRecord = {
+  id: string;
+  userId: string;
+  type: string;
+  amount: number;
+  description: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type QuotaAdjustmentRecord = {
+  id: string;
+  userId: string;
+  type: string;
+  amount: number;
+  description: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+};
+
+export type SaveQuotaUsageEventInput = Omit<QuotaUsageEventRecord, 'id' | 'createdAt' | 'metadata'> & {
+  id?: string;
+  metadata?: Record<string, unknown>;
+};
+
+

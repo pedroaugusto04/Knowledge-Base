@@ -13,5 +13,6 @@ export { WebhookController } from './webhooks/webhook.controller.js';
 export { WebhookSubscriptionsController } from './webhook-subscriptions/webhook-subscriptions.controller.js';
 export { WorkspacesController } from './workspaces/workspaces.controller.js';
 export { PushSubscriptionsController } from './push/push-subscriptions.controller.js';
+export { SubscriptionController } from './subscription/subscription.controller.js';
 
 

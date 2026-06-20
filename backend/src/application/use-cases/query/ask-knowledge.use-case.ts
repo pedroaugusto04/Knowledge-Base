@@ -8,6 +8,9 @@ import { RuntimeEnvironmentProvider } from '../../ports/observability/runtime-en
 import type { NoteRecord } from '../../models/repository-records.models.js';
 import type { AskConversationTurn } from '../../../contracts/ask-conversation.js';
 import { ConversationConfidence } from '../../../contracts/enums.js';
+import { QuotaService } from '../../services/quota.service.js';
+import { QuotaResourceType } from '../../../domain/enums/plans.enums.js';
+import { QuotaExceededException } from '../../../interfaces/http/quota-exceeded.exception.js';
 
 @Injectable()
 export class AskKnowledgeUseCase {
@@ -17,6 +20,7 @@ export class AskKnowledgeUseCase {
     private readonly contentRepository: ContentRepository,
     private readonly answerGenerationGateway: AnswerGenerationGateway,
     private readonly runtimeEnv: RuntimeEnvironmentProvider,
+    private readonly quotaService: QuotaService,
   ) {}
 
   async execute(
@@ -24,6 +28,11 @@ export class AskKnowledgeUseCase {
     userId: string,
     options: { workspaceSlug?: string; projectSlug?: string; conversationHistory?: AskConversationTurn[] } = {},
   ) {
+    const quotaResult = await this.quotaService.checkQuota(userId, QuotaResourceType.AI_REQUEST, 1);
+    if (!quotaResult.allowed) {
+      throw new QuotaExceededException('ai_request', quotaResult.limit, quotaResult.current);
+    }
+
     const env = this.runtimeEnv.read();
     const embeddingConfig = {
       provider: env.embeddingAiProvider,
@@ -125,6 +134,8 @@ export class AskKnowledgeUseCase {
         relatedNotes: [],
       };
     }
+
+    await this.quotaService.incrementUsage(userId, QuotaResourceType.AI_REQUEST, 1, 'AI Ask request');
 
     return {
       ok: true,

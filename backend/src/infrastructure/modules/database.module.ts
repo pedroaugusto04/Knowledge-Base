@@ -16,6 +16,8 @@ import { PushSubscriptionRepository } from '../../application/ports/push/push-su
 import { ProjectBriefHistoryRepository } from '../../application/ports/projects/project-brief-history.repository.js';
 import { AskHistoryRepository } from '../../application/ports/query/ask-history.repository.js';
 import { NoteEmbeddingRepository } from '../../application/ports/notes/note-embedding.repository.js';
+import { QuotaRepository } from '../../application/ports/quota/quota.repository.js';
+import { QuotaService } from '../../application/services/quota.service.js';
 
 import { PostgresUserRepository } from '../repositories/auth.repository.js';
 import { PostgresContentQueryRepository } from '../repositories/content-query.repository.js';
@@ -36,6 +38,7 @@ import { PostgresNoteRepository } from '../repositories/note.repository.js';
 import { PostgresFolderRepository } from '../repositories/folder.repository.js';
 import { PostgresAttachmentRepository } from '../repositories/attachment.repository.js';
 import { PostgresCategoryRepository } from '../repositories/category.repository.js';
+import { PostgresQuotaRepository } from '../repositories/quota.repository.js';
 
 const repositories = [
   PostgresDatabase,
@@ -57,7 +60,10 @@ const repositories = [
   PostgresWebhookEventRepository,
   PostgresWebhookSubscriptionRepository,
   PostgresPushSubscriptionRepository,
+  PostgresQuotaRepository,
+  QuotaService,
   { provide: SchemaMigrator, useExisting: PostgresSchemaMigrator },
+  { provide: QuotaRepository, useExisting: PostgresQuotaRepository },
   { provide: UserRepository, useExisting: PostgresUserRepository },
   { provide: ProjectBriefHistoryRepository, useExisting: PostgresProjectBriefHistoryRepository },
   { provide: AskHistoryRepository, useExisting: PostgresAskHistoryRepository },

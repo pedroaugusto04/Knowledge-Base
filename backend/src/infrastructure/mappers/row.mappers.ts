@@ -15,6 +15,11 @@ import type {
   WorkspaceRecord,
   PushSubscriptionRecord,
   CategoryRecord,
+  PlanRecord,
+  UserSubscriptionRecord,
+  UserSubscriptionWithPlan,
+  QuotaUsageEventRecord,
+  QuotaAdjustmentRecord,
 } from '../../application/models/repository-records.models.js';
 import type { WebhookSubscriptionRecord } from '../../application/models/webhook-subscription.models.js';
 
@@ -314,5 +319,71 @@ export function pushSubscriptionFromRow(row: Row): PushSubscriptionRecord {
     auth: String(row.auth),
     createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
     updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
+  };
+}
+
+export function planFromRow(row: Row): PlanRecord {
+  return {
+    id: String(row.id),
+    slug: String(row.slug),
+    displayName: fieldString(row, 'display_name', 'displayName'),
+    description: fieldString(row, 'description', 'description'),
+    maxStorageBytes: Number(field(row, 'max_storage_bytes', 'maxStorageBytes') || 0),
+    maxAiRequestsPerMonth: Number(field(row, 'max_ai_requests_per_month', 'maxAiRequestsPerMonth') || 0),
+    maxWorkspaces: Number(field(row, 'max_workspaces', 'maxWorkspaces') || 0),
+    maxProjectsPerWorkspace: Number(field(row, 'max_projects_per_workspace', 'maxProjectsPerWorkspace') || 0),
+    priceCents: Number(field(row, 'price_cents', 'priceCents') || 0),
+    billingPeriod: fieldString(row, 'billing_period', 'billingPeriod', 'monthly'),
+    isActive: field(row, 'is_active', 'isActive') !== false,
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
+  };
+}
+
+export function userSubscriptionFromRow(row: Row): UserSubscriptionRecord {
+  return {
+    userId: fieldString(row, 'user_id', 'userId'),
+    planId: fieldString(row, 'plan_id', 'planId'),
+    status: fieldString(row, 'status', 'status', 'active'),
+    currentPeriodStart: toIsoTimestamp(field(row, 'current_period_start', 'currentPeriodStart')),
+    currentPeriodEnd: toIsoTimestamp(field(row, 'current_period_end', 'currentPeriodEnd')),
+    gatewayName: fieldString(row, 'gateway_name', 'gatewayName', 'asaas'),
+    gatewaySubscriptionId: field(row, 'gateway_subscription_id', 'gatewaySubscriptionId') ? String(field(row, 'gateway_subscription_id', 'gatewaySubscriptionId')) : null,
+    gatewayCustomerId: field(row, 'gateway_customer_id', 'gatewayCustomerId') ? String(field(row, 'gateway_customer_id', 'gatewayCustomerId')) : null,
+    createdAt: toIsoTimestamp(field(row, 'created_at', 'createdAt')),
+    updatedAt: toIsoTimestamp(field(row, 'updated_at', 'updatedAt')),
+  };
+}
+
+export function userSubscriptionWithPlanFromRow(row: Row): UserSubscriptionWithPlan {
+  const sub = userSubscriptionFromRow(row);
+  const plan = planFromRow(row);
+  return {
+    ...sub,
+    plan,
+  };
+}
+
+export function quotaUsageEventFromRow(row: Row): QuotaUsageEventRecord {
+  return {
+    id: String(row.id),
+    userId: fieldString(row, 'user_id', 'userId'),
+    type: String(row.type),
+    amount: Number(row.amount || 1),
+    description: row.description ? String(row.description) : null,
+    metadata: (row.metadata || {}) as Record<string, unknown>,
+    createdAt: toIsoTimestamp(row.createdAt || row.created_at),
+  };
+}
+
+export function quotaAdjustmentFromRow(row: Row): QuotaAdjustmentRecord {
+  return {
+    id: String(row.id),
+    userId: fieldString(row, 'user_id', 'userId'),
+    type: String(row.type),
+    amount: Number(row.amount || 0),
+    description: row.description ? String(row.description) : null,
+    expiresAt: row.expiresAt || row.expires_at ? toIsoTimestamp(row.expiresAt || row.expires_at) : null,
+    createdAt: toIsoTimestamp(row.createdAt || row.created_at),
   };
 }

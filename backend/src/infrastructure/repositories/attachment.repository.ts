@@ -9,16 +9,27 @@ import { ContentObjectStorageService } from '../../application/services/content-
 import { attachmentFromRow } from '../mappers/row.mappers.js';
 import { PostgresDatabase } from '../persistence/database.js';
 import { attachments, notes, workspaces } from '../persistence/schema/index.js';
+import { QuotaService } from '../../application/services/quota.service.js';
+import { QuotaResourceType } from '../../domain/enums/plans.enums.js';
+import { QuotaExceededException } from '../../interfaces/http/quota-exceeded.exception.js';
 
 @Injectable()
 export class PostgresAttachmentRepository {
   constructor(
     private readonly database: PostgresDatabase,
     private readonly contentObjectStorage: ContentObjectStorageService,
+    private readonly quotaService: QuotaService,
   ) {}
 
   async save(userId: string, input: SaveAttachmentInput) {
     const attachmentId = input.id || crypto.randomUUID();
+    const sizeBytes = calculateAttachmentSize(input.sizeBytes, input.dataBase64);
+
+    const quotaResult = await this.quotaService.checkQuota(userId, QuotaResourceType.STORAGE, sizeBytes);
+    if (!quotaResult.allowed) {
+      throw new QuotaExceededException('storage', quotaResult.limit, quotaResult.current);
+    }
+
     const db = this.database.getDb();
     const noteResult = await db
       .select({ workspaceSlug: workspaces.workspaceSlug })
@@ -29,7 +40,6 @@ export class PostgresAttachmentRepository {
     
     const workspaceSlug = noteResult[0]?.workspaceSlug || 'default';
     const storageKey = await this.contentObjectStorage.saveAttachmentData(userId, workspaceSlug, input);
-    const sizeBytes = calculateAttachmentSize(input.sizeBytes, input.dataBase64);
     const result = await db
       .insert(attachments)
       .values({
