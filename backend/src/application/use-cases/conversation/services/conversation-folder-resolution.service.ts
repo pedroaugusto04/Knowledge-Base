@@ -18,12 +18,15 @@ export class ConversationFolderResolutionService {
     if (state.folder.placeInRoot || state.folder.suggestedFolderPath.length === 0) return state.folder.selectedFolderId;
     if (state.folder.selectedFolderId) return state.folder.selectedFolderId;
 
+    const project = await this.contentRepository.getProjectBySlug(userId, state.project.selectedProjectSlug);
+    if (!project) return '';
+
     let parentFolderId = '';
     let lastFolderId = '';
     for (const segment of state.folder.suggestedFolderPath) {
       const displayName = trimText(segment);
       if (!displayName) continue;
-      const folders = await this.contentRepository.listProjectFolders(userId, state.project.selectedProjectSlug);
+      const folders = await this.contentRepository.listProjectFolders(userId, project.id);
       const folderSlug = folderSlugFromDisplayName(displayName);
       const existing = folders.find((folder) => folder.parentFolderId === (parentFolderId || null) && folder.folderSlug === folderSlug);
       if (existing) {
@@ -32,7 +35,7 @@ export class ConversationFolderResolutionService {
         continue;
       }
       const created = await this.createProjectFolderUseCase.execute({
-        projectSlug: state.project.selectedProjectSlug,
+        projectId: project.id,
         displayName,
         parentFolderId: parentFolderId || undefined,
       }, userId);

@@ -24,10 +24,8 @@ export class CreateManualNoteUseCase {
     private readonly noteEventDispatcher: NoteEventDispatcher,
   ) { }
 
-  async execute(input: CreateManualNoteInput & { projectId?: string }, userId: string) {
-    const project = input.projectId
-      ? await this.contentRepository.getProjectById(userId, input.projectId)
-      : await this.contentRepository.getProjectBySlug(userId, input.projectSlug || '');
+  async execute(input: CreateManualNoteInput & { projectId: string }, userId: string) {
+    const project = await this.contentRepository.getProjectById(userId, input.projectId);
     if (!project || !project.enabled) throw new NotFoundException('project_not_found');
 
     const workspaceId = project.workspaceId;

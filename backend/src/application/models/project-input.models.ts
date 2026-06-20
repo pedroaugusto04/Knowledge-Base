@@ -6,8 +6,7 @@ export type CreateProjectInput = {
 };
 
 export type UpdateProjectInput = {
-  projectId?: string;
-  projectSlug?: string;
+  projectId: string;
   displayName: string;
   repositoryIds: string[];
   defaultTags: string[];

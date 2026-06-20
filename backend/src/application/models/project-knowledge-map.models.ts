@@ -44,8 +44,7 @@ export type ProjectKnowledgeMapResponse = {
 };
 
 export type ListProjectKnowledgeMapInput = {
-  projectId?: string;
-  projectSlug?: string;
+  projectId: string;
   folderId?: string;
   folderIds?: string[];
   limit: number;

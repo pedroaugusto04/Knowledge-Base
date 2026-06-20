@@ -6,13 +6,11 @@ import { ContentRepository } from '../../ports/notes/content.repository.js';
 
 @Injectable()
 export class ListProjectTimelineUseCase {
-  constructor(private readonly contentRepository: ContentRepository) {}
+  constructor(private readonly contentRepository: ContentRepository) { }
 
   async execute(userId: string, input: ListProjectTimelineInput) {
-    if (input.projectId || input.projectSlug) {
-      const project = input.projectId
-        ? await this.contentRepository.getProjectById(userId, input.projectId)
-        : await this.contentRepository.getProjectBySlug(userId, input.projectSlug || '');
+    if (input.projectId) {
+      const project = await this.contentRepository.getProjectById(userId, input.projectId);
       if (!project || !project.enabled) throw new NotFoundException('project_not_found');
 
       const normalizedFolderId = input.folderId?.trim() || '';

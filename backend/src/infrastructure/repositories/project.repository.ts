@@ -70,11 +70,7 @@ export class PostgresProjectRepository {
     const client = await this.database.getPool().connect();
     try {
       await client.query('BEGIN');
-      const wsResult = await client.query('select id from kb_workspaces where user_id = $1 and workspace_slug = $2 limit 1', [userId, input.workspaceSlug]);
-      if (wsResult.rows.length === 0) {
-        throw new Error(`Workspace not found for slug: ${input.workspaceSlug}`);
-      }
-      const workspaceId = wsResult.rows[0].id;
+      const workspaceId = input.workspaceId;
 
       const result = await client.query(
         `insert into kb_projects (id, user_id, project_slug, display_name, workspace_id, enabled, is_favorite)
@@ -88,7 +84,7 @@ export class PostgresProjectRepository {
            updated_at = now()
          returning *`,
         [
-          crypto.randomUUID(),
+          input.id || crypto.randomUUID(),
           userId,
           input.projectSlug,
           input.displayName,

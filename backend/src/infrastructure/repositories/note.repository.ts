@@ -241,9 +241,6 @@ export class PostgresNoteRepository {
     if (input.projectId) {
       values.push(input.projectId);
       clauses.push(`n.project_id = $${values.length}`);
-    } else if (input.projectSlug) {
-      values.push(input.projectSlug);
-      clauses.push(`p.project_slug = $${values.length}`);
     }
 
     appendTimelineFolderClause(clauses, values, input.folderId, input.folderIds);
@@ -310,9 +307,6 @@ export class PostgresNoteRepository {
     if (input.projectId) {
       values.push(input.projectId);
       clauses.push(`n.project_id = $${values.length}`);
-    } else {
-      values.push(input.projectSlug);
-      clauses.push(`p.project_slug = $${values.length}`);
     }
     appendTimelineFolderClause(clauses, values, input.folderId, input.folderIds);
     appendTimelineCategoryClause(clauses, input.category);

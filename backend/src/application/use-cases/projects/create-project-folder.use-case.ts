@@ -11,9 +11,7 @@ export class CreateProjectFolderUseCase {
   constructor(private readonly contentRepository: ContentRepository) {}
 
   async execute(input: CreateProjectFolderInput, userId: string) {
-    const project = input.projectId
-      ? await this.contentRepository.getProjectById(userId, input.projectId)
-      : await this.contentRepository.getProjectBySlug(userId, input.projectSlug || '');
+    const project = await this.contentRepository.getProjectById(userId, input.projectId);
     if (!project || !project.enabled) throw new NotFoundException('project_not_found');
 
     const folders = await this.contentRepository.listProjectFolders(userId, project.id);
