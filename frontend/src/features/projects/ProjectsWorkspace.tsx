@@ -10,11 +10,11 @@ import {
   fetchAllProjectsTimeline,
   fetchProjectFolders,
   fetchProjectTimeline,
+  pinNote,
   runQuery,
 } from '../../shared/api/client';
-import type { NoteSummary } from '../../shared/api/models/note';
 import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
-import type { ProjectTimelineCategory } from '../../shared/api/models/project-timeline';
+import type { ProjectTimelineCategory, ProjectTimelineItem, ProjectTimelineItemCategory } from '../../shared/api/models/project-timeline';
 import { type NoteStatus } from '../../shared/api/models/note-status';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import { formatDisplayToken } from '../../shared/utils/format';
@@ -41,8 +41,8 @@ import { ProjectsBrowser } from './ProjectsBrowser';
 import { flattenFolders } from './projects.helpers';
 import type { ConfirmState, FolderModalState, NoteModalState, ProjectModalState } from './projects.types';
 import { ProjectTimeline } from './ProjectTimeline';
+import { ProjectTimelineCard } from './ProjectTimelineCard';
 import { SideNoteDrawer } from '../../widgets/notes/SideNoteDrawer';
-import { NoteRow } from '../../widgets/notes/NoteRow';
 import { SearchIcon } from '../../shared/ui/icons';
 
 const statusOptions: Array<{ value: '' | 'open' | NoteStatus; label: string }> = [
@@ -160,13 +160,27 @@ export function ProjectsWorkspace({
     placeholderData: keepPreviousData,
   });
 
-  const searchResults: NoteSummary[] = useMemo(() => {
+  const searchResults: ProjectTimelineItem[] = useMemo(() => {
     if (!searchQuery.data?.matches) return [];
     return searchQuery.data.matches.map((match) => ({
-      ...match,
-      attachmentCount: match.attachmentCount || 0,
+      id: match.id,
+      noteId: match.id,
+      title: match.title,
+      summary: match.summary,
+      project: match.project,
+      workspace: match.workspace,
       folderId: null,
       categories: [],
+      type: match.type,
+      category: deriveTimelineCategory(match.source) as ProjectTimelineItemCategory,
+      status: match.status,
+      source: match.source,
+      sourceChannel: match.source,
+      date: match.date,
+      tags: match.tags,
+      path: match.path,
+      attachmentCount: match.attachmentCount || 0,
+      isPinned: false,
     }));
   }, [searchQuery.data?.matches]);
 
@@ -206,6 +220,14 @@ export function ProjectsWorkspace({
     mutationFn: (id: string) => globalLoading.trackPromise(ensureNoteDetail(queryClient, id)),
     onSuccess: (note) => setNoteModal({ mode: 'edit', note }),
     onError: (error) => notifyGeneralFormError(error, UI_MESSAGES.COULD_NOT_LOAD_NOTE_FOR_EDITING),
+  });
+  const searchPinMutation = useMutation({
+    mutationFn: ({ noteId, pinned }: { noteId: string; pinned: boolean }) => pinNote(noteId, pinned),
+    onSuccess: async (_, { pinned }) => {
+      notifySuccess(pinned ? UI_MESSAGES.NOTE_PINNED : UI_MESSAGES.NOTE_UNPINNED);
+      await invalidateNoteRelatedQueries(queryClient);
+    },
+    onError: (error) => notifyGeneralFormError(error, UI_MESSAGES.COULD_NOT_TOGGLE_PIN_STATUS),
   });
   const deleteProjectMutation = useMutation({
     mutationFn: (projectSlug: string) => globalLoading.trackPromise(deleteProject(projectSlug)),
@@ -316,17 +338,18 @@ export function ProjectsWorkspace({
                 </div>
               </div>
               {searchQuery.isError ? <InlineMessage tone="error">{UI_MESSAGES.COULD_NOT_LOAD_NOTES_FOR_SEARCH}</InlineMessage> : null}
-              <div className={`list ${searchQuery.isPlaceholderData ? 'stale-data' : ''}`}>
-                {paginatedSearchResults.map((note) => (
-                  <NoteRow
-                    key={note.id}
-                    note={note}
+              <div className={`project-timeline-list ${searchQuery.isPlaceholderData ? 'stale-data' : ''}`}>
+                {paginatedSearchResults.map((item) => (
+                  <ProjectTimelineCard
+                    key={item.id}
+                    item={item}
                     dashboard={dashboard}
-                    onDelete={() => setConfirmState({ kind: 'note', note })}
-                    onEdit={() => loadNoteMutation.mutate(note.id)}
+                    isPinPending={searchPinMutation.isPending}
                     onOpen={handleOpenNote}
-                    onDoubleClick={openNote}
-                    onPinSuccess={() => setSearchPage(1)}
+                    onOpenFullPage={openNote}
+                    onEdit={() => loadNoteMutation.mutate(item.noteId)}
+                    onDelete={(note) => setConfirmState({ kind: 'note', note })}
+                    onPin={(noteId, pinned) => searchPinMutation.mutate({ noteId, pinned })}
                   />
                 ))}
               </div>
@@ -492,4 +515,13 @@ export function ProjectsWorkspace({
 
 async function refreshDashboard(queryClient: ReturnType<typeof useQueryClient>) {
   await invalidateNoteRelatedQueries(queryClient);
+}
+
+function deriveTimelineCategory(source: string | undefined): string {
+  if (!source) return 'manual';
+  const s = source.toLowerCase();
+  if (s.includes('github')) return 'github-push';
+  if (s.includes('whatsapp') || s.includes('evolution')) return 'whatsapp';
+  if (s === 'ai-chat' || s.includes('antigravity') || s.includes('codex') || s.includes('claude') || s.includes('opencode') || s.includes('open-code')) return 'ai-chat';
+  return 'manual';
 }

@@ -5,16 +5,12 @@ import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
 import { projectTimelineCategoryValues, type ProjectTimelineCategory, type ProjectTimelineItem } from '../../shared/api/models/project-timeline';
 import type { PaginationMeta } from '../../shared/api/models/pagination';
-import { formatDisplayToken, formatUsDate, formatUsDateTime, projectName, noteTypeLabel, getCleanSummary, getTimelineNodeColor } from '../../shared/utils/format';
-import { buildNoteDisplayTags } from '../../shared/utils/note-tags';
-import { Badge, EmptyState, Tags } from '../../shared/ui/primitives';
+import { formatDisplayToken } from '../../shared/utils/format';
+import { EmptyState } from '../../shared/ui/primitives';
 import { Pagination } from '../../shared/ui/pagination';
 import { MobileInfinitePagination, useMobilePaginatedItems } from '../../shared/ui/mobile-infinite-pagination';
-import { PencilIcon, TrashIcon, ResolveIcon, ArchiveIcon } from '../../shared/ui/icons';
+import { ResolveIcon, ArchiveIcon } from '../../shared/ui/icons';
 import { ConfirmationModal } from '../../shared/ui/confirmation-modal';
-import { AttachmentIndicator } from '../../widgets/notes/AttachmentIndicator';
-import { QuickNoteStatusActions } from '../../widgets/notes/QuickNoteStatusActions';
-import { SourceBadge } from '../../widgets/notes/SourceBadge';
 import { type NoteStatus } from '../../shared/api/models/note-status';
 import { BulkActionType, BulkStatusUpdate } from '../../shared/api/models/bulk-action';
 import { invalidateNoteRelatedQueries } from '../../shared/api/note-query';
@@ -24,15 +20,9 @@ import { UI_MESSAGES } from '../../shared/constants/ui.constants';
 import { QUERY_KEYS } from '../../shared/constants/query-keys.constants';
 import { Select } from '../../shared/ui/select';
 import { useMediaQuery } from '../../shared/ui/use-media-query';
+import { ProjectTimelineCard } from './ProjectTimelineCard';
 
-function PinIcon({ active }: { active?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '1em', height: '1em' }}>
-      <line x1="12" y1="17" x2="12" y2="22" />
-      <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.91a2 2 0 0 1-.43-1.24V5a2 2 0 0 0-2-2h-3.6a2 2 0 0 0-2 2v4.85a2 2 0 0 1-.43 1.24l-2.33 2.91a2 2 0 0 0-.44 1.24z" />
-    </svg>
-  );
-}
+
 
 const categoryOptions: Array<{ value: ProjectTimelineCategory; label: string }> = projectTimelineCategoryValues.map((value) => ({
   value,
@@ -175,103 +165,19 @@ export function ProjectTimeline({
       </div>
       {visibleItems.length > 0 ? (
         <div className={`project-timeline-list ${isStale ? 'stale-data' : ''}`}>
-          {visibleItems.map((item) => {
-            const activeSource = item.source || item.sourceChannel;
-            const displayTags = buildNoteDisplayTags({ tags: item.tags, categories: item.categories });
-            return (
-              <article className="project-timeline-item clickable" key={item.id} onClick={() => onOpenNote(item.noteId)} onDoubleClick={() => onOpenNoteFullPage?.(item.noteId)}>
-                <div
-                  className="project-timeline-marker"
-                  aria-hidden="true"
-                  style={{
-                    backgroundColor: getTimelineNodeColor(item.category, item.type),
-                    boxShadow: `0 0 6px ${getTimelineNodeColor(item.category, item.type)}`,
-                  }}
-                />
-                <div className="project-timeline-card">
-                  <div className="project-timeline-meta">
-                    {item.isPinned && (
-                      <span className="pinned-badge" title="Pinned Note" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: 'var(--amber)', fontSize: '11px', fontWeight: 'bold' }}>
-                        <PinIcon active /> Pinned
-                      </span>
-                    )}
-                    {displayTags.length ? <Tags items={displayTags} /> : null}
-                    <span className="meta meta-date">{formatUsDate(item.date)}</span>
-                    <span className="meta meta-time"> {formatUsDateTime(item.date).split(' ')[1]}</span>
-                    <span className="meta meta-project">{projectName(dashboard.projects, item.project)}</span>
-                    <AttachmentIndicator count={item.attachmentCount || 0} />
-                    <Badge value={formatDisplayToken(item.status)} tone={item.status} />
-                  </div>
-                  <button
-                    aria-label={item.isPinned ? `Unpin note ${item.title}` : `Pin note ${item.title}`}
-                    className={`row-action-button pin ${item.isPinned ? 'active' : ''}`}
-                    title={item.isPinned ? 'Unpin' : 'Pin'}
-                    type="button"
-                    disabled={pinMutation.isPending}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      pinMutation.mutate({ noteId: item.noteId, pinned: !item.isPinned });
-                    }}
-                    style={{
-                      position: 'absolute',
-                      top: '14px',
-                      right: '14px',
-                      zIndex: 2,
-                    }}
-                  >
-                    <PinIcon active={item.isPinned} />
-                  </button>
-                  <div className="project-timeline-body">
-                    <div>
-                      <h3>{item.title}</h3>
-                      <SourceBadge source={activeSource} />
-                      <p>{getCleanSummary(item.summary)}</p>
-                    </div>
-                    <div className="row-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-end', marginTop: 'auto' }}>
-                      <QuickNoteStatusActions
-                        note={{
-                          id: item.noteId,
-                          title: item.title,
-                          status: item.status,
-                          project: item.project,
-                          tags: item.tags,
-                        }}
-                        compact
-                      />
-                      {onEditNote ? (
-                        <button
-                          aria-label={`Edit note ${item.title}`}
-                          className="row-action-button edit"
-                          title="Edit"
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onEditNote(item);
-                          }}
-                        >
-                          <PencilIcon />
-                        </button>
-                      ) : null}
-                      {onDeleteNote ? (
-                        <button
-                          aria-label={`Delete note ${item.title}`}
-                          className="row-action-button danger"
-                          title="Delete"
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onDeleteNote(item);
-                          }}
-                        >
-                          <TrashIcon />
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          {visibleItems.map((item) => (
+            <ProjectTimelineCard
+              key={item.id}
+              item={item}
+              dashboard={dashboard}
+              isPinPending={pinMutation.isPending}
+              onOpen={onOpenNote}
+              onOpenFullPage={onOpenNoteFullPage}
+              onEdit={onEditNote}
+              onDelete={onDeleteNote}
+              onPin={(noteId, pinned) => pinMutation.mutate({ noteId, pinned })}
+            />
+          ))}
         </div>
       ) : (
         <EmptyState>No timeline items for this category.</EmptyState>
