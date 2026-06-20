@@ -8,9 +8,12 @@ export class AiHistoryManager {
   private knownSessionTimes = new Map<string, number>(); // track last modified timestamps to avoid duplicates
   private recentSessions: AiSession[] = []; // store in memory to allow viewing/importing later
   private context?: vscode.ExtensionContext;
-  private savedSessions = new Set<string>(); // set of keys "providerId:sessionId"
-  private ignoredSessions = new Set<string>(); // set of keys "providerId:sessionId"
+  private savedSessions = new Map<string, number>(); // key -> timestamp "providerId:sessionId"
+  private ignoredSessions = new Map<string, number>(); // key -> timestamp "providerId:sessionId"
   private promptedSessions = new Set<string>(); // in-memory set to prevent duplicate popups during active session
+  private readonly MAX_SAVED_SESSIONS = 200; // Maximum number of saved sessions to track
+  private readonly MAX_IGNORED_SESSIONS = 500; // Maximum number of ignored sessions to track
+  private readonly SESSION_TTL_DAYS = 60; // Remove sessions older than 60 days
 
   registerProvider(provider: AiHistoryProvider) {
     this.providers.set(provider.id, provider);
@@ -42,18 +45,20 @@ export class AiHistoryManager {
 
     // Load persisted saved session keys
     try {
-      const persistedSaved = context.globalState.get<string[]>('kb.savedSessions') || [];
-      this.savedSessions = new Set(persistedSaved);
+      const persistedSaved = context.globalState.get<[string, number][]>('kb.savedSessionsMap') || [];
+      this.savedSessions = new Map(persistedSaved);
+      this.enforceSessionLimits();
     } catch {
-      this.savedSessions = new Set();
+      this.savedSessions = new Map();
     }
 
     // Load persisted ignored session keys
     try {
-      const persistedIgnored = context.globalState.get<string[]>('kb.ignoredSessions') || [];
-      this.ignoredSessions = new Set(persistedIgnored);
+      const persistedIgnored = context.globalState.get<[string, number][]>('kb.ignoredSessionsMap') || [];
+      this.ignoredSessions = new Map(persistedIgnored);
+      this.enforceSessionLimits();
     } catch {
-      this.ignoredSessions = new Set();
+      this.ignoredSessions = new Map();
     }
 
     // Load initial recent sessions from active providers to populate the list on startup
@@ -138,16 +143,56 @@ export class AiHistoryManager {
 
   markSessionAsSaved(providerId: string, sessionId: string) {
     const key = `${providerId}:${sessionId}`;
-    this.savedSessions.add(key);
+    this.savedSessions.set(key, Date.now());
     this.ignoredSessions.delete(key);
+    this.enforceSessionLimits();
     this.saveState();
   }
 
   markSessionAsIgnored(providerId: string, sessionId: string) {
     const key = `${providerId}:${sessionId}`;
-    this.ignoredSessions.add(key);
+    this.ignoredSessions.set(key, Date.now());
     this.savedSessions.delete(key);
+    this.enforceSessionLimits();
     this.saveState();
+  }
+
+  private enforceSessionLimits() {
+    const now = Date.now();
+    const ttlMs = this.SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
+
+    // Remove entries older than TTL from both sets
+    for (const [key, timestamp] of this.savedSessions.entries()) {
+      if (now - timestamp > ttlMs) {
+        this.savedSessions.delete(key);
+      }
+    }
+
+    for (const [key, timestamp] of this.ignoredSessions.entries()) {
+      if (now - timestamp > ttlMs) {
+        this.ignoredSessions.delete(key);
+      }
+    }
+
+    // Enforce limit on saved sessions using LRU (remove oldest by timestamp)
+    if (this.savedSessions.size > this.MAX_SAVED_SESSIONS) {
+      const entries = Array.from(this.savedSessions.entries())
+        .sort((a, b) => a[1] - b[1]); // Sort by timestamp ascending (oldest first)
+      const toRemove = entries.slice(0, entries.length - this.MAX_SAVED_SESSIONS);
+      for (const [key] of toRemove) {
+        this.savedSessions.delete(key);
+      }
+    }
+
+    // Enforce limit on ignored sessions using LRU (remove oldest by timestamp)
+    if (this.ignoredSessions.size > this.MAX_IGNORED_SESSIONS) {
+      const entries = Array.from(this.ignoredSessions.entries())
+        .sort((a, b) => a[1] - b[1]); // Sort by timestamp ascending (oldest first)
+      const toRemove = entries.slice(0, entries.length - this.MAX_IGNORED_SESSIONS);
+      for (const [key] of toRemove) {
+        this.ignoredSessions.delete(key);
+      }
+    }
   }
 
   private saveState() {
@@ -156,8 +201,8 @@ export class AiHistoryManager {
       const timesArray = Array.from(this.knownSessionTimes.entries());
       this.context.globalState.update('kb.knownSessionTimes', timesArray);
       this.context.globalState.update('kb.recentSessions', this.recentSessions);
-      this.context.globalState.update('kb.savedSessions', Array.from(this.savedSessions));
-      this.context.globalState.update('kb.ignoredSessions', Array.from(this.ignoredSessions));
+      this.context.globalState.update('kb.savedSessionsMap', Array.from(this.savedSessions.entries()));
+      this.context.globalState.update('kb.ignoredSessionsMap', Array.from(this.ignoredSessions.entries()));
     } catch (err) {
       console.error('Failed to save AI sessions state:', err);
     }
