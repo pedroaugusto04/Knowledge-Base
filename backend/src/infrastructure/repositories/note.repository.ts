@@ -171,11 +171,6 @@ export class PostgresNoteRepository {
     const selectedPage = input.selectedId ? await this.resolveNotePage(input, whereCondition) : input.page;
     const pagination = buildPaginationMeta({ page: selectedPage, pageSize: input.pageSize }, total);
 
-    // When selectedId is provided, ensure the selected note is included in the results
-    const resultCondition = input.selectedId
-      ? or(whereCondition, eq(notes.id, input.selectedId))
-      : whereCondition;
-
     const result = await db
       .select({
         id: notes.id,
@@ -226,7 +221,7 @@ export class PostgresNoteRepository {
       ))
       .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
       .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
-      .where(resultCondition)
+      .where(whereCondition)
       .groupBy(notes.id, projects.projectSlug)
       .orderBy(desc(notes.isPinned), desc(notes.occurredAt), notes.title)
       .limit(pagination.pageSize)
