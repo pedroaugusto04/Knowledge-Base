@@ -159,7 +159,6 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
     const neighbors = await this.noteRepository.getNoteNeighbors(userId, id, {
       projectId: note.projectId,
       workspaceId: note.workspaceId,
-      folderId: note.folderId ?? undefined,
     });
     return noteDetail(note, [], neighbors);
   }
