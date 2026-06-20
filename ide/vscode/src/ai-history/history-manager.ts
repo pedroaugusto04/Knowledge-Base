@@ -8,6 +8,9 @@ export class AiHistoryManager {
   private knownSessionTimes = new Map<string, number>(); // track last modified timestamps to avoid duplicates
   private recentSessions: AiSession[] = []; // store in memory to allow viewing/importing later
   private context?: vscode.ExtensionContext;
+  private savedSessions = new Set<string>(); // set of keys "providerId:sessionId"
+  private ignoredSessions = new Set<string>(); // set of keys "providerId:sessionId"
+  private promptedSessions = new Set<string>(); // in-memory set to prevent duplicate popups during active session
 
   registerProvider(provider: AiHistoryProvider) {
     this.providers.set(provider.id, provider);
@@ -35,6 +38,22 @@ export class AiHistoryManager {
       this.recentSessions = context.globalState.get<AiSession[]>('kb.recentSessions') || [];
     } catch {
       this.recentSessions = [];
+    }
+
+    // Load persisted saved session keys
+    try {
+      const persistedSaved = context.globalState.get<string[]>('kb.savedSessions') || [];
+      this.savedSessions = new Set(persistedSaved);
+    } catch {
+      this.savedSessions = new Set();
+    }
+
+    // Load persisted ignored session keys
+    try {
+      const persistedIgnored = context.globalState.get<string[]>('kb.ignoredSessions') || [];
+      this.ignoredSessions = new Set(persistedIgnored);
+    } catch {
+      this.ignoredSessions = new Set();
     }
 
     // Load initial recent sessions from active providers to populate the list on startup
@@ -74,17 +93,38 @@ export class AiHistoryManager {
           this.knownSessionTimes.set(key, session.timestamp);
           this.addOrUpdateRecentSession(session);
 
+          // If the session is already saved (auto-save enabled)
+          if (this.savedSessions.has(key)) {
+            await this.autoSaveSessionToVault(client, session);
+            return;
+          }
+
+          // If the session is ignored, do nothing
+          if (this.ignoredSessions.has(key)) {
+            return;
+          }
+
+          // If we have already prompted the user for this session in this runtime session, do not prompt again
+          if (this.promptedSessions.has(key)) {
+            return;
+          }
+
+          this.promptedSessions.add(key);
+
           const action = await vscode.window.showInformationMessage(
             `KB: New AI session detected from ${provider.name}. Do you want to save it as a note?`,
-            'Save directly',
+            'Auto-save',
             'Preview & Edit',
             'Ignore'
           );
 
-          if (action === 'Save directly') {
+          if (action === 'Auto-save') {
+            this.markSessionAsSaved(provider.id, session.sessionId);
             await this.saveSessionToVault(client, session);
           } else if (action === 'Preview & Edit') {
             await this.openPreview(session);
+          } else if (action === 'Ignore') {
+            this.markSessionAsIgnored(provider.id, session.sessionId);
           }
         });
 
@@ -96,12 +136,28 @@ export class AiHistoryManager {
     }
   }
 
+  markSessionAsSaved(providerId: string, sessionId: string) {
+    const key = `${providerId}:${sessionId}`;
+    this.savedSessions.add(key);
+    this.ignoredSessions.delete(key);
+    this.saveState();
+  }
+
+  markSessionAsIgnored(providerId: string, sessionId: string) {
+    const key = `${providerId}:${sessionId}`;
+    this.ignoredSessions.add(key);
+    this.savedSessions.delete(key);
+    this.saveState();
+  }
+
   private saveState() {
     if (!this.context) return;
     try {
       const timesArray = Array.from(this.knownSessionTimes.entries());
       this.context.globalState.update('kb.knownSessionTimes', timesArray);
       this.context.globalState.update('kb.recentSessions', this.recentSessions);
+      this.context.globalState.update('kb.savedSessions', Array.from(this.savedSessions));
+      this.context.globalState.update('kb.ignoredSessions', Array.from(this.ignoredSessions));
     } catch (err) {
       console.error('Failed to save AI sessions state:', err);
     }
@@ -254,10 +310,11 @@ export class AiHistoryManager {
       if (selected.session) {
         const action = await vscode.window.showInformationMessage(
           `Selected session: "${selected.label}"`,
-          'Save directly',
+          'Auto-save',
           'Preview & Edit'
         );
-        if (action === 'Save directly') {
+        if (action === 'Auto-save') {
+          this.markSessionAsSaved(selected.session.providerId, selected.session.sessionId);
           await this.saveSessionToVault(client, selected.session);
         } else if (action === 'Preview & Edit') {
           await this.openPreview(selected.session);
@@ -337,4 +394,24 @@ export class AiHistoryManager {
       vscode.window.showErrorMessage(`Failed to save note: ${err.message || err}`);
     }
   }
+
+  private async autoSaveSessionToVault(client: KbClient, session: AiSession) {
+    try {
+      const titleWithDate = this.getTitleWithDate(session);
+      const rawText = this.getMarkdownText(session);
+      await client.createNote({
+        title: titleWithDate,
+        rawText,
+        projectSlug: session.projectSlug || client.defaultProjectSlug || 'inbox',
+        sourceChannel: 'ai-chat',
+        source: session.providerId,
+        sessionId: session.sessionId,
+      });
+
+      vscode.commands.executeCommand('kb.refresh');
+    } catch (err: any) {
+      console.error(`Failed to auto-save note: ${err.message || err}`);
+    }
+  }
 }
+

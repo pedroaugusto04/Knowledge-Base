@@ -83,8 +83,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // -------------------------------------------------------------------------
+  // AI Session Watchers
+  // -------------------------------------------------------------------------
+  const historyManager = new AiHistoryManager();
+  historyManager.registerProvider(new ClaudeCodeHistoryProvider());
+  historyManager.registerProvider(new CodexHistoryProvider());
+  historyManager.registerProvider(new AntigravityHistoryProvider());
+  historyManager.registerProvider(new OpenCodeHistoryProvider());
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('kb.showRecentAiSessions', () => {
+      historyManager.showRecentSessions(kbClient);
+    })
+  );
+
+  historyManager.startWatching(kbClient, context);
+
   registerAskCommand(context, kbClient, () => sidebarProvider.activeProject ?? activeProject ?? kbClient.defaultProjectSlug);
-  registerSaveNoteCommand(context, kbClient, () => sidebarProvider.activeProject ?? activeProject ?? kbClient.defaultProjectSlug);
+  registerSaveNoteCommand(
+    context,
+    kbClient,
+    () => sidebarProvider.activeProject ?? activeProject ?? kbClient.defaultProjectSlug,
+    historyManager
+  );
 
   // -------------------------------------------------------------------------
   // Auto-refresh sidebar when window regains focus
@@ -111,23 +133,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       } catch { /* silent */ }
     }),
   );
-
-  // -------------------------------------------------------------------------
-  // AI Session Watchers
-  // -------------------------------------------------------------------------
-  const historyManager = new AiHistoryManager();
-  historyManager.registerProvider(new ClaudeCodeHistoryProvider());
-  historyManager.registerProvider(new CodexHistoryProvider());
-  historyManager.registerProvider(new AntigravityHistoryProvider());
-  historyManager.registerProvider(new OpenCodeHistoryProvider());
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('kb.showRecentAiSessions', () => {
-      historyManager.showRecentSessions(kbClient);
-    })
-  );
-
-  historyManager.startWatching(kbClient, context);
 }
 
 export function deactivate(): void {

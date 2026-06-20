@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { KbClient } from '../kb-client';
 import { reportError } from '../error-reporter';
+import type { AiHistoryManager } from '../ai-history/history-manager';
 
 /**
  * Right-click on a selection → "KB: Save Selection as Note"
@@ -10,6 +11,7 @@ export function registerSaveNoteCommand(
   context: vscode.ExtensionContext,
   client: KbClient,
   getProject: () => string,
+  historyManager?: AiHistoryManager
 ): void {
   context.subscriptions.push(
     vscode.commands.registerCommand('kb.saveSelection', async () => {
@@ -114,6 +116,9 @@ export function registerSaveNoteCommand(
               sessionId,
             });
             vscode.window.showInformationMessage(`Note saved to KB — project: ${getProject()}`);
+            if (sessionId && providerIdParam) {
+              historyManager?.markSessionAsSaved(providerIdParam, sessionId);
+            }
             vscode.commands.executeCommand('kb.refresh');
           } catch (err: unknown) {
             reportError('save-active-file', err);
@@ -123,3 +128,4 @@ export function registerSaveNoteCommand(
     })
   );
 }
+
