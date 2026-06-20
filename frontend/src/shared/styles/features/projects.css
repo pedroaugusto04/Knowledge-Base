@@ -1013,6 +1013,11 @@
   pointer-events: none;
 }
 
+.matching-notes-count {
+  display: block;
+  margin-bottom: 12px;
+}
+
 /* Project Brief Loading & Thinking States */
 .brief-waiting-card,
 .brief-thinking-card {
