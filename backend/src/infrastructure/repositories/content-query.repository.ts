@@ -156,12 +156,16 @@ export class PostgresContentQueryRepository extends ContentQueryRepository {
     const note = result[0] ? await this.hydrateMarkdown(noteFromRow(result[0])) : null;
     if (!note) return null;
 
-    const neighbors = await this.noteRepository.getNoteNeighbors(userId, id, note.projectId, note.workspaceId);
+    const neighbors = await this.noteRepository.getNoteNeighbors(userId, id, {
+      projectId: note.projectId,
+      workspaceId: note.workspaceId,
+      folderId: note.folderId ?? undefined,
+    });
     return noteDetail(note, [], neighbors);
   }
 
-  async getNoteNeighbors(userId: string, noteId: string, projectId?: string, workspaceId?: string) {
-    return this.noteRepository.getNoteNeighbors(userId, noteId, projectId, workspaceId);
+  async getNoteNeighbors(userId: string, noteId: string, input?: { projectId?: string; workspaceId?: string; folderId?: string; status?: string }) {
+    return this.noteRepository.getNoteNeighbors(userId, noteId, input);
   }
 
   async listReviews(userId: string) {

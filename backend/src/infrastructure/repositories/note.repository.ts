@@ -720,17 +720,25 @@ export class PostgresNoteRepository {
     return index > 0 ? Math.ceil(index / input.pageSize) : 1;
   }
 
-  async getNoteNeighbors(userId: string, noteId: string, projectId?: string, workspaceId?: string) {
+  async getNoteNeighbors(userId: string, noteId: string, input?: { projectId?: string; workspaceId?: string; folderId?: string; status?: string }) {
     const conditions: string[] = ['n.user_id = $1'];
     const values: unknown[] = [userId];
 
-    if (projectId) {
-      values.push(projectId);
+    if (input?.projectId) {
+      values.push(input.projectId);
       conditions.push(`n.project_id = $${values.length}`);
     }
-    if (workspaceId) {
-      values.push(workspaceId);
+    if (input?.workspaceId) {
+      values.push(input.workspaceId);
       conditions.push(`n.workspace_id = $${values.length}`);
+    }
+    if (input?.folderId) {
+      values.push(input.folderId);
+      conditions.push(`n.folder_id = $${values.length}`);
+    }
+    if (input?.status) {
+      values.push(input.status);
+      conditions.push(`n.status = $${values.length}`);
     }
 
     const where = conditions.join(' AND ');
