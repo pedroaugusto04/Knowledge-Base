@@ -13,27 +13,23 @@ import { SubscriptionService } from '../../application/services/billing/Subscrip
 import { SubscriptionUpgradeService } from '../../application/services/billing/SubscriptionUpgradeService.js';
 import { SubscriptionCancellationService } from '../../application/services/billing/SubscriptionCancellationService.js';
 import { SubscriptionChangeService } from '../../application/services/billing/SubscriptionChangeService.js';
+import { UpdateSubscriptionStrategyFactory } from '../../application/services/billing/subscriptionStrategy/UpdateSubscriptionStrategyFactory.js';
 
 import { AuthModule } from './auth.module.js';
 import { AsaasWebhookController } from '../../interfaces/http/controllers/billing/asaas-webhook.controller.js';
 import { StripeWebhookController } from '../../interfaces/http/controllers/billing/stripe-webhook.controller.js';
-import { BillingSseController } from '../../interfaces/http/controllers/billing/billing-sse.controller.js';
 import { HandleAsaasWebhookUseCase, HandleStripeWebhookUseCase } from '../../application/use-cases/index.js';
 import { BillingEventBus } from '../../application/services/billing-event.bus.js';
 import { AppLogger } from '../../observability/logger.js';
 import { ChangeSubscriptionWorker } from '../../workers/change-subscription.worker.js';
 import { BillingWorker } from '../../workers/billing.worker.js';
 import { WebhookOutboxRelayWorker } from '../../workers/webhook-outbox-relay.worker.js';
-import { BillingSseRedisBroker } from '../billing/sse/BillingSseRedisBroker.js';
-import { BillingSseHub } from '../billing/sse/BillingSseHub.js';
 
 @Module({
   imports: [DatabaseModule, LoggerModule, AuthModule],
-  controllers: [AsaasWebhookController, StripeWebhookController, BillingSseController],
+  controllers: [AsaasWebhookController, StripeWebhookController],
   providers: [
     AppLogger,
-    BillingSseRedisBroker,
-    BillingSseHub,
     AsaasPaymentGateway,
     AsaasGatewayStatusMapper,
     StripePaymentGateway,
@@ -46,7 +42,7 @@ import { BillingSseHub } from '../billing/sse/BillingSseHub.js';
     SubscriptionUpgradeService,
     SubscriptionCancellationService,
     SubscriptionChangeService,
-
+    UpdateSubscriptionStrategyFactory,
     HandleAsaasWebhookUseCase,
     HandleStripeWebhookUseCase,
     BillingEventBus,
@@ -56,7 +52,6 @@ import { BillingSseHub } from '../billing/sse/BillingSseHub.js';
   ],
   exports: [
     AppLogger,
-    BillingSseHub,
     AsaasPaymentGateway,
     AsaasGatewayStatusMapper,
     StripePaymentGateway,
@@ -67,6 +62,7 @@ import { BillingSseHub } from '../billing/sse/BillingSseHub.js';
     SubscriptionUpgradeService,
     SubscriptionCancellationService,
     SubscriptionChangeService,
+    UpdateSubscriptionStrategyFactory,
     HandleAsaasWebhookUseCase,
     HandleStripeWebhookUseCase,
     BillingEventBus,

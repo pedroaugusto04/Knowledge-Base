@@ -28,6 +28,14 @@ export enum SubscriptionChangeStatus {
   CANCELED = 'canceled',
 }
 
+export enum SubscriptionChangeKind {
+  NEW = 'NEW',
+  UPGRADE = 'UPGRADE',
+  DOWNGRADE = 'DOWNGRADE',
+  CHANGE_CYCLE = 'CHANGE_CYCLE',
+  NOOP = 'NOOP',
+}
+
 export enum PaymentStatus {
   PENDING = 'pending',
   RECEIVED = 'received',

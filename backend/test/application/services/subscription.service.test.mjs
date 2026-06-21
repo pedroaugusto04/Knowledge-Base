@@ -71,14 +71,16 @@ test('SubscriptionService throws when trying to subscribe to the same active pla
 
   const service = new SubscriptionService(
     mockDatabase,
-    null, // logger
-    null, // asaasPaymentGateway
-    null, // stripePaymentGateway
-    null, // asaasGatewayStatusMapper
-    null, // stripeGatewayStatusMapper
-    null, // subscriptionUpgradeService
-    null, // billingIntentService
-    null  // subscriptionChangeService
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    { getChangeKind: () => 'NEW' },
   );
 
   await assert.rejects(

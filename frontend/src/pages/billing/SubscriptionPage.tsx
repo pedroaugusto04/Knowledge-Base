@@ -15,7 +15,7 @@ import {
 import { PageHead, Panel, InlineMessage } from '../../shared/ui/primitives';
 import { formatCpfCnpj, isValidCpfCnpjFormat } from '../../shared/utils/cpf-cnpj';
 import { detectUserCountry } from '../../shared/utils/location';
-import { BILLING_ERROR_MESSAGES, BILLING_CYCLE, BILLING_TYPE, type BillingCycle, type BillingType } from '../../shared/constants/billing.constants';
+import { BILLING_ERROR_MESSAGES, BILLING_CYCLE, BILLING_TYPE, SUBSCRIPTION_CHANGE_KIND, type BillingCycle, type BillingType } from '../../shared/constants/billing.constants';
 import { notifySuccess, notifyError } from '../../shared/ui/notifications';
 
 export function SubscriptionPage() {
@@ -88,14 +88,23 @@ export function SubscriptionPage() {
     onSuccess: (data) => {
       queryClient.setQueryData(['billing', 'status'], data);
       setIsChoiceModalOpen(false);
-      
+
+      if (
+        data.changeKind === SUBSCRIPTION_CHANGE_KIND.DOWNGRADE ||
+        data.changeKind === SUBSCRIPTION_CHANGE_KIND.CHANGE_CYCLE
+      ) {
+        notifySuccess('Subscription change scheduled successfully');
+        return;
+      }
+
       const pendingPayment = data.summary.latestPendingPayment;
-      if (pendingPayment && (pendingPayment.billingType === 'pix' || pendingPayment.billingType === 'boleto')) {
+      if (pendingPayment) {
         setActivePayment(pendingPayment);
         setIsPaymentModalOpen(true);
-      } else {
-        notifySuccess('Subscription updated successfully');
+        return;
       }
+
+      notifySuccess('Subscription updated successfully');
     },
     onError: (error) => {
       notifyError(error instanceof Error ? error.message : 'An error occurred');
@@ -129,10 +138,12 @@ export function SubscriptionPage() {
   const summary = status?.summary;
   const savedCpfCnpj = status?.cpfCnpj || '';
 
-  const currentPlan = useMemo(() => {
-    if (!status || !plans.length) return null;
-    return plans.find(p => p.id === summary?.activeSub?.planId) || null;
-  }, [status, plans, summary]);
+  const defaultPlanId = useMemo(
+    () => plans.find((plan) => plan.isDefault)?.id ?? null,
+    [plans],
+  );
+
+  const entitledPlanId = summary?.entitledPlanId ?? defaultPlanId;
 
   const handleOpenChoice = (plan: PlanDTO) => {
     setSelectedPlan(plan);
@@ -331,7 +342,7 @@ export function SubscriptionPage() {
             {/* Plans Card Grid */}
             <div className="subscription-grid">
               {plans.map(plan => {
-                const isCurrent = summary.latestSub?.planId === plan.id;
+                const isCurrent = plan.id === entitledPlanId;
                 const isFree = plan.isDefault;
                 
                 // Calculate display price based on global state cycle selection and country
@@ -425,7 +436,7 @@ export function SubscriptionPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '20px 0' }}>
               <div className="inline-message warning" style={{ fontSize: '12px' }}>
-                Upgrades are applied immediately with proportional charging. Downgrades and billing cycle modifications will be scheduled for the next period.
+                New subscriptions and upgrades are activated after payment confirmation. Downgrades and billing cycle changes are scheduled for the next period.
               </div>
 
               {/* Cycle chooser inside modal (Free is always monthly) */}

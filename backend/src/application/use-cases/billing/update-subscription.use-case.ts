@@ -22,7 +22,7 @@ export class UpdateSubscriptionUseCase {
     cpfCnpj?: string;
     countryCode?: string;
   }) {
-    await this.subscriptionService.registerOrUpdateSubscription(
+    const result = await this.subscriptionService.registerOrUpdateSubscription(
       params.userId,
       params.email,
       params.displayName,
@@ -36,10 +36,10 @@ export class UpdateSubscriptionUseCase {
     this.billingEventBus.emit(params.userId);
 
     const quotaStatus = await this.quotaService.getQuotaStatus(params.userId);
-    const summary = await this.subscriptionService.getSubscriptionStatusSummary(params.userId);
     return {
       ...quotaStatus,
-      summary,
+      summary: result.summary,
+      changeKind: result.changeKind,
     };
   }
 }

@@ -11,7 +11,6 @@ import { StripePaymentGateway } from '../../../infrastructure/billing/gateways/s
 import { AppLogger } from '../../../observability/logger.js';
 import { BillingIntentService } from './BillingIntentService.js';
 import { PAYMENT_GATEWAY } from '../../../domain/constants/billing.constants.js';
-import { BillingSseHub } from '../../../infrastructure/billing/sse/BillingSseHub.js';
 
 @Injectable()
 export class SubscriptionCancellationService {
@@ -21,7 +20,6 @@ export class SubscriptionCancellationService {
     private readonly asaasPaymentGateway: AsaasPaymentGateway,
     private readonly stripePaymentGateway: StripePaymentGateway,
     private readonly billingIntentService: BillingIntentService,
-    private readonly billingSseHub: BillingSseHub,
   ) {}
 
   async cancelPendingPayment(userId: string, paymentId: string) {
@@ -58,9 +56,6 @@ export class SubscriptionCancellationService {
     }
 
     await this.billingIntentService.cancelLatestPendingOneShotIntent(userId);
-
-    // Publish SSE update
-    this.billingSseHub.publishSubscriptionStatus(userId, { summary: null });
   }
 
   async cancelSubscription(userId: string) {
@@ -107,9 +102,6 @@ export class SubscriptionCancellationService {
     }).where(eq(userSubscriptions.userId, userId));
 
     await this.billingIntentService.cancelLatestPendingOneShotIntent(userId);
-
-    // Publish SSE update
-    this.billingSseHub.publishSubscriptionStatus(userId, { summary: null });
   }
 
   async disableSubscription(userId: string) {
@@ -156,8 +148,5 @@ export class SubscriptionCancellationService {
     }).where(eq(userSubscriptions.userId, userId));
 
     await this.billingIntentService.cancelLatestPendingOneShotIntent(userId);
-
-    // Publish SSE update
-    this.billingSseHub.publishSubscriptionStatus(userId, { summary: null });
   }
 }

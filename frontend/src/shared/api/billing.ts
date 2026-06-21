@@ -1,6 +1,7 @@
 import { request } from './request';
 import { detectUserCountry } from '../utils/location';
 import { resolveApiPath } from './api-path';
+import type { SubscriptionChangeKind } from '../constants/billing.constants';
 
 export interface PlanDTO {
   id: string;
@@ -88,6 +89,7 @@ export interface QuotaAndBillingStatusDTO {
     projects: number;
   };
   summary: SubscriptionSummaryDTO;
+  changeKind?: SubscriptionChangeKind;
 }
 
 export interface SubscriptionInput {

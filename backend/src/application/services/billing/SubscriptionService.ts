@@ -23,6 +23,7 @@ import {
   SubscriptionStatus,
   SubscriptionChangeType,
   SubscriptionChangeStatus,
+  SubscriptionChangeKind,
   PaymentStatus,
 } from '../../../domain/enums/billing.enums.js';
 import { FREE_PLAN_ID, SubscriptionPlan } from '../../../domain/enums/plans.enums.js';
@@ -30,16 +31,10 @@ import { PAYMENT_GATEWAY, COUNTRY_CODE } from '../../../domain/constants/billing
 import { BillingIntentService } from './BillingIntentService.js';
 import { SubscriptionUpgradeService } from './SubscriptionUpgradeService.js';
 import { SubscriptionContext } from './subscriptionStrategy/subscriptionContext.js';
-import { SubscriptionChangeKind } from './subscriptionStrategy/subscriptionChangeKind.js';
-import { UpdateSubscriptionStrategyResult } from './subscriptionStrategy/UpdateSubscriptionStrategy.js';
+import type { SubscriptionChangeResult } from '../../models/subscription-change.models.js';
 import { SubscriptionChangeService } from './SubscriptionChangeService.js';
 import { PostgresBillingPaymentRepository } from '../../../infrastructure/repositories/billing.repository.js';
 import { UpdateSubscriptionStrategyFactory } from './subscriptionStrategy/UpdateSubscriptionStrategyFactory.js';
-import { NewSubscriptionStrategy } from './subscriptionStrategy/strategies/NewSubscriptionStrategy.js';
-import { UpgradeProrationStrategy } from './subscriptionStrategy/strategies/UpgradeProrationStrategy.js';
-import { DowngradeStrategy } from './subscriptionStrategy/strategies/DowngradeStrategy.js';
-import { ChangeCycleStrategy } from './subscriptionStrategy/strategies/ChangeCycleStrategy.js';
-import { BillingSseHub } from '../../../infrastructure/billing/sse/BillingSseHub.js';
 
 
 @Injectable()
@@ -55,7 +50,7 @@ export class SubscriptionService {
     private readonly asaasGatewayStatusMapper: AsaasGatewayStatusMapper,
     private readonly stripeGatewayStatusMapper: StripeGatewayStatusMapper,
     private readonly billingPaymentRepository: PostgresBillingPaymentRepository,
-    private readonly billingSseHub: BillingSseHub,
+    private readonly updateSubscriptionStrategyFactory: UpdateSubscriptionStrategyFactory,
   ) {}
 
   async getPlans() {
@@ -87,7 +82,7 @@ export class SubscriptionService {
     billingType?: BillingType,
     cpfCnpj?: string,
     countryCode?: string,
-  ) {
+  ): Promise<SubscriptionChangeResult> {
     const db = this.database.getDb();
 
     const targetPlan = await db.select().from(plans).where(eq(plans.id, planId)).limit(1).then(r => r[0] || null);
@@ -193,19 +188,12 @@ export class SubscriptionService {
       isActive: activePlanRow.isActive,
     } : undefined;
 
-    // Cria SubscriptionContext
     const ctx: SubscriptionContext = {
       userId,
-      newSubscriptionDTO: {
-        planId,
-        billingCycle: cycle,
-        billingType: type,
-      },
       newPlan: targetPlan,
       newBillingCycle: cycle,
       newBillingType: type,
       newCreditCardToken: undefined,
-      newSubscriptionValue: targetPlan.priceCents,
       user: {
         id: userId,
         name: userDisplayName || userEmail,
@@ -223,22 +211,20 @@ export class SubscriptionService {
       activePlan,
     };
 
-    // Usa UpdateSubscriptionStrategyFactory para obter e executar a estratégia
-    const factory = new UpdateSubscriptionStrategyFactory();
-    const kind = factory.getChangeKind(ctx);
-    
-    // Usa strategies instanciadas manualmente para quebrar dependência circular
-    const strategies = {
-      newStrategy: new NewSubscriptionStrategy(this),
-      upgradeProrationStrategy: new UpgradeProrationStrategy(this),
-      downgradeStrategy: new DowngradeStrategy(this),
-      changeCycleStrategy: new ChangeCycleStrategy(this),
-    };
-    
-    const strategy = factory.getStrategy(kind, strategies);
-    const result = await strategy.execute(ctx);
+    const kind = this.updateSubscriptionStrategyFactory.getChangeKind(ctx);
 
-    return result.summary;
+    switch (kind) {
+      case SubscriptionChangeKind.NEW:
+        return this.createNewSubscriptionPayment(ctx);
+      case SubscriptionChangeKind.UPGRADE:
+        return this.upgradeSubscriptionWithProration(ctx);
+      case SubscriptionChangeKind.DOWNGRADE:
+        return this.downgradeSubscription(ctx);
+      case SubscriptionChangeKind.CHANGE_CYCLE:
+        return this.changeCycleSubscription(ctx);
+      default:
+        throw new BadRequestException('Unsupported subscription change');
+    }
   }
 
   async createNewSubscription(params: {
@@ -398,7 +384,8 @@ export class SubscriptionService {
 
     const paymentGateway = sub.gatewayName === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
     const billingCycle = (sub.billingCycle as string) === 'yearly' ? BillingCycle.YEARLY : BillingCycle.MONTHLY;
-    const targetRecurringValue = this.resolvePlanValueForCycle(plan, billingCycle);
+    const gatewayEnum = sub.gatewayName === PAYMENT_GATEWAY.STRIPE ? GatewayNameEnum.STRIPE : GatewayNameEnum.ASAAS;
+    const targetRecurringValue = this.resolvePlanValueForCycle(plan, billingCycle, gatewayEnum);
 
     // Sync subscription value in gateway for next cycles
     if (sub.gatewaySubscriptionId) {
@@ -521,10 +508,6 @@ export class SubscriptionService {
         updatedAt: new Date(),
       })
       .where(eq(userSubscriptions.userId, params.subscriptionId));
-
-    const statusSummary = await this.getSubscriptionStatusSummary(params.userId);
-    const summary = statusSummary ?? undefined;
-    this.billingSseHub.publishSubscriptionStatus(params.userId, { summary: summary ?? null });
   }
 
   async getSubscriptionStatusSummary(userId: string) {
@@ -630,79 +613,19 @@ export class SubscriptionService {
     };
   }
 
-  /**
-   * Cria um novo pagamento de assinatura usando SubscriptionContext
-   */
-  async createNewSubscriptionPaymentFromContext(ctx: SubscriptionContext): Promise<UpdateSubscriptionStrategyResult> {
-    const db = this.database.getDb();
-    const gateway = ctx.gateway === GatewayNameEnum.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
-    const mapper = ctx.gateway === GatewayNameEnum.STRIPE ? this.stripeGatewayStatusMapper : this.asaasGatewayStatusMapper;
-
-    const creditCardToken = ctx.newBillingType === BillingType.CREDIT_CARD ? ctx.newCreditCardToken : undefined;
-
-    const { externalReference } = await this.billingIntentService.createIntentAndExternalReference({
-      type: 'new',
-      userId: ctx.userId,
-      planId: ctx.newPlan.id,
-      billingCycle: ctx.newBillingCycle,
-      creditCardToken: creditCardToken || null,
-    });
-
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 1);
-
-    const isBrazil = ctx.gateway === GatewayNameEnum.ASAAS;
-    const priceCents = isBrazil ? ctx.newPlan.priceCents : ctx.newPlan.priceUsdCents;
-    const price = ctx.newBillingCycle === BillingCycle.YEARLY ? (priceCents * 12 * 0.8) / 100 : priceCents / 100;
-
-    const payment = await gateway.createPayment({
-      customerId: ctx.gatewayCustomerId,
-      userId: ctx.userId,
-      billingType: toGatewayBillingType(ctx.newBillingType),
-      value: price,
-      dueDate: dueDate.toISOString().split('T')[0],
+  async createNewSubscriptionPayment(ctx: SubscriptionContext): Promise<SubscriptionChangeResult> {
+    const price = this.resolvePlanValueForCycle(ctx.newPlan, ctx.newBillingCycle, ctx.gateway);
+    await this.createOneShotPayment({
+      ctx,
+      intentType: 'new',
+      paymentValue: price,
+      paymentDescription: SubscriptionChangeKind.NEW,
       description: `First payment for plan ${ctx.newPlan.displayName} - ${ctx.user.name}`,
-      externalReference,
-      creditCardToken,
-      kind: 'upgrade' as any,
     });
-
-    const normalizedStatus = mapper.normalizePaymentStatus(payment.status, null) ?? PaymentStatus.PENDING;
-
-    await db.insert(billingPayments).values({
-      id: crypto.randomUUID(),
-      subscriptionId: ctx.userId,
-      userId: ctx.userId,
-      gateway: ctx.gateway.toLowerCase() as any,
-      gatewayPaymentId: payment.id,
-      status: normalizedStatus,
-      billingType: ctx.newBillingType,
-      kind: 'upgrade',
-      gatewayStatus: payment.status ?? undefined,
-      value: String(price),
-      dueDate,
-      paidAt: payment.paidAt ? new Date(payment.paidAt) : null,
-      invoiceUrl: payment.invoiceUrl || null,
-      bankSlipUrl: payment.bankSlipUrl || null,
-      pixQrCode: payment.pixQrCode || null,
-      pixQrCodeUrl: payment.pixQrCodeUrl || null,
-      description: payment.description || SubscriptionChangeKind.NEW,
-    });
-
-    const statusSummary = await this.getSubscriptionStatusSummary(ctx.userId);
-    const summary = statusSummary ?? undefined;
-
-    this.billingSseHub.publishSubscriptionStatus(ctx.userId, { summary: summary ?? null });
-
-    const changeKind: SubscriptionChangeKind = SubscriptionChangeKind.NEW;
-
-    return { summary, changeKind };
+    return this.buildSubscriptionChangeResult(ctx.userId, SubscriptionChangeKind.NEW);
   }
 
-  /**
-   * Performs subscription upgrade with proration
-   */
-  async upgradeSubscriptionWithProration(ctx: SubscriptionContext): Promise<UpdateSubscriptionStrategyResult> {
+  async upgradeSubscriptionWithProration(ctx: SubscriptionContext): Promise<SubscriptionChangeResult> {
     const db = this.database.getDb();
 
     if (!ctx.activeSub) {
@@ -714,85 +637,32 @@ export class SubscriptionService {
       throw new BadRequestException('Cannot perform upgrade with past due subscription. Please settle the pending recurring payment and try again.');
     }
 
-    // Calculate first payment value based on difference (proration)
     const firstPaymentValue = await this.subscriptionUpgradeService.calculateProrationUpgradeValue({
       currentPlanId: ctx.activePlan?.id || '',
       newPlanId: ctx.newPlan.id,
       billingCycle: ctx.activeSub.billingCycle,
-      currentPeriodEnd: ctx.activeSub.nextDueDate || new Date()
+      currentPeriodEnd: ctx.activeSub.nextDueDate || new Date(),
     });
 
-    const gateway = ctx.gateway === GatewayNameEnum.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
-    const mapper = ctx.gateway === GatewayNameEnum.STRIPE ? this.stripeGatewayStatusMapper : this.asaasGatewayStatusMapper;
-
-    const creditCardToken = ctx.newBillingType === BillingType.CREDIT_CARD ? ctx.newCreditCardToken : undefined;
-
-    const { externalReference } = await this.billingIntentService.createIntentAndExternalReference({
-      type: 'upgrade',
-      userId: ctx.userId,
-      planId: ctx.newPlan.id,
-      billingCycle: ctx.newBillingCycle,
-      creditCardToken: creditCardToken || null,
-      subscriptionId: ctx.activeSub.id,
-    });
-
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 1);
-
-    const payment = await gateway.createPayment({
-      customerId: ctx.gatewayCustomerId,
-      userId: ctx.userId,
-      billingType: toGatewayBillingType(ctx.newBillingType),
-      value: firstPaymentValue,
-      dueDate: dueDate.toISOString().split('T')[0],
+    await this.createOneShotPayment({
+      ctx,
+      intentType: 'upgrade',
+      paymentValue: firstPaymentValue,
+      paymentDescription: SubscriptionChangeKind.UPGRADE,
       description: `Upgrade payment for plan ${ctx.newPlan.displayName} - ${ctx.user.name}`,
-      externalReference,
-      creditCardToken,
-      kind: 'upgrade' as any,
-    });
-
-    const normalizedStatus = mapper.normalizePaymentStatus(payment.status, null) ?? PaymentStatus.PENDING;
-
-    await db.insert(billingPayments).values({
-      id: crypto.randomUUID(),
       subscriptionId: ctx.activeSub.id,
-      userId: ctx.userId,
-      gateway: ctx.gateway.toLowerCase() as any,
-      gatewayPaymentId: payment.id,
-      status: normalizedStatus,
-      billingType: ctx.newBillingType,
-      kind: 'upgrade',
-      gatewayStatus: payment.status ?? undefined,
-      value: String(firstPaymentValue),
-      dueDate,
-      paidAt: payment.paidAt ? new Date(payment.paidAt) : null,
-      invoiceUrl: payment.invoiceUrl || null,
-      bankSlipUrl: payment.bankSlipUrl || null,
-      pixQrCode: payment.pixQrCode || null,
-      pixQrCodeUrl: payment.pixQrCodeUrl || null,
-      description: payment.description || SubscriptionChangeKind.UPGRADE,
     });
 
-    const statusSummary = await this.getSubscriptionStatusSummary(ctx.userId);
-    const summary = statusSummary ?? undefined;
-
-    this.billingSseHub.publishSubscriptionStatus(ctx.userId, { summary: summary ?? null });
-
-    const changeKind: SubscriptionChangeKind = SubscriptionChangeKind.UPGRADE;
-
-    return { summary, changeKind };
+    return this.buildSubscriptionChangeResult(ctx.userId, SubscriptionChangeKind.UPGRADE);
   }
 
-  /**
-   * Performs subscription downgrade
-   */
-  async downgradeSubscription(ctx: SubscriptionContext): Promise<UpdateSubscriptionStrategyResult> {
+  async downgradeSubscription(ctx: SubscriptionContext): Promise<SubscriptionChangeResult> {
     if (!ctx.activeSub) {
       throw new BadRequestException('Cannot perform downgrade without an active subscription');
     }
 
     const effectiveAt = new Date(ctx.activeSub.nextDueDate || Date.now());
-    effectiveAt.setDate(effectiveAt.getDate() - 1); // 1 day before due date
+    effectiveAt.setDate(effectiveAt.getDate() - 1);
 
     await this.subscriptionChangeService.scheduleChange({
       userId: ctx.userId,
@@ -803,29 +673,19 @@ export class SubscriptionService {
       toBillingCycle: ctx.newBillingCycle,
       toBillingType: ctx.newBillingType,
       type: SubscriptionChangeType.DOWNGRADE,
-      effectiveAt
+      effectiveAt,
     });
 
-    const statusSummary = await this.getSubscriptionStatusSummary(ctx.userId);
-    const summary = statusSummary ?? undefined;
-
-    this.billingSseHub.publishSubscriptionStatus(ctx.userId, { summary: summary ?? null });
-
-    const changeKind: SubscriptionChangeKind = SubscriptionChangeKind.DOWNGRADE;
-
-    return { summary, changeKind };
+    return this.buildSubscriptionChangeResult(ctx.userId, SubscriptionChangeKind.DOWNGRADE);
   }
 
-  /**
-   * Performs subscription cycle change
-   */
-  async changeCycleSubscription(ctx: SubscriptionContext): Promise<UpdateSubscriptionStrategyResult> {
+  async changeCycleSubscription(ctx: SubscriptionContext): Promise<SubscriptionChangeResult> {
     if (!ctx.activeSub) {
       throw new BadRequestException('Cannot perform cycle change without an active subscription');
     }
 
     const effectiveAt = new Date(ctx.activeSub.nextDueDate || Date.now());
-    effectiveAt.setDate(effectiveAt.getDate() - 1); // 1 day before due date
+    effectiveAt.setDate(effectiveAt.getDate() - 1);
 
     await this.subscriptionChangeService.scheduleChange({
       userId: ctx.userId,
@@ -836,26 +696,91 @@ export class SubscriptionService {
       toBillingCycle: ctx.newBillingCycle,
       toBillingType: ctx.newBillingType,
       type: SubscriptionChangeType.CHANGE_CYCLE,
-      effectiveAt
+      effectiveAt,
     });
 
-    const statusSummary = await this.getSubscriptionStatusSummary(ctx.userId);
-    const summary = statusSummary ?? undefined;
-
-    this.billingSseHub.publishSubscriptionStatus(ctx.userId, { summary: summary ?? null });
-
-    const changeKind: SubscriptionChangeKind = SubscriptionChangeKind.CHANGE_CYCLE;
-
-    return { summary, changeKind };
+    return this.buildSubscriptionChangeResult(ctx.userId, SubscriptionChangeKind.CHANGE_CYCLE);
   }
 
+  private async buildSubscriptionChangeResult(
+    userId: string,
+    changeKind: SubscriptionChangeKind,
+  ): Promise<SubscriptionChangeResult> {
+    const summary = await this.getSubscriptionStatusSummary(userId);
+    return { summary: summary ?? undefined, changeKind };
+  }
 
+  private async createOneShotPayment(params: {
+    ctx: SubscriptionContext;
+    intentType: 'new' | 'upgrade';
+    paymentValue: number;
+    paymentDescription: SubscriptionChangeKind;
+    description: string;
+    subscriptionId?: string;
+  }): Promise<void> {
+    const { ctx, intentType, paymentValue, paymentDescription, description, subscriptionId } = params;
+    const db = this.database.getDb();
+    const gateway = ctx.gateway === GatewayNameEnum.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
+    const mapper = ctx.gateway === GatewayNameEnum.STRIPE ? this.stripeGatewayStatusMapper : this.asaasGatewayStatusMapper;
+    const creditCardToken = ctx.newBillingType === BillingType.CREDIT_CARD ? ctx.newCreditCardToken : undefined;
 
-  private resolvePlanValueForCycle(plan: { priceCents: number; priceUsdCents: number }, cycle: BillingCycle): number {
+    const { externalReference } = await this.billingIntentService.createIntentAndExternalReference({
+      type: intentType,
+      userId: ctx.userId,
+      planId: ctx.newPlan.id,
+      billingCycle: ctx.newBillingCycle,
+      creditCardToken: creditCardToken || null,
+      subscriptionId,
+    });
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 1);
+
+    const payment = await gateway.createPayment({
+      customerId: ctx.gatewayCustomerId,
+      userId: ctx.userId,
+      billingType: toGatewayBillingType(ctx.newBillingType),
+      value: paymentValue,
+      dueDate: dueDate.toISOString().split('T')[0],
+      description,
+      externalReference,
+      creditCardToken,
+      kind: 'upgrade' as any,
+    });
+
+    const normalizedStatus = mapper.normalizePaymentStatus(payment.status, null) ?? PaymentStatus.PENDING;
+
+    await db.insert(billingPayments).values({
+      id: crypto.randomUUID(),
+      subscriptionId: subscriptionId ?? null,
+      userId: ctx.userId,
+      gateway: ctx.gateway.toLowerCase() as any,
+      gatewayPaymentId: payment.id,
+      status: normalizedStatus,
+      billingType: ctx.newBillingType,
+      kind: 'upgrade',
+      gatewayStatus: payment.status ?? undefined,
+      value: String(paymentValue),
+      dueDate,
+      paidAt: payment.paidAt ? new Date(payment.paidAt) : null,
+      invoiceUrl: payment.invoiceUrl || null,
+      bankSlipUrl: payment.bankSlipUrl || null,
+      pixQrCode: payment.pixQrCode || null,
+      pixQrCodeUrl: payment.pixQrCodeUrl || null,
+      description: payment.description || paymentDescription,
+    });
+  }
+
+  private resolvePlanValueForCycle(
+    plan: { priceCents: number; priceUsdCents: number },
+    cycle: BillingCycle,
+    gateway: GatewayNameEnum,
+  ): number {
+    const isBrazil = gateway === GatewayNameEnum.ASAAS;
+    const priceCents = isBrazil ? plan.priceCents : plan.priceUsdCents;
     if (cycle === BillingCycle.YEARLY) {
-      const annualPrice = (plan.priceCents * 12 * 0.8) / 100;
-      return annualPrice;
+      return (priceCents * 12 * 0.8) / 100;
     }
-    return plan.priceCents / 100;
+    return priceCents / 100;
   }
 }

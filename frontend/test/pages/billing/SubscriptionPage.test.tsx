@@ -44,15 +44,39 @@ const mockPlans = [
 ];
 
 const mockStatus = {
+  plan: 'free',
+  status: 'active',
+  currentPeriodEnd: '2026-07-21T00:00:00Z',
+  limits: {
+    storage: 5368709120,
+    aiRequests: 50,
+    workspaces: 1,
+    projects: 3,
+  },
+  usage: {
+    storage: 0,
+    aiRequests: 0,
+    workspaces: 1,
+    projects: 0,
+  },
   summary: {
     latestSub: {
-      id: 'sub-1',
+      userId: 'user-1',
       planId: 'plan-free',
       status: 'active',
+      currentPeriodStart: '2026-06-21T00:00:00Z',
+      currentPeriodEnd: '2026-07-21T00:00:00Z',
+      billingCycle: 'monthly',
+      billingType: null,
+      nextDueDate: null,
     },
+    activeSub: null,
     latestPendingPayment: null,
     scheduledChange: null,
-  }
+    entitledPlanId: 'plan-free',
+    entitledUntil: null,
+    hasCreditCardOnFile: false,
+  },
 };
 
 afterEach(() => {
@@ -90,27 +114,74 @@ describe('SubscriptionPage', () => {
 
   it('shows warning banners for scheduled changes and pending payments', async () => {
     const statusWithWarnings = {
+      plan: 'pro',
+      status: 'active',
+      currentPeriodEnd: '2026-07-21T00:00:00Z',
+      limits: {
+        storage: 26843545600,
+        aiRequests: 500,
+        workspaces: 3,
+        projects: 20,
+      },
+      usage: {
+        storage: 0,
+        aiRequests: 0,
+        workspaces: 1,
+        projects: 0,
+      },
       summary: {
         latestSub: {
-          id: 'sub-1',
+          userId: 'user-1',
           planId: 'plan-pro',
           status: 'active',
+          currentPeriodStart: '2026-06-21T00:00:00Z',
+          currentPeriodEnd: '2026-07-21T00:00:00Z',
+          billingCycle: 'monthly',
+          billingType: 'credit_card',
+          nextDueDate: '2026-07-21T00:00:00Z',
+        },
+        activeSub: {
+          userId: 'user-1',
+          planId: 'plan-pro',
+          status: 'active',
+          currentPeriodStart: '2026-06-21T00:00:00Z',
+          currentPeriodEnd: '2026-07-21T00:00:00Z',
+          billingCycle: 'monthly',
+          billingType: 'credit_card',
+          nextDueDate: '2026-07-21T00:00:00Z',
         },
         latestPendingPayment: {
           id: 'pay-1',
+          subscriptionId: 'user-1',
+          userId: 'user-1',
+          gateway: 'asaas',
+          gatewayPaymentId: 'pay-gw-1',
+          status: 'pending',
+          billingType: 'pix',
+          kind: 'upgrade',
           value: 49.00,
           dueDate: '2026-07-21T00:00:00Z',
-          billingType: 'pix',
+          bankSlipUrl: null,
           pixQrCode: 'mock-pix-code',
           pixQrCodeUrl: 'data:image/png;base64,mock',
-          bankSlipUrl: null,
+          invoiceUrl: null,
+          canCancel: true,
         },
         scheduledChange: {
           id: 'change-1',
+          userId: 'user-1',
+          fromSubscriptionId: 'user-1',
           toPlanId: 'plan-free',
+          toBillingCycle: 'monthly',
+          toBillingType: 'credit_card',
+          type: 'downgrade',
+          status: 'scheduled',
           effectiveAt: '2026-07-21T00:00:00Z',
         },
-      }
+        entitledPlanId: 'plan-pro',
+        entitledUntil: '2026-07-21T00:00:00Z',
+        hasCreditCardOnFile: false,
+      },
     };
 
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
@@ -126,7 +197,7 @@ describe('SubscriptionPage', () => {
 
     renderWithAppProviders(<SubscriptionPage />);
 
-    expect(await screen.findByText(/Scheduled Cycle Change/)).toBeInTheDocument();
+    expect(await screen.findByText(/Scheduled Downgrade/)).toBeInTheDocument();
     expect(await screen.findByText(/Pending invoice/)).toBeInTheDocument();
   });
 
