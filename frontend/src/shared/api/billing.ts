@@ -52,9 +52,10 @@ export interface ScheduledChangeDTO {
   userId: string;
   fromSubscriptionId: string;
   toPlanId: string;
+  toPlan?: PlanDTO | null;
   toBillingCycle: 'monthly' | 'yearly';
   toBillingType: 'credit_card' | 'pix' | 'boleto';
-  type: 'downgrade' | 'upgrade';
+  type: 'downgrade' | 'change_cycle';
   status: string;
   effectiveAt: string;
 }

@@ -599,10 +599,43 @@ export class SubscriptionService {
     const customerRow = await db.select().from(billingCustomers).where(eq(billingCustomers.userId, userId)).limit(1).then(r => r[0] || null);
     const hasCreditCardOnFile = Boolean(customerRow?.hasCreditCardOnFile);
 
+    const scheduledChange = await this.subscriptionChangeService.getScheduledChange(userId);
+    let scheduledChangeDTO = null;
+    if (scheduledChange) {
+      const targetPlan = await db.select().from(plans).where(eq(plans.id, scheduledChange.toPlanId)).limit(1).then(r => r[0] || null);
+      scheduledChangeDTO = {
+        id: scheduledChange.id,
+        userId: scheduledChange.userId,
+        fromSubscriptionId: scheduledChange.fromSubscriptionId,
+        toPlanId: scheduledChange.toPlanId,
+        toPlan: targetPlan ? {
+          id: targetPlan.id,
+          name: targetPlan.displayName,
+          description: targetPlan.description,
+          price: targetPlan.priceCents / 100,
+          annualPrice: (targetPlan.priceCents * 12 * 0.8) / 100,
+          priceUsd: targetPlan.priceUsdCents / 100,
+          annualPriceUsd: (targetPlan.priceUsdCents * 12 * 0.8) / 100,
+          maxStorageBytes: Number(targetPlan.maxStorageBytes),
+          maxAiRequestsPerMonth: targetPlan.maxAiRequestsPerMonth,
+          maxWorkspaces: targetPlan.maxWorkspaces,
+          maxProjectsPerWorkspace: targetPlan.maxProjectsPerWorkspace,
+          isDefault: targetPlan.slug === 'free',
+          isVisible: targetPlan.isActive,
+        } : null,
+        toBillingCycle: scheduledChange.toBillingCycle,
+        toBillingType: scheduledChange.toBillingType,
+        type: scheduledChange.type,
+        status: scheduledChange.status,
+        effectiveAt: scheduledChange.effectiveAt.toISOString(),
+      };
+    }
+
     return {
       latestSub: latestSubSummary,
       activeSub: activeSubSummary,
       latestPendingPayment: latestPendingPaymentSummary,
+      scheduledChange: scheduledChangeDTO,
       entitledPlanId: activeSubSummary ? activeSubSummary.planId : FREE_PLAN_ID,
       entitledUntil: activeSubSummary ? activeSubSummary.currentPeriodEnd : null,
       hasCreditCardOnFile,

@@ -126,7 +126,7 @@ describe('SubscriptionPage', () => {
 
     renderWithAppProviders(<SubscriptionPage />);
 
-    expect(await screen.findByText(/Change scheduled/)).toBeInTheDocument();
+    expect(await screen.findByText(/Scheduled Cycle Change/)).toBeInTheDocument();
     expect(await screen.findByText(/Pending invoice/)).toBeInTheDocument();
   });
 

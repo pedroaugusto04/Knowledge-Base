@@ -46,6 +46,8 @@ export function SubscriptionPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [activePayment, setActivePayment] = useState<PendingPaymentDTO | null>(null);
 
+  const [isCancelScheduledModalOpen, setIsCancelScheduledModalOpen] = useState(false);
+
   const [copied, setCopied] = useState(false);
 
   // SSE Subscription for real-time status updates
@@ -195,24 +197,62 @@ export function SubscriptionPage() {
           <>
             {/* Scheduled change request banner */}
             {summary.scheduledChange && (
-              <div className="status-banner info">
-                <div className="status-banner-content">
-                  <span className="status-banner-title">
-                    Change scheduled
-                  </span>
-                  <span className="status-banner-desc">
-                    Your plan is scheduled to change to <strong>{plans.find(p => p.id === summary.scheduledChange?.toPlanId)?.name || 'Free'}</strong> on {formatDate(summary.scheduledChange.effectiveAt)}.
-                  </span>
+              <div className="status-banner warning" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                  <div className="status-banner-content" style={{ flex: 1, minWidth: '280px' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      <span className="current-badge" style={{ position: 'static', background: 'var(--amber)', color: 'black', fontSize: '11px', padding: '2px 8px' }}>
+                        {summary.scheduledChange.type === 'downgrade' ? 'Scheduled Downgrade' : 'Scheduled Cycle Change'}
+                      </span>
+                      <span className="current-badge" style={{ position: 'static', background: 'var(--surface-3)', color: 'var(--text-strong)', fontSize: '11px', padding: '2px 8px', border: '1px solid var(--border-subtle)' }}>
+                        Effective on {formatDate(summary.scheduledChange.effectiveAt)}
+                      </span>
+                    </div>
+                    <span className="status-banner-desc" style={{ fontWeight: 500, fontSize: '14px' }}>
+                      {summary.scheduledChange.type === 'change_cycle'
+                        ? `Your billing cycle will be changed to ${summary.scheduledChange.toBillingCycle === 'yearly' ? 'Yearly' : 'Monthly'} starting on ${formatDate(summary.scheduledChange.effectiveAt)}.`
+                        : `You will continue to have access to your current plan until ${formatDate(summary.scheduledChange.effectiveAt)}. After that, your plan will be changed to ${summary.scheduledChange.toPlan?.name || 'Free'} (${summary.scheduledChange.toBillingCycle === 'yearly' ? 'Yearly' : 'Monthly'}).`
+                      }
+                    </span>
+                    
+                    <div className="scheduled-change-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginTop: '16px' }}>
+                      <div style={{ background: 'var(--surface-1)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>NEW PLAN</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-strong)', marginTop: '4px' }}>
+                          {summary.scheduledChange.toPlan?.name || 'Free'}
+                        </div>
+                      </div>
+                      <div style={{ background: 'var(--surface-1)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>NEW CYCLE</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-strong)', marginTop: '4px' }}>
+                          {summary.scheduledChange.toBillingCycle === 'yearly' ? 'Yearly' : 'Monthly'}
+                        </div>
+                      </div>
+                      <div style={{ background: 'var(--surface-1)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>PRICE</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-strong)', marginTop: '4px' }}>
+                          {(() => {
+                            const p = summary.scheduledChange.toPlan;
+                            if (!p) return 'Free';
+                            const priceVal = isBrazil
+                              ? (summary.scheduledChange.toBillingCycle === 'yearly' ? p.annualPrice : p.price)
+                              : (summary.scheduledChange.toBillingCycle === 'yearly' ? p.annualPriceUsd : p.priceUsd);
+                            return priceVal === 0 ? 'Free' : `${formatCurrency(priceVal)}/${summary.scheduledChange.toBillingCycle === 'yearly' ? 'year' : 'month'}`;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    className="filter-chip"
+                    style={{ border: '1px solid rgb(220, 38, 38)', color: 'rgb(220, 38, 38)', background: 'rgba(220, 38, 38, 0.05)', fontWeight: 600, padding: '8px 16px', borderRadius: '6px' }}
+                    onClick={() => setIsCancelScheduledModalOpen(true)}
+                  >
+                    Cancel Change
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="filter-chip"
-                  style={{ border: '1px solid var(--primary)', color: 'var(--primary)' }}
-                  onClick={() => cancelChangeMutation.mutate(summary.scheduledChange!.id)}
-                  disabled={cancelChangeMutation.isPending}
-                >
-                  {cancelChangeMutation.isPending ? 'Canceling...' : 'Cancel change'}
-                </button>
               </div>
             )}
 
@@ -605,6 +645,41 @@ export function SubscriptionPage() {
                 onClick={() => setIsPaymentModalOpen(false)}
               >
                 Close
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* 3. Modal: Cancel Scheduled Change Confirmation */}
+      {isCancelScheduledModalOpen && summary?.scheduledChange && (
+        <div className="modal-backdrop" onClick={() => setIsCancelScheduledModalOpen(false)}>
+          <section className="modal-panel integration-modal confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-head">
+              <div>
+                <h2>Cancel Scheduled Change</h2>
+                <p>Are you sure you want to cancel the scheduled plan change? Your subscription will continue as currently configured.</p>
+              </div>
+              <button className="modal-close" type="button" onClick={() => setIsCancelScheduledModalOpen(false)}>x</button>
+            </div>
+            <div className="form-actions">
+              <button className="filter-chip" type="button" onClick={() => setIsCancelScheduledModalOpen(false)}>
+                Keep scheduled change
+              </button>
+              <button
+                className="icon-button danger-button"
+                style={{ background: 'rgb(220, 38, 38)', color: '#ffffff', border: '1px solid rgb(220, 38, 38)' }}
+                disabled={cancelChangeMutation.isPending}
+                type="button"
+                onClick={() => {
+                  cancelChangeMutation.mutate(summary.scheduledChange!.id, {
+                    onSuccess: () => {
+                      setIsCancelScheduledModalOpen(false);
+                    }
+                  });
+                }}
+              >
+                {cancelChangeMutation.isPending ? 'Canceling...' : 'Yes, cancel change'}
               </button>
             </div>
           </section>
