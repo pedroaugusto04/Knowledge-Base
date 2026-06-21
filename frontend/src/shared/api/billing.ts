@@ -1,5 +1,6 @@
 import { request } from './request';
 import { detectUserCountry } from '../utils/location';
+import { resolveApiPath } from './api-path';
 
 export interface PlanDTO {
   id: string;
@@ -142,7 +143,7 @@ export function cancelScheduledChange(changeId: string): Promise<{ ok: true }> {
 export type SubscriptionStatusHandler = (status: QuotaAndBillingStatusDTO | null) => void;
 
 export function subscribeToSubscriptionStatus(handler: SubscriptionStatusHandler): () => void {
-  const url = '/api/subscription/status/stream';
+  const url = resolveApiPath('/api/subscription/status/stream');
   let retryCount = 0;
   let retryTimeout: any = null;
   let closed = false;
