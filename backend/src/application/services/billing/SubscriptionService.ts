@@ -136,6 +136,32 @@ export class SubscriptionService {
       throw new BadRequestException('Your subscription has a past due payment. Please settle the pending payment to change plan or cycle.');
     }
 
+    const pendingPayment = await db
+      .select()
+      .from(billingPayments)
+      .where(
+        and(
+          eq(billingPayments.userId, userId),
+          eq(billingPayments.status, PaymentStatus.PENDING)
+        )
+      )
+      .limit(1)
+      .then(r => r[0] || null);
+
+    if (pendingPayment) {
+      throw new BadRequestException('A subscription payment is already pending. Please settle or cancel the pending payment before making a new request.');
+    }
+
+    if (
+      currentSub &&
+      currentSub.planId === planId &&
+      currentSub.billingCycle === cycle &&
+      currentSub.billingType === type &&
+      currentSub.status === SubscriptionStatus.ACTIVE
+    ) {
+      throw new BadRequestException('You are already subscribed to this plan with the same cycle and payment method.');
+    }
+
     if (currentSub) {
       const isScheduled = await this.subscriptionChangeService.isChangeScheduled(userId);
       if (isScheduled) {
