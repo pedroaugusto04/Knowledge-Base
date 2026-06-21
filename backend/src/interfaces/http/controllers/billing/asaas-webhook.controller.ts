@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { Controller, Post, Body, Req, Headers, UnauthorizedException, Logger, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Req, Headers, UnauthorizedException, Logger, HttpCode, HttpStatus, UseGuards, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { type Request } from 'express';
 
@@ -16,7 +16,19 @@ export class AsaasWebhookController {
   constructor(
     private readonly webhookEventRepository: BillingWebhookEventRepository,
     private readonly queuePublisher: BillingQueuePublisher,
-  ) {}
+  ) { }
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Webhook health check' })
+  @ApiResponse({ status: 200, description: 'Webhook is ready' })
+  async healthCheck() {
+    return {
+      ok: true,
+      ready: true,
+      message: 'Asaas webhook endpoint is ready'
+    };
+  }
 
   @Post()
   @HttpCode(HttpStatus.OK)
@@ -45,7 +57,7 @@ export class AsaasWebhookController {
 
     const eventType = String(body?.event ?? 'unknown');
     const gatewayEventId = body?.id ? String(body.id) : null;
-    
+
     // Fallback deduplication key using SHA-256 hash of body if event id is missing
     const dedupKey = gatewayEventId || crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex');
 
@@ -53,8 +65,8 @@ export class AsaasWebhookController {
     const subscription = body?.subscription;
 
     const gatewayPaymentId = payment?.id ? String(payment.id) : null;
-    const gatewaySubscriptionId = payment?.subscription 
-      ? String(payment.subscription) 
+    const gatewaySubscriptionId = payment?.subscription
+      ? String(payment.subscription)
       : (subscription?.id ? String(subscription.id) : null);
 
     // Save event to database once for idempotency
