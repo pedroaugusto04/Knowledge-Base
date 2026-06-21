@@ -24,7 +24,7 @@ import {
   SubscriptionChangeStatus,
   PaymentStatus,
 } from '../../../domain/enums/billing.enums.js';
-import { FREE_PLAN_ID } from '../../../domain/enums/plans.enums.js';
+import { FREE_PLAN_ID, SubscriptionPlan } from '../../../domain/enums/plans.enums.js';
 import { PAYMENT_GATEWAY, COUNTRY_CODE } from '../../../domain/constants/billing.constants.js';
 import { BillingIntentService } from './BillingIntentService.js';
 import { SubscriptionUpgradeService } from './SubscriptionUpgradeService.js';
@@ -39,11 +39,6 @@ import { UpgradeProrationStrategy } from './subscriptionStrategy/strategies/Upgr
 import { DowngradeStrategy } from './subscriptionStrategy/strategies/DowngradeStrategy.js';
 import { ChangeCycleStrategy } from './subscriptionStrategy/strategies/ChangeCycleStrategy.js';
 
-// Constants for Gateway Names
-export const GATEWAY_NAMES = {
-  ASAAS: 'asaas',
-  STRIPE: 'stripe',
-} as const;
 
 @Injectable()
 export class SubscriptionService {
@@ -75,7 +70,7 @@ export class SubscriptionService {
       maxAiRequestsPerMonth: plan.maxAiRequestsPerMonth,
       maxWorkspaces: plan.maxWorkspaces,
       maxProjectsPerWorkspace: plan.maxProjectsPerWorkspace,
-      isDefault: plan.slug === 'free',
+      isDefault: plan.slug === SubscriptionPlan.FREE,
       isVisible: plan.isActive,
     }));
   }
@@ -97,7 +92,7 @@ export class SubscriptionService {
       throw new BadRequestException('Plan not found');
     }
     if (!targetPlan.isActive) {
-      throw new BadRequestException('Plano indisponível');
+      throw new BadRequestException('Plan unavailable');
     }
 
     const currentSub = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId)).limit(1).then(r => r[0] || null);
@@ -138,26 +133,26 @@ export class SubscriptionService {
     }
 
     if (currentSub?.status === SubscriptionStatus.PAST_DUE) {
-      throw new BadRequestException('Sua assinatura está com cobrança em atraso. Regularize o pagamento pendente para alterar plano ou ciclo.');
+      throw new BadRequestException('Your subscription has a past due payment. Please settle the pending payment to change plan or cycle.');
     }
 
     if (currentSub) {
       const isScheduled = await this.subscriptionChangeService.isChangeScheduled(userId);
       if (isScheduled) {
-        throw new BadRequestException('Já existe uma mudança de plano agendada. Aguarde ou cancele a mudança a ser aplicada para escolher um novo plano.');
+        throw new BadRequestException('A plan change is already scheduled. Please wait or cancel the scheduled change before selecting a new plan.');
       }
     }
 
-    // Verifica se tem cartão cadastrado para mensal
+    // Check if credit card is registered for monthly billing
     if (cycle === BillingCycle.MONTHLY && type !== BillingType.CREDIT_CARD) {
       const customerRow = await db.select().from(billingCustomers).where(eq(billingCustomers.userId, userId)).limit(1).then(r => r[0] || null);
       const hasCreditCardOnFile = Boolean(customerRow?.hasCreditCardOnFile);
       if (hasCreditCardOnFile) {
-        throw new BadRequestException('Com cartão cadastrado, assinaturas mensais devem usar cartão de crédito.');
+        throw new BadRequestException('With a registered card, monthly subscriptions must use credit card.');
       }
     }
 
-    // Cria gatewayCustomerId se necessário
+    // Create gatewayCustomerId if necessary
     let gatewayCustomerId = currentSub?.gatewayCustomerId || '';
     if (!gatewayCustomerId) {
       const customer = await gateway.createCustomer({
@@ -245,15 +240,15 @@ export class SubscriptionService {
     gatewayName?: string;
   }): Promise<{ id: string }> {
     const db = this.database.getDb();
-    const gatewayName = params.gatewayName || GATEWAY_NAMES.ASAAS;
-    const gateway = gatewayName === GATEWAY_NAMES.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
+    const gatewayName = params.gatewayName || PAYMENT_GATEWAY.ASAAS;
+    const gateway = gatewayName === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
     
     const targetPlan = await db.select().from(plans).where(eq(plans.id, params.targetPlanId)).limit(1).then(r => r[0] || null);
     if (!targetPlan) {
       throw new BadRequestException('Plan not found');
     }
 
-    const isBrazil = gatewayName === GATEWAY_NAMES.ASAAS;
+    const isBrazil = gatewayName === PAYMENT_GATEWAY.ASAAS;
     const priceCents = isBrazil ? targetPlan.priceCents : targetPlan.priceUsdCents;
     const price = params.billingCycle === BillingCycle.YEARLY ? (priceCents * 12 * 0.8) / 100 : priceCents / 100;
 
@@ -275,7 +270,7 @@ export class SubscriptionService {
       value: price,
       cycle: params.billingCycle === BillingCycle.YEARLY ? 'YEARLY' as any : 'MONTHLY' as any,
       nextDueDate: nextDueDate.toISOString().split('T')[0],
-      description: `Assinatura ${targetPlan.displayName}`,
+      description: `Subscription ${targetPlan.displayName}`,
       creditCardToken: params.billingType === BillingType.CREDIT_CARD ? params.creditCardToken : undefined,
     });
 
@@ -317,7 +312,7 @@ export class SubscriptionService {
       const subscriptionPayments = await gateway.getSubscriptionPayments(gatewaySubscription.id);
       const dueDateReference = currentPeriodEnd.toISOString().split('T')[0];
 
-      const paymentMapper = gatewayName === GATEWAY_NAMES.ASAAS 
+      const paymentMapper = gatewayName === PAYMENT_GATEWAY.ASAAS 
         ? this.asaasGatewayStatusMapper 
         : this.stripeGatewayStatusMapper;
 
@@ -388,11 +383,11 @@ export class SubscriptionService {
       throw new BadRequestException('Plan not found');
     }
 
-    const paymentGateway = gateway === GATEWAY_NAMES.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
+    const paymentGateway = gateway === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
     const billingCycle = (sub.billingCycle as string) === 'yearly' ? BillingCycle.YEARLY : BillingCycle.MONTHLY;
     const targetRecurringValue = this.resolvePlanValueForCycle(plan, billingCycle);
 
-    // Sincroniza o valor da assinatura no gateway para os próximos ciclos
+    // Sync subscription value in gateway for next cycles
     if (sub.gatewaySubscriptionId) {
       try {
         await paymentGateway.updateSubscription(sub.gatewaySubscriptionId, {
@@ -400,20 +395,20 @@ export class SubscriptionService {
           updatePendingPayments: true,
         });
 
-        // Sincroniza pagamentos pendentes após o upgrade
+        // Sync pending payments after upgrade
         await this.subscriptionChangeService.syncPendingRecurringPaymentsAfterUpgrade(
           { id: sub.userId, userId: subscriptionId, gatewaySubscriptionId: sub.gatewaySubscriptionId, gatewayName: sub.gatewayName },
           targetRecurringValue
         );
 
-        this.logger.info(`Assinatura ${subscriptionId} atualizada no gateway após upgrade para plano ${targetPlanId}`);
+        this.logger.info(`Subscription ${subscriptionId} updated in gateway after upgrade to plan ${targetPlanId}`);
       } catch (err: any) {
-        this.logger.error(`Falha ao atualizar assinatura no gateway após upgrade: ${err.message}`);
-        // Continua com atualização local mesmo se falhar no gateway
+        this.logger.error(`Failed to update subscription in gateway after upgrade: ${err.message}`);
+        // Continue with local update even if gateway fails
       }
     }
 
-    // Atualiza o plano da assinatura localmente
+    // Update subscription plan locally
     await db
       .update(userSubscriptions)
       .set({
@@ -422,9 +417,9 @@ export class SubscriptionService {
       })
       .where(eq(userSubscriptions.userId, subscriptionId));
 
-    // Cria pagamento de upgrade (se price foi fornecido)
+    // Create upgrade payment (if price was provided)
     if (price > 0) {
-      const mapper = gateway === GATEWAY_NAMES.STRIPE ? this.stripeGatewayStatusMapper : this.asaasGatewayStatusMapper;
+      const mapper = gateway === PAYMENT_GATEWAY.STRIPE ? this.stripeGatewayStatusMapper : this.asaasGatewayStatusMapper;
       
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 1);
@@ -478,13 +473,13 @@ export class SubscriptionService {
       try {
         gatewaySubscription = await gateway.getSubscriptionByGatewayId(params.gatewaySubscriptionId);
       } catch (err: any) {
-        this.logger.warn(`Falha ao obter assinatura do gateway: ${err.message}`);
+        this.logger.warn(`Failed to get subscription from gateway: ${err.message}`);
       }
     }
 
     if (!gatewaySubscription) {
       this.logger.warn(
-        `Refresh ignorado: assinatura não encontrada no gateway (subscriptionId=${params.subscriptionId}, gatewaySubscriptionId=${params.gatewaySubscriptionId}, statusAtual=${params.status ?? "unknown"})`
+        `Refresh ignored: subscription not found in gateway (subscriptionId=${params.subscriptionId}, gatewaySubscriptionId=${params.gatewaySubscriptionId}, currentStatus=${params.status ?? "unknown"})`
       );
       return;
     }
@@ -501,7 +496,7 @@ export class SubscriptionService {
       .then(r => r[0] || null);
 
     if (!latestRecurringPayment) {
-      this.logger.info(`Nenhum pagamento recorrente encontrado para a assinatura ${params.subscriptionId}`);
+      this.logger.info(`No recurring payment found for subscription ${params.subscriptionId}`);
       return;
     }
 
@@ -515,10 +510,10 @@ export class SubscriptionService {
       params.status === SubscriptionStatus.ACTIVE ||
       params.status === SubscriptionStatus.PAST_DUE;
 
-    // status financeiro da assinatura:
-    // ACTIVE quando não há débito recorrente real aberto
-    // PAST_DUE quando existe ao menos um débito recorrente real aberto
-    // CANCELED/INACTIVE não devem ser reativados por refresh de cobrança
+    // subscription financial status:
+    // ACTIVE when there is no open real recurring debt
+    // PAST_DUE when there is at least one open real recurring debt
+    // CANCELED/INACTIVE should not be reactivated by payment refresh
     const newStatus: SubscriptionStatus | null | undefined = canTransitionFromCurrentStatus
       ? (hasRecurringPaymentInRealDebt ? SubscriptionStatus.PAST_DUE : SubscriptionStatus.ACTIVE)
       : params.status;
@@ -533,14 +528,14 @@ export class SubscriptionService {
 
     const gatewayNextDueDate = gatewaySubscription?.nextDueDate ? new Date(gatewaySubscription.nextDueDate) : null;
 
-    // calcula a data de vencimento com base na ultima cobranca
-    // caso nao tenha usa a data de vencimento do gateway
+    // calculate due date based on last payment
+    // if not available, use gateway due date
     const nextDueDate =
       (latestRecurringPayment.status === PaymentStatus.PENDING) && latestPaymentDueDate
         ? (!gatewayNextDueDate || gatewayNextDueDate > latestPaymentDueDate ? latestPaymentDueDate : gatewayNextDueDate)
         : (gatewayNextDueDate ?? latestPaymentDueDate);
 
-    // atualiza a data de vencimento com base na ultima cobranca
+    // update due date based on last payment
     await db
       .update(userSubscriptions)
       .set({
@@ -638,7 +633,7 @@ export class SubscriptionService {
           maxAiRequestsPerMonth: targetPlan.maxAiRequestsPerMonth,
           maxWorkspaces: targetPlan.maxWorkspaces,
           maxProjectsPerWorkspace: targetPlan.maxProjectsPerWorkspace,
-          isDefault: targetPlan.slug === 'free',
+          isDefault: targetPlan.slug === SubscriptionPlan.FREE,
           isVisible: targetPlan.isActive,
         } : null,
         toBillingCycle: scheduledChange.toBillingCycle,
@@ -691,7 +686,7 @@ export class SubscriptionService {
       billingType: ctx.newBillingType,
       value: price,
       dueDate: dueDate.toISOString().split('T')[0],
-      description: `Primeiro pagamento para plano ${ctx.newPlan.displayName} - ${ctx.user.name}`,
+      description: `First payment for plan ${ctx.newPlan.displayName} - ${ctx.user.name}`,
       externalReference,
       creditCardToken,
       kind: 'upgrade' as any,
@@ -716,7 +711,7 @@ export class SubscriptionService {
       bankSlipUrl: payment.bankSlipUrl || null,
       pixQrCode: payment.pixQrCode || null,
       pixQrCodeUrl: payment.pixQrCodeUrl || null,
-      description: payment.description || 'NEW',
+      description: payment.description || SubscriptionChangeKind.NEW,
     });
 
     const statusSummary = await this.getSubscriptionStatusSummary(ctx.userId);
@@ -731,21 +726,21 @@ export class SubscriptionService {
   }
 
   /**
-   * Realiza upgrade de assinatura com prorrateamento
+   * Performs subscription upgrade with proration
    */
   async upgradeSubscriptionWithProration(ctx: SubscriptionContext): Promise<UpdateSubscriptionStrategyResult> {
     const db = this.database.getDb();
 
     if (!ctx.activeSub) {
-      throw new BadRequestException('Não é possível realizar upgrade sem uma assinatura ativa');
+      throw new BadRequestException('Cannot perform upgrade without an active subscription');
     }
 
     const currentSub = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, ctx.userId)).limit(1).then(r => r[0] || null);
     if (currentSub?.status === SubscriptionStatus.PAST_DUE) {
-      throw new BadRequestException('Não é possível realizar upgrade com assinatura em atraso. Regularize a cobrança recorrente pendente e tente novamente.');
+      throw new BadRequestException('Cannot perform upgrade with past due subscription. Please settle the pending recurring payment and try again.');
     }
 
-    // Calcula o valor do primeiro pagamento conforme diferença (prorata)
+    // Calculate first payment value based on difference (proration)
     const firstPaymentValue = await this.subscriptionUpgradeService.calculateProrationUpgradeValue({
       currentPlanId: ctx.activePlan?.id || '',
       newPlanId: ctx.newPlan.id,
@@ -776,7 +771,7 @@ export class SubscriptionService {
       billingType: ctx.newBillingType,
       value: firstPaymentValue,
       dueDate: dueDate.toISOString().split('T')[0],
-      description: `Pagamento de upgrade para plano ${ctx.newPlan.displayName} - ${ctx.user.name}`,
+      description: `Upgrade payment for plan ${ctx.newPlan.displayName} - ${ctx.user.name}`,
       externalReference,
       creditCardToken,
       kind: 'upgrade' as any,
@@ -801,7 +796,7 @@ export class SubscriptionService {
       bankSlipUrl: payment.bankSlipUrl || null,
       pixQrCode: payment.pixQrCode || null,
       pixQrCodeUrl: payment.pixQrCodeUrl || null,
-      description: payment.description || 'UPGRADE',
+      description: payment.description || SubscriptionChangeKind.UPGRADE,
     });
 
     const statusSummary = await this.getSubscriptionStatusSummary(ctx.userId);
@@ -816,15 +811,15 @@ export class SubscriptionService {
   }
 
   /**
-   * Realiza downgrade de assinatura
+   * Performs subscription downgrade
    */
   async downgradeSubscription(ctx: SubscriptionContext): Promise<UpdateSubscriptionStrategyResult> {
     if (!ctx.activeSub) {
-      throw new BadRequestException('Não é possível realizar downgrade sem uma assinatura ativa');
+      throw new BadRequestException('Cannot perform downgrade without an active subscription');
     }
 
     const effectiveAt = new Date();
-    effectiveAt.setDate(effectiveAt.getDate() - 1); // 1 dia antes do vencimento
+    effectiveAt.setDate(effectiveAt.getDate() - 1); // 1 day before due date
 
     await this.subscriptionChangeService.scheduleChange({
       userId: ctx.userId,
@@ -850,15 +845,15 @@ export class SubscriptionService {
   }
 
   /**
-   * Realiza mudança de ciclo de assinatura
+   * Performs subscription cycle change
    */
   async changeCycleSubscription(ctx: SubscriptionContext): Promise<UpdateSubscriptionStrategyResult> {
     if (!ctx.activeSub) {
-      throw new BadRequestException('Não é possível realizar uma mudança de ciclo sem uma assinatura ativa');
+      throw new BadRequestException('Cannot perform cycle change without an active subscription');
     }
 
     const effectiveAt = new Date();
-    effectiveAt.setDate(effectiveAt.getDate() - 1); // 1 dia antes do vencimento
+    effectiveAt.setDate(effectiveAt.getDate() - 1); // 1 day before due date
 
     await this.subscriptionChangeService.scheduleChange({
       userId: ctx.userId,

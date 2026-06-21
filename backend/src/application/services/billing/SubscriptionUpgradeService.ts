@@ -77,14 +77,14 @@ export class SubscriptionUpgradeService {
     if (cycle === BillingCycle.YEARLY) {
       const annualPrice = (plan.priceCents * 12 * 0.8) / 100;
       if (compareMoney(annualPrice, 0, PLAN_PRICE_SCALE) <= 0) {
-        throw new BadRequestException('Pagamento anual indisponível para este plano');
+        throw new BadRequestException('Annual payment unavailable for this plan');
       }
       return annualPrice;
     }
 
     const monthlyPrice = plan.priceCents / 100;
     if (compareMoney(monthlyPrice, 0, PLAN_PRICE_SCALE) < 0) {
-      throw new BadRequestException('Preço mensal inválido para este plano');
+      throw new BadRequestException('Invalid monthly price for this plan');
     }
 
     return monthlyPrice;

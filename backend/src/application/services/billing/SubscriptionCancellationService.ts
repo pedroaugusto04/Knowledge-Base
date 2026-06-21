@@ -10,12 +10,7 @@ import { AsaasPaymentGateway } from '../../../infrastructure/billing/gateways/as
 import { StripePaymentGateway } from '../../../infrastructure/billing/gateways/stripe/StripePaymentGateway.js';
 import { AppLogger } from '../../../observability/logger.js';
 import { BillingIntentService } from './BillingIntentService.js';
-
-// Constants for Gateway Names
-export const GATEWAY_NAMES = {
-  ASAAS: 'asaas',
-  STRIPE: 'stripe',
-} as const;
+import { PAYMENT_GATEWAY } from '../../../domain/constants/billing.constants.js';
 
 @Injectable()
 export class SubscriptionCancellationService {
@@ -35,17 +30,17 @@ export class SubscriptionCancellationService {
       throw new BadRequestException('Payment not found');
     }
 
-    // Validação: apenas pagamentos PENDING podem ser cancelados
+    // Validation: only PENDING payments can be canceled
     if (payment.status !== PaymentStatus.PENDING) {
-      throw new BadRequestException('Apenas pagamentos pendentes podem ser cancelados');
+      throw new BadRequestException('Only pending payments can be canceled');
     }
 
-    // Validação: apenas pagamentos de tipo UPGRADE podem ser cancelados manualmente
+    // Validation: only UPGRADE type payments can be manually canceled
     if (payment.kind !== 'upgrade') {
-      throw new BadRequestException('Apenas cobranças criadas manualmente podem ser canceladas');
+      throw new BadRequestException('Only manually created charges can be canceled');
     }
 
-    const gateway = payment.gateway === GATEWAY_NAMES.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
+    const gateway = payment.gateway === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
     try {
       await gateway.cancelPayment(payment.gatewayPaymentId);
     } catch (e: any) {
@@ -74,7 +69,7 @@ export class SubscriptionCancellationService {
       throw new BadRequestException('No gateway subscription to cancel');
     }
 
-    const gateway = sub.gatewayName === GATEWAY_NAMES.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
+    const gateway = sub.gatewayName === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
     try {
       await gateway.cancelSubscription(sub.gatewaySubscriptionId);
     } catch (e: any) {
@@ -118,7 +113,7 @@ export class SubscriptionCancellationService {
       throw new BadRequestException('No gateway subscription to disable');
     }
 
-    const gateway = sub.gatewayName === GATEWAY_NAMES.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
+    const gateway = sub.gatewayName === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
     try {
       await gateway.cancelSubscription(sub.gatewaySubscriptionId);
     } catch (e: any) {

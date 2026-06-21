@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { QuotaRepository } from '../ports/quota/quota.repository.js';
 import { UserRepository } from '../ports/auth/auth.repository.js';
-import { QuotaResourceType } from '../../domain/enums/plans.enums.js';
+import { QuotaResourceType, SubscriptionPlan } from '../../domain/enums/plans.enums.js';
 import type { PlanRecord } from '../models/repository-records.models.js';
 
 export interface QuotaStatus {
@@ -47,7 +47,7 @@ export class QuotaService {
       periodStart = new Date(activeSub.currentPeriodStart);
       periodEnd = new Date(activeSub.currentPeriodEnd);
     } else {
-      const freePlan = await this.quotaRepository.getPlanBySlug('free');
+      const freePlan = await this.quotaRepository.getPlanBySlug(SubscriptionPlan.FREE);
       if (!freePlan) {
         throw new Error('Default "free" plan not found in database. Seed must be run.');
       }
@@ -108,7 +108,7 @@ export class QuotaService {
       periodStart = new Date(activeSub.currentPeriodStart);
       periodEnd = new Date(activeSub.currentPeriodEnd);
     } else {
-      const freePlan = await this.quotaRepository.getPlanBySlug('free');
+      const freePlan = await this.quotaRepository.getPlanBySlug(SubscriptionPlan.FREE);
       if (!freePlan) {
         throw new Error('Default "free" plan not found in database. Seed must be run.');
       }

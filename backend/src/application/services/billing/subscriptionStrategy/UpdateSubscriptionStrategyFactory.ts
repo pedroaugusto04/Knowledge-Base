@@ -3,6 +3,7 @@ import { SubscriptionChangeKind } from './subscriptionChangeKind.js';
 import { SubscriptionContext } from './subscriptionContext.js';
 import { UpdateSubscriptionStrategy } from './UpdateSubscriptionStrategy.js';
 import { compareMoney, PLAN_PRICE_SCALE } from '../../../../infrastructure/utils/money.js';
+import { FREE_PLAN_ID, SubscriptionPlan } from '../../../../domain/enums/plans.enums.js';
 
 @Injectable()
 export class UpdateSubscriptionStrategyFactory {
@@ -13,8 +14,15 @@ export class UpdateSubscriptionStrategyFactory {
   getChangeKind(ctx: SubscriptionContext): SubscriptionChangeKind {
     const activeSub = ctx.activeSub;
 
-    // caso nao tenha assinatura ativa -> cria nova
-    if (!activeSub) return SubscriptionChangeKind.NEW;
+    // caso nao tenha assinatura ativa ou se a assinatura ativa for o plano gratuito -> cria nova
+    if (
+      !activeSub ||
+      activeSub.planId === FREE_PLAN_ID ||
+      ctx.activePlan?.slug === SubscriptionPlan.FREE ||
+      ctx.activePlan?.id === FREE_PLAN_ID
+    ) {
+      return SubscriptionChangeKind.NEW;
+    }
 
     // Adaptado para knowledge-base: usa priceCents em vez de price
     const currentPrice = ctx.activePlan?.priceCents ?? 0;

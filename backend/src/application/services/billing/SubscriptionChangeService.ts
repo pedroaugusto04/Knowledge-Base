@@ -7,6 +7,7 @@ import {
   plans,
 } from '../../../infrastructure/persistence/schema/index.js';
 import { SubscriptionChangeStatus, SubscriptionChangeType, SubscriptionStatus, BillingCycle, BillingType, PaymentStatus } from '../../../domain/enums/billing.enums.js';
+import { SubscriptionPlan } from '../../../domain/enums/plans.enums.js';
 import { BillingTypeEnum, GatewayNameEnum } from '../../../infrastructure/billing/gateways/IPaymentGateway.js';
 import { AsaasPaymentGateway } from '../../../infrastructure/billing/gateways/asaas/AsaasPaymentGateway.js';
 import { StripePaymentGateway } from '../../../infrastructure/billing/gateways/stripe/StripePaymentGateway.js';
@@ -41,7 +42,7 @@ export class SubscriptionChangeService {
   }): Promise<string> {
     const db = this.database.getDb();
 
-    // Verifica se já existe mudança agendada do mesmo tipo
+    // Check if change of same type is already scheduled
     const existingChange = await db.select().from(subscriptionChangeRequests).where(and(
       eq(subscriptionChangeRequests.userId, params.userId),
       eq(subscriptionChangeRequests.type, params.type as any),
@@ -49,7 +50,7 @@ export class SubscriptionChangeService {
     )).limit(1).then(r => r[0] || null);
 
     if (existingChange) {
-      throw new BadRequestException(`${params.type === SubscriptionChangeType.DOWNGRADE ? 'Downgrade' : 'Mudança de ciclo'} já está agendado`);
+      throw new BadRequestException(`${params.type === SubscriptionChangeType.DOWNGRADE ? 'Downgrade' : 'Cycle change'} is already scheduled`);
     }
 
     const changeRequest = {
@@ -116,15 +117,15 @@ export class SubscriptionChangeService {
       throw new BadRequestException('Subscription not found');
     }
 
-    // Verifica se é downgrade para plano free - cancela a assinatura
+    // Check if downgrade to free plan - cancel subscription
     const plan = await db.select().from(plans).where(eq(plans.id, changeRequest.toPlanId)).limit(1).then(r => r[0] || null);
     if (!plan) {
       throw new BadRequestException('Plan not found');
     }
 
-    if (plan.slug === 'free') {
-      // Caso seja downgrade para o plano gratuito, cancela a assinatura
-      // TODO: Implementar cancelamento da assinatura no gateway
+    if (plan.slug === SubscriptionPlan.FREE) {
+      // If downgrade to free plan, cancel subscription
+      // TODO: Implement subscription cancellation in gateway
       await db.update(userSubscriptions).set({
         status: SubscriptionStatus.CANCELED,
         updatedAt: new Date(),
@@ -138,13 +139,13 @@ export class SubscriptionChangeService {
       return;
     }
 
-    // Atualiza a assinatura no gateway
+    // Update subscription in gateway
     const gateway = changeRequest.fromGateway === 'stripe' ? this.stripePaymentGateway : this.asaasPaymentGateway;
     const billingCycle = (changeRequest.toBillingCycle as string) === 'yearly' ? BillingCycle.YEARLY : BillingCycle.MONTHLY;
     const targetRecurringValue = this.resolvePlanValueForCycle(plan, billingCycle);
     
     if (!sub.gatewaySubscriptionId) {
-      this.logger.warn(`Assinatura ${sub.userId} não possui gatewaySubscriptionId, pulando atualização do gateway`);
+      this.logger.warn(`Subscription ${sub.userId} does not have gatewaySubscriptionId, skipping gateway update`);
     } else {
       try {
         await gateway.updateSubscription(sub.gatewaySubscriptionId, {
@@ -154,20 +155,20 @@ export class SubscriptionChangeService {
           updatePendingPayments: true,
         });
 
-        // Sincronizar pagamentos pendentes após a mudança
+        // Sync pending payments after change
         await this.syncPendingRecurringPaymentsAfterUpgrade(
           { id: sub.userId, userId: changeRequest.userId, gatewaySubscriptionId: sub.gatewaySubscriptionId, gatewayName: sub.gatewayName },
           targetRecurringValue
         );
 
-        this.logger.info(`Assinatura ${sub.userId} atualizada no gateway para plano ${plan.id} com ciclo ${changeRequest.toBillingCycle}`);
+        this.logger.info(`Subscription ${sub.userId} updated in gateway to plan ${plan.id} with cycle ${changeRequest.toBillingCycle}`);
       } catch (err: any) {
-        this.logger.error(`Falha ao atualizar assinatura no gateway: ${err.message}`);
-        // Continua com atualização local mesmo se falhar no gateway
+        this.logger.error(`Failed to update subscription in gateway: ${err.message}`);
+        // Continue with local update even if gateway fails
       }
     }
 
-    // Atualiza localmente
+    // Update locally
     await db.update(userSubscriptions).set({
       planId: changeRequest.toPlanId,
       billingCycle: changeRequest.toBillingCycle,
@@ -228,7 +229,7 @@ export class SubscriptionChangeService {
   }
 
   /**
-   * Sincroniza pagamentos pendentes após upgrade
+   * Sync pending payments after upgrade
    */
   async syncPendingRecurringPaymentsAfterUpgrade(
     sub: { id: string; userId: string; gatewaySubscriptionId: string; gatewayName: string },
@@ -242,7 +243,7 @@ export class SubscriptionChangeService {
     try {
       gatewayPayments = await gateway.getSubscriptionPayments(sub.gatewaySubscriptionId);
     } catch (err: any) {
-      this.logger.error(`Falha ao obter pagamentos da assinatura ${sub.id}: ${err.message}`);
+      this.logger.error(`Failed to get payments for subscription ${sub.id}: ${err.message}`);
       return;
     }
 
@@ -266,7 +267,7 @@ export class SubscriptionChangeService {
         });
       } catch (err: any) {
         this.logger.error(
-          `Falha ao atualizar cobrança aberta ${payment.id} após alteração da assinatura ${sub.id}: ${err.message}`
+          `Failed to update open payment ${payment.id} after subscription change ${sub.id}: ${err.message}`
         );
         continue;
       }
@@ -300,7 +301,7 @@ export class SubscriptionChangeService {
       });
 
       this.logger.info(
-        `Cobrança recorrente ${payment.id} sincronizada após alteração da assinatura ${sub.id}`
+        `Recurring payment ${payment.id} synced after subscription change ${sub.id}`
       );
     }
   }

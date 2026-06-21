@@ -10,9 +10,10 @@ import { AsaasPaymentGateway } from '../gateways/asaas/AsaasPaymentGateway.js';
 import { StripePaymentGateway } from '../gateways/stripe/StripePaymentGateway.js';
 import { AsaasGatewayStatusMapper } from '../gateways/asaas/AsaasGatewayStatusMapper.js';
 import { StripeGatewayStatusMapper } from '../gateways/stripe/StripeGatewayStatusMapper.js';
-import { SubscriptionService, GATEWAY_NAMES } from '../../../application/services/billing/SubscriptionService.js';
+import { SubscriptionService } from '../../../application/services/billing/SubscriptionService.js';
 import { BillingIntentService } from '../../../application/services/billing/BillingIntentService.js';
 import { BillingType } from '../../../domain/enums/billing.enums.js';
+import { PAYMENT_GATEWAY } from '../../../domain/constants/billing.constants.js';
 import { AppLogger } from '../../../observability/logger.js';
 import { BillingEventBus } from '../../../application/services/billing-event.bus.js';
 import {
@@ -271,7 +272,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
     }
 
     const gateway = webhookRecord.gateway;
-    const paymentGateway = gateway === GATEWAY_NAMES.STRIPE ? this.stripePaymentGateway : this.paymentGateway;
+    const paymentGateway = gateway === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.paymentGateway;
     const event = paymentGateway.parseWebhook(webhookRecord.payload as Record<string, unknown>);
     const payment = event.payment;
 
@@ -283,7 +284,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
     const gatewayPaymentId = String(payment.id);
 
     let payStatus: PaymentStatus | null = null;
-    const mapper = gateway === GATEWAY_NAMES.STRIPE 
+    const mapper = gateway === PAYMENT_GATEWAY.STRIPE 
       ? this.stripeGatewayStatusMapper 
       : this.asaasGatewayStatusMapper;
     payStatus = mapper.normalizePaymentStatus(payment.status, event.event);
@@ -360,7 +361,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
         subscriptionId: userId,
         gatewaySubscriptionId: payment.subscription,
         userId,
-        status: null, // Não muda status da assinatura em cancelamento de pagamento
+        status: null, // Do not change subscription status on payment cancellation
       });
       this.billingEventBus.emit(userId);
       return;
@@ -382,7 +383,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
       subscriptionId: userId,
       gatewaySubscriptionId: payment.subscription,
       userId,
-      status: null, // Deixa o método determinar o status baseado nos pagamentos
+      status: null, // Let the method determine status based on payments
     });
     this.billingEventBus.emit(userId);
   }
@@ -443,7 +444,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
     let creditCardToken = payment.creditCardToken || intent?.creditCardToken;
     if (!creditCardToken) {
       try {
-        const paymentGateway = gateway === GATEWAY_NAMES.STRIPE ? this.stripePaymentGateway : this.paymentGateway;
+        const paymentGateway = gateway === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.paymentGateway;
         const gatewayPayment = await paymentGateway.getPaymentByGatewayId(gatewayPaymentId);
         creditCardToken = gatewayPayment?.creditCardToken;
       } catch (err) {
@@ -463,7 +464,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
       return { creditCardToken, billingType: BillingTypeEnum.CREDIT_CARD };
     }
 
-    // Fallback para PIX se token de cartão não for recuperável
+    // Fallback to PIX if credit card token cannot be retrieved
     this.logger.warn('billing_webhook_consumer.cc_token_not_found_fallback_to_pix', {
       userId,
       gatewayPaymentId,
@@ -503,7 +504,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
         activationDate: paidAt || new Date(),
         creditCardToken,
         createdFromIntentId: intent.id,
-        gatewayName: payment.gateway || GATEWAY_NAMES.ASAAS,
+        gatewayName: payment.gateway || PAYMENT_GATEWAY.ASAAS,
       });
       return;
     }
@@ -524,7 +525,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
       }
 
       const gatewayCustomerId = activeSub?.gatewayCustomerId || '';
-      const gateway = activeSub?.gatewayName || GATEWAY_NAMES.ASAAS;
+      const gateway = activeSub?.gatewayName || PAYMENT_GATEWAY.ASAAS;
       const price = intent.value || 0;
       const billingType = intent.billingType || BillingType.CREDIT_CARD;
       

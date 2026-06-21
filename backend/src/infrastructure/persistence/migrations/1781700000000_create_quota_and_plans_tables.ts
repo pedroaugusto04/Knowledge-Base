@@ -61,9 +61,9 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(`
     INSERT INTO kb_plans (id, slug, display_name, description, max_storage_bytes, max_ai_requests_per_month, max_workspaces, max_projects_per_workspace, price_cents, billing_period)
     VALUES 
-      ('00000000-0000-0000-0000-000000000001', 'free', 'Free', 'Plano básico gratuito', 52428800, 50, 1, 3, 0, 'monthly'),
-      ('00000000-0000-0000-0000-000000000002', 'pro', 'Pro', 'Plano profissional para indivíduos', 5368709120, 1000, 5, 20, 2900, 'monthly'),
-      ('00000000-0000-0000-0000-000000000003', 'enterprise', 'Enterprise', 'Plano corporativo com recursos ilimitados', 107374182400, 10000, 999, 999, 9900, 'monthly')
+      ('00000000-0000-0000-0000-000000000001', 'free', 'Free', 'Basic free plan', 52428800, 50, 1, 3, 0, 'monthly'),
+      ('00000000-0000-0000-0000-000000000002', 'pro', 'Pro', 'Professional plan for individuals', 5368709120, 1000, 5, 20, 2900, 'monthly'),
+      ('00000000-0000-0000-0000-000000000003', 'enterprise', 'Enterprise', 'Corporate plan with unlimited resources', 107374182400, 10000, 999, 999, 9900, 'monthly')
     ON CONFLICT (slug) DO NOTHING;
   `);
 }

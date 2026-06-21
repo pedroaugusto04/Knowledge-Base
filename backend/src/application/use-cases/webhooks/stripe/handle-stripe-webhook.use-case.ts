@@ -2,7 +2,7 @@ import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import crypto from 'node:crypto';
 import { BillingWebhookEventRepository } from '../../../ports/billing/billing-repositories.js';
 import { BillingQueuePublisher } from '../../../ports/billing/billing-queue.publisher.js';
-import { GATEWAY_NAMES } from '../../../services/billing/SubscriptionService.js';
+import { PAYMENT_GATEWAY } from '../../../../domain/constants/billing.constants.js';
 
 @Injectable()
 export class HandleStripeWebhookUseCase {
@@ -43,7 +43,7 @@ export class HandleStripeWebhookUseCase {
 
     // Save event to database once for idempotency
     const savedEvent = await this.webhookEventRepository.createWebhookEventOnce({
-      gateway: GATEWAY_NAMES.STRIPE,
+      gateway: PAYMENT_GATEWAY.STRIPE,
       dedupKey,
       eventType,
       gatewayEventId,
