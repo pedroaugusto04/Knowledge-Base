@@ -4,6 +4,7 @@ import { DatabaseModule } from './database.module.js';
 import { AuthModule } from './auth.module.js';
 import { EnvModule } from './env.module.js';
 import { AiModule } from './ai.module.js';
+import { QuotaModule } from './quota.module.js';
 
 import {
   ListWorkspacesUseCase,
@@ -22,6 +23,7 @@ import { WorkspacesController } from '../../interfaces/http/controllers/index.js
     AuthModule,
     EnvModule,
     AiModule,
+    QuotaModule,
   ],
   controllers: [
     WorkspacesController,

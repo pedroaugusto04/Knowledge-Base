@@ -1,5 +1,5 @@
 import { schedule } from 'node-cron';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { SubscriptionChangeService } from '../application/services/billing/SubscriptionChangeService.js';
 import { SubscriptionService } from '../application/services/billing/SubscriptionService.js';
 import { AppLogger } from '../observability/logger.js';
@@ -15,7 +15,9 @@ const CHANGE_SUBSCRIPTION_WORKER_AUTORUN = (() => {
 })();
 
 @Injectable()
-export class ChangeSubscriptionWorker implements OnModuleInit {
+export class ChangeSubscriptionWorker implements OnModuleInit, OnModuleDestroy {
+  private cronTask: any;
+
   constructor(
     private readonly subscriptionService: SubscriptionService,
     private readonly subscriptionChangeService: SubscriptionChangeService,
@@ -27,11 +29,17 @@ export class ChangeSubscriptionWorker implements OnModuleInit {
     this.startChangeSubscriptionWorker();
   }
 
+  onModuleDestroy() {
+    if (this.cronTask) {
+      this.cronTask.stop();
+    }
+  }
+
   async startChangeSubscriptionWorker() {
     this.logger.info('[worker] change subscription worker started');
     this.logger.info(`[worker] CHANGE_SUBSCRIPTION_WORKER_AUTORUN=${CHANGE_SUBSCRIPTION_WORKER_AUTORUN}`);
 
-    schedule(
+    this.cronTask = schedule(
       '10 0 * * *', // todo dia 00:10 (America/Sao_Paulo)
       async () => {
         await this.runChangeSubscriptionJob();

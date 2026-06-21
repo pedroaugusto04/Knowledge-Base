@@ -1,5 +1,5 @@
 import { schedule } from 'node-cron';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { BillingWebhookEventRepository } from '../application/ports/billing/billing-repositories.js';
 import { BillingQueuePublisher } from '../application/ports/billing/billing-queue.publisher.js';
 import { AppLogger } from '../observability/logger.js';
@@ -22,7 +22,9 @@ const OUTBOX_ALERT_MARKER = '[OUTBOX_ATTEMPT_LIMIT_ALERT_SENT]';
 const DEV_EMAIL = process.env.DEV_EMAIL?.trim();
 
 @Injectable()
-export class WebhookOutboxRelayWorker implements OnModuleInit {
+export class WebhookOutboxRelayWorker implements OnModuleInit, OnModuleDestroy {
+  private cronTask: any;
+
   constructor(
     private readonly billingWebhookEventRepository: BillingWebhookEventRepository,
     private readonly billingQueuePublisher: BillingQueuePublisher,
@@ -34,6 +36,12 @@ export class WebhookOutboxRelayWorker implements OnModuleInit {
     this.startWebhookOutboxRelayWorker();
   }
 
+  onModuleDestroy() {
+    if (this.cronTask) {
+      this.cronTask.stop();
+    }
+  }
+
   async startWebhookOutboxRelayWorker() {
     this.logger.info('[worker] webhook outbox relay started');
     this.logger.info(`[worker] WEBHOOK_OUTBOX_RELAY_CRON=${WEBHOOK_OUTBOX_RELAY_CRON}`);
@@ -42,7 +50,7 @@ export class WebhookOutboxRelayWorker implements OnModuleInit {
     this.logger.info(`[worker] WEBHOOK_OUTBOX_RELAY_MIN_AGE_SECONDS=${WEBHOOK_OUTBOX_RELAY_MIN_AGE_SECONDS}`);
     this.logger.info(`[worker] WEBHOOK_OUTBOX_RELAY_MAX_ATTEMPTS=${WEBHOOK_OUTBOX_RELAY_MAX_ATTEMPTS}`);
 
-    schedule(
+    this.cronTask = schedule(
       WEBHOOK_OUTBOX_RELAY_CRON,
       async () => {
         await this.runWebhookOutboxRelayJob();

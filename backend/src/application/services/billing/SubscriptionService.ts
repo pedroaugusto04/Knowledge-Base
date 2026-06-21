@@ -58,10 +58,6 @@ export class SubscriptionService {
     private readonly asaasGatewayStatusMapper: AsaasGatewayStatusMapper,
     private readonly stripeGatewayStatusMapper: StripeGatewayStatusMapper,
     private readonly billingPaymentRepository: PostgresBillingPaymentRepository,
-    private readonly newSubscriptionStrategy: NewSubscriptionStrategy,
-    private readonly upgradeProrationStrategy: UpgradeProrationStrategy,
-    private readonly downgradeStrategy: DowngradeStrategy,
-    private readonly changeCycleStrategy: ChangeCycleStrategy,
   ) {}
 
   async getPlans() {
@@ -205,12 +201,12 @@ export class SubscriptionService {
     const factory = new UpdateSubscriptionStrategyFactory();
     const kind = factory.getChangeKind(ctx);
     
-    // Usa strategies injetadas via NestJS DI
+    // Usa strategies instanciadas manualmente para quebrar dependência circular
     const strategies = {
-      newStrategy: this.newSubscriptionStrategy,
-      upgradeProrationStrategy: this.upgradeProrationStrategy,
-      downgradeStrategy: this.downgradeStrategy,
-      changeCycleStrategy: this.changeCycleStrategy,
+      newStrategy: new NewSubscriptionStrategy(this),
+      upgradeProrationStrategy: new UpgradeProrationStrategy(this),
+      downgradeStrategy: new DowngradeStrategy(this),
+      changeCycleStrategy: new ChangeCycleStrategy(this),
     };
     
     const strategy = factory.getStrategy(kind, strategies);
@@ -387,7 +383,7 @@ export class SubscriptionService {
         });
 
         // Sincroniza pagamentos pendentes após o upgrade
-        await this.syncPendingRecurringPaymentsAfterUpgrade(
+        await this.subscriptionChangeService.syncPendingRecurringPaymentsAfterUpgrade(
           { id: sub.userId, userId: subscriptionId, gatewaySubscriptionId: sub.gatewaySubscriptionId, gatewayName: sub.gatewayName },
           targetRecurringValue
         );
@@ -836,83 +832,7 @@ export class SubscriptionService {
     return { summary, changeKind };
   }
 
-  /**
-   * Sincroniza pagamentos pendentes após upgrade
-   */
-  private async syncPendingRecurringPaymentsAfterUpgrade(
-    sub: { id: string; userId: string; gatewaySubscriptionId: string; gatewayName: string },
-    newRecurringValue: number
-  ) {
-    const gateway = sub.gatewayName === GatewayNameEnum.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
-    const normalizedRecurringValue = newRecurringValue / 100; // Converte de cents para decimal
 
-    let gatewayPayments: Awaited<ReturnType<typeof gateway.getSubscriptionPayments>> = [];
-
-    try {
-      gatewayPayments = await gateway.getSubscriptionPayments(sub.gatewaySubscriptionId);
-    } catch (err: any) {
-      this.logger.error(`Falha ao obter pagamentos da assinatura ${sub.id}: ${err.message}`);
-      return;
-    }
-
-    for (const payment of gatewayPayments ?? []) {
-      if (!payment?.id) continue;
-
-      const normalizedStatus = gateway === this.asaasPaymentGateway
-        ? this.asaasGatewayStatusMapper.normalizePaymentStatus(payment.status, null)
-        : this.stripeGatewayStatusMapper.normalizePaymentStatus(payment.status, null);
-
-      if (normalizedStatus !== PaymentStatus.PENDING) continue;
-
-      const dueDate = payment.dueDate ? new Date(payment.dueDate) : null;
-      if (!dueDate) continue;
-
-      let syncedPayment = payment;
-      try {
-        syncedPayment = await gateway.updatePayment(payment.id, {
-          value: normalizedRecurringValue,
-          dueDate: dueDate.toISOString().split('T')[0],
-        });
-      } catch (err: any) {
-        this.logger.error(
-          `Falha ao atualizar cobrança aberta ${payment.id} após alteração da assinatura ${sub.id}: ${err.message}`
-        );
-        continue;
-      }
-
-      const syncedDueDate = syncedPayment.dueDate ? new Date(syncedPayment.dueDate) : dueDate;
-      const syncedPaidAt = syncedPayment.paidAt ? new Date(syncedPayment.paidAt) : null;
-      const syncedStatus = gateway === this.asaasPaymentGateway
-        ? this.asaasGatewayStatusMapper.normalizePaymentStatus(syncedPayment.status, null) ?? normalizedStatus ?? PaymentStatus.PENDING
-        : this.stripeGatewayStatusMapper.normalizePaymentStatus(syncedPayment.status, null) ?? normalizedStatus ?? PaymentStatus.PENDING;
-
-      const billingType = syncedPayment.billingType ?? payment.billingType;
-      const normalizedBillingType = billingType === BillingTypeEnum.BOLETO ? 'boleto' : billingType === BillingTypeEnum.PIX ? 'pix' : 'credit_card';
-
-      await this.billingPaymentRepository.upsertSubscriptionPayment({
-        subscriptionId: sub.id,
-        userId: sub.userId,
-        gateway: gateway === this.asaasPaymentGateway ? 'asaas' : 'stripe',
-        gatewayPaymentId: payment.id,
-        status: syncedStatus,
-        billingType: normalizedBillingType,
-        gatewayStatus: syncedPayment.status ?? payment.status ?? undefined,
-        value: (syncedPayment.value ?? normalizedRecurringValue) * 100, // Converte de decimal para cents
-        dueDate: syncedDueDate,
-        paidAt: syncedPaidAt ?? null,
-        invoiceUrl: syncedPayment.invoiceUrl ?? null,
-        bankSlipUrl: syncedPayment.bankSlipUrl ?? null,
-        pixQrCode: syncedPayment.pixQrCode ?? null,
-        pixQrCodeUrl: syncedPayment.pixQrCodeUrl ?? null,
-        description: syncedPayment.description ?? null,
-        kind: 'recurring',
-      });
-
-      this.logger.info(
-        `Cobrança recorrente ${payment.id} sincronizada após alteração da assinatura ${sub.id}`
-      );
-    }
-  }
 
   private resolvePlanValueForCycle(plan: { priceCents: number; priceUsdCents: number }, cycle: BillingCycle): number {
     if (cycle === BillingCycle.YEARLY) {

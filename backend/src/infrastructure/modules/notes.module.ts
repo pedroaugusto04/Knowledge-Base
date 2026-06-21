@@ -8,6 +8,7 @@ import { QueueModule } from './queue.module.js';
 import { AiModule } from './ai.module.js';
 import { RemindersModule } from './reminders.module.js';
 import { ProjectsModule } from './projects.module.js';
+import { QuotaModule } from './quota.module.js';
 
 import {
   ListPaginatedNotesUseCase,
@@ -42,6 +43,7 @@ import { NotesController } from '../../interfaces/http/controllers/index.js';
     AiModule,
     RemindersModule,
     ProjectsModule,
+    QuotaModule,
   ],
   controllers: [
     NotesController,

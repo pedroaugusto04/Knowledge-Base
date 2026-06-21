@@ -6,11 +6,13 @@ import {
   userSubscriptions,
   plans,
 } from '../../../infrastructure/persistence/schema/index.js';
-import { SubscriptionChangeStatus, SubscriptionChangeType, SubscriptionStatus, BillingCycle, BillingType } from '../../../domain/enums/billing.enums.js';
-import { BillingTypeEnum } from '../../../infrastructure/billing/gateways/IPaymentGateway.js';
+import { SubscriptionChangeStatus, SubscriptionChangeType, SubscriptionStatus, BillingCycle, BillingType, PaymentStatus } from '../../../domain/enums/billing.enums.js';
+import { BillingTypeEnum, GatewayNameEnum } from '../../../infrastructure/billing/gateways/IPaymentGateway.js';
 import { AsaasPaymentGateway } from '../../../infrastructure/billing/gateways/asaas/AsaasPaymentGateway.js';
 import { StripePaymentGateway } from '../../../infrastructure/billing/gateways/stripe/StripePaymentGateway.js';
-import { SubscriptionService } from './SubscriptionService.js';
+import { AsaasGatewayStatusMapper } from '../../../infrastructure/billing/gateways/asaas/AsaasGatewayStatusMapper.js';
+import { StripeGatewayStatusMapper } from '../../../infrastructure/billing/gateways/stripe/StripeGatewayStatusMapper.js';
+import { PostgresBillingPaymentRepository } from '../../../infrastructure/repositories/billing.repository.js';
 import { AppLogger } from '../../../observability/logger.js';
 import crypto from 'node:crypto';
 
@@ -20,7 +22,9 @@ export class SubscriptionChangeService {
     private readonly database: PostgresDatabase,
     private readonly asaasPaymentGateway: AsaasPaymentGateway,
     private readonly stripePaymentGateway: StripePaymentGateway,
-    private readonly subscriptionService: SubscriptionService,
+    private readonly asaasGatewayStatusMapper: AsaasGatewayStatusMapper,
+    private readonly stripeGatewayStatusMapper: StripeGatewayStatusMapper,
+    private readonly billingPaymentRepository: PostgresBillingPaymentRepository,
     private readonly logger: AppLogger,
   ) {}
 
@@ -151,7 +155,7 @@ export class SubscriptionChangeService {
         });
 
         // Sincronizar pagamentos pendentes após a mudança
-        await this.subscriptionService['syncPendingRecurringPaymentsAfterUpgrade'](
+        await this.syncPendingRecurringPaymentsAfterUpgrade(
           { id: sub.userId, userId: changeRequest.userId, gatewaySubscriptionId: sub.gatewaySubscriptionId, gatewayName: sub.gatewayName },
           targetRecurringValue
         );
@@ -221,5 +225,83 @@ export class SubscriptionChangeService {
       return annualPrice;
     }
     return plan.priceCents / 100;
+  }
+
+  /**
+   * Sincroniza pagamentos pendentes após upgrade
+   */
+  async syncPendingRecurringPaymentsAfterUpgrade(
+    sub: { id: string; userId: string; gatewaySubscriptionId: string; gatewayName: string },
+    newRecurringValue: number
+  ) {
+    const gateway = sub.gatewayName === GatewayNameEnum.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
+    const normalizedRecurringValue = newRecurringValue / 100; // Converte de cents para decimal
+
+    let gatewayPayments: Awaited<ReturnType<typeof gateway.getSubscriptionPayments>> = [];
+
+    try {
+      gatewayPayments = await gateway.getSubscriptionPayments(sub.gatewaySubscriptionId);
+    } catch (err: any) {
+      this.logger.error(`Falha ao obter pagamentos da assinatura ${sub.id}: ${err.message}`);
+      return;
+    }
+
+    for (const payment of gatewayPayments ?? []) {
+      if (!payment?.id) continue;
+
+      const normalizedStatus = gateway === this.asaasPaymentGateway
+        ? this.asaasGatewayStatusMapper.normalizePaymentStatus(payment.status, null)
+        : this.stripeGatewayStatusMapper.normalizePaymentStatus(payment.status, null);
+
+      if (normalizedStatus !== PaymentStatus.PENDING) continue;
+
+      const dueDate = payment.dueDate ? new Date(payment.dueDate) : null;
+      if (!dueDate) continue;
+
+      let syncedPayment = payment;
+      try {
+        syncedPayment = await gateway.updatePayment(payment.id, {
+          value: normalizedRecurringValue,
+          dueDate: dueDate.toISOString().split('T')[0],
+        });
+      } catch (err: any) {
+        this.logger.error(
+          `Falha ao atualizar cobrança aberta ${payment.id} após alteração da assinatura ${sub.id}: ${err.message}`
+        );
+        continue;
+      }
+
+      const syncedDueDate = syncedPayment.dueDate ? new Date(syncedPayment.dueDate) : dueDate;
+      const syncedPaidAt = syncedPayment.paidAt ? new Date(syncedPayment.paidAt) : null;
+      const syncedStatus = gateway === this.asaasPaymentGateway
+        ? this.asaasGatewayStatusMapper.normalizePaymentStatus(syncedPayment.status, null) ?? normalizedStatus ?? PaymentStatus.PENDING
+        : this.stripeGatewayStatusMapper.normalizePaymentStatus(syncedPayment.status, null) ?? normalizedStatus ?? PaymentStatus.PENDING;
+
+      const billingType = syncedPayment.billingType ?? payment.billingType;
+      const normalizedBillingType = billingType === BillingTypeEnum.BOLETO ? 'boleto' : billingType === BillingTypeEnum.PIX ? 'pix' : 'credit_card';
+
+      await this.billingPaymentRepository.upsertSubscriptionPayment({
+        subscriptionId: sub.id,
+        userId: sub.userId,
+        gateway: gateway === this.asaasPaymentGateway ? 'asaas' : 'stripe',
+        gatewayPaymentId: payment.id,
+        status: syncedStatus,
+        billingType: normalizedBillingType,
+        gatewayStatus: syncedPayment.status ?? payment.status ?? undefined,
+        value: (syncedPayment.value ?? normalizedRecurringValue) * 100, // Converte de decimal para cents
+        dueDate: syncedDueDate,
+        paidAt: syncedPaidAt ?? null,
+        invoiceUrl: syncedPayment.invoiceUrl ?? null,
+        bankSlipUrl: syncedPayment.bankSlipUrl ?? null,
+        pixQrCode: syncedPayment.pixQrCode ?? null,
+        pixQrCodeUrl: syncedPayment.pixQrCodeUrl ?? null,
+        description: syncedPayment.description ?? null,
+        kind: 'recurring',
+      });
+
+      this.logger.info(
+        `Cobrança recorrente ${payment.id} sincronizada após alteração da assinatura ${sub.id}`
+      );
+    }
   }
 }

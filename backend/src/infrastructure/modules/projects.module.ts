@@ -5,6 +5,7 @@ import { AuthModule } from './auth.module.js';
 import { AiModule } from './ai.module.js';
 import { WorkspacesModule } from './workspaces.module.js';
 import { EnvModule } from './env.module.js';
+import { QuotaModule } from './quota.module.js';
 
 import {
   ListPaginatedProjectsUseCase,
@@ -35,6 +36,7 @@ import { ProjectResolutionGuard, OptionalProjectResolutionGuard } from '../../in
     AiModule,
     WorkspacesModule,
     EnvModule,
+    QuotaModule,
   ],
   controllers: [
     ProjectsController,

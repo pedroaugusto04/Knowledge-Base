@@ -1,9 +1,7 @@
-import { Injectable } from '@nestjs/common';
 import { SubscriptionContext } from '../subscriptionContext.js';
 import { UpdateSubscriptionStrategy, UpdateSubscriptionStrategyResult } from '../UpdateSubscriptionStrategy.js';
-import { SubscriptionService } from '../../SubscriptionService.js';
+import type { SubscriptionService } from '../../SubscriptionService.js';
 
-@Injectable()
 export class UpgradeProrationStrategy implements UpdateSubscriptionStrategy {
   constructor(
     private readonly subscriptionService: SubscriptionService

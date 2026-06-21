@@ -7,13 +7,16 @@ import { ingestPayloadSchema, withDerivedReminderAt, type IngestPayload } from '
 import { hasReminder, normalizeManualNoteStatus } from '../../../domain/note-status.js';
 import { buildNotePaths, renderEventNote } from '../../../domain/notes.js';
 import type { Project } from '../../../domain/projects.js';
-import { slugify, trimText } from '../../../domain/strings.js';
+import { slugify, trimText, calculateAttachmentSize } from '../../../domain/strings.js';
 import { ContentRepository } from '../../ports/notes/content.repository.js';
 import { EmbeddingQueuePublisher, EmbeddingJobType } from '../../ports/notes/embedding-queue.publisher.js';
 import { RuntimeEnvironmentProvider } from '../../ports/observability/runtime-environment.port.js';
 import type { ProjectFolderRecord } from '../../models/repository-records.models.js';
 import type { SaveNoteResult } from '../../models/note-save-result.models.js';
 import { resolveCanonicalTypeFromCategories } from '../../../domain/note-classification.js';
+import { QuotaService } from '../../services/quota.service.js';
+import { QuotaResourceType } from '../../../domain/enums/plans.enums.js';
+import { QuotaExceededException } from '../../../interfaces/http/quota-exceeded.exception.js';
 
 
 type IngestExecutionOptions = {
@@ -29,11 +32,13 @@ export class IngestEntryUseCase {
     private readonly contentRepository: ContentRepository,
     private readonly environmentProvider: RuntimeEnvironmentProvider,
     private readonly embeddingQueue: EmbeddingQueuePublisher,
+    private readonly quotaService: QuotaService,
   ) {}
 
   async execute(input: IngestPayload, userId: string, workspaceSlug = '', options: IngestExecutionOptions = {}) {
     const result = await saveIngestedNote(
       this.contentRepository,
+      this.quotaService,
       userId,
       input,
       this.environmentProvider.read().reminderTimeZone,
@@ -78,6 +83,7 @@ function projectFromPayload(payload: IngestPayload, workspaceSlug: string): Proj
 
 async function saveIngestedNote(
   contentRepository: ContentRepository,
+  quotaService: QuotaService,
   userId: string,
   input: IngestPayload,
   reminderTimeZone: string,
@@ -228,6 +234,18 @@ async function saveIngestedNote(
     reminderDate: payload.actions.reminderDate,
     reminderAt: payload.actions.reminderAt,
   });
+  let totalAttachmentSize = 0;
+  for (const attachment of payload.content.attachments) {
+    totalAttachmentSize += calculateAttachmentSize(attachment.sizeBytes, attachment.dataBase64);
+  }
+
+  if (totalAttachmentSize > 0) {
+    const quotaResult = await quotaService.checkQuota(userId, QuotaResourceType.STORAGE, totalAttachmentSize);
+    if (!quotaResult.allowed) {
+      throw new QuotaExceededException('storage', quotaResult.limit, quotaResult.current);
+    }
+  }
+
   const attachments = await Promise.all(
     payload.content.attachments.map((attachment) =>
       contentRepository.saveAttachment(userId, {

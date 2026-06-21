@@ -1,5 +1,5 @@
 import { schedule } from 'node-cron';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { SubscriptionCancellationService } from '../application/services/billing/SubscriptionCancellationService.js';
 import { AppLogger } from '../observability/logger.js';
 import { eq, and, lt } from 'drizzle-orm';
@@ -25,7 +25,9 @@ const MAX_DAYS_PAST_DUE = (() => {
 })();
 
 @Injectable()
-export class BillingWorker implements OnModuleInit {
+export class BillingWorker implements OnModuleInit, OnModuleDestroy {
+  private cronTask: any;
+
   constructor(
     private readonly subscriptionCancellationService: SubscriptionCancellationService,
     private readonly database: PostgresDatabase,
@@ -36,12 +38,18 @@ export class BillingWorker implements OnModuleInit {
     this.startBillingWorker();
   }
 
+  onModuleDestroy() {
+    if (this.cronTask) {
+      this.cronTask.stop();
+    }
+  }
+
   async startBillingWorker() {
     this.logger.info('[worker] billing worker started');
     this.logger.info(`[worker] MAX_DAYS_PAST_DUE=${MAX_DAYS_PAST_DUE}`);
     this.logger.info(`[worker] BILLING_WORKER_AUTORUN=${BILLING_WORKER_AUTORUN}`);
 
-    schedule(
+    this.cronTask = schedule(
       '05 0 * * *', // todo dia 00:05 (America/Sao_Paulo)
       async () => {
         await this.runPastDueJob();

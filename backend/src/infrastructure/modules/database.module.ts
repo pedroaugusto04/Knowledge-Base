@@ -17,7 +17,6 @@ import { ProjectBriefHistoryRepository } from '../../application/ports/projects/
 import { AskHistoryRepository } from '../../application/ports/query/ask-history.repository.js';
 import { NoteEmbeddingRepository } from '../../application/ports/notes/note-embedding.repository.js';
 import { QuotaRepository } from '../../application/ports/quota/quota.repository.js';
-import { QuotaService } from '../../application/services/quota.service.js';
 import {
   BillingCustomerRepository,
   BillingPaymentRepository,

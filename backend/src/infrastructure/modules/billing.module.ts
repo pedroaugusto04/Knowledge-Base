@@ -13,10 +13,7 @@ import { SubscriptionService } from '../../application/services/billing/Subscrip
 import { SubscriptionUpgradeService } from '../../application/services/billing/SubscriptionUpgradeService.js';
 import { SubscriptionCancellationService } from '../../application/services/billing/SubscriptionCancellationService.js';
 import { SubscriptionChangeService } from '../../application/services/billing/SubscriptionChangeService.js';
-import { NewSubscriptionStrategy } from '../../application/services/billing/subscriptionStrategy/strategies/NewSubscriptionStrategy.js';
-import { UpgradeProrationStrategy } from '../../application/services/billing/subscriptionStrategy/strategies/UpgradeProrationStrategy.js';
-import { DowngradeStrategy } from '../../application/services/billing/subscriptionStrategy/strategies/DowngradeStrategy.js';
-import { ChangeCycleStrategy } from '../../application/services/billing/subscriptionStrategy/strategies/ChangeCycleStrategy.js';
+
 import { AsaasWebhookController } from '../../interfaces/http/controllers/billing/asaas-webhook.controller.js';
 import { StripeWebhookController } from '../../interfaces/http/controllers/billing/stripe-webhook.controller.js';
 import { HandleAsaasWebhookUseCase, HandleStripeWebhookUseCase } from '../../application/use-cases/index.js';
@@ -42,10 +39,7 @@ import { WebhookOutboxRelayWorker } from '../../workers/webhook-outbox-relay.wor
     SubscriptionUpgradeService,
     SubscriptionCancellationService,
     SubscriptionChangeService,
-    NewSubscriptionStrategy,
-    UpgradeProrationStrategy,
-    DowngradeStrategy,
-    ChangeCycleStrategy,
+
     HandleAsaasWebhookUseCase,
     HandleStripeWebhookUseCase,
     BillingEventBus,

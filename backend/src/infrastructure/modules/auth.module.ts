@@ -48,7 +48,7 @@ import { AuthController } from '../../interfaces/http/controllers/index.js';
     TrustedOriginGuard,
     InternalServiceTokenGuard,
     WebhookRateLimitGuard,
-    UserRepository,
+    DatabaseModule,
   ],
 })
 export class AuthModule {}
