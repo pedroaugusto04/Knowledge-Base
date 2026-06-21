@@ -334,23 +334,46 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
     // A subsequent webhook upsert will update it once the subscription is created.
     const subscriptionId = existingPayment?.subscriptionId ?? null;
 
+    let pixQrCode = payment.pixQrCode ?? existingPayment?.pixQrCode ?? null;
+    let pixQrCodeUrl = payment.pixQrCodeUrl ?? existingPayment?.pixQrCodeUrl ?? null;
+    let bankSlipUrl = payment.bankSlipUrl ?? existingPayment?.bankSlipUrl ?? null;
+    let invoiceUrl = payment.invoiceUrl ?? existingPayment?.invoiceUrl ?? null;
+
+    if (
+      !pixQrCode &&
+      (payment.billingType === BillingTypeEnum.PIX || existingPayment?.billingType === 'pix')
+    ) {
+      try {
+        const gatewayPayment = await paymentGateway.getPaymentByGatewayId(gatewayPaymentId);
+        pixQrCode = gatewayPayment?.pixQrCode ?? pixQrCode;
+        pixQrCodeUrl = gatewayPayment?.pixQrCodeUrl ?? pixQrCodeUrl;
+      } catch (err) {
+        this.logger.warn('billing_webhook_consumer.pix_fetch_failed', {
+          gatewayPaymentId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
     const paymentData = {
       subscriptionId,
       userId,
       gateway,
       gatewayPaymentId,
       status: payStatus,
-      billingType: payment.billingType ?? null,
-      kind: existingPayment?.kind || (intent?.type === 'upgrade' ? PAYMENT_KIND.UPGRADE : PAYMENT_KIND.RECURRING) as PaymentKind,
+      billingType: payment.billingType ?? existingPayment?.billingType ?? null,
+      kind: existingPayment?.kind || ((intent?.type === 'new' || intent?.type === 'upgrade')
+        ? PAYMENT_KIND.UPGRADE
+        : PAYMENT_KIND.RECURRING) as PaymentKind,
       gatewayStatus: payment.status || null,
       value,
       dueDate,
       paidAt,
-      invoiceUrl: payment.invoiceUrl || null,
-      bankSlipUrl: payment.bankSlipUrl || null,
-      pixQrCode: payment.pixQrCode || null,
-      pixQrCodeUrl: payment.pixQrCodeUrl || null,
-      description: payment.description || null,
+      invoiceUrl,
+      bankSlipUrl,
+      pixQrCode,
+      pixQrCodeUrl,
+      description: payment.description || existingPayment?.description || null,
       lastGatewayEventAt: eventCreatedAt,
     };
 
@@ -385,6 +408,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
             paidAt,
             creditCardToken,
             nextBillingType,
+            gateway,
           );
         } else {
           const claimedIntent = await this.billingIntentService.claimForProcessing(userId, intent.id);
@@ -480,7 +504,11 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
       return { creditCardToken, billingType: BillingTypeEnum.CREDIT_CARD };
     }
 
-    // Fallback to PIX if credit card token cannot be retrieved
+    // Stripe users always stay on credit card; PIX fallback is Asaas-only.
+    if (gateway === PAYMENT_GATEWAY.STRIPE) {
+      return { billingType: BillingTypeEnum.CREDIT_CARD };
+    }
+
     this.logger.warn('billing_webhook_consumer.cc_token_not_found_fallback_to_pix', {
       userId,
       gatewayPaymentId,
@@ -495,7 +523,8 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
     intent: any,
     paidAt: Date | null,
     creditCardToken?: string,
-    nextBillingType?: BillingTypeEnum
+    nextBillingType?: BillingTypeEnum,
+    gatewayName: PaymentGateway = PAYMENT_GATEWAY.ASAAS,
   ): Promise<void> {
     const existingSubscriptionByIntent = await this.subscriptionService.getSubscriptionByCreatedFromIntentId(
       userId,
@@ -540,7 +569,7 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
         activationDate: paidAt || new Date(),
         creditCardToken,
         createdFromIntentId: intent.id,
-        gatewayName: payment.gateway || PAYMENT_GATEWAY.ASAAS,
+        gatewayName,
       });
     } catch (error) {
       const existingAfterError = await this.subscriptionService.getSubscriptionByCreatedFromIntentId(

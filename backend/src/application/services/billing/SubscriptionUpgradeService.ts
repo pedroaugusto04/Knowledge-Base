@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { PostgresDatabase } from '../../../infrastructure/persistence/database.js';
 import { plans } from '../../../infrastructure/persistence/schema/index.js';
 import { BillingCycle } from '../../../domain/enums/billing.enums.js';
+import { resolvePlanPriceCentsForGateway, resolvePlanValueForCycle } from '../../../domain/utils/plan-pricing.utils.js';
 import { compareMoney, PLAN_PRICE_SCALE, toMoneyDecimal, toMoneyNumber } from '../../../infrastructure/utils/money.js';
 import { AsaasPaymentGateway } from '../../../infrastructure/billing/gateways/asaas/AsaasPaymentGateway.js';
 import { StripePaymentGateway } from '../../../infrastructure/billing/gateways/stripe/StripePaymentGateway.js';
@@ -51,9 +52,14 @@ export class SubscriptionUpgradeService {
       newPlanId: ctx.newPlan.id,
       billingCycle: ctx.activeSub.billingCycle,
       currentPeriodEnd: periodEnd,
+      gateway: ctx.gateway,
     });
 
-    const fallbackValue = ctx.newSubscriptionValue ?? await this.resolvePlanValueForCycle(ctx.newPlan, ctx.activeSub.billingCycle);
+    const fallbackValue = ctx.newSubscriptionValue ?? resolvePlanValueForCycle(
+      ctx.newPlan,
+      ctx.activeSub.billingCycle,
+      ctx.gateway,
+    );
 
     return compareMoney(deltaPrice, 0, PLAN_PRICE_SCALE) > 0 ? deltaPrice : fallbackValue;
   }
@@ -63,6 +69,7 @@ export class SubscriptionUpgradeService {
     newPlanId: string;
     billingCycle: BillingCycle;
     currentPeriodEnd: Date;
+    gateway: GatewayNameEnum;
   }): Promise<number> {
     if (!params.currentPlanId || !params.newPlanId) {
       throw new BadRequestException('Plan IDs cannot be empty');
@@ -77,8 +84,8 @@ export class SubscriptionUpgradeService {
       throw new BadRequestException('Plan not found for proration calculation');
     }
 
-    const currentPrice = this.priceForCycle(currentPlan, params.billingCycle);
-    const newPrice = this.priceForCycle(newPlan, params.billingCycle);
+    const currentPrice = this.priceForCycle(currentPlan, params.billingCycle, params.gateway);
+    const newPrice = this.priceForCycle(newPlan, params.billingCycle, params.gateway);
 
     return this.computeProrationDelta({
       currentPrice,
@@ -86,16 +93,6 @@ export class SubscriptionUpgradeService {
       currentBillingCycle: params.billingCycle,
       periodEnd: params.currentPeriodEnd,
     });
-  }
-
-  private async resolvePlanValueForCycle(
-    plan: { priceCents: number; priceUsdCents: number },
-    cycle: BillingCycle,
-  ): Promise<number> {
-    if (cycle === BillingCycle.YEARLY) {
-      return (plan.priceCents * 12 * 0.8) / 100;
-    }
-    return plan.priceCents / 100;
   }
 
   private computeProrationDelta(params: {
@@ -126,16 +123,22 @@ export class SubscriptionUpgradeService {
     return toMoneyNumber(rawDelta, PLAN_PRICE_SCALE);
   }
 
-  private priceForCycle(plan: { priceCents: number; priceUsdCents: number }, cycle: BillingCycle): number {
+  private priceForCycle(
+    plan: { priceCents: number; priceUsdCents: number },
+    cycle: BillingCycle,
+    gateway: GatewayNameEnum,
+  ): number {
+    const unitCents = resolvePlanPriceCentsForGateway(plan, gateway);
+
     if (cycle === BillingCycle.YEARLY) {
-      const annualPrice = (plan.priceCents * 12 * 0.8) / 100;
+      const annualPrice = (unitCents * 12 * 0.8) / 100;
       if (compareMoney(annualPrice, 0, PLAN_PRICE_SCALE) <= 0) {
         throw new BadRequestException('Annual payment unavailable for this plan');
       }
       return annualPrice;
     }
 
-    const monthlyPrice = plan.priceCents / 100;
+    const monthlyPrice = unitCents / 100;
     if (compareMoney(monthlyPrice, 0, PLAN_PRICE_SCALE) < 0) {
       throw new BadRequestException('Invalid monthly price for this plan');
     }

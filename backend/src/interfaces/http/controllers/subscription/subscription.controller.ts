@@ -11,6 +11,7 @@ import { COUNTRY_CODE } from '../../../../domain/constants/billing.constants.js'
 import { BillingEventBus } from '../../../../application/services/billing-event.bus.js';
 import {
   GetPlansUseCase,
+  GetStripeConfigUseCase,
   GetSubscriptionStatusUseCase,
   UpdateSubscriptionUseCase,
   CancelPaymentUseCase,
@@ -23,6 +24,7 @@ import {
 export class SubscriptionController {
   constructor(
     private readonly getPlansUseCase: GetPlansUseCase,
+    private readonly getStripeConfigUseCase: GetStripeConfigUseCase,
     private readonly getSubscriptionStatusUseCase: GetSubscriptionStatusUseCase,
     private readonly updateSubscriptionUseCase: UpdateSubscriptionUseCase,
     private readonly cancelPaymentUseCase: CancelPaymentUseCase,
@@ -52,6 +54,14 @@ export class SubscriptionController {
   @ApiResponse({ status: 200, description: 'Plans retrieved successfully' })
   async getPlans() {
     return this.getPlansUseCase.execute();
+  }
+
+  @Get('stripe/config')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get Stripe publishable configuration for international billing' })
+  @ApiResponse({ status: 200, description: 'Stripe config retrieved successfully' })
+  async getStripeConfig() {
+    return this.getStripeConfigUseCase.execute();
   }
 
   @Get('status')

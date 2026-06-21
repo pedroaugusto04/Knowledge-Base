@@ -43,3 +43,28 @@ export function resolveEffectiveMonthlyBillingType(
 export function canChooseManualMonthlyPayment(hasCreditCardOnFile: boolean): boolean {
   return !hasCreditCardOnFile;
 }
+
+type MergeablePendingPayment = {
+  id: string;
+  pixQrCode?: string | null;
+  pixQrCodeUrl?: string | null;
+  bankSlipUrl?: string | null;
+  invoiceUrl?: string | null;
+};
+
+export function mergePendingPayment<T extends MergeablePendingPayment>(
+  current: T | null,
+  incoming: T,
+): T {
+  if (!current || current.id !== incoming.id) {
+    return incoming;
+  }
+
+  return {
+    ...incoming,
+    pixQrCode: incoming.pixQrCode ?? current.pixQrCode ?? null,
+    pixQrCodeUrl: incoming.pixQrCodeUrl ?? current.pixQrCodeUrl ?? null,
+    bankSlipUrl: incoming.bankSlipUrl ?? current.bankSlipUrl ?? null,
+    invoiceUrl: incoming.invoiceUrl ?? current.invoiceUrl ?? null,
+  };
+}

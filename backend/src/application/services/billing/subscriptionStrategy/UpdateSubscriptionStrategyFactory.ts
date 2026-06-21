@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SubscriptionChangeKind } from '../../../../domain/enums/billing.enums.js';
+import { resolvePlanPriceCentsForGateway } from '../../../../domain/utils/plan-pricing.utils.js';
 import { SubscriptionContext } from './subscriptionContext.js';
 import { compareMoney, PLAN_PRICE_SCALE } from '../../../../infrastructure/utils/money.js';
 
@@ -12,9 +13,15 @@ export class UpdateSubscriptionStrategyFactory {
       return SubscriptionChangeKind.NEW;
     }
 
+    const activePriceCents = resolvePlanPriceCentsForGateway(
+      ctx.activePlan ?? { priceCents: 0, priceUsdCents: 0 },
+      ctx.gateway,
+    );
+    const newPriceCents = resolvePlanPriceCentsForGateway(ctx.newPlan, ctx.gateway);
+
     const priceComparison = compareMoney(
-      ctx.activePlan?.priceCents ?? 0,
-      ctx.newPlan?.priceCents ?? 0,
+      activePriceCents,
+      newPriceCents,
       PLAN_PRICE_SCALE,
     );
 

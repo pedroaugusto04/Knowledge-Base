@@ -38,7 +38,11 @@ export class HandleStripeWebhookUseCase {
     const dedupKey = gatewayEventId || crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex');
 
     const dataObject = body?.data?.object;
-    const gatewayPaymentId = dataObject?.id && eventType.startsWith('invoice.') ? String(dataObject.id) : null;
+    const gatewayPaymentId = dataObject?.id && (
+      eventType.startsWith('invoice.') || eventType.startsWith('payment_intent.')
+    )
+      ? String(dataObject.id)
+      : null;
     const gatewaySubscriptionId = dataObject?.subscription ? String(dataObject.subscription) : null;
 
     // Save event to database once for idempotency

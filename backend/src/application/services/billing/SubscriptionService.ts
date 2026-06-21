@@ -28,6 +28,7 @@ import {
 } from '../../../domain/enums/billing.enums.js';
 import { FREE_PLAN_ID, SubscriptionPlan } from '../../../domain/enums/plans.enums.js';
 import { formatGatewayDueDate, getNextDueDate } from '../../../domain/utils/subscription.utils.js';
+import { resolvePlanValueForCycle } from '../../../domain/utils/plan-pricing.utils.js';
 import { PAYMENT_GATEWAY, COUNTRY_CODE } from '../../../domain/constants/billing.constants.js';
 import { BillingIntentService } from './BillingIntentService.js';
 import { SubscriptionUpgradeService } from './SubscriptionUpgradeService.js';
@@ -168,6 +169,14 @@ export class SubscriptionService {
       }
     }
 
+    if (!isBrazil && type === BillingType.CREDIT_CARD) {
+      const customerRow = await db.select().from(billingCustomers).where(eq(billingCustomers.userId, userId)).limit(1).then(r => r[0] || null);
+      const hasCreditCardOnFile = Boolean(customerRow?.hasCreditCardOnFile);
+      if (!hasCreditCardOnFile && !normalizedCreditCardToken) {
+        throw new BadRequestException('Credit card details are required for international subscriptions.');
+      }
+    }
+
     // Create gatewayCustomerId if necessary
     let gatewayCustomerId = currentSub?.gatewayCustomerId || '';
     if (!gatewayCustomerId) {
@@ -196,7 +205,7 @@ export class SubscriptionService {
       isActive: activePlanRow.isActive,
     } : undefined;
 
-    const newSubscriptionValue = this.resolvePlanValueForCycle(
+    const newSubscriptionValue = resolvePlanValueForCycle(
       {
         priceCents: targetPlan.priceCents,
         priceUsdCents: targetPlan.priceUsdCents,
@@ -397,7 +406,7 @@ export class SubscriptionService {
     const paymentGateway = sub.gatewayName === PAYMENT_GATEWAY.STRIPE ? this.stripePaymentGateway : this.asaasPaymentGateway;
     const billingCycle = (sub.billingCycle as string) === 'yearly' ? BillingCycle.YEARLY : BillingCycle.MONTHLY;
     const gatewayEnum = sub.gatewayName === PAYMENT_GATEWAY.STRIPE ? GatewayNameEnum.STRIPE : GatewayNameEnum.ASAAS;
-    const targetRecurringValue = this.resolvePlanValueForCycle(plan, billingCycle, gatewayEnum);
+    const targetRecurringValue = resolvePlanValueForCycle(plan, billingCycle, gatewayEnum);
 
     // Sync subscription value in gateway for next cycles
     if (sub.gatewaySubscriptionId) {
@@ -622,7 +631,7 @@ export class SubscriptionService {
   }
 
   async createNewSubscriptionPayment(ctx: SubscriptionContext): Promise<SubscriptionChangeResult> {
-    const price = this.resolvePlanValueForCycle(ctx.newPlan, ctx.newBillingCycle, ctx.gateway);
+    const price = resolvePlanValueForCycle(ctx.newPlan, ctx.newBillingCycle, ctx.gateway);
     await this.createOneShotPayment({
       ctx,
       intentType: 'new',
@@ -772,18 +781,5 @@ export class SubscriptionService {
       pixQrCodeUrl: payment.pixQrCodeUrl || null,
       description: payment.description || paymentDescription,
     });
-  }
-
-  private resolvePlanValueForCycle(
-    plan: { priceCents: number; priceUsdCents: number },
-    cycle: BillingCycle,
-    gateway: GatewayNameEnum,
-  ): number {
-    const isBrazil = gateway === GatewayNameEnum.ASAAS;
-    const priceCents = isBrazil ? plan.priceCents : plan.priceUsdCents;
-    if (cycle === BillingCycle.YEARLY) {
-      return (priceCents * 12 * 0.8) / 100;
-    }
-    return priceCents / 100;
   }
 }

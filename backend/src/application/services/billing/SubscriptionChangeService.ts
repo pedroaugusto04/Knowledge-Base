@@ -8,6 +8,8 @@ import {
 } from '../../../infrastructure/persistence/schema/index.js';
 import { SubscriptionChangeStatus, SubscriptionChangeType, SubscriptionStatus, BillingCycle, BillingType, PaymentStatus } from '../../../domain/enums/billing.enums.js';
 import { SubscriptionPlan } from '../../../domain/enums/plans.enums.js';
+import { PAYMENT_GATEWAY } from '../../../domain/constants/billing.constants.js';
+import { resolvePlanValueForCycle } from '../../../domain/utils/plan-pricing.utils.js';
 import { BillingTypeEnum, GatewayNameEnum } from '../../../infrastructure/billing/gateways/IPaymentGateway.js';
 import { toGatewayBillingType } from '../../../infrastructure/billing/helpers/billingTypeMapper.js';
 import { AsaasPaymentGateway } from '../../../infrastructure/billing/gateways/asaas/AsaasPaymentGateway.js';
@@ -153,7 +155,10 @@ export class SubscriptionChangeService {
     // Update subscription in gateway
     const gateway = changeRequest.fromGateway === 'stripe' ? this.stripePaymentGateway : this.asaasPaymentGateway;
     const billingCycle = (changeRequest.toBillingCycle as string) === 'yearly' ? BillingCycle.YEARLY : BillingCycle.MONTHLY;
-    const targetRecurringValue = this.resolvePlanValueForCycle(plan, billingCycle);
+    const gatewayEnum = changeRequest.fromGateway === PAYMENT_GATEWAY.STRIPE
+      ? GatewayNameEnum.STRIPE
+      : GatewayNameEnum.ASAAS;
+    const targetRecurringValue = resolvePlanValueForCycle(plan, billingCycle, gatewayEnum);
     
     if (!sub.gatewaySubscriptionId) {
       this.logger.warn(`Subscription ${sub.userId} does not have gatewaySubscriptionId, skipping gateway update`);
@@ -229,14 +234,6 @@ export class SubscriptionChangeService {
       eq(subscriptionChangeRequests.userId, userId)
     )).returning();
     return result.length;
-  }
-
-  private resolvePlanValueForCycle(plan: { priceCents: number; priceUsdCents: number }, cycle: BillingCycle): number {
-    if (cycle === BillingCycle.YEARLY) {
-      const annualPrice = (plan.priceCents * 12 * 0.8) / 100;
-      return annualPrice;
-    }
-    return plan.priceCents / 100;
   }
 
   /**

@@ -4,7 +4,7 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Injec
 import type { Request, Response } from 'express';
 
 import type { ApiErrorDetails, ApiErrorResponse } from '../contracts/http-error.js';
-import { resolveHttpErrorCode, httpErrorCatalog } from './http-error-catalog.js';
+import { resolveHttpErrorCode, httpErrorCatalog, isKnownHttpErrorCode, type HttpErrorCode } from './http-error-catalog.js';
 import { AppLogger } from './logger.js';
 import { getRequestMetadata } from './request-metadata.js';
 import { getRequestContext, updateRequestContext } from './request-context.js';
@@ -46,6 +46,22 @@ function extractHttpExceptionPayload(error: HttpException): { code?: string; sta
   return { code, statusCode, details };
 }
 
+function resolveClientSafeMessage(
+  payload: { code?: string; statusCode: number },
+  resolvedCode: HttpErrorCode,
+): string {
+  const catalogEntry = httpErrorCatalog[resolvedCode];
+  if (
+    payload.code &&
+    !isKnownHttpErrorCode(payload.code) &&
+    payload.statusCode >= 400 &&
+    payload.statusCode < 500
+  ) {
+    return payload.code;
+  }
+  return catalogEntry.safeMessage;
+}
+
 export function normalizeException(error: unknown): { code: string; statusCode: number; details: ApiErrorDetails; safeMessage: string; logLevel: HttpErrorLogLevel } {
   if (error instanceof HttpException) {
     const payload = extractHttpExceptionPayload(error);
@@ -54,7 +70,7 @@ export function normalizeException(error: unknown): { code: string; statusCode: 
       code,
       statusCode: payload.statusCode,
       details: payload.details,
-      safeMessage: httpErrorCatalog[code].safeMessage,
+      safeMessage: resolveClientSafeMessage(payload, code),
       logLevel: httpErrorCatalog[code].logLevel,
     };
   }

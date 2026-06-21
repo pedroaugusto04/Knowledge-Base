@@ -6,6 +6,7 @@ import { SubscriptionController } from '../../interfaces/http/controllers/subscr
 import { QuotaService } from '../../application/services/quota.service.js';
 import {
   GetPlansUseCase,
+  GetStripeConfigUseCase,
   GetSubscriptionStatusUseCase,
   UpdateSubscriptionUseCase,
   CancelPaymentUseCase,
@@ -24,6 +25,7 @@ import {
   providers: [
     QuotaService,
     GetPlansUseCase,
+    GetStripeConfigUseCase,
     GetSubscriptionStatusUseCase,
     UpdateSubscriptionUseCase,
     CancelPaymentUseCase,

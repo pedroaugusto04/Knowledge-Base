@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { eq, and } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { PostgresDatabase } from '../../../infrastructure/persistence/database.js';
@@ -74,7 +74,7 @@ export class BillingIntentService {
         .then(r => r[0] || null);
 
       if (pendingOneShotIntent && (pendingOneShotIntent.type === 'new' || pendingOneShotIntent.type === 'upgrade')) {
-        throw new Error('There is already a pending charge awaiting payment');
+        throw new BadRequestException('There is already a pending charge awaiting payment');
       }
     }
     

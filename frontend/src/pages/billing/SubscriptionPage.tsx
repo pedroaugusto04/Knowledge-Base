@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchPlans,
+  fetchStripeConfig,
   fetchSubscriptionStatus,
   fetchDetectedCountry,
   updateSubscription,
@@ -12,6 +13,7 @@ import {
   type PendingPaymentDTO,
   type ScheduledChangeDTO
 } from '../../shared/api/billing';
+import { StripeCardCapture, type StripeCardCaptureHandle } from '../../features/billing/StripeCardCapture';
 import { PageHead, Panel, InlineMessage } from '../../shared/ui/primitives';
 import { formatCpfCnpj, isValidCpfCnpjFormat } from '../../shared/utils/cpf-cnpj';
 import { detectUserCountry } from '../../shared/utils/location';
@@ -20,6 +22,7 @@ import {
   canChooseManualMonthlyPayment,
   isManualBillingType,
   isOpenSubscriptionStatus,
+  mergePendingPayment,
   pendingChargeStatus,
   resolveEffectiveMonthlyBillingType,
   toUtcDateOnlyTimestamp,
@@ -32,6 +35,12 @@ export function SubscriptionPage() {
   const { data: countryData } = useQuery({
     queryKey: ['billing', 'detectedCountry'],
     queryFn: fetchDetectedCountry,
+    staleTime: Infinity,
+  });
+
+  const { data: stripeConfig } = useQuery({
+    queryKey: ['billing', 'stripeConfig'],
+    queryFn: fetchStripeConfig,
     staleTime: Infinity,
   });
 
@@ -60,6 +69,8 @@ export function SubscriptionPage() {
 
   const [copied, setCopied] = useState(false);
   const hadPendingPaymentRef = useRef(false);
+  const stripeCardRef = useRef<StripeCardCaptureHandle | null>(null);
+  const [stripeCardError, setStripeCardError] = useState('');
 
   const statusQuery = useQuery({
     queryKey: ['billing', 'status'],
@@ -95,27 +106,31 @@ export function SubscriptionPage() {
       const pendingPayment = data.summary.latestPendingPayment;
       if (pendingPayment) {
         hadPendingPaymentRef.current = true;
-        setActivePayment(pendingPayment);
+        setActivePayment((current) => mergePendingPayment(current, pendingPayment));
         return;
       }
-
-      setIsPaymentModalOpen(false);
-      setActivePayment(null);
 
       if (
         hadPendingPayment &&
         previousEntitledPlanId &&
         data.summary.entitledPlanId !== previousEntitledPlanId
       ) {
+        setIsPaymentModalOpen(false);
+        setActivePayment(null);
         notifySuccess('Subscription activated successfully');
+        hadPendingPaymentRef.current = false;
       }
-      hadPendingPaymentRef.current = false;
     });
 
     return () => {
       unsubscribe();
     };
   }, [shouldSubscribeSse, queryClient, statusQuery.data?.summary?.entitledPlanId]);
+
+  useEffect(() => {
+    if (!isPaymentModalOpen || !latestPendingPayment) return;
+    setActivePayment((current) => mergePendingPayment(current, latestPendingPayment));
+  }, [isPaymentModalOpen, latestPendingPayment]);
 
   // Queries
   const plansQuery = useQuery({
@@ -141,7 +156,7 @@ export function SubscriptionPage() {
       const pendingPayment = data.summary.latestPendingPayment;
       if (pendingPayment) {
         hadPendingPaymentRef.current = true;
-        setActivePayment(pendingPayment);
+        setActivePayment((current) => mergePendingPayment(current, pendingPayment));
         setIsPaymentModalOpen(true);
         return;
       }
@@ -192,6 +207,13 @@ export function SubscriptionPage() {
     hasCreditCardOnFile,
     choiceType,
   );
+  const requiresStripeCardCapture = Boolean(
+    !isBrazil &&
+    modalEffectiveBillingType === BILLING_TYPE.CREDIT_CARD &&
+    !hasCreditCardOnFile &&
+    !selectedPlan?.isDefault,
+  );
+  const stripePublishableKey = stripeConfig?.publishableKey || null;
   const hasOpenSubscription = Boolean(
     summary?.latestSub && isOpenSubscriptionStatus(summary.latestSub.status),
   );
@@ -229,11 +251,12 @@ export function SubscriptionPage() {
     setChoiceType(BILLING_TYPE.CREDIT_CARD);
     setCpfCnpj(savedCpfCnpj);
     setCpfCnpjError('');
+    setStripeCardError('');
     updateMutation.reset();
     setIsChoiceModalOpen(true);
   };
 
-  const handleConfirmChoice = () => {
+  const handleConfirmChoice = async () => {
     if (!selectedPlan) return;
 
     // CPF/CNPJ is required for PIX and Boleto
@@ -254,12 +277,28 @@ export function SubscriptionPage() {
       return;
     }
 
+    let creditCardToken: string | undefined;
+    if (requiresStripeCardCapture) {
+      if (!stripePublishableKey) {
+        setStripeCardError('Stripe is not configured for international payments.');
+        return;
+      }
+
+      try {
+        creditCardToken = await stripeCardRef.current?.createPaymentMethodId();
+      } catch (error) {
+        setStripeCardError(error instanceof Error ? error.message : 'Unable to validate card details.');
+        return;
+      }
+    }
+
     const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
     updateMutation.mutate({
       planId: selectedPlan.id,
       billingCycle: choiceCycle,
       billingType: effectiveBillingType,
       cpfCnpj: isBrazil ? (cleanCpfCnpj || undefined) : undefined,
+      creditCardToken,
     });
   };
 
@@ -702,6 +741,24 @@ export function SubscriptionPage() {
                     Required for invoice issuance
                   </span>
                 </div>
+              )}
+
+              {requiresStripeCardCapture && stripePublishableKey && (
+                <StripeCardCapture
+                  ref={stripeCardRef}
+                  publishableKey={stripePublishableKey}
+                  disabled={updateMutation.isPending}
+                />
+              )}
+
+              {requiresStripeCardCapture && !stripePublishableKey && (
+                <InlineMessage tone="error">
+                  Stripe is not configured for international card payments.
+                </InlineMessage>
+              )}
+
+              {stripeCardError && (
+                <InlineMessage tone="error">{stripeCardError}</InlineMessage>
               )}
             </div>
 

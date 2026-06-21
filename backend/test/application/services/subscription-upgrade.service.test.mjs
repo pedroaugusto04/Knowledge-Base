@@ -68,6 +68,7 @@ test('SubscriptionUpgradeService prorates when upgrading between paid plans', as
     newPlanId: 'enterprise-plan-uuid',
     billingCycle: BillingCycle.MONTHLY,
     currentPeriodEnd: periodEnd,
+    gateway: GatewayNameEnum.ASAAS,
   });
 
   assert.equal(value, 40.0);

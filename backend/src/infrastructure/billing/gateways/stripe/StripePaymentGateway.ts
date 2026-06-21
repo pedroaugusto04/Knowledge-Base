@@ -52,7 +52,7 @@ function serializeToForm(obj: any, prefix?: string): string {
 
 @Injectable()
 export class StripePaymentGateway implements IPaymentGateway {
-  readonly gateway = GatewayNameEnum.STRIPE as any; // Cast in case GatewayNameEnum needs to be updated
+  readonly gateway = GatewayNameEnum.STRIPE as any;
   private readonly logger = new Logger(StripePaymentGateway.name);
 
   private ensureConfigured() {
@@ -97,6 +97,22 @@ export class StripePaymentGateway implements IPaymentGateway {
     }
   }
 
+  private async attachPaymentMethod(customerId: string, paymentMethodId: string): Promise<void> {
+    await this.request<any>(`/payment_methods/${paymentMethodId}/attach`, {
+      method: 'POST',
+      body: serializeToForm({ customer: customerId }),
+    });
+
+    await this.request<any>(`/customers/${customerId}`, {
+      method: 'POST',
+      body: serializeToForm({
+        invoice_settings: {
+          default_payment_method: paymentMethodId,
+        },
+      }),
+    });
+  }
+
   async createCustomer(input: CreateCustomerInput): Promise<GatewayCustomer> {
     const body = {
       name: input.name,
@@ -119,20 +135,16 @@ export class StripePaymentGateway implements IPaymentGateway {
     return { id: data.id };
   }
 
-  async findCustomerByCpfCnpj(cpfCnpj: string): Promise<GatewayCustomer | null> {
-    // Stripe does not naturally search by CPF/CNPJ, but we can search customers list or metadata.
-    // However, since Stripe is for non-BR, they don't have CPF/CNPJ. We can return null.
+  async findCustomerByCpfCnpj(_cpfCnpj: string): Promise<GatewayCustomer | null> {
     return null;
   }
 
   private async getOrCreateProductAndPrice(name: string, value: number, cycle: string): Promise<string> {
-    // 1. Check if product exists or create it
     const productId = `prod_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-    let product: any;
     try {
-      product = await this.request<any>(`/products/${productId}`);
+      await this.request<any>(`/products/${productId}`);
     } catch {
-      product = await this.request<any>('/products', {
+      await this.request<any>('/products', {
         method: 'POST',
         body: serializeToForm({
           id: productId,
@@ -141,12 +153,11 @@ export class StripePaymentGateway implements IPaymentGateway {
       });
     }
 
-    // 2. Find or create a price for this value, currency (usd) and interval
     const centsValue = Math.round(value * 100);
     const pricesData = await this.request<{ data: any[] }>(
       `/prices?product=${productId}&active=true`
     );
-    
+
     const existingPrice = pricesData.data.find(
       (p: any) =>
         p.unit_amount === centsValue &&
@@ -174,7 +185,6 @@ export class StripePaymentGateway implements IPaymentGateway {
   }
 
   async createSubscription(input: CreateSubscriptionInput): Promise<GatewaySubscription> {
-    // Get product name from description or default
     const planName = input.description?.split(' ')[1] || 'Pro';
     const priceId = await this.getOrCreateProductAndPrice(
       planName,
@@ -182,33 +192,21 @@ export class StripePaymentGateway implements IPaymentGateway {
       input.cycle
     );
 
-    // Create subscription
     const body: any = {
       customer: input.customerId,
       items: [{ price: priceId }],
       metadata: {
         externalReference: input.externalReference || '',
       },
+      payment_settings: {
+        save_default_payment_method: 'on_subscription',
+      },
     };
 
     if (input.creditCardToken) {
-      // Attach payment method if provided
-      // In Stripe, creditCardToken represents the PaymentMethod ID (e.g. pm_...)
       try {
-        await this.request<any>(`/payment_methods/${input.creditCardToken}/attach`, {
-          method: 'POST',
-          body: serializeToForm({ customer: input.customerId }),
-        });
-        
-        // Set as default payment method on customer
-        await this.request<any>(`/customers/${input.customerId}`, {
-          method: 'POST',
-          body: serializeToForm({
-            invoice_settings: {
-              default_payment_method: input.creditCardToken,
-            },
-          }),
-        });
+        await this.attachPaymentMethod(input.customerId, input.creditCardToken);
+        body.default_payment_method = input.creditCardToken;
       } catch (e: any) {
         this.logger.warn(`Failed to attach payment method to customer: ${e.message}`);
       }
@@ -241,10 +239,8 @@ export class StripePaymentGateway implements IPaymentGateway {
       throw new Error(`Stripe subscription ${gatewaySubscriptionId} not found`);
     }
 
-    // If updating plan value or cycle, we need to find or create the new price
     let priceId: string | undefined;
     if (input.value !== undefined) {
-      // Get current subscription to fetch product name
       const stripeSub = await this.request<any>(`/subscriptions/${gatewaySubscriptionId}`);
       const productId = stripeSub?.items?.data?.[0]?.price?.product;
       let planName = 'Pro';
@@ -267,7 +263,9 @@ export class StripePaymentGateway implements IPaymentGateway {
     const stripeSub = await this.request<any>(`/subscriptions/${gatewaySubscriptionId}`);
     const itemId = stripeSub?.items?.data?.[0]?.id;
 
-    const body: any = {};
+    const body: any = {
+      proration_behavior: 'create_prorations',
+    };
     if (priceId && itemId) {
       body.items = [{
         id: itemId,
@@ -280,10 +278,6 @@ export class StripePaymentGateway implements IPaymentGateway {
         externalReference: input.externalReference,
       };
     }
-
-    // Stripe automatically prorates and updates pending invoices when updating subscription
-    // The updatePendingPayments flag is handled automatically by Stripe's default behavior
-    // If proration behavior needs to be controlled, it can be done via proration_behavior parameter
 
     const data = await this.request<any>(`/subscriptions/${gatewaySubscriptionId}`, {
       method: 'POST',
@@ -306,10 +300,21 @@ export class StripePaymentGateway implements IPaymentGateway {
   }
 
   async cancelPayment(gatewayPaymentId: string): Promise<void> {
-    // In Stripe, this usually cancels a PaymentIntent
-    await this.request<void>(`/payment_intents/${gatewayPaymentId}/cancel`, {
-      method: 'POST',
-    });
+    if (gatewayPaymentId.startsWith('in_')) {
+      await this.request<void>(`/invoices/${gatewayPaymentId}/void`, {
+        method: 'POST',
+      });
+      return;
+    }
+
+    if (gatewayPaymentId.startsWith('pi_')) {
+      await this.request<void>(`/payment_intents/${gatewayPaymentId}/cancel`, {
+        method: 'POST',
+      });
+      return;
+    }
+
+    throw new Error(`Unsupported Stripe payment id: ${gatewayPaymentId}`);
   }
 
   async createPayment(input: CreatePaymentInput): Promise<GatewayPayment> {
@@ -326,9 +331,15 @@ export class StripePaymentGateway implements IPaymentGateway {
     };
 
     if (input.creditCardToken) {
+      await this.attachPaymentMethod(input.customerId, input.creditCardToken);
       body.payment_method = input.creditCardToken;
       body.confirm = true;
-      body.off_session = true;
+      body.off_session = false;
+      body.setup_future_usage = 'off_session';
+    } else {
+      body.automatic_payment_methods = {
+        enabled: true,
+      };
     }
 
     const data = await this.request<any>('/payment_intents', {
@@ -336,20 +347,14 @@ export class StripePaymentGateway implements IPaymentGateway {
       body: serializeToForm(body),
     });
 
-    return {
-      id: data.id,
-      status: data.status === 'succeeded' ? 'confirmed' : 'pending',
-      value: data.amount / 100,
-      dueDate: input.dueDate ? new Date(input.dueDate) : new Date(),
-      billingType: BillingTypeEnum.CREDIT_CARD,
-      paidAt: data.status === 'succeeded' ? new Date() : undefined,
-      description: input.description,
-      externalReference: input.externalReference,
-      subscription: input.subscriptionId,
-    };
+    return this.mapPaymentIntent(data, input);
   }
 
   async updatePayment(gatewayPaymentId: string, input: UpdatePaymentInput): Promise<GatewayPayment> {
+    if (gatewayPaymentId.startsWith('in_')) {
+      return this.getInvoiceAsPayment(gatewayPaymentId) as Promise<GatewayPayment>;
+    }
+
     const centsValue = input.value !== undefined ? Math.round(input.value * 100) : undefined;
     const body: any = {};
     if (centsValue !== undefined) {
@@ -372,37 +377,15 @@ export class StripePaymentGateway implements IPaymentGateway {
       body: serializeToForm(body),
     });
 
-    return {
-      id: data.id,
-      status: data.status === 'succeeded' ? 'confirmed' : 'pending',
-      value: data.amount / 100,
-      dueDate: input.dueDate ? new Date(input.dueDate) : new Date(),
-      billingType: BillingTypeEnum.CREDIT_CARD,
-      description: input.description,
-      externalReference: input.externalReference,
-    };
+    return this.mapPaymentIntent(data, input);
   }
 
   async getSubscriptionPayments(gatewaySubscriptionId: string): Promise<GatewayPayment[]> {
-    // List invoices for this subscription
     const invoicesData = await this.request<{ data: any[] }>(
       `/invoices?subscription=${gatewaySubscriptionId}`
     );
 
-    return invoicesData.data.map((inv: any) => ({
-      id: inv.id,
-      status: inv.paid ? 'confirmed' : 'pending',
-      value: inv.amount_due / 100,
-      dueDate: inv.due_date ? new Date(inv.due_date * 1000) : new Date(),
-      billingType: BillingTypeEnum.CREDIT_CARD,
-      paidAt: inv.status_transitions?.paid_at
-        ? new Date(inv.status_transitions.paid_at * 1000)
-        : undefined,
-      invoiceUrl: inv.hosted_invoice_url || undefined,
-      subscription: inv.subscription || undefined,
-      description: inv.description || inv.metadata?.description || undefined,
-      externalReference: inv.metadata?.externalReference || undefined,
-    }));
+    return invoicesData.data.map((inv: any) => this.mapInvoice(inv));
   }
 
   async getSubscriptionByGatewayId(gatewaySubscriptionId: string): Promise<GatewaySubscription | null> {
@@ -424,35 +407,14 @@ export class StripePaymentGateway implements IPaymentGateway {
   parseWebhook(body: Record<string, unknown>): GatewayWebhookEvent {
     const event = String(body.type || '');
     const dataObject = (body.data as any)?.object || {};
-    
+
     let payment: GatewayPayment | undefined;
     let subscription: GatewaySubscription | undefined;
 
     if (event.startsWith('invoice.')) {
-      payment = {
-        id: dataObject.id,
-        status: dataObject.paid ? 'confirmed' : 'pending',
-        value: (dataObject.amount_due || 0) / 100,
-        dueDate: dataObject.due_date ? new Date(dataObject.due_date * 1000) : new Date(),
-        paidAt: dataObject.status_transitions?.paid_at ? new Date(dataObject.status_transitions.paid_at * 1000) : undefined,
-        subscription: dataObject.subscription || undefined,
-        description: dataObject.description || dataObject.metadata?.description || undefined,
-        externalReference: dataObject.metadata?.externalReference || undefined,
-        billingType: BillingTypeEnum.CREDIT_CARD,
-        creditCardToken: dataObject.default_payment_method || undefined,
-      };
+      payment = this.mapInvoice(dataObject);
     } else if (event.startsWith('payment_intent.')) {
-      payment = {
-        id: dataObject.id,
-        status: dataObject.status === 'succeeded' ? 'confirmed' : dataObject.status === 'processing' ? 'pending' : dataObject.status,
-        value: (dataObject.amount || 0) / 100,
-        dueDate: new Date(),
-        paidAt: dataObject.status === 'succeeded' ? new Date() : undefined,
-        description: dataObject.description || dataObject.metadata?.description || undefined,
-        externalReference: dataObject.metadata?.externalReference || undefined,
-        billingType: BillingTypeEnum.CREDIT_CARD,
-        creditCardToken: dataObject.payment_method || undefined,
-      };
+      payment = this.mapPaymentIntent(dataObject);
     } else if (event.startsWith('customer.subscription.')) {
       subscription = {
         id: dataObject.id,
@@ -472,21 +434,67 @@ export class StripePaymentGateway implements IPaymentGateway {
 
   async getPaymentByGatewayId(gatewayPaymentId: string): Promise<GatewayPayment | null> {
     try {
-      const data = await this.request<any>(`/payment_intents/${gatewayPaymentId}`);
-      if (!data?.id) return null;
-      return {
-        id: data.id,
-        status: data.status === 'succeeded' ? 'confirmed' : 'pending',
-        value: data.amount / 100,
-        dueDate: new Date(),
-        billingType: BillingTypeEnum.CREDIT_CARD,
-        description: data.metadata?.description || data.description || undefined,
-        externalReference: data.metadata?.externalReference || undefined,
-        subscription: data.metadata?.subscription || undefined,
-        creditCardToken: data.payment_method || undefined,
-      };
+      if (gatewayPaymentId.startsWith('in_')) {
+        return this.getInvoiceAsPayment(gatewayPaymentId);
+      }
+      if (gatewayPaymentId.startsWith('pi_')) {
+        return this.getPaymentIntentAsPayment(gatewayPaymentId);
+      }
+      return null;
     } catch {
       return null;
     }
+  }
+
+  private async getInvoiceAsPayment(gatewayPaymentId: string): Promise<GatewayPayment | null> {
+    const data = await this.request<any>(`/invoices/${gatewayPaymentId}`);
+    if (!data?.id) return null;
+    return this.mapInvoice(data);
+  }
+
+  private async getPaymentIntentAsPayment(gatewayPaymentId: string): Promise<GatewayPayment | null> {
+    const data = await this.request<any>(`/payment_intents/${gatewayPaymentId}`);
+    if (!data?.id) return null;
+    return this.mapPaymentIntent(data);
+  }
+
+  private mapInvoice(data: any): GatewayPayment {
+    const paid = data.status === 'paid' || data.paid === true;
+    const amount = paid ? (data.amount_paid ?? data.total ?? 0) : (data.amount_due ?? data.total ?? 0);
+
+    return {
+      id: data.id,
+      status: paid ? 'confirmed' : data.status || 'pending',
+      value: amount / 100,
+      dueDate: data.due_date ? new Date(data.due_date * 1000) : new Date(),
+      billingType: BillingTypeEnum.CREDIT_CARD,
+      paidAt: data.status_transitions?.paid_at
+        ? new Date(data.status_transitions.paid_at * 1000)
+        : undefined,
+      invoiceUrl: data.hosted_invoice_url || undefined,
+      subscription: data.subscription || undefined,
+      description: data.description || data.metadata?.description || undefined,
+      externalReference: data.metadata?.externalReference || undefined,
+      creditCardToken: data.default_payment_method || data.payment_intent?.payment_method || undefined,
+    };
+  }
+
+  private mapPaymentIntent(data: any, input?: Partial<CreatePaymentInput | UpdatePaymentInput>): GatewayPayment {
+    const succeeded = data.status === 'succeeded';
+
+    return {
+      id: data.id,
+      status: succeeded ? 'confirmed' : data.status || 'pending',
+      value: (data.amount ?? 0) / 100,
+      dueDate: input?.dueDate ? new Date(input.dueDate) : new Date(),
+      billingType: BillingTypeEnum.CREDIT_CARD,
+      paidAt: succeeded ? new Date() : undefined,
+      description: data.metadata?.description || data.description || input?.description || undefined,
+      externalReference: data.metadata?.externalReference || input?.externalReference || undefined,
+      subscription: data.metadata?.subscription || undefined,
+      creditCardToken: typeof data.payment_method === 'string'
+        ? data.payment_method
+        : data.payment_method?.id || undefined,
+    };
   }
 }

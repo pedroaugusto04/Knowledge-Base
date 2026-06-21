@@ -195,6 +195,30 @@ test('global exception filter preserves validation details', () => {
   });
 });
 
+test('global exception filter exposes custom 4xx HttpException messages', () => {
+  const logger = loggerMock();
+  const filter = new GlobalExceptionFilter(logger);
+  const request = requestMock({ headers: { 'x-request-id': 'req-billing' } });
+  const response = responseMock();
+
+  runWithRequestContext({
+    requestId: 'req-billing',
+    startTime: Date.now() - 10,
+    method: 'POST',
+    path: '/api/subscription',
+    ip: '127.0.0.1',
+  }, () => {
+    filter.catch(
+      new HttpException('There is already a pending charge awaiting payment', HttpStatus.BAD_REQUEST),
+      hostMock(request, response),
+    );
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body.error.code, 'bad_request');
+  assert.equal(response.body.error.message, 'There is already a pending charge awaiting payment');
+});
+
 test('global exception filter hides unexpected errors behind internal_server_error', () => {
   const logger = loggerMock();
   const filter = new GlobalExceptionFilter(logger);

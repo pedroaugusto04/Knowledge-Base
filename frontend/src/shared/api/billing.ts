@@ -101,6 +101,11 @@ export interface SubscriptionInput {
   creditCardToken?: string;
 }
 
+export interface StripeConfigDTO {
+  publishableKey: string | null;
+  configured: boolean;
+}
+
 export function fetchPlans(): Promise<PlanDTO[]> {
   return request<PlanDTO[]>('/api/subscription/plans', {
     headers: { 'x-user-country': detectUserCountry() },
@@ -109,6 +114,10 @@ export function fetchPlans(): Promise<PlanDTO[]> {
 
 export function fetchDetectedCountry(): Promise<{ country: string }> {
   return request<{ country: string }>('/api/subscription/country');
+}
+
+export function fetchStripeConfig(): Promise<StripeConfigDTO> {
+  return request<StripeConfigDTO>('/api/subscription/stripe/config');
 }
 
 export function fetchSubscriptionStatus(): Promise<QuotaAndBillingStatusDTO> {

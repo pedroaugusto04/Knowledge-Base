@@ -70,6 +70,27 @@ const mockStatus = {
   },
 };
 
+function createBillingFetchHandler(handlers: Record<string, () => Response | Promise<Response>>) {
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+
+    if (url.includes('/api/subscription/country')) {
+      return Response.json({ country: 'BR' });
+    }
+    if (url.includes('/api/subscription/stripe/config')) {
+      return Response.json({ publishableKey: null, configured: false });
+    }
+
+    for (const [match, handler] of Object.entries(handlers)) {
+      if (url.includes(match)) {
+        return handler();
+      }
+    }
+
+    return new Response(null, { status: 404 });
+  };
+}
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -85,16 +106,10 @@ describe('SubscriptionPage', () => {
   });
 
   it('renders available plans and highlights the current plan', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/api/subscription/plans')) {
-        return Response.json(mockPlans);
-      }
-      if (url.includes('/api/subscription/status')) {
-        return Response.json(mockStatus);
-      }
-      return new Response(null, { status: 404 });
-    }));
+    vi.stubGlobal('fetch', vi.fn(createBillingFetchHandler({
+      '/api/subscription/plans': () => Response.json(mockPlans),
+      '/api/subscription/status': () => Response.json(mockStatus),
+    })));
 
     renderWithAppProviders(<SubscriptionPage />);
 
@@ -175,16 +190,10 @@ describe('SubscriptionPage', () => {
       },
     };
 
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/api/subscription/plans')) {
-        return Response.json(mockPlans);
-      }
-      if (url.includes('/api/subscription/status')) {
-        return Response.json(statusWithWarnings);
-      }
-      return new Response(null, { status: 404 });
-    }));
+    vi.stubGlobal('fetch', vi.fn(createBillingFetchHandler({
+      '/api/subscription/plans': () => Response.json(mockPlans),
+      '/api/subscription/status': () => Response.json(statusWithWarnings),
+    })));
 
     renderWithAppProviders(<SubscriptionPage />);
 
@@ -219,16 +228,10 @@ describe('SubscriptionPage', () => {
       },
     };
 
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/api/subscription/plans')) {
-        return Response.json(mockPlans);
-      }
-      if (url.includes('/api/subscription/status')) {
-        return Response.json(statusWithRenewal);
-      }
-      return new Response(null, { status: 404 });
-    }));
+    vi.stubGlobal('fetch', vi.fn(createBillingFetchHandler({
+      '/api/subscription/plans': () => Response.json(mockPlans),
+      '/api/subscription/status': () => Response.json(statusWithRenewal),
+    })));
 
     renderWithAppProviders(<SubscriptionPage />);
 
@@ -238,16 +241,10 @@ describe('SubscriptionPage', () => {
   });
 
   it('opens cycle choice modal when clicking upgrade plan', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/api/subscription/plans')) {
-        return Response.json(mockPlans);
-      }
-      if (url.includes('/api/subscription/status')) {
-        return Response.json(mockStatus);
-      }
-      return new Response(null, { status: 404 });
-    }));
+    vi.stubGlobal('fetch', vi.fn(createBillingFetchHandler({
+      '/api/subscription/plans': () => Response.json(mockPlans),
+      '/api/subscription/status': () => Response.json(mockStatus),
+    })));
 
     renderWithAppProviders(<SubscriptionPage />);
 
@@ -260,6 +257,13 @@ describe('SubscriptionPage', () => {
   it('shows API error message in the modal if update request fails', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+
+      if (url.includes('/api/subscription/country')) {
+        return Response.json({ country: 'BR' });
+      }
+      if (url.includes('/api/subscription/stripe/config')) {
+        return Response.json({ publishableKey: null, configured: false });
+      }
       if (url.includes('/api/subscription/plans')) {
         return Response.json(mockPlans);
       }
@@ -270,7 +274,7 @@ describe('SubscriptionPage', () => {
         return new Response(JSON.stringify({
           statusCode: 400,
           error: 'Bad Request',
-          message: 'A subscription payment is already pending. Please settle or cancel the pending payment before making a new request.'
+          message: 'There is already a pending charge awaiting payment'
         }), {
           status: 400,
           headers: { 'content-type': 'application/json' }
@@ -290,6 +294,6 @@ describe('SubscriptionPage', () => {
     fireEvent.click(confirmBtn);
 
     // Assert error message appears in modal
-    expect(await screen.findByText('A subscription payment is already pending. Please settle or cancel the pending payment before making a new request.')).toBeInTheDocument();
+    expect(await screen.findByText('There is already a pending charge awaiting payment')).toBeInTheDocument();
   });
 });
