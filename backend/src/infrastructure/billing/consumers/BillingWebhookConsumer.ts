@@ -9,6 +9,7 @@ import {
 import { AsaasPaymentGateway } from '../gateways/asaas/AsaasPaymentGateway.js';
 import { StripePaymentGateway } from '../gateways/stripe/StripePaymentGateway.js';
 import { AsaasGatewayStatusMapper } from '../gateways/asaas/AsaasGatewayStatusMapper.js';
+import { StripeGatewayStatusMapper } from '../gateways/stripe/StripeGatewayStatusMapper.js';
 import { SubscriptionService, BillingIntentService, GATEWAY_NAMES } from '../../../application/services/billing-stubs.service.js';
 import { AppLogger } from '../../../observability/logger.js';
 import { BillingEventBus } from '../../../application/services/billing-event.bus.js';
@@ -65,7 +66,8 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly webhookEventRepository: BillingWebhookEventRepository,
     private readonly paymentGateway: AsaasPaymentGateway,
     private readonly stripePaymentGateway: StripePaymentGateway,
-    private readonly gatewayStatusMapper: AsaasGatewayStatusMapper,
+    private readonly asaasGatewayStatusMapper: AsaasGatewayStatusMapper,
+    private readonly stripeGatewayStatusMapper: StripeGatewayStatusMapper,
     private readonly subscriptionService: SubscriptionService,
     private readonly billingIntentService: BillingIntentService,
     private readonly billingEventBus: BillingEventBus,
@@ -279,14 +281,10 @@ export class BillingWebhookConsumer implements OnModuleInit, OnModuleDestroy {
     const gatewayPaymentId = String(payment.id);
 
     let payStatus: PaymentStatus | null = null;
-    if (gateway === GATEWAY_NAMES.STRIPE) {
-      const s = String(payment.status ?? '').toLowerCase();
-      if (['pending', 'received', 'confirmed', 'overdue', 'refunded', 'canceled', 'partially_refunded'].includes(s)) {
-        payStatus = s as PaymentStatus;
-      }
-    } else {
-      payStatus = this.gatewayStatusMapper.normalizePaymentStatus(payment.status, event.event);
-    }
+    const mapper = gateway === GATEWAY_NAMES.STRIPE 
+      ? this.stripeGatewayStatusMapper 
+      : this.asaasGatewayStatusMapper;
+    payStatus = mapper.normalizePaymentStatus(payment.status, event.event);
 
     if (!payStatus) {
       this.logger.warn('billing_webhook_consumer.ignored_unknown_status', {

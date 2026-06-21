@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { IGatewayStatusMapper } from '../IGatewayStatusMapper.js';
 import { PaymentStatus } from '../../../persistence/schema/index.js';
-
-export interface IGatewayStatusMapper {
-  normalizeSubscriptionStatus(raw?: string | null): string | null;
-  normalizePaymentStatus(rawStatus?: string | null, event?: string | null): PaymentStatus | null;
-}
 
 @Injectable()
 export class AsaasGatewayStatusMapper implements IGatewayStatusMapper {
