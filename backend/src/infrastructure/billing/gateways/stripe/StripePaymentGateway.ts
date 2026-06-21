@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import {
   CreateCustomerInput,
   CreatePaymentInput,
@@ -13,6 +13,26 @@ import {
   UpdatePaymentInput,
   BillingTypeEnum,
 } from '../IPaymentGateway.js';
+
+function stripeToAppError(err: any): HttpException {
+  if (err instanceof HttpException) return err;
+
+  const gatewayError = err || {};
+  const code = gatewayError.code;
+
+  if (code === 'ECONNABORTED') {
+    return new HttpException({ code: 'payment_gateway_timeout' }, HttpStatus.GATEWAY_TIMEOUT);
+  }
+
+  if (code === 'ENOTFOUND' || code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT') {
+    return new HttpException({ code: 'payment_gateway_unavailable' }, HttpStatus.BAD_GATEWAY);
+  }
+
+  const message = gatewayError.message || 'Stripe error';
+  const stripeErrorMessage = message.includes('Stripe error') ? message : `Stripe error: ${message}`;
+
+  return new HttpException({ code: 'stripe_payment_failed', details: { originalMessage: stripeErrorMessage } }, HttpStatus.BAD_REQUEST);
+}
 
 function serializeToForm(obj: any, prefix?: string): string {
   const str: string[] = [];
@@ -67,13 +87,13 @@ export class StripePaymentGateway implements IPaymentGateway {
       }
 
       if (!response.ok) {
-        throw new Error(data?.error?.message || `Stripe error: ${response.statusText}`);
+        throw stripeToAppError({ message: data?.error?.message || `Stripe error: ${response.statusText}` });
       }
 
       return data as T;
     } catch (err: any) {
       this.logger.error(`Stripe API error on ${path}: ${err.message}`);
-      throw err;
+      throw stripeToAppError(err);
     }
   }
 

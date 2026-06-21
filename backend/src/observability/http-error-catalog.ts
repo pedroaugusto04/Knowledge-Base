@@ -97,6 +97,16 @@ export const httpErrorCatalog = {
   credentials_encryption_key_must_be_32_bytes_base64: { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, safeMessage: 'Credential encryption is unavailable.', logLevel: HttpErrorLogLevel.Error },
   invalid_encrypted_config: { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, safeMessage: 'Stored credential is invalid.', logLevel: HttpErrorLogLevel.Error },
   KB_DATABASE_URL_not_configured: { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, safeMessage: 'Database is not configured.', logLevel: HttpErrorLogLevel.Error },
+  payment_gateway_error: { statusCode: HttpStatus.BAD_REQUEST, safeMessage: 'Payment gateway error. Please try again.', logLevel: HttpErrorLogLevel.Warn },
+  payment_gateway_timeout: { statusCode: HttpStatus.GATEWAY_TIMEOUT, safeMessage: 'Payment gateway timed out. Please try again.', logLevel: HttpErrorLogLevel.Warn },
+  payment_gateway_unavailable: { statusCode: HttpStatus.BAD_GATEWAY, safeMessage: 'Payment gateway unavailable. Please try again later.', logLevel: HttpErrorLogLevel.Error },
+  stripe_payment_failed: { statusCode: HttpStatus.BAD_REQUEST, safeMessage: 'Stripe payment failed. Please check your payment details.', logLevel: HttpErrorLogLevel.Warn },
+  asaas_payment_failed: { statusCode: HttpStatus.BAD_REQUEST, safeMessage: 'Payment failed. Please check your payment details.', logLevel: HttpErrorLogLevel.Warn },
+  subscription_not_found: { statusCode: HttpStatus.NOT_FOUND, safeMessage: 'Subscription not found.', logLevel: HttpErrorLogLevel.Warn },
+  payment_not_found: { statusCode: HttpStatus.NOT_FOUND, safeMessage: 'Payment not found.', logLevel: HttpErrorLogLevel.Warn },
+  plan_not_found: { statusCode: HttpStatus.NOT_FOUND, safeMessage: 'Plan not found.', logLevel: HttpErrorLogLevel.Warn },
+  gateway_subscription_not_found: { statusCode: HttpStatus.NOT_FOUND, safeMessage: 'Gateway subscription not found.', logLevel: HttpErrorLogLevel.Warn },
+  gateway_customer_not_found: { statusCode: HttpStatus.NOT_FOUND, safeMessage: 'Gateway customer not found.', logLevel: HttpErrorLogLevel.Warn },
 } as const satisfies Record<string, HttpErrorDefinition>;
 
 export type HttpErrorCode = keyof typeof httpErrorCatalog;

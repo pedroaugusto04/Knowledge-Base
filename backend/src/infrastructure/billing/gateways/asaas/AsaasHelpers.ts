@@ -1,4 +1,4 @@
-import { HttpException } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 export const ASAAS_SANDBOX_BASE_URL = 'https://api-sandbox.asaas.com/v3';
 export const PLAN_PRICE_SCALE = 2;
@@ -36,18 +36,18 @@ export function getErrorMessage(err: unknown): string {
   return String(err);
 }
 
-export function asaasToAppError(err: any): Error {
+export function asaasToAppError(err: any): HttpException {
   if (err instanceof HttpException) return err;
 
   const gatewayError = err || {};
   const code = gatewayError.code;
 
   if (code === 'ECONNABORTED') {
-    return new HttpException('Payment gateway timed out. Please try again.', 504);
+    return new HttpException({ code: 'payment_gateway_timeout' }, HttpStatus.GATEWAY_TIMEOUT);
   }
 
   if (code === 'ENOTFOUND' || code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT') {
-    return new HttpException('Communication failure with payment gateway. Please try again.', 502);
+    return new HttpException({ code: 'payment_gateway_unavailable' }, HttpStatus.BAD_GATEWAY);
   }
 
   const status = gatewayError.response?.status;
@@ -59,7 +59,7 @@ export function asaasToAppError(err: any): Error {
     data?.error ||
     'Payment gateway failure. Please try again.';
 
-  return new HttpException(message, status || 500);
+  return new HttpException({ code: 'asaas_payment_failed', details: { originalMessage: message } }, status || HttpStatus.BAD_REQUEST);
 }
 
 export function buildExternalReference(
