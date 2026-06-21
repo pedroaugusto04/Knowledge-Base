@@ -19,6 +19,10 @@ export class SubscriptionUpgradeService {
     billingCycle: BillingCycle;
     currentPeriodEnd: Date;
   }): Promise<number> {
+    if (!params.currentPlanId || !params.newPlanId) {
+      throw new BadRequestException('Plan IDs cannot be empty');
+    }
+
     const db = this.database.getDb();
 
     const currentPlan = await db.select().from(plans).where(eq(plans.id, params.currentPlanId)).limit(1).then(r => r[0] || null);

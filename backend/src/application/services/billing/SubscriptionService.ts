@@ -168,6 +168,23 @@ export class SubscriptionService {
       gatewayCustomerId = customer.id;
     }
 
+    let activePlanRow = null;
+    if (currentSub) {
+      activePlanRow = await db.select().from(plans).where(eq(plans.id, currentSub.planId)).limit(1).then(r => r[0] || null);
+    }
+    const activePlan = activePlanRow ? {
+      id: activePlanRow.id,
+      slug: activePlanRow.slug,
+      displayName: activePlanRow.displayName,
+      priceCents: activePlanRow.priceCents,
+      priceUsdCents: activePlanRow.priceUsdCents,
+      maxStorageBytes: Number(activePlanRow.maxStorageBytes),
+      maxAiRequestsPerMonth: activePlanRow.maxAiRequestsPerMonth,
+      maxWorkspaces: activePlanRow.maxWorkspaces,
+      maxProjectsPerWorkspace: activePlanRow.maxProjectsPerWorkspace,
+      isActive: activePlanRow.isActive,
+    } : undefined;
+
     // Cria SubscriptionContext
     const ctx: SubscriptionContext = {
       userId,
@@ -195,6 +212,7 @@ export class SubscriptionService {
         nextDueDate: currentSub.nextDueDate || undefined,
         gatewayName: currentSub.gatewayName,
       } : undefined,
+      activePlan,
     };
 
     // Usa UpdateSubscriptionStrategyFactory para obter e executar a estratégia
