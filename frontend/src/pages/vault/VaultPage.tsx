@@ -17,6 +17,7 @@ import { QuickNoteStatusActions } from '../../widgets/notes/QuickNoteStatusActio
 import { PencilIcon, TrashIcon } from '../../shared/ui/icons';
 import { NoteBody, NoteAttachments } from '../../widgets/notes/NoteReaderContent';
 import { RelatedNotesSection } from '../../widgets/notes/RelatedNotesSection';
+import { FloatingNoteNavigation } from '../../widgets/notes/FloatingNoteNavigation';
 
 type NavigationNote = Pick<NoteSummary, 'id' | 'title'>;
 
@@ -209,7 +210,7 @@ export function VaultPage({
       />
       <article
         className="note-reader vault-reader"
-        style={{ opacity: contentOpacity, transition: 'opacity 200ms ease' }}
+        style={{ opacity: contentOpacity, transition: 'opacity 200ms ease', paddingBottom: '80px' }}
       >
 
         {noteQuery.data ? (
@@ -236,6 +237,14 @@ export function VaultPage({
           <EmptyState>{selectedProjectDetails ? 'Open a note to start reading details.' : 'Select a project and open a note to start reading details.'}</EmptyState>
         )}
       </article>
+      
+      <FloatingNoteNavigation
+        previousNoteId={previousNote?.id || null}
+        nextNoteId={nextNote?.id || null}
+        onPrevious={() => previousNote && openNote(previousNote.id)}
+        onNext={() => nextNote && openNote(nextNote.id)}
+        isMobile={isMobile}
+      />
     </div>
   );
 }
