@@ -305,7 +305,7 @@ describe('SearchPage (Ask AI)', () => {
 
     renderSearchPage();
     fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Show history' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Show history' }));
 
     // Wait for history item to appear and select it
     const historyItem = await screen.findByText('Custom history brief summary');
@@ -328,7 +328,7 @@ describe('SearchPage (Ask AI)', () => {
     renderSearchPage();
     fireEvent.click(screen.getByRole('button', { name: 'Project Briefs' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show history' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Show history' }));
 
     expect(await screen.findByText('No brief history for this project.')).toBeInTheDocument();
   });
