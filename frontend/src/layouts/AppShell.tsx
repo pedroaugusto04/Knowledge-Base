@@ -24,6 +24,7 @@ const ProfilePage = lazy(() => import('../pages/profile/ProfilePage').then(m => 
 const SetupPage = lazy(() => import('../pages/setup/SetupPage').then(m => ({ default: m.SetupPage })));
 const AuthPage = lazy(() => import('../pages/auth/AuthPage').then(m => ({ default: m.AuthPage })));
 const HelpPage = lazy(() => import('../pages/help/HelpPage').then(m => ({ default: m.HelpPage })));
+const SettingsPage = lazy(() => import('../pages/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 import { flattenFolders } from '../features/projects/projects.helpers';
 import { ProjectNoteModal } from '../features/projects/modals/ProjectNoteModal';
 import type { ConfirmState, NoteModalState } from '../features/projects/projects.types';
@@ -590,6 +591,7 @@ export function AppShell() {
               <Route path="/profile" element={<ProfilePage workspace={activeWorkspace} />} />
               <Route path="/settings/integrations" element={<IntegrationsPage workspaceSlug={activeWorkspace.workspaceSlug} />} />
               <Route path="/settings/subscription" element={<SubscriptionPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="*" element={<HomePage {...pageContext} />} />
             </Routes>

@@ -14,10 +14,11 @@ export const routes = {
   profile: '/profile',
   integrations: '/settings/integrations',
   subscription: '/settings/subscription',
+  settings: '/settings',
   help: '/help',
 } as const;
 
-export type View = 'home' | 'map' | 'projects' | 'note' | 'search' | 'kanban' | 'reminders' | 'profile' | 'integrations' | 'subscription' | 'help';
+export type View = 'home' | 'map' | 'projects' | 'note' | 'search' | 'kanban' | 'reminders' | 'profile' | 'integrations' | 'subscription' | 'help' | 'settings';
 
 
 export const navItems: Array<{ view: View; label: string; path: string }> = [
@@ -27,4 +28,5 @@ export const navItems: Array<{ view: View; label: string; path: string }> = [
   { view: 'kanban', label: 'Kanban', path: routes.kanban },
   { view: 'reminders', label: 'Reminders', path: routes.reminders },
   { view: 'map', label: 'Map', path: routes.map },
+  { view: 'settings', label: 'Settings', path: routes.settings },
 ];

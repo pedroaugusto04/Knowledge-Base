@@ -41,6 +41,8 @@ export {
   updateWebhookSubscription,
   deleteWebhookSubscription,
 } from './webhook-subscriptions';
+
+export { fetchAutoActionGlobal, setAutoActionGlobal } from './notes';
 export {
   fetchPushPublicKey,
   subscribePush,

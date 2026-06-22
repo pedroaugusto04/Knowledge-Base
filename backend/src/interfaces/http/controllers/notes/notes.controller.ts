@@ -10,6 +10,9 @@ import {
   UpdateNoteUseCase,
   SetNotePinnedUseCase,
   FindRelatedNotesUseCase,
+  SetNoteAutoActionUseCase,
+  GetAutoActionGlobalUseCase,
+  SetAutoActionGlobalUseCase,
 } from '../../../../application/use-cases/index.js';
 import { CurrentUser } from '../../auth.decorators.js';
 import { AccessTokenAuthGuard, TrustedOriginGuard } from '../../auth.guards.js';
@@ -18,6 +21,8 @@ import {
   noteAttachmentContentParamSchema,
   noteIdParamSchema,
   updateNoteBodySchema,
+  autoActionBodySchema,
+  autoActionGlobalSchema,
   pinNoteBodySchema,
   type CreateNoteBody,
   type NoteAttachmentContentParam,
@@ -41,6 +46,8 @@ export class NotesController {
     private readonly getAttachmentContent: GetNoteAttachmentContentUseCase,
     private readonly setNotePinnedUseCase: SetNotePinnedUseCase,
     private readonly findRelatedNotesUseCase: FindRelatedNotesUseCase,
+    private readonly getAutoActionGlobalUseCase: GetAutoActionGlobalUseCase,
+    private readonly setAutoActionGlobalUseCase: SetAutoActionGlobalUseCase,
   ) {}
 
   @Post()
@@ -131,5 +138,24 @@ export class NotesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.findRelatedNotesUseCase.execute(user.id, params.id);
+  }
+
+  // per-note auto-action endpoint removed; global settings supported via /api/notes/auto/global
+
+  @Get('auto/global')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get global auto-action config' })
+  async getAutoActionGlobal() {
+    return await this.getAutoActionGlobalUseCase.execute();
+  }
+
+  @Patch('auto/global')
+  @UseGuards(TrustedOriginGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set global auto-action config' })
+  async setAutoActionGlobal(
+    @Body(new ZodValidationPipe(autoActionGlobalSchema, 'invalid_auto_action_global_payload')) body: import('../../dto/note.dto.js').AutoActionGlobal,
+  ) {
+    return await this.setAutoActionGlobalUseCase.execute({ enabled: body.enabled, action: body.action, afterHours: body.afterHours ?? null });
   }
 }

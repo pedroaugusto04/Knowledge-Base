@@ -58,6 +58,8 @@ export {
 } from './push/push-subscription.use-cases.js';
 export { SetNotePinnedUseCase } from './notes/set-note-pinned.use-case.js';
 export { FindRelatedNotesUseCase } from './notes/find-related-notes.use-case.js';
+export { GetAutoActionGlobalUseCase } from './settings/get-auto-action-global.use-case.js';
+export { SetAutoActionGlobalUseCase } from './settings/set-auto-action-global.use-case.js';
 export { GetStripeConfigUseCase } from './billing/get-stripe-config.use-case.js';
 export { GetPlansUseCase } from './billing/get-plans.use-case.js';
 export { GetSubscriptionStatusUseCase } from './billing/get-subscription-status.use-case.js';

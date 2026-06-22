@@ -73,6 +73,8 @@ export const updateNoteBodySchema = z
     reminderDate: z.string().trim().optional().default(''),
     reminderTime: z.string().trim().optional().default(''),
     reminderAt: z.string().trim().optional().default(''),
+    autoAction: z.enum(['none', 'resolved', 'archived']).optional().default('none'),
+    autoAfterHours: z.number().int().positive().optional().nullable(),
   })
   .strict()
   .transform((body) => ({
@@ -85,6 +87,8 @@ export const updateNoteBodySchema = z
     reminderDate: body.reminderDate.trim(),
     reminderTime: normalizeTime(body.reminderTime),
     reminderAt: body.reminderAt,
+    autoAction: body.autoAction,
+    autoAfterHours: body.autoAfterHours ?? null,
   }))
   .superRefine((body, ctx) => {
     if (body.reminderTime && !body.reminderDate) {
@@ -99,6 +103,19 @@ export const updateNoteBodySchema = z
 export type NoteIdParam = z.infer<typeof noteIdParamSchema>;
 export type NoteAttachmentContentParam = z.infer<typeof noteAttachmentContentParamSchema>;
 export type UpdateNoteBody = z.infer<typeof updateNoteBodySchema>;
+
+export const autoActionBodySchema = z.object({
+  autoAction: z.enum(['none', 'resolved', 'archived']),
+  autoAfterHours: z.number().int().positive().optional().nullable(),
+}).strict();
+export type AutoActionBody = z.infer<typeof autoActionBodySchema>;
+
+export const autoActionGlobalSchema = z.object({
+  enabled: z.boolean(),
+  action: z.enum(['none', 'resolved', 'archived']),
+  afterHours: z.number().int().optional().nullable(),
+}).strict();
+export type AutoActionGlobal = z.infer<typeof autoActionGlobalSchema>;
 
 export const pinNoteBodySchema = z.object({
   pinned: z.boolean(),

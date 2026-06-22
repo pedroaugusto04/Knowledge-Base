@@ -58,6 +58,8 @@ export class UpdateNoteUseCase {
       });
     } catch { /* webhook dispatch must never block note update */ }
 
+    // Global scheduling is handled by the batch worker; per-note scheduling removed
+
     return { ok: true as const, noteId: updated.id };
   }
 

@@ -111,3 +111,15 @@ export function fetchRelatedNotes(id: string): Promise<NoteSummary[]> {
 export function fetchAttachmentText(url: string): Promise<string> {
   return requestText(url);
 }
+
+export function fetchAutoActionGlobal(): Promise<{ enabled: boolean; action: 'none' | 'resolved' | 'archived'; afterHours: number | null } | null> {
+  return request(`/api/notes/auto/global`);
+}
+
+export function setAutoActionGlobal(input: { enabled: boolean; action: 'none' | 'resolved' | 'archived'; afterHours?: number | null }) {
+  return request<{ ok: true }>(`/api/notes/auto/global`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
