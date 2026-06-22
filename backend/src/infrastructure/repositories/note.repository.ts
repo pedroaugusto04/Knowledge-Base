@@ -113,7 +113,7 @@ export class PostgresNoteRepository {
       .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
       .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(eq(notes.userId, userId))
-      .groupBy(notes.id, projects.projectSlug)
+      .groupBy(notes.id, projects.projectSlug, workspaces.workspaceSlug)
       .orderBy(desc(notes.isPinned), desc(notes.occurredAt), notes.title);
 
     return result.map(noteFromRow);
@@ -226,7 +226,7 @@ export class PostgresNoteRepository {
       .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
       .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(whereCondition)
-      .groupBy(notes.id, projects.projectSlug)
+      .groupBy(notes.id, projects.projectSlug, workspaces.workspaceSlug)
       .orderBy(desc(notes.isPinned), desc(notes.occurredAt), notes.title)
       .limit(pagination.pageSize)
       .offset((pagination.page - 1) * pagination.pageSize);
