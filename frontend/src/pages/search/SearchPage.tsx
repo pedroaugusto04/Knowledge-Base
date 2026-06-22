@@ -66,6 +66,13 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
 
   const briefProjectSlug = projectSlug || 'all';
 
+  const latestBriefQuery = useQuery({
+    queryKey: ['latest-brief', briefProjectSlug],
+    queryFn: () => fetchLatestProjectBrief(briefProjectSlug),
+    enabled: activeTab === 'brief',
+    staleTime: 60_000,
+  });
+
   const briefHistoryQuery = useQuery({
     queryKey: ['brief-history', briefProjectSlug, briefHistoryPage],
     queryFn: () => fetchProjectBriefHistory(briefProjectSlug, { page: briefHistoryPage, pageSize: 5 }),
@@ -78,11 +85,15 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
     onSuccess: (response) => {
       setSelectedBrief(response);
       void queryClient.invalidateQueries({ queryKey: ['brief-history'] });
+      void queryClient.invalidateQueries({ queryKey: ['latest-brief'] });
     },
     onError: (error) => notifyGeneralFormError(error, SEARCH_MESSAGES.ERRORS.COULD_NOT_GENERATE_BRIEF),
   });
 
-  const displayedBrief = selectedBrief || undefined;
+  // selectedBrief (user-generated or history pick) takes precedence over the auto-loaded latest brief
+  const displayedBrief: ProjectBriefPanelResponse | undefined = selectedBrief
+    || (latestBriefQuery.data?.brief ? latestBriefQuery.data : undefined)
+    || undefined;
 
   const handleAsk = async (overrideQuestion?: string) => {
     const question = (overrideQuestion ?? questionInput).trim();
@@ -249,7 +260,7 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
             <Panel className="ask-ai-brief-panel">
               <ProjectBriefPanel
                 response={displayedBrief}
-                loading={generateBriefMutation.isPending && generateBriefMutation.variables === briefProjectSlug}
+                loading={(generateBriefMutation.isPending && generateBriefMutation.variables === briefProjectSlug) || (latestBriefQuery.isLoading && !selectedBrief)}
                 error={generateBriefMutation.isError && generateBriefMutation.variables === briefProjectSlug
                   ? getErrorMessage(generateBriefMutation.error, 'Could not generate the project brief.')
                   : ''}

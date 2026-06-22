@@ -104,20 +104,32 @@ export function VaultPage({
     if (!isMobile) return;
 
     let touchStartX = 0;
+    let touchStartY = 0;
     let touchEndX = 0;
+    let touchEndY = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
       touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+      touchEndX = touchStartX;
+      touchEndY = touchStartY;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       touchEndX = e.changedTouches[0].screenX;
-      const distance = touchStartX - touchEndX;
-      
-      if (distance > 20) {
-        setSwipeDirection('left');
-      } else if (distance < -20) {
-        setSwipeDirection('right');
+      touchEndY = e.changedTouches[0].screenY;
+      const deltaX = touchStartX - touchEndX;
+      const deltaY = touchStartY - touchEndY;
+
+      // Only show swipe hint when gesture is clearly horizontal
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 20) {
+          setSwipeDirection('left');
+        } else if (deltaX < -20) {
+          setSwipeDirection('right');
+        } else {
+          setSwipeDirection(null);
+        }
       } else {
         setSwipeDirection(null);
       }
@@ -125,10 +137,15 @@ export function VaultPage({
 
     const handleTouchEnd = (e: TouchEvent) => {
       setSwipeDirection(null);
-      const distance = touchStartX - touchEndX;
-      const isLeftSwipe = distance > 50;
-      const isRightSwipe = distance < -50;
-      
+      const deltaX = touchStartX - touchEndX;
+      const deltaY = touchStartY - touchEndY;
+
+      // Only trigger navigation when the gesture is predominantly horizontal
+      if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
+
+      const isLeftSwipe = deltaX > 50;
+      const isRightSwipe = deltaX < -50;
+
       if (isLeftSwipe && nextNote) {
         e.preventDefault();
         openNote(nextNote.id);
