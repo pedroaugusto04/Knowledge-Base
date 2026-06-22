@@ -108,21 +108,25 @@ export function VaultPage({
     let touchEndX = 0;
     let touchEndY = 0;
 
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartX = e.changedTouches[0].screenX;
-      touchStartY = e.changedTouches[0].screenY;
+    const handleTouchStart = (e: Event) => {
+      const te = e as TouchEvent;
+      touchStartX = te.changedTouches[0].screenX;
+      touchStartY = te.changedTouches[0].screenY;
       touchEndX = touchStartX;
       touchEndY = touchStartY;
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      touchEndX = e.changedTouches[0].screenX;
-      touchEndY = e.changedTouches[0].screenY;
+    const handleTouchMove = (e: Event) => {
+      const te = e as TouchEvent;
+      touchEndX = te.changedTouches[0].screenX;
+      touchEndY = te.changedTouches[0].screenY;
       const deltaX = touchStartX - touchEndX;
       const deltaY = touchStartY - touchEndY;
 
       // Only show swipe hint when gesture is clearly horizontal
       if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // prevent vertical scrolling when user is performing a horizontal swipe
+        try { e.preventDefault(); } catch (err) { /* ignore */ }
         if (deltaX > 20) {
           setSwipeDirection('left');
         } else if (deltaX < -20) {
@@ -135,7 +139,8 @@ export function VaultPage({
       }
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
+    const handleTouchEnd = (e: Event) => {
+      const te = e as TouchEvent;
       setSwipeDirection(null);
       const deltaX = touchStartX - touchEndX;
       const deltaY = touchStartY - touchEndY;
@@ -147,22 +152,37 @@ export function VaultPage({
       const isRightSwipe = deltaX < -50;
 
       if (isLeftSwipe && nextNote) {
-        e.preventDefault();
+        try { te.preventDefault(); } catch (err) { /* ignore */ }
         openNote(nextNote.id);
       } else if (isRightSwipe && previousNote) {
-        e.preventDefault();
+        try { te.preventDefault(); } catch (err) { /* ignore */ }
         openNote(previousNote.id);
       }
     };
 
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
-    window.addEventListener('touchend', handleTouchEnd, { passive: false });
+    const container = document.querySelector('.note-reader.vault-reader') || document.querySelector('.note-reader');
+    if (container) {
+      // capture + non-passive so we can prevent vertical scroll when horizontal swipe detected
+      container.addEventListener('touchstart', handleTouchStart, { passive: true, capture: true });
+      container.addEventListener('touchmove', handleTouchMove as EventListener, { passive: false, capture: true });
+      container.addEventListener('touchend', handleTouchEnd as EventListener, { passive: false, capture: true });
+    } else {
+      // fallback to window
+      window.addEventListener('touchstart', handleTouchStart, { passive: true });
+      window.addEventListener('touchmove', handleTouchMove as EventListener, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd as EventListener, { passive: false });
+    }
 
     return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
+      if (container) {
+        container.removeEventListener('touchstart', handleTouchStart as EventListener);
+        container.removeEventListener('touchmove', handleTouchMove as EventListener);
+        container.removeEventListener('touchend', handleTouchEnd as EventListener);
+      } else {
+        window.removeEventListener('touchstart', handleTouchStart as EventListener);
+        window.removeEventListener('touchmove', handleTouchMove as EventListener);
+        window.removeEventListener('touchend', handleTouchEnd as EventListener);
+      }
     };
   }, [isMobile, previousNote, nextNote, openNote]);
 

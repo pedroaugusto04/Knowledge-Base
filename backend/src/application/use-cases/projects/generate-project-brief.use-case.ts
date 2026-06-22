@@ -28,6 +28,7 @@ export class GenerateProjectBriefUseCase {
 
   async execute(userId: string, projectId: string) {
     let workspaceSlug = '';
+    let workspaceId = '';
     let isAll = false;
     let projectSlug = '';
 
@@ -37,6 +38,7 @@ export class GenerateProjectBriefUseCase {
       const workspaces = await this.contentRepository.listWorkspaces(userId);
       if (workspaces.length > 0) {
         workspaceSlug = workspaces[0].workspaceSlug;
+        workspaceId = workspaces[0].id;
       } else {
         throw new NotFoundException('workspace_not_found');
       }
@@ -44,6 +46,7 @@ export class GenerateProjectBriefUseCase {
       const project = await this.contentRepository.getProjectById(userId, projectId);
       if (!project || !project.enabled) throw new NotFoundException('project_not_found');
       workspaceSlug = project.workspaceSlug || '';
+      workspaceId = project.workspaceId || '';
       projectSlug = project.projectSlug;
     }
 
@@ -52,7 +55,7 @@ export class GenerateProjectBriefUseCase {
 
     const generatedAt = new Date().toISOString();
     const items = (await this.contentRepository.listNotes(userId))
-      .filter((note) => note.workspaceSlug === workspaceSlug && (isAll || (note.projectId && note.projectId === projectId)))
+      .filter((note) => note.workspaceId === workspaceId && (isAll || (note.projectId && note.projectId === projectId)))
       .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt) || left.title.localeCompare(right.title))
       .slice(0, CONTEXT_WINDOW)
       .map(toContextItem);

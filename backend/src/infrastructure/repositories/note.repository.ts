@@ -68,6 +68,7 @@ export class PostgresNoteRepository {
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
+        workspaceSlug: workspaces.workspaceSlug,
         projectSlug: projects.projectSlug,
         folderId: notes.folderId,
         status: notes.status,
@@ -104,6 +105,7 @@ export class PostgresNoteRepository {
       })
       .from(notes)
       .leftJoin(projects, eq(projects.id, notes.projectId))
+      .leftJoin(workspaces, eq(workspaces.id, notes.workspaceId))
       .leftJoin(attachments, and(
         eq(attachments.userId, notes.userId),
         eq(attachments.noteId, notes.id)
@@ -179,6 +181,7 @@ export class PostgresNoteRepository {
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
+        workspaceSlug: workspaces.workspaceSlug,
         projectSlug: projects.projectSlug,
         folderId: notes.folderId,
         status: notes.status,
@@ -215,6 +218,7 @@ export class PostgresNoteRepository {
       })
       .from(notes)
       .leftJoin(projects, eq(projects.id, notes.projectId))
+      .leftJoin(workspaces, eq(workspaces.id, notes.workspaceId))
       .leftJoin(attachments, and(
         eq(attachments.userId, notes.userId),
         eq(attachments.noteId, notes.id)
