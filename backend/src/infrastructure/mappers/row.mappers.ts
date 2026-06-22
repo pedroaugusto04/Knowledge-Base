@@ -37,15 +37,17 @@ function fieldString(row: Row, snake: string, camel: string, fallback = ''): str
 
 function toIsoTimestamp(value: unknown): string {
   if (value instanceof Date) {
-    if (isNaN(value.getTime())) {
-      return '';
-    }
+    if (isNaN(value.getTime())) return '';
     return value.toISOString();
   }
+
   const s = String(value || '').trim();
   if (!s) return '';
-  const parsed = new Date(s);
-  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+
+  const parsed = Date.parse(s);
+  if (!Number.isNaN(parsed)) return new Date(parsed).toISOString();
+
+  return '';
 }
 
 function stringArray(value: unknown): string[] {
@@ -245,6 +247,7 @@ export function noteFromRow(row: Row): NoteRecord {
       : field(row, 'created_at', 'createdAt')
       ? toIsoTimestamp(field(row, 'created_at', 'createdAt'))
       : '',
+    createdAt: field(row, 'created_at', 'createdAt') ? toIsoTimestamp(field(row, 'created_at', 'createdAt')) : '',
     sourceChannel: fieldString(row, 'source_channel', 'sourceChannel'),
     summary: fieldString(row, 'summary', 'summary'),
     markdown: fieldString(row, 'markdown', 'markdown'),

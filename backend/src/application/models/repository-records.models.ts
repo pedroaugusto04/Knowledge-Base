@@ -155,6 +155,8 @@ export type NoteRecord = {
   reminderAt: string;
   attachmentCount?: number;
   isPinned?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type AttachmentRecord = {

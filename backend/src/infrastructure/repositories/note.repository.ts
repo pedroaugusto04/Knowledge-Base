@@ -668,7 +668,8 @@ export class PostgresNoteRepository {
         input.folderId,
         input.status,
         JSON.stringify(input.tags),
-        input.occurredAt,
+        // pass a Date so DB timestamptz stores UTC consistently
+        input.occurredAt ? new Date(input.occurredAt) : new Date(),
         input.sourceChannel,
         input.summary,
         markdownStorageKey,
