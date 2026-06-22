@@ -38,11 +38,14 @@ function fieldString(row: Row, snake: string, camel: string, fallback = ''): str
 function toIsoTimestamp(value: unknown): string {
   if (value instanceof Date) {
     if (isNaN(value.getTime())) {
-      return new Date().toISOString();
+      return '';
     }
     return value.toISOString();
   }
-  return String(value || new Date().toISOString());
+  const s = String(value || '').trim();
+  if (!s) return '';
+  const parsed = new Date(s);
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
 }
 
 function stringArray(value: unknown): string[] {
