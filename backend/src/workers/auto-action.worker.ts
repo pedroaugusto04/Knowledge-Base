@@ -43,29 +43,36 @@ export class AutoActionWorker implements OnModuleInit, OnModuleDestroy {
     const pool = this.database.getPool();
 
     try {
-      // read global settings
-      const g = (await pool.query('select enabled, action, after_hours from kb_auto_action_global limit 1')).rows[0];
-      if (!g || !g.enabled || !g.after_hours || g.action === AUTO_ACTION_NONE) {
-        this.logger.info('[worker] global auto-action disabled or not configured');
+      // read all user-scoped auto-action settings that are enabled
+      const rows = (await pool.query("select user_id, enabled, action, after_hours from kb_auto_action_global where enabled = true")).rows;
+      if (!rows || rows.length === 0) {
+        this.logger.info('[worker] no user auto-action configured/enabled');
         return;
       }
 
-      const afterHours = Number(g.after_hours);
-      const action = String(g.action);
+      for (const g of rows) {
+        if (!g || !g.after_hours || g.action === AUTO_ACTION_NONE) {
+          this.logger.info(`[worker] skipping user=${g?.user_id} - auto-action not configured or none`);
+          continue;
+        }
 
-      // Update notes in batch: apply only to active notes older than afterHours
-      const res = await pool.query(
-        `update kb_notes set status = $1::note_status_enum, updated_at = now()
-           where status = 'active' and created_at <= now() - ($2::int * interval '1 hour')
-           returning id`,
-        [action, afterHours]
-      );
+        const afterHours = Number(g.after_hours);
+        const action = String(g.action);
 
-      const applied = Number(res.rowCount ?? 0);
-      if (applied > 0) {
-        this.logger.info(`[worker] applied auto-action='${action}' to ${applied} notes`);
-      } else {
-        this.logger.info('[worker] no notes eligible for auto-action');
+        // Update notes for this specific user: only active notes older than afterHours
+        const res = await pool.query(
+          `update kb_notes set status = $1::note_status_enum, updated_at = now()
+             where user_id = $3::uuid and status = 'active' and created_at <= now() - ($2::int * interval '1 hour')
+             returning id`,
+          [action, afterHours, g.user_id]
+        );
+
+        const applied = Number(res.rowCount ?? 0);
+        if (applied > 0) {
+          this.logger.info(`[worker] applied auto-action='${action}' to ${applied} notes for user=${g.user_id}`);
+        } else {
+          this.logger.info(`[worker] no notes eligible for auto-action for user=${g.user_id}`);
+        }
       }
     } catch (err) {
       this.logger.error('[worker] auto-action job failed', { error: err instanceof Error ? err.message : String(err) });
