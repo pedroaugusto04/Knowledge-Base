@@ -10,21 +10,10 @@ type StripeCardCaptureProps = {
   disabled?: boolean;
 };
 
-const cardElementOptions = {
-  hidePostalCode: true,
-  style: {
-    base: {
-      fontSize: '14px',
-      color: 'var(--text-strong, #111827)',
-      '::placeholder': {
-        color: 'var(--muted, #6b7280)',
-      },
-    },
-    invalid: {
-      color: '#dc2626',
-    },
-  },
-};
+// Card element options are created per-render so we can read CSS variables
+// (necessary because Stripe Elements runs in an iframe and CSS vars may
+// not resolve when passed as raw strings). We compute colors at runtime
+// to ensure dark-mode text is readable.
 
 const StripeCardCaptureInner = forwardRef<StripeCardCaptureHandle, StripeCardCaptureProps>(
   function StripeCardCaptureInner({ disabled }, ref) {
@@ -59,10 +48,29 @@ const StripeCardCaptureInner = forwardRef<StripeCardCaptureHandle, StripeCardCap
       },
     }), [elements, stripe]);
 
+    const cardElementOptions = useMemo(() => {
+      // read CSS variables from root
+      const root = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null;
+      const textStrong = root?.getPropertyValue('--text-strong')?.trim() || '#111827';
+      const muted = root?.getPropertyValue('--muted')?.trim() || '#6b7280';
+
+      return {
+        hidePostalCode: true,
+        style: {
+          base: {
+            fontSize: '14px',
+            color: textStrong,
+            '::placeholder': { color: muted },
+          },
+          invalid: { color: '#dc2626' },
+        },
+      } as const;
+    }, []);
+
     return (
       <div className="form-field">
         <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: '8px' }}>
-          Card details
+          Card number
         </label>
         <div
           className="stripe-card-element"
@@ -74,7 +82,7 @@ const StripeCardCaptureInner = forwardRef<StripeCardCaptureHandle, StripeCardCap
             opacity: disabled ? 0.6 : 1,
           }}
         >
-          <CardElement options={cardElementOptions} />
+          <CardElement options={cardElementOptions} aria-label="Card number input" />
         </div>
       </div>
     );
