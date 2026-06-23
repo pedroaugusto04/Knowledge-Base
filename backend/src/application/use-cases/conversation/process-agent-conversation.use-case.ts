@@ -135,11 +135,17 @@ export class ProcessAgentConversationUseCase {
     }
 
     const selectedProjectSlug = resolveAgentSelectedProjectSlug(decision.selectedProjectSlug, state);
-    const foldersForDecision = selectedProjectSlug && selectedProjectSlug !== 'inbox'
-      ? selectedProjectSlug === candidateProjectSlug
-        ? candidateFolders
-        : await this.contentRepository.listProjectFolders(userId, selectedProjectSlug)
-      : [];
+    let foldersForDecision: ProjectFolderRecord[] = [];
+    if (selectedProjectSlug && selectedProjectSlug !== 'inbox') {
+      if (selectedProjectSlug === candidateProjectSlug) {
+        foldersForDecision = candidateFolders;
+      } else {
+        const selectedProject = await this.contentRepository.getProjectBySlug(userId, selectedProjectSlug);
+        if (selectedProject && selectedProject.enabled) {
+          foldersForDecision = await this.contentRepository.listProjectFolders(userId, selectedProject.id);
+        }
+      }
+    }
     const nextState = buildNextAgentConversationState({
       current: state,
       messageText,
@@ -214,9 +220,13 @@ export class ProcessAgentConversationUseCase {
     const projects = (await this.contentRepository.listProjects(userId))
       .filter((project) => project.enabled && project.workspaceSlug === workspaceSlug);
     const candidateProjectSlug = sanitizeExistingAgentProjectSlug(state.project.selectedProjectSlug, projects);
-    const candidateFolders = candidateProjectSlug && candidateProjectSlug !== 'inbox'
-      ? await this.contentRepository.listProjectFolders(userId, candidateProjectSlug)
-      : [];
+    let candidateFolders: ProjectFolderRecord[] = [];
+    if (candidateProjectSlug && candidateProjectSlug !== 'inbox') {
+      const candidateProject = await this.contentRepository.getProjectBySlug(userId, candidateProjectSlug);
+      if (candidateProject && candidateProject.enabled) {
+        candidateFolders = await this.contentRepository.listProjectFolders(userId, candidateProject.id);
+      }
+    }
     const environment = this.environmentProvider.read();
     const localDateTime = currentDateTimeInTimeZone(environment.reminderTimeZone);
 
