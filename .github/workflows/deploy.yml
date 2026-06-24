@@ -151,13 +151,26 @@ jobs:
           KB_AUDIO_AI_BASE_URL: ${{ vars.KB_AUDIO_AI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta' }}
           KB_AUDIO_AI_MODEL: ${{ vars.KB_AUDIO_AI_MODEL || 'gemini-2.5-flash' }}
           KB_AUDIO_AI_API_KEY: ${{ secrets.KB_AUDIO_AI_API_KEY || '' }}
+          # Full email configuration (provider, SMTP host/port, from, queues, worker flags)
+          KB_EMAIL_PROVIDER: ${{ vars.KB_EMAIL_PROVIDER || 'resend' }}
+          KB_EMAIL_FROM: ${{ vars.KB_EMAIL_FROM || vars.KB_ADMIN_EMAIL || '' }}
+          KB_EMAIL_SMTP_HOST: ${{ vars.KB_EMAIL_SMTP_HOST || '' }}
+          KB_EMAIL_SMTP_PORT: ${{ vars.KB_EMAIL_SMTP_PORT || '587' }}
+          KB_EMAIL_SMTP_SECURE: ${{ vars.KB_EMAIL_SMTP_SECURE || 'false' }}
+          KB_EMAIL_QUEUE_EXCHANGE: ${{ vars.KB_EMAIL_QUEUE_EXCHANGE || 'kb.email' }}
+          KB_EMAIL_QUEUE_NAME: ${{ vars.KB_EMAIL_QUEUE_NAME || 'kb.email.send' }}
+          KB_EMAIL_QUEUE_ROUTING_KEY: ${{ vars.KB_EMAIL_QUEUE_ROUTING_KEY || 'kb.email.send' }}
+          KB_EMAIL_WORKER_AUTORUN: ${{ vars.KB_EMAIL_WORKER_AUTORUN || 'true' }}
+          KB_EMAIL_RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || '' }}
+          KB_EMAIL_SMTP_USER: ${{ secrets.SMTP_USER || '' }}
+          KB_EMAIL_SMTP_PASS: ${{ secrets.SMTP_PASS || '' }}
           KB_RABBITMQ_URL: ${{ secrets.KB_RABBITMQ_URL || '' }}
           KB_RABBITMQ_USER: ${{ vars.KB_RABBITMQ_USER || 'kb' }}
           KB_RABBITMQ_PASSWORD: ${{ secrets.KB_RABBITMQ_PASSWORD || '' }}
           KB_RABBITMQ_PORT: ${{ vars.KB_RABBITMQ_PORT || '5672' }}
           KB_RABBITMQ_MANAGEMENT_PORT: ${{ vars.KB_RABBITMQ_MANAGEMENT_PORT || '15672' }}
           KB_DISABLE_EMBEDDING_WORKER: ${{ vars.KB_DISABLE_EMBEDDING_WORKER || 'false' }}
-          KB_VAPID_PUBLIC_KEY: ${{ vars.KB_VAPID_PUBLIC_KEY || secrets.KB_VAPID_PUBLIC_KEY || '' }}
+          KB_VAPID_PUBLIC_KEY: ${{ vars.KB_VAPID_PUBLIC_KEY || '' }}
           KB_VAPID_PRIVATE_KEY: ${{ secrets.KB_VAPID_PRIVATE_KEY || '' }}
           ASAAS_ACCESS_TOKEN: ${{ secrets.ASAAS_ACCESS_TOKEN || '' }}
           ASAAS_BASE_URL: ${{ vars.ASAAS_BASE_URL || '' }}
@@ -199,6 +212,18 @@ jobs:
           KB_JWT_REFRESH_SECRET: ${{ secrets.KB_JWT_REFRESH_SECRET }}
           KB_INTERNAL_SERVICE_TOKEN: ${{ secrets.KB_INTERNAL_SERVICE_TOKEN }}
           KB_CREDENTIALS_ENCRYPTION_KEY: ${{ secrets.KB_CREDENTIALS_ENCRYPTION_KEY }}
+          KB_EMAIL_PROVIDER: ${{ vars.KB_EMAIL_PROVIDER || 'resend' }}
+          KB_EMAIL_FROM: ${{ vars.KB_EMAIL_FROM || vars.KB_ADMIN_EMAIL || '' }}
+          KB_EMAIL_SMTP_HOST: ${{ vars.KB_EMAIL_SMTP_HOST || '' }}
+          KB_EMAIL_SMTP_PORT: ${{ vars.KB_EMAIL_SMTP_PORT || '587' }}
+          KB_EMAIL_SMTP_SECURE: ${{ vars.KB_EMAIL_SMTP_SECURE || 'false' }}
+          KB_EMAIL_QUEUE_EXCHANGE: ${{ vars.KB_EMAIL_QUEUE_EXCHANGE || 'kb.email' }}
+          KB_EMAIL_QUEUE_NAME: ${{ vars.KB_EMAIL_QUEUE_NAME || 'kb.email.send' }}
+          KB_EMAIL_QUEUE_ROUTING_KEY: ${{ vars.KB_EMAIL_QUEUE_ROUTING_KEY || 'kb.email.send' }}
+          KB_EMAIL_WORKER_AUTORUN: ${{ vars.KB_EMAIL_WORKER_AUTORUN || 'true' }}
+          KB_EMAIL_RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || '' }}
+          KB_EMAIL_SMTP_USER: ${{ secrets.SMTP_USER || '' }}
+          KB_EMAIL_SMTP_PASS: ${{ secrets.SMTP_PASS || '' }}
           STRIPE_PUBLISHABLE_KEY: ${{ vars.STRIPE_PUBLISHABLE_KEY || '' }}
         run: |
           set -euo pipefail
