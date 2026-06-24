@@ -72,6 +72,7 @@ export type RuntimeEnvironment = {
   credentialsEncryptionKey: string;
   internalServiceToken: string;
   disableEmbeddingWorker: boolean;
+  testEmailAuthSecret: string;
 };
 
 export abstract class RuntimeEnvironmentProvider {

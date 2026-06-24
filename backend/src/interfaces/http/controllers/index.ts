@@ -14,5 +14,6 @@ export { WebhookSubscriptionsController } from './webhook-subscriptions/webhook-
 export { WorkspacesController } from './workspaces/workspaces.controller.js';
 export { PushSubscriptionsController } from './push/push-subscriptions.controller.js';
 export { SubscriptionController } from './subscription/subscription.controller.js';
+export { TestEmailController } from './test-email/test-email.controller.js';
 
 

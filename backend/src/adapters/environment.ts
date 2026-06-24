@@ -91,6 +91,7 @@ export type RuntimeEnvironment = {
   credentialsEncryptionKey: string;
   internalServiceToken: string;
   disableEmbeddingWorker: boolean;
+  testEmailAuthSecret: string;
 };
 
 export function readEnvironment(env = process.env): RuntimeEnvironment {
@@ -177,5 +178,6 @@ export function readEnvironment(env = process.env): RuntimeEnvironment {
     credentialsEncryptionKey: String(env.KB_CREDENTIALS_ENCRYPTION_KEY || '').trim(),
     internalServiceToken: String(env.KB_INTERNAL_SERVICE_TOKEN || '').trim(),
     disableEmbeddingWorker: String(env.KB_DISABLE_EMBEDDING_WORKER || 'false').trim().toLowerCase() === 'true',
+    testEmailAuthSecret: String(env.KB_TEST_EMAIL_AUTH_SECRET || '').trim(),
   };
 }

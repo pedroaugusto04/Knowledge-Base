@@ -78,44 +78,7 @@ export class WeeklySummaryService {
           if (!user || !user.email) continue;
 
           const userNotesByProject = grouped[uid] || {};
-          const totalNotes = Object.values(userNotesByProject).reduce((s, arr) => s + arr.length, 0);
-          if (totalNotes === 0) continue;
-
-          const environment = this.environmentProvider.read();
-          const appName = (environment.emailFrom || 'Kote').split('@')[0];
-          const subject = `${appName} — Weekly summary (${totalNotes} new note${totalNotes > 1 ? 's' : ''})`;
-
-          const textParts: string[] = [];
-          textParts.push(`Hi ${user.displayName || ''},`);
-          textParts.push('Here is your weekly activity summary:');
-          for (const [project, items] of Object.entries(userNotesByProject)) {
-            textParts.push(`\nProject: ${project} — ${items.length} note${items.length > 1 ? 's' : ''}`);
-            for (const item of items as any[]) {
-              textParts.push(`- ${item.title} (${new Date(item.createdAt).toISOString().slice(0, 10)})`);
-            }
-          }
-          textParts.push('\nThanks — sent by your KB');
-
-          const projects = Object.entries(userNotesByProject).map(([projectSlug, items]) => ({
-            projectName: projectSlug,
-            count: items.length,
-            notes: (items as any[]).map((item) => ({
-              title: item.title,
-              date: new Date(item.createdAt).toISOString().slice(0, 10),
-            })),
-          }));
-
-          await this.emailService.sendEmail({
-            to: user.email,
-            subject,
-            text: textParts.join('\n'),
-            templateName: 'weekly-summary',
-            templateData: {
-              displayName: user.displayName || '',
-              appName,
-              projects,
-            },
-          });
+          await this.sendWeeklySummaryToUser(user, userNotesByProject);
         } catch (err) {
           this.logger.error('weekly_summary.failed_send', { userId: uid, error: err instanceof Error ? err.message : String(err) });
         }
@@ -124,5 +87,81 @@ export class WeeklySummaryService {
       if (counts.length < pageSize) break;
       offset += pageSize;
     }
+  }
+
+  async sendWeeklySummaryToUser(user: { id: string; email: string; displayName?: string }, userNotesByProject: Record<string, any[]>) {
+    const totalNotes = Object.values(userNotesByProject).reduce((s, arr) => s + arr.length, 0);
+    if (totalNotes === 0) return 0;
+
+    const environment = this.environmentProvider.read();
+    const appName = (environment.emailFrom || 'Kote').split('@')[0];
+    const subject = `${appName} — Weekly summary (${totalNotes} new note${totalNotes > 1 ? 's' : ''})`;
+
+    const textParts: string[] = [];
+    textParts.push(`Hi ${user.displayName || ''},`);
+    textParts.push('Here is your weekly activity summary:');
+    for (const [project, items] of Object.entries(userNotesByProject)) {
+      textParts.push(`\nProject: ${project} — ${items.length} note${items.length > 1 ? 's' : ''}`);
+      for (const item of items as any[]) {
+        textParts.push(`- ${item.title} (${new Date(item.createdAt).toISOString().slice(0, 10)})`);
+      }
+    }
+    textParts.push('\nThanks — sent by your KB');
+
+    const projects = Object.entries(userNotesByProject).map(([projectSlug, items]) => ({
+      projectName: projectSlug,
+      count: items.length,
+      notes: (items as any[]).map((item) => ({
+        title: item.title,
+        date: new Date(item.createdAt).toISOString().slice(0, 10),
+      })),
+    }));
+
+    await this.emailService.sendEmail({
+      to: user.email,
+      subject,
+      text: textParts.join('\n'),
+      templateName: 'weekly-summary',
+      templateData: {
+        displayName: user.displayName || '',
+        appName,
+        projects,
+      },
+    });
+
+    return totalNotes;
+  }
+
+  async sendWeeklySummaryToUserForRange(userId: string, startIso: string, endIso: string): Promise<number> {
+    const db = this.db.getDb();
+
+    const noteRows = await db
+      .select({
+        id: notes.id,
+        userId: notes.userId,
+        title: notes.title,
+        summary: notes.summary,
+        projectId: notes.projectId,
+        createdAt: notes.createdAt,
+        projectSlug: projects.projectSlug,
+      })
+      .from(notes)
+      .leftJoin(projects, eq(projects.id, notes.projectId))
+      .where(and(eq(notes.userId, userId), gte(notes.createdAt, new Date(startIso)), lt(notes.createdAt, new Date(endIso))))
+      .orderBy(desc(notes.createdAt));
+
+    const userNotesByProject: Record<string, any[]> = {};
+    for (const r of noteRows as any[]) {
+      const slug = r.projectSlug || 'inbox';
+      userNotesByProject[slug] = userNotesByProject[slug] || [];
+      userNotesByProject[slug].push(r);
+    }
+
+    const user = await this.users.findUserById(userId);
+    if (!user || !user.email) {
+      throw new Error(`User with id ${userId} not found or has no email`);
+    }
+
+    return this.sendWeeklySummaryToUser(user, userNotesByProject);
   }
 }
