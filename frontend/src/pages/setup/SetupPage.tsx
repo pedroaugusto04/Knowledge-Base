@@ -51,6 +51,15 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
     setValue('workspaceSlug', slugifyInput(displayName));
   }, [displayName, setValue, slugTouched]);
 
+  // Auto-focus display name input on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const input = formRef.current?.querySelector('input[name="displayName"]') as HTMLInputElement | null;
+      input?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const createWorkspaceMutation = useMutation({
     mutationFn: (values: WorkspaceFormValues) => globalLoading.trackPromise(createWorkspace(values)),
     onSuccess: (result) => {
