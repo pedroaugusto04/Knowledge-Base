@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import type { ProjectsPageContext } from '../../app/page-context';
@@ -77,6 +77,7 @@ export function ProjectsWorkspace({
   const [timelineStatus, setTimelineStatus] = useState<NoteStatusFilter>(StatusFilter.Open);
   const [hiddenLatestBriefProjects, setHiddenLatestBriefProjects] = useState<Record<string, boolean>>({});
   const [sideNoteId, setSideNoteId] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Search state
   const [searchInput, setSearchInput] = useState('');
@@ -107,6 +108,11 @@ export function ProjectsWorkspace({
   useEffect(() => {
     setSearchInput('');
   }, [selectedSlug]);
+
+  // Auto-focus search input on mount
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
 
   const foldersQuery = useQuery({
     queryKey: QUERY_KEYS.PROJECTS.FOLDERS(selected?.projectSlug || ''),
@@ -311,6 +317,7 @@ export function ProjectsWorkspace({
       <section className="search-box projects-search-box">
         <SearchIcon className="projects-search-icon" />
         <input
+          ref={searchInputRef}
           aria-label={UI_MESSAGES.SEARCH_NOTES_IN_PROJECT}
           autoComplete="off"
           enterKeyHint="search"
