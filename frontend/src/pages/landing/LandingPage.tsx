@@ -87,14 +87,14 @@ export function LandingPage() {
             </div>
 
             {/* DASHBOARD PREVIEW SCREENSHOT */}
-            <div className="landing-dashboard-wrapper" aria-label="Knowledge Vault Dashboard Preview">
+            <div className="landing-dashboard-wrapper" aria-label="Kote Dashboard Preview">
               <div className="landing-mock-browser-bar">
                 <div className="landing-mock-browser-dot" />
                 <div className="landing-mock-browser-dot" />
                 <div className="landing-mock-browser-dot" />
-                <div className="landing-mock-browser-url">https://pedro-duarte.ddns.net/knowledge-base/</div>
+                <div className="landing-mock-browser-url">https://pedro-duarte.ddns.net/kote/</div>
               </div>
-              <img src={withFrontendBasePath('/dashboard-screenshot.png')} alt="Knowledge Vault Dashboard" className="landing-real-screenshot" />
+              <img src={withFrontendBasePath('/dashboard-screenshot.png')} alt="Kote Dashboard" className="landing-real-screenshot" />
             </div>
           </div>
         </section>
@@ -129,7 +129,7 @@ export function LandingPage() {
                 <div className="landing-timeline-node cyan">
                   <div className="landing-timeline-tooltip">
                     <h4>commit 1e4f2b: exponential backoff</h4>
-                    <p>"Linked to Knowledge Vault note: Standard retry-policy. Context preserved."</p>
+                    <p>"Linked to Kote note: Standard retry-policy. Context preserved."</p>
                   </div>
                 </div>
                 <div className="landing-timeline-node cyan">
@@ -156,7 +156,7 @@ export function LandingPage() {
               <span className="landing-kicker">Unified Context</span>
               <h2 id="integrations-title">Where engineering memory lives.</h2>
               <p>
-                Knowledge Vault seamlessly bridges the gap between your communication channels and your codebase, 
+                Kote seamlessly bridges the gap between your communication channels and your codebase, 
                 automatically grouping files and discussions.
               </p>
             </header>
@@ -205,7 +205,7 @@ export function LandingPage() {
           <div className="landing-container">
             <header className="landing-section-header reveal-up">
               <span className="landing-kicker">Features Grid</span>
-              <h2 id="features-title">With Knowledge Vault, you don't need to guess.</h2>
+              <h2 id="features-title">With Kote, you don't need to guess.</h2>
               <p>
                 The time between understanding and acting decreases — and clarity becomes part of the process.
               </p>
@@ -344,12 +344,12 @@ export function LandingPage() {
           <div className="landing-footer-content">
             <div className="landing-footer-logo">
               <BrandMark />
-              <strong>Knowledge Vault</strong>
+              <strong>Kote</strong>
             </div>
             <div className="landing-footer-meta">
               <span>Knowledge management for modern engineering teams.</span>
               <a href="mailto:pedroaugustoaduarte@gmail.com">Contact Support</a>
-              <span>© 2026 Knowledge Vault. All rights reserved.</span>
+              <span>© 2026 Kote. All rights reserved.</span>
             </div>
           </div>
         </footer>

@@ -84,7 +84,7 @@ export function SetupPage({ dashboard, refetchDashboard }: { dashboard: Dashboar
           <Link className="brand auth-brand" to={routes.home} aria-label="Ir para Home">
             <BrandMark />
             <div>
-              <strong>Knowledge Vault</strong>
+              <strong>Kote</strong>
               <span>workspace setup</span>
             </div>
           </Link>

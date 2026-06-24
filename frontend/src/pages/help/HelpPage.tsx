@@ -88,8 +88,8 @@ const sections: HelpSection[] = [
     id: 'overview',
     label: 'Overview',
     icon: <IconBook />,
-    title: 'What is Knowledge Vault?',
-    description: 'Knowledge Vault centralizes your team\'s operational knowledge — decisions, routines, and context — in one searchable, AI-queryable place.',
+    title: 'What is Kote?',
+    description: 'Kote centralizes your team\'s operational knowledge — decisions, routines, and context — in one searchable, AI-queryable place.',
     items: [
       { title: 'Zero context loss', body: 'Every decision, routine, and exception is recorded. New team members get up to speed in minutes, not weeks.' },
       { title: 'Invisible capture', body: 'Knowledge flows in where work happens: WhatsApp audio messages, Telegram alerts, GitHub pushes, VS Code, and the CLI.' },
@@ -164,7 +164,7 @@ const sections: HelpSection[] = [
     items: [
       {
         title: 'GitHub App Installation',
-        body: 'Install the Knowledge Vault GitHub App to enable automatic code review capture on push events.',
+        body: 'Install the Kote GitHub App to enable automatic code review capture on push events.',
         steps: [
           'Go to Settings → Integrations → GitHub App',
           'Click "Connect" to install the GitHub App',
@@ -254,7 +254,7 @@ Body:
           'Enter a label, your endpoint URL, and select the events you want to track',
           'Optionally add a secret for signature verification',
         ],
-        tip: 'Use a secret to verify that webhook requests are genuinely from Knowledge Vault by checking the X-KB-Signature-256 header.',
+        tip: 'Use a secret to verify that webhook requests are genuinely from Kote by checking the X-KB-Signature-256 header.',
       },
     ],
   },
@@ -333,7 +333,7 @@ Body:
       { title: 'Setting a reminder in the app', body: 'When creating or editing a note, set a reminder date and time. The system will send a WhatsApp message with the note content at the scheduled time.', tip: 'WhatsApp must be connected for reminder delivery to work.' },
       {
         title: 'Setting a reminder via WhatsApp',
-        body: 'You can create a reminder directly from WhatsApp — just like saving a regular note, but including the day and time for the reminder. Send a message to the Knowledge Vault bot specifying the reminder schedule.',
+        body: 'You can create a reminder directly from WhatsApp — just like saving a regular note, but including the day and time for the reminder. Send a message to the Kote bot specifying the reminder schedule.',
         code: 'Remind me to review Lucas\'s PR tomorrow at 10am\n\nTeam meeting with product on Friday at 2:30pm\n\nRemind me to update the API docs on June 20th at 9:00am',
         tip: 'It works just like saving a regular note via WhatsApp. Include the day and time in your message and the system will automatically detect and schedule it as a reminder.',
       },
@@ -415,7 +415,7 @@ export function HelpPage() {
           <span className="help-sidebar-logo-icon"><IconBook /></span>
           <div>
             <strong>Documentation</strong>
-            <small>Knowledge Vault guide</small>
+            <small>Kote guide</small>
           </div>
         </div>
         <nav className="help-nav" aria-label="Help sections">

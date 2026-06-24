@@ -21,8 +21,8 @@ export const INTEGRATION_MESSAGES = {
   
   CONNECTION: {
     TITLE: 'Connect {provider}',
-    WHATSAPP_INSTRUCTION: 'Send the command below to the Knowledge Vault WhatsApp bot:',
-    TELEGRAM_INSTRUCTION: 'Send the command below to the Knowledge Vault Telegram bot:',
+    WHATSAPP_INSTRUCTION: 'Send the command below to the Kote WhatsApp bot:',
+    TELEGRAM_INSTRUCTION: 'Send the command below to the Kote Telegram bot:',
     CONNECTION_CODE: 'Connection code',
     SEND_TO_WHATSAPP: 'Send {instruction} to +{number}',
     SEND_TO_TELEGRAM: 'Send {instruction} to @{username}',
