@@ -111,7 +111,10 @@ export function ProjectsWorkspace({
 
   // Auto-focus search input on mount
   useEffect(() => {
-    searchInputRef.current?.focus();
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const foldersQuery = useQuery({

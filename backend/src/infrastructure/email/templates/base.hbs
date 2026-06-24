@@ -32,11 +32,11 @@
     }
     .email-header img {
       height: auto;
-      max-width: 72px;
-      max-height: 72px;
+      max-width: 200px;
+      max-height: 120px;
       width: auto;
       display: block;
-      margin: 0 auto 10px;
+      margin: 0 auto;
     }
     .email-body {
       padding: 20px;
@@ -71,7 +71,6 @@
       {{#if appLogoUrl}}
       <img src="{{appLogoUrl}}" alt="{{appName}} Logo" />
       {{/if}}
-      <h2 style="color: #ffffff; margin: 0;">{{appName}}</h2>
     </div>
     <div class="email-body">
       {{{body}}}
