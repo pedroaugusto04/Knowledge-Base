@@ -2,7 +2,9 @@
   <img src="frontend/public/Kote-Brand.png" alt="Kote" width="600">
 </p>
 
-https://knowledgebase.sbs/kote
+<p align="center">
+  https://knowledgebase.sbs/kote
+</p>
 
 **Kote** centralizes your team's operational knowledge and decisions in one place, preventing knowledge fragmentation and accelerating the integration of new team members into your workflow.
 
@@ -141,23 +143,6 @@ Save code snippets or entire files directly from your editor. Right-click select
 **Installation:** Search for "Kote" in the VS Code Extension Marketplace.
 
 For complete extension documentation, see [ide/vscode/README.md](ide/vscode/README.md).
-
-## Configuration
-
-### Email Interception for Development
-
-To intercept all emails during development and redirect them to a single address:
-
-```bash
-DEV_EMAIL_INTERCEPT=true
-DEV_EMAIL=pedroaugustoaduarte@gmail.com
-```
-
-When `DEV_EMAIL_INTERCEPT` is set to `true`, all emails are sent to `DEV_EMAIL` instead of the original recipient. This is useful for testing email functionality without sending emails to real users during development.
-
-Default values:
-- `DEV_EMAIL_INTERCEPT`: `false`
-- `DEV_EMAIL`: `pedroaugustoaduarte@gmail.com`
 
 ## License
 
