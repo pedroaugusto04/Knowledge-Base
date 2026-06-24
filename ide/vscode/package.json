@@ -1,13 +1,13 @@
 {
-  "name": "knowledge-base-vscode",
-  "displayName": "Knowledge Vault",
-  "description": "Integrate your Knowledge Vault directly into VS Code — search, ask AI, save notes without leaving your editor.",
+  "name": "kote-vscode",
+  "displayName": "Kote",
+  "description": "Integrate your Kote directly into VS Code — search, ask AI, save notes without leaving your editor.",
   "version": "1.0.1",
-  "publisher": "Knowledge-Base",
+  "publisher": "kote",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pedroaugusto04/knowledge-base"
+    "url": "https://github.com/pedroaugusto04/kote"
   },
   "engines": {
     "vscode": ">=1.80.0"
@@ -32,7 +32,7 @@
       "activitybar": [
         {
           "id": "kb-sidebar-container",
-          "title": "Knowledge Vault",
+          "title": "Kote",
           "icon": "resources/kb-icon.svg"
         }
       ]
@@ -42,7 +42,7 @@
         {
           "type": "webview",
           "id": "kb.sidebarView",
-          "name": "Knowledge Vault"
+          "name": "Kote"
         }
       ]
     },
@@ -50,32 +50,32 @@
       {
         "command": "kb.openChat",
         "title": "KB: Open Chat",
-        "category": "Knowledge Vault"
+        "category": "Kote"
       },
       {
         "command": "kb.ask",
         "title": "KB: Ask (Quick Input)",
-        "category": "Knowledge Vault"
+        "category": "Kote"
       },
       {
         "command": "kb.saveSelection",
         "title": "KB: Save Selection as Note",
-        "category": "Knowledge Vault"
+        "category": "Kote"
       },
       {
         "command": "kb.refresh",
         "title": "KB: Refresh Sidebar",
-        "category": "Knowledge Vault"
+        "category": "Kote"
       },
       {
         "command": "kb.saveActiveFile",
         "title": "KB: Save Active File as Note",
-        "category": "Knowledge Vault"
+        "category": "Kote"
       },
       {
         "command": "kb.showRecentAiSessions",
         "title": "KB: View Recent AI Sessions",
-        "category": "Knowledge Vault",
+        "category": "Kote",
         "icon": "$(history)"
       }
     ],

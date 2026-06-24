@@ -82,7 +82,7 @@ export class AskKnowledgeUseCase {
     if (similarChunks.length === 0) {
       return {
         ok: true,
-        answer: 'No relevant information found in the knowledge base.',
+        answer: 'No relevant information found in your Kote.',
         confidence: ConversationConfidence.Low,
         requestedAttachments: false,
         sources: [],

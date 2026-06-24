@@ -72,7 +72,7 @@ const CHECKLIST_ITEMS: ChecklistItemDef[] = [
   {
     id: 'ask-ai',
     label: 'Test Ask AI',
-    description: 'Try asking questions about your knowledge base.',
+    description: 'Try asking questions about your Kote.',
     priority: false,
     route: routes.search,
     icon: '✦',

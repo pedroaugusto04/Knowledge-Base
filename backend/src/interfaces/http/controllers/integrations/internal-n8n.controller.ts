@@ -50,7 +50,7 @@ export class InternalN8NController {
   }
 
   @Post('query')
-  @ApiOperation({ summary: 'Query knowledge base (internal n8n)' })
+  @ApiOperation({ summary: 'Query Kote (internal n8n)' })
   @ApiResponse({ status: 200, description: 'Query results retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async query(@Body(new ZodValidationPipe(internalN8nQueryBodySchema, 'invalid_internal_query_payload')) body: InternalN8nQueryBody) {

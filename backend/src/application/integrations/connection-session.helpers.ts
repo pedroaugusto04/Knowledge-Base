@@ -92,8 +92,8 @@ export function normalizeTrimmedValue(value: string): string {
 export function normalizeReturnToPath(value: string | undefined, fallback: string): string {
   if (!value || !value.startsWith('/') || value.startsWith('//')) return fallback;
   try {
-    const parsed = new URL(value, 'https://knowledge-base.local');
-    if (parsed.origin !== 'https://knowledge-base.local') return fallback;
+    const parsed = new URL(value, 'https://kote.local');
+    if (parsed.origin !== 'https://kote.local') return fallback;
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
     return fallback;
@@ -113,7 +113,7 @@ export function normalizeBrowserOrigin(value: string | undefined): string {
 
 export function buildBrowserRedirectUrl(baseUrl: string | undefined, path: string): URL {
   const normalizedPath = normalizeReturnToPath(path, '/settings/integrations');
-  const fallbackBase = new URL('https://knowledge-base.local');
+  const fallbackBase = new URL('https://kote.local');
   const base = baseUrl ? new URL(baseUrl) : fallbackBase;
   const basePathname = base.pathname.replace(/\/+$/, '');
   const finalPath = normalizedPath === '/'

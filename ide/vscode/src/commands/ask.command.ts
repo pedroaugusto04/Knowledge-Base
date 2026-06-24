@@ -15,7 +15,7 @@ export function registerAskCommand(
   context.subscriptions.push(
     vscode.commands.registerCommand('kb.ask', async () => {
       const question = await vscode.window.showInputBox({
-        prompt: 'Ask your knowledge base',
+        prompt: 'Ask your Kote',
         placeHolder: 'e.g. How is authentication configured in this project?',
         ignoreFocusOut: false,
       });
@@ -25,7 +25,7 @@ export function registerAskCommand(
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: 'Knowledge Vault',
+          title: 'Kote',
           cancellable: false,
         },
         async (progress) => {

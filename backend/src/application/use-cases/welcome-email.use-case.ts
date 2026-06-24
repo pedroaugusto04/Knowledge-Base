@@ -20,7 +20,7 @@ export class WelcomeEmailService {
     const env = this.environmentProvider.read();
     const rawFrom = String(env.emailFrom || '');
     const displayFromMatch = rawFrom.match(/^\s*([^<]+)\s*</);
-    const appName = displayFromMatch && displayFromMatch[1] ? displayFromMatch[1].trim() : 'Knowledge Base';
+    const appName = displayFromMatch && displayFromMatch[1] ? displayFromMatch[1].trim() : 'Kote';
     const subject = `Welcome to ${appName}!`;
 
     const text = `Hello ${user.displayName || 'user'},\n\n` +
@@ -29,7 +29,7 @@ export class WelcomeEmailService {
       `KEY FEATURES:\n` +
       `• GitHub Push Integration: Automatically capture commits with AI analysis\n` +
       `• WhatsApp & Telegram: Send audio/text to generate structured notes\n` +
-      `• AI-Powered Conversations: Integrated chat to ask questions about your knowledge base\n` +
+      `• AI-Powered Conversations: Integrated chat to ask questions about your Kote\n` +
       `• CLI Tool & VS Code: Sync files and AI sessions directly from your editor\n\n` +
       `GETTING STARTED:\n` +
       `1. Access your account and explore the Dashboard\n` +

@@ -186,7 +186,7 @@ export class DashboardController {
 
   @Get('query')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Query knowledge base (GET)' })
+  @ApiOperation({ summary: 'Query Kote (GET)' })
   @ApiResponse({ status: 200, description: 'Query results retrieved successfully' })
   query(@Query(new ZodValidationPipe(queryRequestSchema, 'invalid_query_payload')) query: QueryRequest, @CurrentUser() user: AuthenticatedUser) {
     return this.queryKnowledge.execute(query, user.id);
@@ -195,7 +195,7 @@ export class DashboardController {
   @Post('query')
   @UseGuards(TrustedOriginGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Query knowledge base (POST)' })
+  @ApiOperation({ summary: 'Query Kote (POST)' })
   @ApiResponse({ status: 200, description: 'Query results retrieved successfully' })
   queryPost(@Body(new ZodValidationPipe(queryRequestSchema, 'invalid_query_payload')) body: QueryRequest, @CurrentUser() user: AuthenticatedUser) {
     return this.queryKnowledge.execute(body, user.id);

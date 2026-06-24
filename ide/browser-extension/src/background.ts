@@ -5,7 +5,7 @@ import { convertHtmlToMarkdown, formatNoteWithFrontmatter, type ClipPayload } fr
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'kb-save-selection',
-    title: 'Save selection to Knowledge Base',
+    title: 'Save selection to Kote',
     contexts: ['selection'],
   });
 });
@@ -80,7 +80,7 @@ async function saveClippedNote(clip: ClipPayload, tags: string[] = [], projectSl
     'defaultProject',
   ]);
 
-  const resolvedApiUrl = apiUrl || 'https://pedro-duarte.ddns.net/knowledge-base';
+  const resolvedApiUrl = apiUrl || 'https://pedro-duarte.ddns.net/kote';
 
   if (!connectionToken) {
     throw new Error('Connection Token not configured. Please open extension settings.');

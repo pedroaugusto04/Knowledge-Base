@@ -52,15 +52,15 @@ export function LandingPage() {
 
   return (
     <main className="landing-layout">
-      <section className="landing-shell" aria-label="Knowledge Vault landing page">
+      <section className="landing-shell" aria-label="Kote landing page">
         
         {/* HEADER / TOPBAR */}
         <header className="landing-topbar">
-          <Link className="landing-brand" to={routes.auth} aria-label="Knowledge Vault">
+          <Link className="landing-brand" to={routes.auth} aria-label="Kote">
             <BrandMark />
             <div>
-              <strong>Knowledge Vault</strong>
-              <span>developer knowledge base</span>
+              <strong>Kote</strong>
+              <span>Your Team's Second Brain</span>
             </div>
           </Link>
           <div className="landing-topbar-actions">

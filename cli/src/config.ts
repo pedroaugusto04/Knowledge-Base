@@ -59,7 +59,7 @@ const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 export function loadConfig(): CliConfig {
   const defaults: CliConfig = {
-    apiUrl: process.env.KB_API_URL || process.env.KB_API_PUBLIC_BASE_URL || 'https://pedro-duarte.ddns.net/knowledge-base/api',
+    apiUrl: process.env.KB_API_URL || process.env.KB_API_PUBLIC_BASE_URL || 'https://pedro-duarte.ddns.net/kote/api',
     workspaceSlug: process.env.KB_CLI_WORKSPACE || 'default',
     defaultProjectSlug: process.env.KB_CLI_PROJECT || 'inbox',
     cookies: {},

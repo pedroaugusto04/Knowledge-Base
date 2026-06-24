@@ -1,7 +1,7 @@
 {
-  "name": "@pedroaugusto04/kb-cli",
+  "name": "@pedroaugusto04/kote-cli",
   "version": "1.2.8",
-  "description": "CLI client for the Knowledge Base AI system",
+  "description": "CLI client for the Kote AI system",
   "type": "module",
   "bin": {
     "kb": "dist/index.js"

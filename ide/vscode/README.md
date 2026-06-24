@@ -1,15 +1,15 @@
-# Knowledge Vault for VS Code
+# Kote for VS Code
 
-Integrate your Knowledge Vault directly into VS Code — search, ask AI, save notes without leaving your editor.
+Integrate your Kote directly into VS Code — search, ask AI, save notes without leaving your editor.
 
-[![Visual Studio Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=knowledge-base.knowledge-base-vscode)
+[![Visual Studio Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=kote.kote-vscode)
 
 ## Features
 
 - **Dedicated Sidebar**: Interactive AI chat and manual note saving
 - **Quick AI Questions**: Ask questions without leaving your editor (Ctrl+Shift+K)
 - **Save Code Selection**: Right-click any code selection to save as a note
-- **Save Active File**: Save entire files directly to your knowledge base
+- **Save Active File**: Save entire files directly to your Kote
 - **AI Session History**: View and search recent AI-assisted development sessions
 - **Real-time Sync**: Monitor and sync local AI CLI sessions automatically
 
@@ -26,24 +26,24 @@ Integrate your Knowledge Vault directly into VS Code — search, ask AI, save no
 
 1. Open VS Code
 2. Go to Extensions (Ctrl+Shift+X)
-3. Search for "Knowledge Vault"
+3. Search for "Kote"
 4. Click Install
 
 ### Manual Installation
 
-1. Download the latest `.vsix` file from the [Releases](https://github.com/pedroaugusto04/knowledge-base/releases) page
+1. Download the latest `.vsix` file from the [Releases](https://github.com/pedroaugusto04/kote/releases) page
 2. Open VS Code
 3. Run "Extensions: Install from VSIX..." from the Command Palette (Ctrl+Shift+P)
 4. Select the downloaded file
 
 ## Getting Started
 
-### 1. Configure Your Knowledge Vault
+### 1. Configure Your Kote
 
-After installation, you'll need to connect to your Knowledge Vault instance:
+After installation, you'll need to connect to your Kote instance:
 
-1. Open the Knowledge Vault sidebar (click the icon in the activity bar)
-2. Enter your Knowledge Vault URL
+1. Open the Kote sidebar (click the icon in the activity bar)
+2. Enter your Kote URL
 3. Provide your API credentials
 4. Select your default workspace/project
 
@@ -56,7 +56,7 @@ After installation, you'll need to connect to your Knowledge Vault instance:
 1. Select text in your editor (optional)
 2. Press `Ctrl+Shift+K`
 3. Type your question
-4. Get instant answers from your knowledge base
+4. Get instant answers from your Kote
 
 #### Save Code Selection
 
@@ -74,7 +74,7 @@ After installation, you'll need to connect to your Knowledge Vault instance:
 
 #### View AI Sessions
 
-1. Open Knowledge Vault sidebar
+1. Open Kote sidebar
 2. Click the history icon (clock) in the sidebar title
 3. Browse recent AI-assisted development sessions
 4. Click any session to view details
@@ -119,7 +119,7 @@ The extension can automatically sync sessions from:
 
 - Save reviewed code sections with notes
 - Ask AI about similar patterns in your codebase
-- Build a knowledge base of code decisions
+- Build a Kote of code decisions
 
 ### Documentation
 
@@ -137,7 +137,7 @@ The extension can automatically sync sessions from:
 
 - [Main Project Documentation](../../README.md)
 - [CLI Documentation](../../cli/README.md)
-- [Knowledge Vault Repository](https://github.com/pedroaugusto04/knowledge-base)
+- [Kote Repository](https://github.com/pedroaugusto04/kote)
 
 ## License
 

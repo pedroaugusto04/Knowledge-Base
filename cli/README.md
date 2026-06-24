@@ -4,18 +4,18 @@
 
 # kb-cli
 
-CLI client for the Knowledge Base AI system - interact with your Knowledge Vault directly from the terminal.
+CLI client for the Kote AI system - interact with your Kote directly from the terminal.
 
 ## About
 
-`kb-cli` is the official command-line interface for Knowledge Vault. It allows you to sync local files and directories, capture AI session histories, and interact with your knowledge base without leaving your terminal.
+`kb-cli` is the official command-line interface for Kote. It allows you to sync local files and directories, capture AI session histories, and interact with your Kote without leaving your terminal.
 
 Perfect for automating knowledge capture in CI/CD pipelines, local development scripts, or any workflow where the terminal is your primary interface.
 
 ## Installation
 
 ```bash
-npm install -g @pedroaugusto04/kb-cli
+npm install -g @pedroaugusto04/kote-cli
 ```
 
 ## Quick Start
@@ -35,7 +35,7 @@ kb --help
 kb init
 ```
 
-This will prompt you for your Knowledge Vault instance URL and credentials, creating a configuration file in your home directory.
+This will prompt you for your Kote instance URL and credentials, creating a configuration file in your home directory.
 
 ### Sync AI Session History (Primary Feature)
 
@@ -46,7 +46,7 @@ kb sync-ai
 
 This will scan for AI sessions and prompt you to select which ones to import.
 
-### Sync Files to Knowledge Vault (Optional)
+### Sync Files to Kote (Optional)
 
 ```bash
 # Sync an entire directory
@@ -64,13 +64,13 @@ kb sync --dir ./src --project my-project --watch
 ### `kb init`
 
 Initialize CLI configuration. Prompts for:
-- Knowledge Vault API URL
+- Kote API URL
 - API credentials (email/password or token)
 - Default project (optional)
 
 ### `kb sync`
 
-Sync local files or directories to your Knowledge Vault.
+Sync local files or directories to your Kote.
 
 **Options:**
 - `--dir <path>`: Sync a directory
@@ -121,7 +121,7 @@ kb sync-ai --session-path ~/.claude/sessions --project ai-work --watch
 
 <p align="center">
   <img src="../docs/screenshots/cli-commands.png" alt="CLI Commands" width="100%" style="max-height: 600px;">
-  <br><em>Command-line interface for syncing files and interacting with Knowledge Vault.</em>
+  <br><em>Command-line interface for syncing files and interacting with Kote.</em>
 </p>
 
 <p align="center">
@@ -141,7 +141,7 @@ kb sync --file ./CHANGELOG.md --project releases
 ```
 
 ### Documentation Workflow
-Keep documentation in sync with your knowledge base:
+Keep documentation in sync with your Kote:
 
 ```bash
 # Watch docs folder for changes
@@ -161,7 +161,7 @@ kb sync-ai --session-path ~/.claude/sessions --project development-history
 
 - [Main Project Documentation](../README.md)
 - [VS Code Extension](../ide/vscode/README.md)
-- [Knowledge Vault Repository](https://github.com/pedroaugusto04/knowledge-base)
+- [Kote Repository](https://github.com/pedroaugusto04/knowledge-base)
 
 ## License
 

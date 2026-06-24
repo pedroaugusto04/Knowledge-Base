@@ -61,10 +61,10 @@ export async function createApp(): Promise<NestExpressApplication> {
 
   // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('Knowledge Base API')
-    .setDescription('API documentation for Knowledge Base application')
+    .setTitle('Kote API')
+    .setDescription('API documentation for Kote application')
     .setVersion('1.0')
-    .addServer('/knowledge-base', 'Production')
+    .addServer('/kote', 'Production')
     .addBearerAuth()
     .addCookieAuth('accessToken')
     .addCookieAuth('refreshToken')

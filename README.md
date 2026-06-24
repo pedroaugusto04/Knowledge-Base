@@ -1,13 +1,13 @@
-# Knowledge Vault
-https://knowledgebase.sbs/knowledge-base
+# Kote
+https://knowledgebase.sbs/kote
 
-**Knowledge Vault** centralizes your team's operational knowledge and decisions in one place, preventing knowledge fragmentation and accelerating the integration of new team members into your workflow.
+**Kote** centralizes your team's operational knowledge and decisions in one place, preventing knowledge fragmentation and accelerating the integration of new team members into your workflow.
 
 ![Home Overview](docs/screenshots/home-overview.png)
 
 ---
 
-## Why Knowledge Vault?
+## Why Kote?
 
 * **Zero Context Loss:** Complete history of decisions, routines, and operational exceptions.
 * **Faster Onboarding:** New team members find the entire project history in seconds.
@@ -17,17 +17,17 @@ https://knowledgebase.sbs/knowledge-base
 
 ## Core Features
 
-* **GitHub Push Integration:** Capture `git push` events, analyze commits/diffs with AI, and automatically send technical summaries to your knowledge base and team channels.
+* **GitHub Push Integration:** Capture `git push` events, analyze commits/diffs with AI, and automatically send technical summaries to your Kote and team channels.
   
 * **WhatsApp Integration:** Send audio or text messages to generate AI-structured notes, use `/ask` to search for information and inserted files, and receive automatic reminders directly in WhatsApp.
   
 * **Telegram Integration:** Get pipeline failure alerts, review summaries, and interact directly with the bot for quick knowledge capture.
   
-* **AI-Powered Conversations:** Integrated chat interface to ask questions about your knowledge base with project filters and conversation history.
+* **AI-Powered Conversations:** Integrated chat interface to ask questions about your Kote with project filters and conversation history.
   
 * **CLI Tool:** Command-line interface for syncing local files and AI session histories directly from your terminal.
   
-* **VS Code Extension:** Complete Knowledge Vault integration with sidebar chat, quick shortcuts, and direct code/file saving from your editor.
+* **VS Code Extension:** Complete Kote integration with sidebar chat, quick shortcuts, and direct code/file saving from your editor.
   
 * **Contextual Search:** Find answers instantly across your entire organizational history.
   
@@ -39,13 +39,13 @@ https://knowledgebase.sbs/knowledge-base
 
 ### GitHub Push Integration
 
-Automatically capture knowledge when you push to GitHub. AI analyzes commits and diffs, storing summaries in your knowledge base with WhatsApp alerts for relevant problems only.
+Automatically capture knowledge when you push to GitHub. AI analyzes commits and diffs, storing summaries in your Kote with WhatsApp alerts for relevant problems only.
 
 ### AI-Powered Conversations
 
 <p align="center">
   <img src="docs/screenshots/ask-ai-overview.png" alt="Ask AI" width="100%" style="max-height: 600px;">
-  <br><em>Chat interface to ask questions about your knowledge base with project-specific filters.</em>
+  <br><em>Chat interface to ask questions about your Kote with project-specific filters.</em>
 </p>
 
 Get instant answers from your team's collective knowledge without searching manually. The AI 
@@ -96,7 +96,7 @@ Connect your existing tools to capture knowledge where your team already works.
 
 <p align="center">
   <img src="docs/screenshots/cli-commands.png" alt="CLI Commands" width="100%" style="max-height: 600px;">
-  <br><em>Command-line interface for syncing files and interacting with Knowledge Vault.</em>
+  <br><em>Command-line interface for syncing files and interacting with Kote.</em>
 </p>
 
 Sync AI sessions (Claude Code, Codex, Antigravity, OpenCode) and files from your terminal.
@@ -108,12 +108,12 @@ Sync AI sessions (Claude Code, Codex, Antigravity, OpenCode) and files from your
 
 <p align="center">
   <img src="docs/screenshots/ai-conversation-example.png" alt="AI Conversation" width="100%" style="max-height: 600px;">
-  <br><em>Example note created from syncing an AI session to your knowledge base.</em>
+  <br><em>Example note created from syncing an AI session to your Kote.</em>
 </p>
 
 **Installation:**
 ```bash
-npm install -g @pedroaugusto04/kb-cli
+npm install -g @pedroaugusto04/kote-cli
 kb init
 ```
 
@@ -135,7 +135,7 @@ For complete CLI documentation, see [cli/README.md](cli/README.md).
 
 Save code snippets or entire files directly from your editor. Right-click selections to save, use keyboard shortcuts for quick AI questions, and view AI session history for import.
 
-**Installation:** Search for "Knowledge Vault" in the VS Code Extension Marketplace.
+**Installation:** Search for "Kote" in the VS Code Extension Marketplace.
 
 For complete extension documentation, see [ide/vscode/README.md](ide/vscode/README.md).
 

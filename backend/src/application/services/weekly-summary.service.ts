@@ -82,7 +82,7 @@ export class WeeklySummaryService {
           if (totalNotes === 0) continue;
 
           const environment = this.environmentProvider.read();
-          const appName = (environment.emailFrom || 'Knowledge Base').split('@')[0];
+          const appName = (environment.emailFrom || 'Kote').split('@')[0];
           const subject = `${appName} — Weekly summary (${totalNotes} new note${totalNotes > 1 ? 's' : ''})`;
 
           const textParts: string[] = [];

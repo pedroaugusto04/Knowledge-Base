@@ -15,8 +15,8 @@ const returnToPathSchema = z.string().trim().optional().transform((value, ctx) =
     return z.NEVER;
   }
   try {
-    const parsed = new URL(value, 'https://knowledge-base.local');
-    if (parsed.origin !== 'https://knowledge-base.local') throw new Error('invalid_origin');
+    const parsed = new URL(value, 'https://kote.local');
+    if (parsed.origin !== 'https://kote.local') throw new Error('invalid_origin');
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Use a relative return path.', path: ['returnToPath'] });

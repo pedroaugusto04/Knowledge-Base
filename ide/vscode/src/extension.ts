@@ -24,7 +24,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     logInfo('Extension', 'Session expired, triggering onAuthChange and reloading webview');
     vscode.commands.executeCommand('kb.onAuthChange');
     sidebarProvider.reloadWebview();
-    vscode.window.showErrorMessage('Your Knowledge Base session has expired. Please log in again.');
+    vscode.window.showErrorMessage('Your Kote session has expired. Please log in again.');
   };
 
   // -------------------------------------------------------------------------

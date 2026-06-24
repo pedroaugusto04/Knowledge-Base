@@ -4,9 +4,9 @@ import { saveConfig } from '../config.js';
 import { ApiClient } from '../client.js';
 
 export async function runInit(): Promise<void> {
-  intro(pc.cyan('Knowledge Base (kb) CLI Setup'));
+  intro(pc.cyan('Kote (kb) CLI Setup'));
 
-  const apiUrl = 'https://pedro-duarte.ddns.net/knowledge-base/api';
+  const apiUrl = 'https://pedro-duarte.ddns.net/kote/api';
 
   const authMethod = await select({
     message: 'Select authentication method:',
@@ -28,7 +28,7 @@ export async function runInit(): Promise<void> {
 
   try {
     if (authMethod === 'google') {
-      const googleStartUrl = `${apiUrl}/auth/google/start?returnTo=/knowledge-base/auth`;
+      const googleStartUrl = `${apiUrl}/auth/google/start?returnTo=/kote/auth`;
       console.log('\n' + pc.cyan('Google OAuth Instructions:'));
       console.log(`1. Open the following URL in your browser to log in:`);
       console.log(`   ${pc.underline(pc.bold(pc.blue(googleStartUrl)))}`);

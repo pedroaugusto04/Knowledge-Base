@@ -155,7 +155,7 @@ export function readEnvironment(env = process.env): RuntimeEnvironment {
     adminPassword: String(env.KB_ADMIN_PASSWORD || '').trim(),
     emailProvider: (String(env.KB_EMAIL_PROVIDER || 'resend').trim().toLowerCase() as RuntimeEnvironment['emailProvider']),
     emailResendApiKey: String(env.KB_EMAIL_RESEND_API_KEY || '').trim(),
-    emailFrom: String(env.KB_EMAIL_FROM || env.KB_ADMIN_EMAIL || 'Knowledge Base <no-reply@knowledge-base.local>').trim(),
+    emailFrom: String(env.KB_EMAIL_FROM || env.KB_ADMIN_EMAIL || 'Kote <no-reply@kote.local>').trim(),
     emailSmtpHost: String(env.KB_EMAIL_SMTP_HOST || '').trim(),
     emailSmtpPort: Number(env.KB_EMAIL_SMTP_PORT || 587),
     emailSmtpUser: String(env.KB_EMAIL_SMTP_USER || '').trim(),

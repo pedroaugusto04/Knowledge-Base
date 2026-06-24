@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load stored configuration
   const config = await chrome.storage.local.get(['apiUrl', 'connectionToken', 'defaultProject']);
-  const defaultApiUrl = 'https://pedro-duarte.ddns.net/knowledge-base';
+  const defaultApiUrl = 'https://pedro-duarte.ddns.net/kote';
   let apiUrl = config.apiUrl || defaultApiUrl;
 
   apiUrl = apiUrl.trim().replace(/\/$/, '');
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load Projects list from backend
   async function loadProjects() {
     const config = await chrome.storage.local.get(['apiUrl', 'connectionToken']);
-    let currentApiUrl = config.apiUrl || 'https://pedro-duarte.ddns.net/knowledge-base';
+    let currentApiUrl = config.apiUrl || 'https://pedro-duarte.ddns.net/kote';
     currentApiUrl = currentApiUrl.trim().replace(/\/$/, '');
     if (currentApiUrl.endsWith('/api')) {
       currentApiUrl = currentApiUrl.slice(0, -4);

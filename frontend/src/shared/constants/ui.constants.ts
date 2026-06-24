@@ -75,8 +75,8 @@ export const UI_MESSAGES = {
   // App shell and navigation labels
   NOTE_DETAILS: 'Note details',
   DOCUMENTATION: 'Documentation',
-  KNOWLEDGE_VAULT: 'Knowledge Vault',
-  DEVELOPER_KNOWLEDGE_BASE: 'developer knowledge base',
+  KNOWLEDGE_VAULT: 'Kote',
+  DEVELOPER_KNOWLEDGE_BASE: 'Your Team\'s Second Brain',
   WORKSPACE: 'Workspace',
   SEARCH_NOTES_PATHS_OR_TAGS: 'Search notes, paths, or tags',
   SEARCHING: 'Searching...',

@@ -83,7 +83,7 @@ export class ResendEmailProvider extends EmailProvider {
       html,
       text: payload.text ?? undefined,
       headers: {
-        'X-KB-Service': 'Knowledge Base',
+        'X-KB-Service': 'Kote',
       },
     } as any);
 

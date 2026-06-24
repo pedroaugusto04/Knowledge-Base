@@ -1,6 +1,6 @@
 const DEFAULT_FRONTEND_URL = 'http://localhost:5173';
 const DEFAULT_LOGO_ASSET_PATH = 'icon-512.png';
-const DEFAULT_APP_NAME = 'Knowledge Base';
+const DEFAULT_APP_NAME = 'Kote';
 
 const stripTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
 

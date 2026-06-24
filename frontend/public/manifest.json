@@ -1,6 +1,6 @@
 {
-  "name": "Knowledge Vault",
-  "short_name": "KB Vault",
+  "name": "Kote",
+  "short_name": "Kote",
   "description": "Centralize your team's operational knowledge in one place.",
   "start_url": "./",
   "display": "standalone",

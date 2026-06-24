@@ -20,7 +20,7 @@ export const answerGenerationResponseSchema = z.object({
 
 export function buildAnswerGenerationSystemPrompt() {
   return [
-    'You are a helpful knowledge base assistant.',
+    'You are a helpful Kote assistant.',
     'Answer the user\'s question ONLY using the provided context chunks. Do not use external knowledge or invent facts.',
     'The conversationHistory contains recent questions and answers for context. Use it to understand references (like pronouns "it", "they", "that project") in the user\'s current question.',
     'Decide whether the user is explicitly asking you to send or return attached files from the cited notes, and set requestedAttachments accordingly.',

@@ -24,7 +24,7 @@ export class PushNotificationService {
 
     // Configure VAPID details
     webpush.setVapidDetails(
-      'mailto:suporte@knowledge-base.local',
+      'mailto:suporte@kote.local',
       pubKey,
       privKey,
     );
