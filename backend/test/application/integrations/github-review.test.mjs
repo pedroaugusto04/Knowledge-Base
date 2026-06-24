@@ -136,8 +136,8 @@ test('github push is converted to canonical code review event', async () => {
         commits: [
           {
             id: 'def456',
-            message: 'refactor knowledge base',
-            modified: ['knowledge-base/src/index.ts'],
+            message: 'refactor kote',
+            modified: ['kote/src/index.ts'],
           },
         ],
       },
@@ -311,7 +311,7 @@ test('github app push sends whatsapp alert for high severity AI review findings'
         reviewAiBaseUrl: 'https://ai.example.com/v1',
         reviewAiModel: 'review-model',
         reviewAiApiKey: 'review-key',
-        publicBaseUrl: 'https://kb.example.com/knowledge-base',
+        publicBaseUrl: 'https://kb.example.com/kote',
       }),
     },
     {
@@ -397,7 +397,7 @@ test('github app push sends whatsapp alert for high severity AI review findings'
   assert.equal(whatsappMessages.length, 1);
   assert.equal(whatsappMessages[0].chatJid, '5511999999999@s.whatsapp.net');
   assert.match(whatsappMessages[0].text, /Commit: def456/);
-  assert.match(whatsappMessages[0].text, /Note details: https:\/\/kb\.example\.com\/knowledge-base\/vault\/note-1/);
+  assert.match(whatsappMessages[0].text, /Note details: https:\/\/kb\.example\.com\/kote\/vault\/note-1/);
   assert.match(whatsappMessages[0].text, /The push introduces a risky permission change/);
   assert.match(whatsappMessages[0].text, /\*Important issues\*/);
   assert.match(whatsappMessages[0].text, /\*HIGH\* \(src\/private\.ts\)/);

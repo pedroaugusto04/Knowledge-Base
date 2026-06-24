@@ -459,13 +459,13 @@ test('google callback with invalid state redirects prepending base path from env
   const { auth, repositories } = await fixture(t, { googleGateway: googleGateway() });
   const originalBaseUrl = process.env.KB_PUBLIC_BASE_URL;
   try {
-    process.env.KB_PUBLIC_BASE_URL = 'https://kb.example.com/knowledge-base';
+    process.env.KB_PUBLIC_BASE_URL = 'https://kb.example.com/kote';
     const controller = new AuthController(auth);
     const callbackResponse = responseMock();
 
     await controller.googleCallback('google-code', 'wrong-state', { headers: {} }, callbackResponse);
 
-    assert.equal(callbackResponse.redirectedTo, '/knowledge-base/auth?error=google_auth_failed');
+    assert.equal(callbackResponse.redirectedTo, '/kote/auth?error=google_auth_failed');
     assert.equal(callbackResponse.cookies.length, 0);
     assert.equal(await repositories.userRepository.findUserByEmail('google.user@example.com'), null);
   } finally {

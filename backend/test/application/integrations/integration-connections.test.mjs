@@ -483,7 +483,7 @@ test('guided integrations reject missing workspace and github callback keeps bro
     userId: user.id,
     workspaceSlug: 'product-team',
     provider: 'github-app',
-    returnToPath: '/knowledge-base/setup',
+    returnToPath: '/kote/setup',
     browserOrigin: 'https://kb.example.com',
   });
   const originalFetch = globalThis.fetch;
@@ -496,7 +496,7 @@ test('guided integrations reject missing workspace and github callback keeps bro
     };
 
     const result = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), installationId: '55' });
-    assert.equal(result.redirectUrl, 'https://kb.example.com/knowledge-base/setup?integration=github-app&status=connected&workspaceSlug=product-team');
+    assert.equal(result.redirectUrl, 'https://kb.example.com/kote/setup?integration=github-app&status=connected&workspaceSlug=product-team');
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -507,7 +507,7 @@ test('github callback fallback redirect preserves base path from public base url
   const previousPublicBaseUrl = process.env.KB_PUBLIC_BASE_URL;
   const originalFetch = globalThis.fetch;
   try {
-    process.env.KB_PUBLIC_BASE_URL = 'https://kb.example.com/knowledge-base';
+    process.env.KB_PUBLIC_BASE_URL = 'https://kb.example.com/kote';
 
     const setup = await connections.connect({
       userId: user.id,
@@ -522,7 +522,7 @@ test('github callback fallback redirect preserves base path from public base url
     };
 
     const result = await connections.completeGithub({ userId: user.id, state: stateFromRedirect(setup), installationId: '42' });
-    assert.equal(result.redirectUrl, 'https://kb.example.com/knowledge-base/automations/integrations?integration=github-app&status=connected&workspaceSlug=default');
+    assert.equal(result.redirectUrl, 'https://kb.example.com/kote/automations/integrations?integration=github-app&status=connected&workspaceSlug=default');
   } finally {
     globalThis.fetch = originalFetch;
     process.env.KB_PUBLIC_BASE_URL = previousPublicBaseUrl;

@@ -18,7 +18,7 @@ test('connection redirect helpers reject unsafe values and preserve base paths',
   assert.equal(normalizeBrowserOrigin('https://kb.example.com/path'), 'https://kb.example.com');
   assert.equal(normalizeReturnToPath('//evil.example.com', '/automations/integrations'), '/automations/integrations');
 
-  const url = buildBrowserRedirectUrl('https://kb.example.com/knowledge-base', '/automations/integrations');
+  const url = buildBrowserRedirectUrl('https://kb.example.com/kote', '/automations/integrations');
   url.searchParams.set('status', 'connected');
-  assert.equal(url.toString(), 'https://kb.example.com/knowledge-base/automations/integrations?status=connected');
+  assert.equal(url.toString(), 'https://kb.example.com/kote/automations/integrations?status=connected');
 });

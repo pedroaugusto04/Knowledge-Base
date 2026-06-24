@@ -140,8 +140,8 @@ describe('api client', () => {
   });
 
   it('resolves API asset paths under the configured API base path', () => {
-    expect(resolveApiPath('/api/auth/avatar/content?v=1', '/knowledge-base/api')).toBe('/knowledge-base/api/auth/avatar/content?v=1');
-    expect(resolveApiPath('https://cdn.example.com/avatar.png', '/knowledge-base/api')).toBe('https://cdn.example.com/avatar.png');
+    expect(resolveApiPath('/api/auth/avatar/content?v=1', '/kote/api')).toBe('/kote/api/auth/avatar/content?v=1');
+    expect(resolveApiPath('https://cdn.example.com/avatar.png', '/kote/api')).toBe('https://cdn.example.com/avatar.png');
   });
 
   it('refreshes once after a session 401 and retries the original request', async () => {

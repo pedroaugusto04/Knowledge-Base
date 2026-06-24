@@ -458,8 +458,8 @@ test('deletes manual note and attachments', async (t) => {
 test('note list and detail expose attachment metadata without storage internals', async (t) => {
   const previousPublicBaseUrl = process.env.KB_PUBLIC_BASE_URL;
   const previousApiPublicBaseUrl = process.env.KB_API_PUBLIC_BASE_URL;
-  process.env.KB_PUBLIC_BASE_URL = 'https://kb.example.com/knowledge-base';
-  process.env.KB_API_PUBLIC_BASE_URL = 'https://kb.example.com/knowledge-base/api';
+  process.env.KB_PUBLIC_BASE_URL = 'https://kb.example.com/kote';
+  process.env.KB_API_PUBLIC_BASE_URL = 'https://kb.example.com/kote/api';
   t.after(() => {
     if (previousPublicBaseUrl === undefined) delete process.env.KB_PUBLIC_BASE_URL;
     else process.env.KB_PUBLIC_BASE_URL = previousPublicBaseUrl;
@@ -547,7 +547,7 @@ test('note list and detail expose attachment metadata without storage internals'
   assert.equal(detail.attachmentCount, 2);
   assert.equal(detail.attachments.length, 2);
   assert.deepEqual(Object.keys(detail.attachments[0]).sort(), ['fileName', 'id', 'mimeType', 'sizeBytes', 'url']);
-  assert.match(detail.attachments[0].url, new RegExp(`^https://kb\\.example\\.com/knowledge-base/api/notes/${note.id}/attachments/.+/content$`));
+  assert.match(detail.attachments[0].url, new RegExp(`^https://kb\\.example\\.com/kote/api/notes/${note.id}/attachments/.+/content$`));
   assert.equal(Object.hasOwn(detail.attachments[0], 'storageKey'), false);
   assert.equal(Object.hasOwn(detail.attachments[0], 'dataBase64'), false);
 });

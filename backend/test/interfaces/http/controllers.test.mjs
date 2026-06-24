@@ -7,7 +7,7 @@ import { ApplicationAccessController, DashboardController, GithubAppCallbackCont
 test('health controller exposes service status', () => {
   const controller = new HealthController();
 
-  assert.deepEqual(controller.health(), { ok: true, service: 'knowledge-base' });
+  assert.deepEqual(controller.health(), { ok: true, service: 'kote' });
 });
 
 test('application access controller logs landing page visits through the use case', async () => {

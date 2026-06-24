@@ -14,7 +14,7 @@ test('workflow adapters use internal HTTP API and avoid embedded credentials', a
 
   for (const file of files) {
     const raw = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-    assert.doesNotMatch(raw, /\/home\/node\/knowledge-base\/dist\/cli\//);
+    assert.doesNotMatch(raw, /\/home\/node\/kote\/dist\/cli\//);
     assert.doesNotMatch(raw, /executeCommand/);
     assert.match(raw, /n8n-nodes-base\.httpRequest/);
     assert.match(raw, /KB_INTERNAL_SERVICE_TOKEN/);
