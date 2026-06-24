@@ -2,13 +2,13 @@
   <img src="../ide/vscode/resources/kb-icon.svg" alt="kb-cli Logo" width="120" height="120">
 </p>
 
-# kb-cli
+# kote-cli
 
 CLI client for the Kote AI system - interact with your Kote directly from the terminal.
 
 ## About
 
-`kb-cli` is the official command-line interface for Kote. It allows you to sync local files and directories, capture AI session histories, and interact with your Kote without leaving your terminal.
+`kote-cli` is the official command-line interface for Kote. It allows you to sync local files and directories, capture AI session histories, and interact with your Kote without leaving your terminal.
 
 Perfect for automating knowledge capture in CI/CD pipelines, local development scripts, or any workflow where the terminal is your primary interface.
 
@@ -23,16 +23,16 @@ npm install -g @pedroaugusto04/kote-cli
 ### Get Help
 
 ```bash
-kb
+kote
 help
 # or use
-kb --help
+kote --help
 ```
 
 ### Initialize Configuration
 
 ```bash
-kb init
+kote init
 ```
 
 This will prompt you for your Kote instance URL and credentials, creating a configuration file in your home directory.
@@ -41,7 +41,7 @@ This will prompt you for your Kote instance URL and credentials, creating a conf
 
 ```bash
 # Interactive session selection
-kb sync-ai
+kote sync-ai
 ```
 
 This will scan for AI sessions and prompt you to select which ones to import.
@@ -50,25 +50,25 @@ This will scan for AI sessions and prompt you to select which ones to import.
 
 ```bash
 # Sync an entire directory
-kb sync --dir ./docs --project my-project
+kote sync --dir ./docs --project my-project
 
 # Sync a single file
-kb sync --file ./README.md --project my-project
+kote sync --file ./README.md --project my-project
 
 # Sync with real-time monitoring
-kb sync --dir ./src --project my-project --watch
+kote sync --dir ./src --project my-project --watch
 ```
 
 ## Key Commands
 
-### `kb init`
+### `kote init`
 
 Initialize CLI configuration. Prompts for:
 - Kote API URL
 - API credentials (email/password or token)
 - Default project (optional)
 
-### `kb sync`
+### `kote sync`
 
 Sync local files or directories to your Kote.
 
@@ -82,19 +82,19 @@ Sync local files or directories to your Kote.
 **Examples:**
 ```bash
 # Sync documentation folder
-kb sync --dir ./docs --project documentation
+kote sync --dir ./docs --project documentation
 
 # Sync specific configuration file
-kb sync --file ./package.json --project infrastructure
+kote sync --file ./package.json --project infrastructure
 
 # Watch and sync changes automatically
-kb sync --dir ./src --project backend --watch
+kote sync --dir ./src --project backend --watch
 
 # Test what would be synced
-kb sync --dir ./docs --project docs --dry-run
+kote sync --dir ./docs --project docs --dry-run
 ```
 
-### `kb sync-ai`
+### `kote sync-ai`
 
 Sync AI-assisted development session histories to preserve valuable insights.
 
@@ -111,10 +111,10 @@ Sync AI-assisted development session histories to preserve valuable insights.
 **Examples:**
 ```bash
 # Sync Claude Code sessions
-kb sync-ai --session-path ~/.claude/sessions --project ai-experiments
+kote sync-ai --session-path ~/.claude/sessions --project ai-experiments
 
 # Monitor for new sessions automatically
-kb sync-ai --session-path ~/.claude/sessions --project ai-work --watch
+kote sync-ai --session-path ~/.claude/sessions --project ai-work --watch
 ```
 
 ## Screenshots
@@ -136,8 +136,8 @@ Automatically capture build artifacts, deployment notes, and configuration chang
 
 ```bash
 # In your CI pipeline
-kb sync --dir ./build-artifacts --project deployments
-kb sync --file ./CHANGELOG.md --project releases
+kote sync --dir ./build-artifacts --project deployments
+kote sync --file ./CHANGELOG.md --project releases
 ```
 
 ### Documentation Workflow
@@ -145,7 +145,7 @@ Keep documentation in sync with your Kote:
 
 ```bash
 # Watch docs folder for changes
-kb sync --dir ./docs --project documentation --watch
+kote sync --dir ./docs --project documentation --watch
 ```
 
 ### AI Session Archiving
@@ -153,7 +153,7 @@ Preserve valuable AI-assisted development sessions:
 
 ```bash
 # Archive Claude Code sessions as searchable knowledge
-kb sync-ai --session-path ~/.claude/sessions --project development-history
+kote sync-ai --session-path ~/.claude/sessions --project development-history
 ```
 
 

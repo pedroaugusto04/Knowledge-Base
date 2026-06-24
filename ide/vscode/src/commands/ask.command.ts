@@ -13,7 +13,7 @@ export function registerAskCommand(
   getProject: () => string,
 ): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand('kb.ask', async () => {
+    vscode.commands.registerCommand('kote.ask', async () => {
       const question = await vscode.window.showInputBox({
         prompt: 'Ask your Kote',
         placeHolder: 'e.g. How is authentication configured in this project?',
@@ -44,7 +44,7 @@ export function registerAskCommand(
               );
 
               if (action === 'Open Chat') {
-                vscode.commands.executeCommand('kb.openChat');
+                vscode.commands.executeCommand('kote.openChat');
               } else if (action === 'Save as Note') {
                 try {
                   await client.createNote({

@@ -58,7 +58,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               this._client.reload();
               vscode.window.showInformationMessage(`Connected to workspace: ${workspaces[0].displayName || workspaces[0].workspaceSlug}`);
               this.reloadWebview();
-              vscode.commands.executeCommand('kb.onAuthChange');
+              vscode.commands.executeCommand('kote.onAuthChange');
             } else {
               this._post({ type: 'loginSuccess', workspaces });
             }
@@ -79,7 +79,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               this._client.reload();
               vscode.window.showInformationMessage(`Connected to workspace: ${workspaces[0].displayName || workspaces[0].workspaceSlug}`);
               this.reloadWebview();
-              vscode.commands.executeCommand('kb.onAuthChange');
+              vscode.commands.executeCommand('kote.onAuthChange');
             } else {
               this._post({ type: 'loginSuccess', workspaces });
             }

@@ -74,8 +74,8 @@ export async function runInit(): Promise<void> {
       saveConfig({
         apiUrl,
         cookies: {
-          kb_access_token: accessToken,
-          kb_refresh_token: refreshToken,
+          kote_access_token: accessToken,
+          kote_refresh_token: refreshToken,
         },
       });
     } else {

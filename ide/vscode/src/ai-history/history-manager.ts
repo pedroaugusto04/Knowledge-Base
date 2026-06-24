@@ -48,7 +48,7 @@ export class AiHistoryManager {
 
     // Load persisted known session hashes
     try {
-      const persistedHashes = context.globalState.get<[string, string][]>('kb.knownSessionHashes') || [];
+      const persistedHashes = context.globalState.get<[string, string][]>('kote.knownSessionHashes') || [];
       this.knownSessionHashes = new Map(persistedHashes);
     } catch {
       this.knownSessionHashes = new Map();
@@ -56,14 +56,14 @@ export class AiHistoryManager {
 
     // Load persisted recent sessions
     try {
-      this.recentSessions = context.globalState.get<AiSession[]>('kb.recentSessions') || [];
+      this.recentSessions = context.globalState.get<AiSession[]>('kote.recentSessions') || [];
     } catch {
       this.recentSessions = [];
     }
 
     // Load persisted saved session keys
     try {
-      const persistedSaved = context.globalState.get<[string, number][]>('kb.savedSessionsMap') || [];
+      const persistedSaved = context.globalState.get<[string, number][]>('kote.savedSessionsMap') || [];
       this.savedSessions = new Map(persistedSaved);
       this.enforceSessionLimits();
     } catch {
@@ -72,7 +72,7 @@ export class AiHistoryManager {
 
     // Load persisted ignored session keys
     try {
-      const persistedIgnored = context.globalState.get<[string, number][]>('kb.ignoredSessionsMap') || [];
+      const persistedIgnored = context.globalState.get<[string, number][]>('kote.ignoredSessionsMap') || [];
       this.ignoredSessions = new Map(persistedIgnored);
       this.enforceSessionLimits();
     } catch {
@@ -191,10 +191,10 @@ export class AiHistoryManager {
     if (!this.context) return;
     try {
       const hashesArray = Array.from(this.knownSessionHashes.entries());
-      this.context.globalState.update('kb.knownSessionHashes', hashesArray);
-      this.context.globalState.update('kb.recentSessions', this.recentSessions);
-      this.context.globalState.update('kb.savedSessionsMap', Array.from(this.savedSessions.entries()));
-      this.context.globalState.update('kb.ignoredSessionsMap', Array.from(this.ignoredSessions.entries()));
+      this.context.globalState.update('kote.knownSessionHashes', hashesArray);
+      this.context.globalState.update('kote.recentSessions', this.recentSessions);
+      this.context.globalState.update('kote.savedSessionsMap', Array.from(this.savedSessions.entries()));
+      this.context.globalState.update('kote.ignoredSessionsMap', Array.from(this.ignoredSessions.entries()));
     } catch (err) {
       console.error('Failed to save AI sessions state:', err);
     }
@@ -515,7 +515,7 @@ export class AiHistoryManager {
         'Save Now'
       );
       if (choice === 'Save Now') {
-        await vscode.commands.executeCommand('kb.saveActiveFile', session.sessionId, session.providerId);
+        await vscode.commands.executeCommand('kote.saveActiveFile', session.sessionId, session.providerId);
       }
     } catch (err: any) {
       vscode.window.showErrorMessage(`Failed to open preview: ${err.message || err}`);
@@ -536,7 +536,7 @@ export class AiHistoryManager {
       });
 
       vscode.window.showInformationMessage('Note saved to Kote successfully!');
-      vscode.commands.executeCommand('kb.refresh');
+      vscode.commands.executeCommand('kote.refresh');
       return true;
     } catch (err: any) {
       vscode.window.showErrorMessage(`Failed to save note: ${err.message || err}`);
@@ -557,7 +557,7 @@ export class AiHistoryManager {
         sessionId: session.sessionId,
       });
 
-      vscode.commands.executeCommand('kb.refresh');
+      vscode.commands.executeCommand('kote.refresh');
       vscode.window.showInformationMessage(`AI session auto-saved to Kote — project: ${session.projectSlug || client.defaultProjectSlug || 'inbox'}.`);
       return true;
     } catch (err: any) {

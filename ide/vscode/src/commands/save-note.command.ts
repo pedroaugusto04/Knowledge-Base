@@ -14,7 +14,7 @@ export function registerSaveNoteCommand(
   historyManager?: AiHistoryManager
 ): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand('kb.saveSelection', async () => {
+    vscode.commands.registerCommand('kote.saveSelection', async () => {
       const editor = vscode.window.activeTextEditor;
       const selectedText = editor?.document.getText(editor.selection)?.trim();
       const fileName = editor ? vscode.workspace.asRelativePath(editor.document.fileName) : '';
@@ -54,7 +54,7 @@ export function registerSaveNoteCommand(
             });
             vscode.window.showInformationMessage(`Note saved to KB — project: ${getProject()}`);
             // Trigger sidebar refresh
-            vscode.commands.executeCommand('kb.refresh');
+            vscode.commands.executeCommand('kote.refresh');
           } catch (err: unknown) {
             reportError('save-note', err);
           }
@@ -62,7 +62,7 @@ export function registerSaveNoteCommand(
       );
     }),
 
-    vscode.commands.registerCommand('kb.saveActiveFile', async (sessionIdParam?: string, providerIdParam?: string) => {
+    vscode.commands.registerCommand('kote.saveActiveFile', async (sessionIdParam?: string, providerIdParam?: string) => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         vscode.window.showWarningMessage('No active editor open.');
@@ -119,7 +119,7 @@ export function registerSaveNoteCommand(
             if (sessionId && providerIdParam) {
               historyManager?.markSessionAsSaved(providerIdParam, sessionId);
             }
-            vscode.commands.executeCommand('kb.refresh');
+            vscode.commands.executeCommand('kote.refresh');
           } catch (err: unknown) {
             reportError('save-active-file', err);
           }

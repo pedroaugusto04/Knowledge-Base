@@ -35,7 +35,7 @@ export class ChatPanelProvider {
 
     logInfo('ChatPanelProvider', 'Creating new chat panel');
     const panel = vscode.window.createWebviewPanel(
-      'kb.chatPanel',
+      'kote.chatPanel',
       'KB: Ask AI',
       vscode.ViewColumn.Two,
       {

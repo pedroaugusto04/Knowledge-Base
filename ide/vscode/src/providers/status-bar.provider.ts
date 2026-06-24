@@ -5,7 +5,7 @@ export class StatusBarProvider {
 
   constructor() {
     this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    this.statusBarItem.command = 'kb.openChat';
+    this.statusBarItem.command = 'kote.openChat';
     this.statusBarItem.tooltip = 'Kote — click to open chat';
     this.setNotConfigured();
     this.statusBarItem.show();

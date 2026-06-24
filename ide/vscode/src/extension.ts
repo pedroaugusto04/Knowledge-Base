@@ -22,7 +22,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   kbClient.onUnauthorized = () => {
     logInfo('Extension', 'Session expired, triggering onAuthChange and reloading webview');
-    vscode.commands.executeCommand('kb.onAuthChange');
+    vscode.commands.executeCommand('kote.onAuthChange');
     sidebarProvider.reloadWebview();
     vscode.window.showErrorMessage('Your Kote session has expired. Please log in again.');
   };
@@ -51,7 +51,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // -------------------------------------------------------------------------
   sidebarProvider = new SidebarViewProvider(context.extensionUri, kbClient, activeProject);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('kb.sidebarView', sidebarProvider, {
+    vscode.window.registerWebviewViewProvider('kote.sidebarView', sidebarProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
   );
@@ -60,17 +60,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Commands
   // -------------------------------------------------------------------------
   context.subscriptions.push(
-    vscode.commands.registerCommand('kb.openChat', async () => {
-      logInfo('Extension', 'kb.openChat command triggered');
-      vscode.commands.executeCommand('kb.sidebarView.focus');
+    vscode.commands.registerCommand('kote.openChat', async () => {
+      logInfo('Extension', 'kote.openChat command triggered');
+      vscode.commands.executeCommand('kote.sidebarView.focus');
     }),
 
-    vscode.commands.registerCommand('kb.refresh', () => {
+    vscode.commands.registerCommand('kote.refresh', () => {
       sidebarProvider.refresh();
     }),
 
-    vscode.commands.registerCommand('kb.onAuthChange', async () => {
-      logInfo('Extension', 'kb.onAuthChange command triggered');
+    vscode.commands.registerCommand('kote.onAuthChange', async () => {
+      logInfo('Extension', 'kote.onAuthChange command triggered');
       kbClient.reload();
       if (isConfigured()) {
         try {
@@ -93,7 +93,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   historyManager.registerProvider(new OpenCodeHistoryProvider());
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('kb.showRecentAiSessions', () => {
+    vscode.commands.registerCommand('kote.showRecentAiSessions', () => {
       historyManager.showRecentSessions(kbClient);
     })
   );

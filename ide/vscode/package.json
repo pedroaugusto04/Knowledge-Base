@@ -31,49 +31,49 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "kb-sidebar-container",
+          "id": "kote-sidebar-container",
           "title": "Kote",
           "icon": "resources/kb-icon.svg"
         }
       ]
     },
     "views": {
-      "kb-sidebar-container": [
+      "kote-sidebar-container": [
         {
           "type": "webview",
-          "id": "kb.sidebarView",
+          "id": "kote.sidebarView",
           "name": "Kote"
         }
       ]
     },
     "commands": [
       {
-        "command": "kb.openChat",
+        "command": "kote.openChat",
         "title": "KB: Open Chat",
         "category": "Kote"
       },
       {
-        "command": "kb.ask",
+        "command": "kote.ask",
         "title": "KB: Ask (Quick Input)",
         "category": "Kote"
       },
       {
-        "command": "kb.saveSelection",
+        "command": "kote.saveSelection",
         "title": "KB: Save Selection as Note",
         "category": "Kote"
       },
       {
-        "command": "kb.refresh",
+        "command": "kote.refresh",
         "title": "KB: Refresh Sidebar",
         "category": "Kote"
       },
       {
-        "command": "kb.saveActiveFile",
+        "command": "kote.saveActiveFile",
         "title": "KB: Save Active File as Note",
         "category": "Kote"
       },
       {
-        "command": "kb.showRecentAiSessions",
+        "command": "kote.showRecentAiSessions",
         "title": "KB: View Recent AI Sessions",
         "category": "Kote",
         "icon": "$(history)"
@@ -81,7 +81,7 @@
     ],
     "keybindings": [
       {
-        "command": "kb.ask",
+        "command": "kote.ask",
         "key": "ctrl+shift+k",
         "mac": "cmd+shift+k",
         "when": "editorTextFocus"
@@ -90,19 +90,19 @@
     "menus": {
       "editor/context": [
         {
-          "command": "kb.saveSelection",
+          "command": "kote.saveSelection",
           "when": "editorHasSelection",
-          "group": "kb@1"
+          "group": "kote@1"
         },
         {
-          "command": "kb.openChat",
-          "group": "kb@2"
+          "command": "kote.openChat",
+          "group": "kote@2"
         }
       ],
       "view/title": [
         {
-          "command": "kb.showRecentAiSessions",
-          "when": "view == kb.sidebarView",
+          "command": "kote.showRecentAiSessions",
+          "when": "view == kote.sidebarView",
           "group": "navigation"
         }
       ]

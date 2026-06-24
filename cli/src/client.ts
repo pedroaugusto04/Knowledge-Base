@@ -29,10 +29,10 @@ export class ApiClient {
     const url = `${apiBase}/${cleanPath.replace(/^\//, '')}`;
 
     const headers = new Headers(options.headers || {});
-    if (config.cookies.kb_access_token || config.cookies.kb_refresh_token) {
+    if (config.cookies.kote_access_token || config.cookies.kote_refresh_token) {
       const cookieParts: string[] = [];
-      if (config.cookies.kb_access_token) cookieParts.push(`kb_access_token=${config.cookies.kb_access_token}`);
-      if (config.cookies.kb_refresh_token) cookieParts.push(`kb_refresh_token=${config.cookies.kb_refresh_token}`);
+      if (config.cookies.kote_access_token) cookieParts.push(`kote_access_token=${config.cookies.kote_access_token}`);
+      if (config.cookies.kote_refresh_token) cookieParts.push(`kote_refresh_token=${config.cookies.kote_refresh_token}`);
       headers.set('Cookie', cookieParts.join('; '));
     }
 
@@ -59,7 +59,7 @@ export class ApiClient {
     if (response.status === 401 && !path.includes('auth/login') && !path.includes('auth/refresh')) {
       const config = loadConfig();
       let refreshed = false;
-      if (config.cookies?.kb_refresh_token) {
+      if (config.cookies?.kote_refresh_token) {
         try {
           const refreshResponse = await this.request('/api/auth/refresh', { method: 'POST' });
           if (refreshResponse.ok) {
