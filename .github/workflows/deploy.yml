@@ -341,8 +341,8 @@ jobs:
 
       - name: Build frontend
         env:
-          VITE_KB_FRONTEND_BASE_PATH: ${{ vars.VITE_KB_FRONTEND_BASE_PATH || '/knowledge-base/' }}
-          VITE_KB_API_BASE_PATH: ${{ vars.VITE_KB_API_BASE_PATH || '/knowledge-base/api' }}
+          VITE_KB_FRONTEND_BASE_PATH: ${{ vars.VITE_KB_FRONTEND_BASE_PATH || '/kote/' }}
+          VITE_KB_API_BASE_PATH: ${{ vars.VITE_KB_API_BASE_PATH || '/kote/api' }}
         run: npm run build:frontend
 
       - name: Ensure rsync is available on GitHub runner
