@@ -105,11 +105,17 @@ npm --prefix knowledge-base run test:api
 - Do not weaken cookie auth/session flow, JWT handling, Origin/Referer checks, permission gates, rate limits, or internal service-token checks without explicit approval.
 - Never hardcode real secrets, tokens, credentials, or customer data.
 - New secrets and config must use env vars.
-- If env keys change, update:
-  - `.env.example`
-  - `knowledge-base/README.md`
-  - Docker compose env wiring
-  - deploy workflows/scripts under `.github/workflows/**` or `scripts/deploy/**` when present and applicable
+- When adding a new environment variable, update ALL of the following files:
+  - `.env.example` - add the variable with a placeholder value
+  - `docker-compose.yml` - add the variable to the service environment section
+  - `docker-compose.prod.yml` - add the variable to the service environment section
+  - `scripts/deploy/generate-backend-env.sh` - add the variable to the keys array
+  - `.github/workflows/deploy.yml` - add the variable to the "Generate backend env file" step (use `secrets.` for secrets, `vars.` for non-secrets)
+  - `.github/env/production.secrets.env.example` - if it's a secret, add to this file
+  - `.github/env/production.variables.env.example` - if it's a non-secret variable, add to this file
+  - `backend/src/adapters/environment.ts` - add to RuntimeEnvironment type if needed
+  - `backend/src/application/ports/observability/runtime-environment.port.ts` - add to RuntimeEnvironment port if needed
+  - `knowledge-base/README.md` - update documentation if the variable affects operational setup
 - Do not log decrypted secrets or return them to browser-facing APIs.
 
 ## Hardcoded Values And Bad Practices

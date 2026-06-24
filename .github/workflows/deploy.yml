@@ -190,6 +190,8 @@ jobs:
           WEBHOOK_OUTBOX_RELAY_MAX_ATTEMPTS: ${{ vars.WEBHOOK_OUTBOX_RELAY_MAX_ATTEMPTS || '10' }}
           DEV_EMAIL: ${{ vars.DEV_EMAIL || '' }}
           DEV_EMAIL_INTERCEPT: ${{ vars.DEV_EMAIL_INTERCEPT || 'false' }}
+          # Test email authentication secret
+          KB_TEST_EMAIL_AUTH_SECRET: ${{ secrets.KB_TEST_EMAIL_AUTH_SECRET || '' }}
           # Email branding
           APP_NAME: ${{ vars.APP_NAME || 'Knowledge Base' }}
           APP_LOGO_URL: ${{ vars.APP_LOGO_URL || '' }}
