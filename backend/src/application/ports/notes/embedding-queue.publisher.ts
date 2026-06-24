@@ -16,6 +16,6 @@ export type EmbeddingJobPayload =
   | { type: EmbeddingJobType.Delete; userId: string; noteId: string }
   | { type: EmbeddingJobType.ReindexAll; userId: string };
 
-export abstract class EmbeddingQueuePublisher {
+export abstract class EmbeddingQueuePublisher { 
   abstract publish(job: EmbeddingJobPayload): Promise<void>;
 }
