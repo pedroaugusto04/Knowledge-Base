@@ -12,26 +12,26 @@ export class StatusBarProvider {
   }
 
   setNotConfigured() {
-    this.statusBarItem.text = '$(database) KB: not connected';
+    this.statusBarItem.text = '$(database) Kote: not connected';
     this.statusBarItem.color = new vscode.ThemeColor('statusBarItem.warningForeground');
     this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
   setConnecting() {
-    this.statusBarItem.text = '$(loading~spin) KB: connecting...';
+    this.statusBarItem.text = '$(loading~spin) Kote: connecting...';
     this.statusBarItem.color = undefined;
     this.statusBarItem.backgroundColor = undefined;
   }
 
   setProject(projectSlug: string) {
-    this.statusBarItem.text = `$(database) KB: ${projectSlug}`;
+    this.statusBarItem.text = `$(database) Kote: ${projectSlug}`;
     this.statusBarItem.color = undefined;
     this.statusBarItem.backgroundColor = undefined;
     this.statusBarItem.tooltip = `Kote — project: ${projectSlug}\nClick to open AI chat`;
   }
 
   setError(message: string) {
-    this.statusBarItem.text = '$(warning) KB: error';
+    this.statusBarItem.text = '$(warning) Kote: error';
     this.statusBarItem.tooltip = `Kote — ${message}`;
     this.statusBarItem.color = new vscode.ThemeColor('statusBarItem.errorForeground');
     this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');

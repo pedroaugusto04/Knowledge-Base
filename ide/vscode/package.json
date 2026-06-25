@@ -49,32 +49,32 @@
     "commands": [
       {
         "command": "kote.openChat",
-        "title": "KB: Open Chat",
+        "title": "Kote: Open Chat",
         "category": "Kote"
       },
       {
         "command": "kote.ask",
-        "title": "KB: Ask (Quick Input)",
+        "title": "Kote: Ask (Quick Input)",
         "category": "Kote"
       },
       {
         "command": "kote.saveSelection",
-        "title": "KB: Save Selection as Note",
+        "title": "Kote: Save Selection as Note",
         "category": "Kote"
       },
       {
         "command": "kote.refresh",
-        "title": "KB: Refresh Sidebar",
+        "title": "Kote: Refresh Sidebar",
         "category": "Kote"
       },
       {
         "command": "kote.saveActiveFile",
-        "title": "KB: Save Active File as Note",
+        "title": "Kote: Save Active File as Note",
         "category": "Kote"
       },
       {
         "command": "kote.showRecentAiSessions",
-        "title": "KB: View Recent AI Sessions",
+        "title": "Kote: View Recent AI Sessions",
         "category": "Kote",
         "icon": "$(history)"
       }

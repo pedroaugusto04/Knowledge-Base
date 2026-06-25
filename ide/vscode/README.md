@@ -61,14 +61,14 @@ After installation, you'll need to connect to your Kote instance:
 #### Save Code Selection
 
 1. Select code in your editor
-2. Right-click and choose "KB: Save Selection as Note"
+2. Right-click and choose "Kote: Save Selection as Note"
 3. Choose project and add optional tags
 4. Save instantly
 
 #### Save Active File
 
 1. Open the Command Palette (Ctrl+Shift+P)
-2. Run "KB: Save Active File as Note"
+2. Run "Kote: Save Active File as Note"
 3. Choose project and add optional tags
 4. Save entire file as a note
 
@@ -83,19 +83,19 @@ After installation, you'll need to connect to your Kote instance:
 
 | Command | Shortcut | Description |
 |---------|----------|-------------|
-| `KB: Open Chat` | - | Open the AI chat in the sidebar |
-| `KB: Ask (Quick Input)` | `Ctrl+Shift+K` | Quick AI question from selected text |
-| `KB: Save Selection as Note` | - | Save selected code as a note |
-| `KB: Save Active File as Note` | - | Save current file as a note |
-| `KB: Refresh Sidebar` | - | Refresh the sidebar content |
-| `KB: View Recent AI Sessions` | - | Open AI session history viewer |
+| `Kote: Open Chat` | - | Open the AI chat in the sidebar |
+| `Kote: Ask (Quick Input)` | `Ctrl+Shift+K` | Quick AI question from selected text |
+| `Kote: Save Selection as Note` | - | Save selected code as a note |
+| `Kote: Save Active File as Note` | - | Save current file as a note |
+| `Kote: Refresh Sidebar` | - | Refresh the sidebar content |
+| `Kote: View Recent AI Sessions` | - | Open AI session history viewer |
 
 ## Context Menu
 
 The extension adds context menu items when you have text selected:
 
-- **KB: Save Selection as Note**: Save selected text as a note
-- **KB: Open Chat**: Open the AI chat sidebar
+- **Kote: Save Selection as Note**: Save selected text as a note
+- **Kote: Open Chat**: Open the AI chat sidebar
 
 
 

@@ -36,7 +36,7 @@ export class ChatPanelProvider {
     logInfo('ChatPanelProvider', 'Creating new chat panel');
     const panel = vscode.window.createWebviewPanel(
       'kote.chatPanel',
-      'KB: Ask AI',
+      'Kote: Ask AI',
       vscode.ViewColumn.Two,
       {
         enableScripts: true,
@@ -111,7 +111,7 @@ export class ChatPanelProvider {
             source: 'open-code',
           });
           this._post({ type: 'noteSaved', noteId: res.noteId ?? res.id ?? '' });
-          vscode.window.showInformationMessage(`Note saved to KB — project: ${msg.projectSlug}`);
+          vscode.window.showInformationMessage(`Note saved to Kote — project: ${msg.projectSlug}`);
         } catch (err: unknown) {
           this._post({ type: 'error', message: toMessage(err) });
         }

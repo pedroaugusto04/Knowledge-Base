@@ -95,7 +95,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             this._client.reload();
             vscode.window.showInformationMessage(`Connected to workspace: ${msg.workspaceSlug}`);
             this.reloadWebview();
-            vscode.commands.executeCommand('kb.onAuthChange');
+            vscode.commands.executeCommand('kote.onAuthChange');
           } catch (err: unknown) {
             this._post({ type: 'error', message: toMessage(err) });
           }
@@ -108,7 +108,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             this._client.reload();
             this.reloadWebview();
             vscode.window.showInformationMessage('Logged out successfully.');
-            vscode.commands.executeCommand('kb.onAuthChange');
+            vscode.commands.executeCommand('kote.onAuthChange');
           } catch (err: unknown) {
             vscode.window.showErrorMessage(`Logout failed: ${toMessage(err)}`);
           }
@@ -164,7 +164,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               noteId: res.noteId ?? res.id ?? '',
               projectName: msg.projectName
             });
-            vscode.window.showInformationMessage(`Note saved to KB — project: ${msg.projectSlug}`);
+            vscode.window.showInformationMessage(`Note saved to Kote — project: ${msg.projectSlug}`);
           } catch (err: unknown) {
             this._post({ type: 'error', message: toMessage(err) });
           }
@@ -191,7 +191,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             });
 
             if (res.action === 'submit') {
-              vscode.window.showInformationMessage(`Note saved to KB — project: ${res.agent?.selectedProjectSlug || 'Inbox'}`);
+              vscode.window.showInformationMessage(`Note saved to Kote — project: ${res.agent?.selectedProjectSlug || 'Inbox'}`);
             }
           } catch (err: unknown) {
             this._post({ type: 'error', message: toMessage(err) });

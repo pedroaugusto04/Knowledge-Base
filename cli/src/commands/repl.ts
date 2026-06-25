@@ -235,7 +235,7 @@ export async function runRepl(): Promise<void> {
   console.log(pc.cyan('================================================\n'));
 
   while (true) {
-    const promptLabel = pc.magenta('kb> ');
+    const promptLabel = pc.magenta('kote> ');
     const line = await readlineAutocompletePrompt(promptLabel, COMMANDS);
     const trimmed = line.trim();
 

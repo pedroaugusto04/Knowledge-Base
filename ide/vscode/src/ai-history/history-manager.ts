@@ -241,7 +241,7 @@ export class AiHistoryManager {
 
     const action = await Promise.race([
       vscode.window.showInformationMessage(
-        `KB: New AI session detected from ${provider.name}. Do you want to save it as a note?`,
+        `Kote: New AI session detected from ${provider.name}. Do you want to save it as a note?`,
         'Auto-save',
         'Preview & Edit',
         'Ignore'
@@ -511,7 +511,7 @@ export class AiHistoryManager {
       await vscode.window.showTextDocument(doc);
 
       const choice = await vscode.window.showInformationMessage(
-        'KB: You are viewing the AI conversation. Edit the file as you wish, then choose Save Now.',
+        'Kote: You are viewing the AI conversation. Edit the file as you wish, then choose Save Now.',
         'Save Now'
       );
       if (choice === 'Save Now') {

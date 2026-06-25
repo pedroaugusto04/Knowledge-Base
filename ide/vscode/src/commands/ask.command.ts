@@ -60,9 +60,9 @@ export function registerAskCommand(
               }
             } else {
               // Open chat with context of this question pre-sent
-              vscode.commands.executeCommand('kb.openChat');
+              vscode.commands.executeCommand('kote.openChat');
               vscode.window.showInformationMessage(
-                'Answer is long — opened in KB Chat.',
+                'Answer is long — opened in Kote Chat.',
                 'OK',
               );
             }

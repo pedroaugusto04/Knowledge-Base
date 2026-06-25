@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../ide/vscode/resources/Kote-Logo.svg" alt="kb-cli Logo" width="120" height="120">
+  <img src="../ide/vscode/resources/Kote-Logo.svg" alt="Kote CLI Logo" width="120" height="120">
 </p>
 
 # kote-cli
@@ -23,9 +23,6 @@ npm install -g @pedroaugusto04/kote-cli
 ### Get Help
 
 ```bash
-kote
-help
-# or use
 kote --help
 ```
 

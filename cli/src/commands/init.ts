@@ -4,7 +4,7 @@ import { saveConfig } from '../config.js';
 import { ApiClient } from '../client.js';
 
 export async function runInit(): Promise<void> {
-  intro(pc.cyan('Kote (kb) CLI Setup'));
+  intro(pc.cyan('Kote CLI Setup'));
 
   const apiUrl = 'https://pedro-duarte.ddns.net/kote/api';
 
@@ -147,6 +147,6 @@ export async function runInit(): Promise<void> {
   } catch (error: any) {
     s.stop(pc.red('Authentication failed'));
     const errorMsg = error?.body?.message || error?.message || 'Unknown error';
-    outro(pc.red(`Error: ${errorMsg}. Please check your credentials and URL, and run 'kb init' again.`));
+    outro(pc.red(`Error: ${errorMsg}. Please check your credentials and URL, and run 'kote init' again.`));
   }
 }

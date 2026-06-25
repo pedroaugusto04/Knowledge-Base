@@ -31,7 +31,7 @@ export class EmailQueueConsumer implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    await this.initializeConsumer(url, environment); // eslint-disable-line @typescript-eslint/no-misused-promises
+    await this.initializeConsumer(url, environment);
   }
 
   async onModuleDestroy() {

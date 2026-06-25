@@ -6,7 +6,7 @@ import http from 'node:http';
 import type { KbConfig, KbProject, KbNote, KbReminder, KbAskResult, KbCreateNotePayload, KbCreateNoteResult } from './types';
 
 // ---------------------------------------------------------------------------
-// Config (mirrors ~/.config/kb/config.json written by the kb CLI)
+// Config (mirrors the CLI config file used by the extension)
 // ---------------------------------------------------------------------------
 
 export type { KbConfig, KbProject, KbNote, KbReminder, KbAskResult, KbCreateNotePayload, KbCreateNoteResult } from './types';
@@ -118,7 +118,7 @@ export class KbClient {
     this.config = loadKbConfig();
   }
 
-  /** Reload config from disk (e.g. after user runs `kb init`) */
+  /** Reload config from disk (e.g. after user runs the CLI init command) */
   reload() {
     this.config = loadKbConfig();
   }

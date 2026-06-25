@@ -4,7 +4,7 @@ import { reportError } from '../error-reporter';
 import type { AiHistoryManager } from '../ai-history/history-manager';
 
 /**
- * Right-click on a selection → "KB: Save Selection as Note"
+ * Right-click on a selection → "Kote: Save Selection as Note"
  * Also available via Command Palette.
  */
 export function registerSaveNoteCommand(
@@ -52,7 +52,7 @@ export function registerSaveNoteCommand(
               projectSlug: getProject(),
               source: 'open-code',
             });
-            vscode.window.showInformationMessage(`Note saved to KB — project: ${getProject()}`);
+            vscode.window.showInformationMessage(`Note saved to Kote — project: ${getProject()}`);
             // Trigger sidebar refresh
             vscode.commands.executeCommand('kote.refresh');
           } catch (err: unknown) {
@@ -115,7 +115,7 @@ export function registerSaveNoteCommand(
               source,
               sessionId,
             });
-            vscode.window.showInformationMessage(`Note saved to KB — project: ${getProject()}`);
+            vscode.window.showInformationMessage(`Note saved to Kote — project: ${getProject()}`);
             if (sessionId && providerIdParam) {
               historyManager?.markSessionAsSaved(providerIdParam, sessionId);
             }
