@@ -23,6 +23,11 @@ npm install -g @pedroaugusto04/kote-cli
 ### Get Help
 
 ```bash
+kote
+help
+
+or 
+
 kote --help
 ```
 

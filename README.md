@@ -97,7 +97,7 @@ Connect your existing tools to capture knowledge where your team already works.
 
 ## Developer Tools
 
-### CLI Tool (`kb`)
+### CLI Tool (`kote`)
 
 <p align="center">
   <img src="docs/screenshots/cli-commands.png" alt="CLI Commands" width="100%" style="max-height: 600px;">
@@ -119,14 +119,14 @@ Sync AI sessions (Claude Code, Codex, Antigravity, OpenCode) and files from your
 **Installation:**
 ```bash
 npm install -g @pedroaugusto04/kote-cli
-kb init
+kote init
 ```
 
 **Key Commands:**
 ```bash
-kb sync-ai              # Sync AI sessions (primary)
-kb sync --dir ./docs    # Sync directory
-kb sync --file ./README.md  # Sync file
+kote sync-ai              # Sync AI sessions (primary)
+kote sync --dir ./docs    # Sync directory
+kote sync --file ./README.md  # Sync file
 ```
 
 For complete CLI documentation, see [cli/README.md](cli/README.md).
@@ -143,19 +143,6 @@ Save code snippets or entire files directly from your editor. Right-click select
 **Installation:** Search for "Kote" in the VS Code Extension Marketplace.
 
 For complete extension documentation, see [ide/vscode/README.md](ide/vscode/README.md).
-
-## Quality Gates
-
-Run the project checks from the repository root:
-
-```bash
-npm run lint              # ESLint baseline for backend, frontend, CLI, and extensions
-npm run lint:architecture # Layering/import boundary checks
-npm run lint:security     # Security-focused ESLint rules
-npm run quality           # Lint, builds, and test suites
-```
-
-The ESLint baseline is intentionally incremental: architecture violations are errors, while security and cleanup findings start as warnings because the existing codebase has known legacy findings that need triage before they can safely block CI.
 
 ## License
 

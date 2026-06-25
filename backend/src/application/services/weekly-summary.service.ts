@@ -178,7 +178,7 @@ export class WeeklySummaryService {
     for (const rec of aiSummary.recommendations) {
       textParts.push(`- ${rec}`);
     }
-    textParts.push('\nThanks — sent by your KB');
+    textParts.push('\nThanks — sent by Kote');
 
     await this.emailService.sendEmail({
       to: user.email,

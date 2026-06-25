@@ -4,7 +4,7 @@ import { conversationInputSchema, type ConversationInput } from '../../contracts
 import { WebhookIgnoreReason } from '../../contracts/enums.js';
 
 const BOT_MESSAGE_PREFIX = '[BOT]';
-const GROUP_INVOCATION_PREFIX = '/kb';
+const GROUP_INVOCATION_PREFIX = '/kote';
 
 export type WhatsappWebhookCommand =
   | {
