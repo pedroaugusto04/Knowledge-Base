@@ -42,8 +42,11 @@ export class SubscriptionUpgradeService {
       this.logger.error('subscription_upgrade.gateway_subscription_missing', {
         gatewaySubscriptionId: ctx.activeSub.gatewaySubscriptionId,
         gateway: ctx.gateway,
+        userId: ctx.userId,
+        activePlanId: ctx.activePlan?.id,
+        newPlanId: ctx.newPlan?.id,
       });
-      throw new BadRequestException('Unable to change subscription plan. Please try again later.');
+      throw new BadRequestException('Unable to change subscription plan. The subscription could not be found in the payment gateway. Please contact support.');
     }
 
     const periodEnd = ctx.activeSub.nextDueDate ?? new Date(gatewaySubscription.nextDueDate);

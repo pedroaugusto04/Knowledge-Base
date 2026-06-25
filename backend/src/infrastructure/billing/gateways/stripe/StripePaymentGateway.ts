@@ -401,7 +401,8 @@ export class StripePaymentGateway implements IPaymentGateway {
           ? new Date(data.current_period_end * 1000)
           : undefined,
       };
-    } catch {
+    } catch (err: any) {
+      this.logger.error(`Failed to retrieve Stripe subscription ${gatewaySubscriptionId}: ${err.message}`, err.stack || '');
       return null;
     }
   }
