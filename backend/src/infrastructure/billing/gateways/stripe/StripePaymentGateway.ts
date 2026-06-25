@@ -316,20 +316,27 @@ export class StripePaymentGateway implements IPaymentGateway {
   }
 
   async cancelPayment(gatewayPaymentId: string): Promise<void> {
+    this.logger.warn(`Attempting to cancel Stripe payment: ${gatewayPaymentId}`);
+
     if (gatewayPaymentId.startsWith('in_')) {
+      this.logger.warn(`Canceling Stripe invoice: ${gatewayPaymentId}`);
       await this.request<void>(`/invoices/${gatewayPaymentId}/void`, {
         method: 'POST',
       });
+      this.logger.warn(`Successfully canceled Stripe invoice: ${gatewayPaymentId}`);
       return;
     }
 
     if (gatewayPaymentId.startsWith('pi_')) {
+      this.logger.warn(`Canceling Stripe payment intent: ${gatewayPaymentId}`);
       await this.request<void>(`/payment_intents/${gatewayPaymentId}/cancel`, {
         method: 'POST',
       });
+      this.logger.warn(`Successfully canceled Stripe payment intent: ${gatewayPaymentId}`);
       return;
     }
 
+    this.logger.error(`Unsupported Stripe payment id for cancellation: ${gatewayPaymentId}`);
     throw new Error(`Unsupported Stripe payment id: ${gatewayPaymentId}`);
   }
 

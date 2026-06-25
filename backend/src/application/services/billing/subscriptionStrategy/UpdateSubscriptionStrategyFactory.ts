@@ -13,6 +13,11 @@ export class UpdateSubscriptionStrategyFactory {
       return SubscriptionChangeKind.NEW;
     }
 
+    // Validate: cannot mix gateways for existing subscriptions
+    if (activeSub.gatewayName && ctx.gateway !== activeSub.gatewayName) {
+      throw new Error(`Cannot change gateway from ${activeSub.gatewayName} to ${ctx.gateway}. Please cancel current subscription first.`);
+    }
+
     const activePriceCents = resolvePlanPriceCentsForGateway(
       ctx.activePlan ?? { priceCents: 0, priceUsdCents: 0 },
       ctx.gateway,
