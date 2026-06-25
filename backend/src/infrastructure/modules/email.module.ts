@@ -53,6 +53,6 @@ import { UserService } from '../../application/services/user.service.js';
       inject: [RuntimeEnvironmentProvider, AppLogger],
     },
   ],
-  exports: [EmailService],
+  exports: [EmailService, WelcomeEmailService, NotifyHighSeverityFindingsService, UserService],
 })
 export class EmailModule {}
