@@ -4,7 +4,7 @@
   "description": "CLI client for the Kote AI system",
   "type": "module",
   "bin": {
-    "kb": "dist/index.js"
+    "kote": "dist/index.js"
   },
   "files": [
     "dist"

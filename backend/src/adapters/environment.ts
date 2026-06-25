@@ -1,4 +1,5 @@
 import { AiProvider } from '../contracts/enums.js';
+import type { RuntimeEnvironment } from '../application/ports/observability/runtime-environment.port.js';
 import { normalizeTimeZone } from '../domain/time.js';
 
 export const defaultGithubAppCallbackPath = '/api/integrations/github-app/callback';
@@ -15,84 +16,6 @@ export function normalizeGithubAppCallbackPath(value: string | undefined): strin
     return withLeadingSlash.replace(/\/{2,}/g, '/');
   }
 }
-
-export type RuntimeEnvironment = {
-  reminderTimeZone: string;
-  webhookSecret: string;
-  githubWebhookSecret: string;
-  conversationTimeoutMs: number;
-  reviewAiProvider: AiProvider;
-  reviewAiBaseUrl: string;
-  reviewAiModel: string;
-  reviewAiApiKey: string;
-  conversationAiProvider: AiProvider;
-  conversationAiBaseUrl: string;
-  conversationAiModel: string;
-  conversationAiApiKey: string;
-  projectBriefAiProvider: AiProvider;
-  projectBriefAiBaseUrl: string;
-  projectBriefAiModel: string;
-  projectBriefAiApiKey: string;
-  embeddingAiProvider: AiProvider;
-  embeddingAiBaseUrl: string;
-  embeddingAiModel: string;
-  embeddingAiApiKey: string;
-  audioAiProvider: AiProvider;
-  audioAiBaseUrl: string;
-  audioAiModel: string;
-  audioAiApiKey: string;
-  githubAppId: string;
-  githubAppPrivateKey: string;
-  publicBaseUrl: string;
-  apiPublicBaseUrl: string;
-  allowedOrigins: string[];
-  allowedExtensionIds: string[];
-  trustProxy: boolean;
-  githubPushWebhookPath: string;
-  ingestWebhookPath: string;
-  whatsappWebhookPath: string;
-  queryWebhookPath: string;
-  githubAppInstallUrl: string;
-  githubAppCallbackPath: string;
-  telegramBotToken: string;
-  telegramWebhookToken: string;
-  telegramChatId: string;
-  whatsappWebhookApiKey: string;
-  evolutionApiKey: string;
-  evolutionApiUrl: string;
-  evolutionApiPublicUrl: string;
-  evolutionInstanceName: string;
-  databaseUrl: string;
-  databaseSslMode: string;
-  databaseSslRejectUnauthorized: boolean | null;
-  adminEmail: string;
-  adminPassword: string;
-  emailProvider: 'resend' | 'smtp' | 'fake';
-  emailResendApiKey: string;
-  emailFrom: string;
-  emailSmtpHost: string;
-  emailSmtpPort: number;
-  emailSmtpUser: string;
-  emailSmtpPass: string;
-  emailSmtpSecure: boolean;
-  emailQueueExchange: string;
-  emailQueueName: string;
-  emailQueueRoutingKey: string;
-  emailWorkerAutorun: boolean;
-  devEmailIntercept: boolean;
-  devEmail: string;
-  jwtAccessSecret: string;
-  jwtRefreshSecret: string;
-  accessTokenTtlSeconds: number;
-  refreshTokenTtlSeconds: number;
-  googleOAuthClientId: string;
-  googleOAuthClientSecret: string;
-  googleOAuthRedirectUri: string;
-  credentialsEncryptionKey: string;
-  internalServiceToken: string;
-  disableEmbeddingWorker: boolean;
-  testEmailAuthSecret: string;
-};
 
 export function readEnvironment(env = process.env): RuntimeEnvironment {
   return {

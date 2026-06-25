@@ -30,6 +30,7 @@ export type RuntimeEnvironment = {
   publicBaseUrl: string;
   apiPublicBaseUrl: string;
   allowedOrigins: string[];
+  allowedExtensionIds: string[];
   trustProxy: boolean;
   githubPushWebhookPath: string;
   ingestWebhookPath: string;
@@ -46,6 +47,8 @@ export type RuntimeEnvironment = {
   evolutionApiPublicUrl: string;
   evolutionInstanceName: string;
   databaseUrl: string;
+  databaseSslMode: string;
+  databaseSslRejectUnauthorized: boolean | null;
   adminEmail: string;
   adminPassword: string;
   emailProvider: 'resend' | 'smtp' | 'fake';

@@ -10,6 +10,7 @@ test('readEnvironment parses optional Postgres SSL settings', () => {
     KB_DATABASE_SSL_REJECT_UNAUTHORIZED: 'false',
   });
 
+  assert.deepEqual(environment.allowedExtensionIds, []);
   assert.equal(environment.databaseSslMode, 'require');
   assert.equal(environment.databaseSslRejectUnauthorized, false);
 });
@@ -19,6 +20,7 @@ test('readEnvironment leaves Postgres SSL settings unset when omitted', () => {
     KB_DATABASE_URL: 'postgres://postgres:postgres@db.example.com:5432/knowledge_base_db',
   });
 
+  assert.deepEqual(environment.allowedExtensionIds, []);
   assert.equal(environment.databaseSslMode, '');
   assert.equal(environment.databaseSslRejectUnauthorized, null);
 });
