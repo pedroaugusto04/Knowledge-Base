@@ -370,10 +370,12 @@ export function AppShell() {
       <OfflineBanner />
       {showQuotaWarningDot && (
         <div className="quota-warning-banner" role="alert" aria-live="polite">
-          <span style={{ fontSize: '16px' }}>⚠️</span>
-          <span style={{ fontSize: '14px' }}>
+          <span style={{ fontSize: '14px' }}>⚠️</span>
+          <span style={{ fontSize: '12px' }}>
             You are approaching your monthly limit.{' '}
-            <Link to="/automations/subscription" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}>Upgrade your plan</Link> to continue without interruption.
+            <Link to="/profile" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}>See quota usage</Link>
+            {' · '}
+            <Link to="/automations/subscription" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}>Upgrade your plan</Link>
           </span>
         </div>
       )}

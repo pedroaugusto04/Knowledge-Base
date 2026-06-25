@@ -1325,13 +1325,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 6px;
+  padding: 6px 12px;
   background: var(--surface-warning);
   border-bottom: 1px solid var(--warning-border);
   color: var(--warning-text);
   font-family: var(--ui);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
 }
 

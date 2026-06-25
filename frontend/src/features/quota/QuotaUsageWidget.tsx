@@ -75,7 +75,7 @@ export function QuotaUsageWidget({ status, compact, hideTitle, aiOnly }: QuotaUs
         <div className="quota-widget-header">
           <span className="quota-widget-title">Quota Usage</span>
           <span className="quota-reset-badge" title={`Full reset on ${resetFull}`}>
-            🔄 {resetLabel}
+            {resetLabel}
           </span>
         </div>
       )}
@@ -85,7 +85,7 @@ export function QuotaUsageWidget({ status, compact, hideTitle, aiOnly }: QuotaUs
       ))}
 
       {compact && hasWarning && (
-        <Link to="/subscription" className="quota-upgrade-link" title="Upgrade plan">
+        <Link to="/automations/subscription" className="quota-upgrade-link" title="Upgrade plan">
           ↑ Upgrade plan
         </Link>
       )}

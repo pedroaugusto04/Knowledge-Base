@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { QuotaRepository } from '../ports/quota/quota.repository.js';
 import { UserRepository } from '../ports/auth/auth.repository.js';
+import { ContentRepository } from '../ports/notes/content.repository.js';
 import { QuotaResourceType, AiOperationType, SubscriptionPlan } from '../../domain/enums/plans.enums.js';
 import { AI_CREDIT_COSTS } from '../../domain/constants/ai-credits.constants.js';
 import type { PlanRecord } from '../models/repository-records.models.js';
@@ -28,7 +29,8 @@ export interface QuotaStatus {
 export class QuotaService {
   constructor(
     private readonly quotaRepository: QuotaRepository,
-    private readonly userRepository: UserRepository
+    private readonly userRepository: UserRepository,
+    private readonly contentRepository?: ContentRepository
   ) {}
 
   async checkQuota(
@@ -119,7 +121,7 @@ export class QuotaService {
     const activeSub = await this.quotaRepository.getSubscription(userId);
     let plan: PlanRecord;
     let status = 'active';
-    let currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    let currentPeriodEnd: string;
     let periodStart = new Date(0);
     let periodEnd = new Date(32503680000000);
 
@@ -162,10 +164,22 @@ export class QuotaService {
     const workspacesLimitTotal = workspacesLimitBase === -1 ? -1 : workspacesLimitBase + workspacesAdjustments.reduce((acc, a) => acc + a.amount, 0);
     const workspacesUsage = await this.quotaRepository.getWorkspaceCount(userId);
 
-    // Projects (per-workspace cap)
+    // Projects (per-workspace cap - show max projects in any workspace)
     const projectsLimitBase = Number(plan.maxProjectsPerWorkspace);
     const projectsAdjustments = await this.quotaRepository.getActiveAdjustments(userId, QuotaResourceType.PROJECT);
     const projectsLimitTotal = projectsLimitBase === -1 ? -1 : projectsLimitBase + projectsAdjustments.reduce((acc, a) => acc + a.amount, 0);
+    
+    // Get all projects to count max per workspace
+    let maxProjectsInAnyWorkspace = 0;
+    if (this.contentRepository) {
+      const allProjects = await this.contentRepository.listProjects(userId);
+      const projectsByWorkspace = new Map<string, number>();
+      allProjects.forEach((project: { workspaceSlug?: string }) => {
+        const ws = project.workspaceSlug || 'default';
+        projectsByWorkspace.set(ws, (projectsByWorkspace.get(ws) || 0) + 1);
+      });
+      maxProjectsInAnyWorkspace = Math.max(0, ...projectsByWorkspace.values());
+    }
 
     return {
       plan: plan.slug,
@@ -182,7 +196,7 @@ export class QuotaService {
         storage: storageUsage,
         aiCredits: aiUsage,
         workspaces: workspacesUsage,
-        projects: 0,
+        projects: maxProjectsInAnyWorkspace,
       },
     };
   }

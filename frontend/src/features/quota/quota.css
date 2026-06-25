@@ -129,7 +129,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: var(--accent, #7c6af5);
+  color: var(--text-strong, #e0e0e0);
   font-weight: 600;
   text-decoration: none;
   margin-top: 2px;
