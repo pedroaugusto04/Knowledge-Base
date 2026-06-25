@@ -1315,6 +1315,32 @@
   opacity: 0.8;
 }
 
+/* Quota warning banner */
+.quota-warning-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 49;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface-warning);
+  border-bottom: 1px solid var(--warning-border);
+  color: var(--warning-text);
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.quota-warning-banner a {
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
 @keyframes offline-banner-slide-in {
   from {
     transform: translateY(-100%);
