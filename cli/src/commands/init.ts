@@ -6,7 +6,7 @@ import { ApiClient } from '../client.js';
 export async function runInit(): Promise<void> {
   intro(pc.cyan('Kote CLI Setup'));
 
-  const apiUrl = 'https://pedro-duarte.ddns.net/kote/api';
+  const apiUrl = 'https://knowledgebase.sbs/kote/api';
 
   const authMethod = await select({
     message: 'Select authentication method:',

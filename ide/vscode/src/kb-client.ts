@@ -192,9 +192,32 @@ export class KbClient {
 
     if (response.status === 204) return undefined as T;
 
-    const parsed = JSON.parse(response.body);
+    // Check if response is HTML instead of JSON (indicates wrong URL or endpoint)
+    const contentType = response.headers['content-type'] as string;
+    if (contentType && contentType.includes('text/html')) {
+      throw new Error(
+        `API returned HTML instead of JSON. This usually means the API URL is incorrect or the endpoint doesn't exist.\n` +
+        `Current API URL: ${this.apiUrl}\n` +
+        `Requested path: ${urlPath}\n` +
+        `Response status: ${response.status}`
+      );
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(response.body);
+    } catch (err) {
+      throw new Error(
+        `Failed to parse API response as JSON. The server may have returned an error page.\n` +
+        `Current API URL: ${this.apiUrl}\n` +
+        `Requested path: ${urlPath}\n` +
+        `Response status: ${response.status}\n` +
+        `Response body: ${response.body.substring(0, 200)}`
+      );
+    }
+
     if (response.status >= 400) {
-      throw new Error(parsed?.message ?? `Request failed with status ${response.status}`);
+      throw new Error((parsed as any)?.message ?? `Request failed with status ${response.status}`);
     }
     return parsed as T;
   }
