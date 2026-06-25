@@ -88,7 +88,10 @@ export class StripePaymentGateway implements IPaymentGateway {
       }
 
       if (!response.ok) {
-        throw stripeToAppError({ message: data?.error?.message || `Stripe error: ${response.statusText}` });
+        const errorMessage = data?.error?.message || `Stripe error: ${response.statusText}`;
+        const errorDetails = data?.error ? JSON.stringify(data.error) : response.statusText;
+        this.logger.error(`Stripe API error on ${path}: ${errorMessage} - Details: ${errorDetails}`);
+        throw stripeToAppError({ message: errorMessage });
       }
 
       return data as T;
