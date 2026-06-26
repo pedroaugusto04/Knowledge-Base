@@ -118,7 +118,7 @@ chrome.commands.onCommand.addListener(async (command) => {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #53c7de 0%, #0369a1 100%);
             color: white;
             padding: 12px 20px;
             border-radius: 8px;
@@ -171,7 +171,7 @@ chrome.commands.onCommand.addListener(async (command) => {
           func: () => {
             const indicator = document.getElementById('kote-clip-indicator');
             if (indicator) {
-              indicator.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+              indicator.style.background = 'linear-gradient(135deg, #7dd3a5 0%, #15803d 100%)';
               indicator.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12" />
