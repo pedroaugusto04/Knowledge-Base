@@ -97,7 +97,7 @@ export class AuthController {
     return { ok: true, connectionToken: token };
   }
 
-  @Post('exchange-connection-token')
+  @Post('exchange-connection-token') 
   @UseGuards(AuthRateLimitGuard, TrustedOriginGuard)
   @ApiOperation({ summary: 'Exchange connection token for user session tokens' })
   @ApiResponse({ status: 200, description: 'Tokens issued successfully' })
