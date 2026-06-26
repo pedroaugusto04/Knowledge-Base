@@ -23,7 +23,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) { }
 
   @Post('login')
-  @UseGuards(AuthRateLimitGuard, TrustedOriginGuard)
+  @UseGuards(AuthRateLimitGuard, BrowserExtensionGuard)
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
