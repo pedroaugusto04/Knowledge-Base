@@ -50,7 +50,8 @@ export function registerSaveNoteCommand(
               rawText,
               title: context_ || (selectedText ? `Snippet from ${fileName}` : undefined),
               projectSlug: getProject(),
-              source: 'open-code',
+              source: 'ide',
+              sourceChannel: 'ide',
             });
             vscode.window.showInformationMessage(`Note saved to Kote — project: ${getProject()}`);
             // Trigger sidebar refresh
@@ -99,8 +100,8 @@ export function registerSaveNoteCommand(
 
       if (confirm === undefined) return;
 
-      let source = providerIdParam || 'open-code';
-      let sourceChannel: string | undefined = providerIdParam ? 'ai-chat' : undefined;
+      let source = providerIdParam || 'ide';
+      let sourceChannel: string | undefined = providerIdParam ? 'ai-chat' : 'ide';
       let sessionId: string | undefined = sessionIdParam;
 
       await vscode.window.withProgress(

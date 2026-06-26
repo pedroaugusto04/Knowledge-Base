@@ -4,6 +4,7 @@ export enum SourceChannel {
   N8nWorkflow = 'n8n-workflow',
   External = 'external',
   AiChat = 'ai-chat',
+  Ide = 'ide',
 }
 
 export enum EventType {
