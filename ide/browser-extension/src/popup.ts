@@ -46,11 +46,78 @@ async function getOrExchangeAccessToken(currentApiUrl: string, connectionToken: 
   return data.accessToken;
 }
 
+async function refreshAccessToken(apiUrl: string): Promise<string> {
+  const config = await chrome.storage.local.get(['refreshToken', 'authMethod']);
+  
+  if (!config.refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (chrome.runtime.id) {
+    headers['Origin'] = `chrome-extension://${chrome.runtime.id}`;
+  }
+
+  const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ refreshToken: config.refreshToken }),
+  });
+
+  if (!refreshRes.ok) {
+    // Refresh token is invalid or expired, need to re-authenticate
+    await chrome.storage.local.remove(['accessToken', 'refreshToken', 'connectionToken', 'authMethod']);
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  const data = await refreshRes.json();
+  await chrome.storage.local.set({ 
+    accessToken: data.accessToken, 
+    refreshToken: data.refreshToken 
+  });
+  
+  return data.accessToken;
+}
+
+async function fetchWithAuth(url: string, options: RequestInit = {}, apiUrl: string): Promise<Response> {
+  const config = await chrome.storage.local.get(['accessToken', 'authMethod']);
+  const headers: Record<string, string> = { 
+    ...options.headers as Record<string, string>,
+    'Content-Type': 'application/json',
+  };
+  
+  if (config.accessToken) {
+    headers['Authorization'] = `Bearer ${config.accessToken}`;
+  }
+  
+  if (chrome.runtime.id) {
+    headers['Origin'] = `chrome-extension://${chrome.runtime.id}`;
+  }
+
+  let response = await fetch(url, { ...options, headers });
+
+  // If we get a 401, try to refresh the token and retry
+  if (response.status === 401 && config.authMethod === 'email') {
+    try {
+      const newAccessToken = await refreshAccessToken(apiUrl);
+      headers['Authorization'] = `Bearer ${newAccessToken}`;
+      response = await fetch(url, { ...options, headers });
+    } catch (error) {
+      // Clear auth data and throw error to trigger logout in caller
+      await chrome.storage.local.remove(['accessToken', 'refreshToken', 'connectionToken', 'authMethod']);
+      throw error;
+    }
+  }
+
+  return response;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // UI Elements
   const panelSettings = document.getElementById('panel-settings')!;
   const panelClipper = document.getElementById('panel-clipper')!;
   const btnSettingsToggle = document.getElementById('btn-settings-toggle')!;
+  const btnLogout = document.getElementById('btn-logout')!;
 
   const inputApiUrl = document.getElementById('input-api-url') as HTMLInputElement;
   const inputToken = document.getElementById('input-token') as HTMLInputElement;
@@ -94,6 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Already configured, show clipper
     panelSettings.classList.add('hidden');
     panelClipper.classList.remove('hidden');
+    btnLogout.style.display = 'block';
     if (config.connectionToken) {
       inputToken.value = config.connectionToken;
     }
@@ -102,6 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Not configured, force settings view (but API URL is already prefilled)
     panelSettings.classList.remove('hidden');
     panelClipper.classList.add('hidden');
+    btnLogout.style.display = 'none';
   }
 
   // Auth Tab Switching
@@ -133,6 +202,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   btnSettingsToggle.addEventListener('click', () => {
     panelSettings.classList.toggle('hidden');
     panelClipper.classList.toggle('hidden');
+  });
+
+  // Logout Click
+  btnLogout.addEventListener('click', async () => {
+    // Clear all authentication data
+    await chrome.storage.local.remove(['accessToken', 'refreshToken', 'connectionToken', 'authMethod']);
+    
+    showStatus('You have been logged out.', 'success');
+    
+    // Switch to settings panel and hide logout button
+    setTimeout(() => {
+      panelSettings.classList.remove('hidden');
+      panelClipper.classList.add('hidden');
+      btnLogout.style.display = 'none';
+    }, 1000);
   });
 
   // Save Settings Click
@@ -219,13 +303,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Check workspaces to verify full token validity
-      const testRes = await fetch(`${url}/api/workspaces`, {
+      const testRes = await fetchWithAuth(`${url}/api/workspaces`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+      }, url);
 
       if (!testRes.ok) {
         throw new Error('Authentication rejected by backend.');
@@ -237,6 +317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(async () => {
         panelSettings.classList.add('hidden');
         panelClipper.classList.remove('hidden');
+        btnLogout.style.display = 'block';
         await initializeClipper();
       }, 1000);
 
@@ -373,18 +454,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      };
-      if (chrome.runtime.id) {
-        headers['Origin'] = `chrome-extension://${chrome.runtime.id}`;
-      }
-
-      const res = await fetch(`${currentApiUrl}/api/projects?page=1&pageSize=100`, {
+      const res = await fetchWithAuth(`${currentApiUrl}/api/projects?page=1&pageSize=100`, {
         method: 'GET',
-        headers,
-      });
+      }, currentApiUrl);
 
       if (res.ok) {
         const data = await res.json();
@@ -417,7 +489,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         inboxOpt.textContent = 'Inbox (Default)';
         selectProject.appendChild(inboxOpt);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Check if this is a session expiration error
+      if (error.message && error.message.includes('Session expired')) {
+        showStatus('Session expired. Please log in again.', 'error');
+        // Switch to settings panel after a short delay
+        setTimeout(() => {
+          panelSettings.classList.remove('hidden');
+          panelClipper.classList.add('hidden');
+        }, 2000);
+        return;
+      }
+      
       // Fallback to static Inbox project
       console.warn('Failed to load dynamic project list:', error);
       selectProject.innerHTML = '';

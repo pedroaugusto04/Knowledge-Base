@@ -1,5 +1,71 @@
 import { convertHtmlToMarkdown, formatNoteWithFrontmatter, type ClipPayload } from './parser.js';
 
+async function refreshAccessToken(apiUrl: string): Promise<string> {
+  const config = await chrome.storage.local.get(['refreshToken', 'authMethod']);
+  
+  if (!config.refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (chrome.runtime.id) {
+    headers['Origin'] = `chrome-extension://${chrome.runtime.id}`;
+  }
+
+  const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ refreshToken: config.refreshToken }),
+  });
+
+  if (!refreshRes.ok) {
+    // Refresh token is invalid or expired, need to re-authenticate
+    await chrome.storage.local.remove(['accessToken', 'refreshToken', 'connectionToken', 'authMethod']);
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  const data = await refreshRes.json();
+  await chrome.storage.local.set({ 
+    accessToken: data.accessToken, 
+    refreshToken: data.refreshToken 
+  });
+  
+  return data.accessToken;
+}
+
+async function fetchWithAuth(url: string, options: RequestInit = {}, apiUrl: string): Promise<Response> {
+  const config = await chrome.storage.local.get(['accessToken', 'authMethod']);
+  const headers: Record<string, string> = { 
+    ...options.headers as Record<string, string>,
+    'Content-Type': 'application/json',
+  };
+  
+  if (config.accessToken) {
+    headers['Authorization'] = `Bearer ${config.accessToken}`;
+  }
+  
+  if (chrome.runtime.id) {
+    headers['Origin'] = `chrome-extension://${chrome.runtime.id}`;
+  }
+
+  let response = await fetch(url, { ...options, headers });
+
+  // If we get a 401, try to refresh the token and retry
+  if (response.status === 401 && config.authMethod === 'email') {
+    try {
+      const newAccessToken = await refreshAccessToken(apiUrl);
+      headers['Authorization'] = `Bearer ${newAccessToken}`;
+      response = await fetch(url, { ...options, headers });
+    } catch (error) {
+      // Clear auth data and throw error
+      await chrome.storage.local.remove(['accessToken', 'refreshToken', 'connectionToken', 'authMethod']);
+      throw error;
+    }
+  }
+
+  return response;
+}
+
 // Setup right-click context menu on installation
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -137,17 +203,8 @@ async function saveClippedNote(clip: ClipPayload, tags: string[] = [], projectSl
   }
 
   // POST note request
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-  };
-  if (chrome.runtime.id) {
-    headers['Origin'] = `chrome-extension://${chrome.runtime.id}`;
-  }
-
-  const response = await fetch(`${cleanApiUrl}/api/notes`, {
+  const response = await fetchWithAuth(`${cleanApiUrl}/api/notes`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({
       projectSlug: project,
       title: clip.title,
@@ -155,7 +212,7 @@ async function saveClippedNote(clip: ClipPayload, tags: string[] = [], projectSl
       source: 'web-clipper',
       tags: tags,
     }),
-  });
+  }, cleanApiUrl);
 
   if (!response.ok) {
     let errorMsg = 'Failed to create note';

@@ -71,6 +71,11 @@ body {
   letter-spacing: -0.01em;
 }
 
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
 .btn-icon {
   background: none;
   border: none;
