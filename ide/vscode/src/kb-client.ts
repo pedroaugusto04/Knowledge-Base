@@ -15,7 +15,7 @@ const CONFIG_PATH = path.join(os.homedir(), '.config', 'kb', 'config.json');
 
 export function loadKbConfig(): KbConfig {
   const defaults: KbConfig = {
-    apiUrl: 'http://localhost:4310',
+    apiUrl: 'https://knowledgebase.sbs/kote/api',
     workspaceSlug: 'default',
     defaultProjectSlug: 'inbox',
     cookies: {},
