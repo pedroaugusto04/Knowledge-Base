@@ -509,17 +509,36 @@
 
   <!-- Chat panel -->
   <div id="chatPanel">
-  <div id="messages">
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">
-        <img src="${logoUri}" alt="Kote" style="width:52px;height:52px;border-radius:10px;object-fit:cover;opacity:0.7;" />
+    <div id="messages">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">
+          <img src="${logoUri}" alt="Kote" style="width:52px;height:52px;border-radius:10px;object-fit:cover;opacity:0.7;" />
+        </div>
+        <h2>Kote</h2>
+        <p>Type normal text to save it as a note, or start with <code>/ask</code> to search your Kote.</p>
+        <div class="suggestion-chips">
+          <button class="chip" data-suggestion="/ask How is authentication configured?">/ask Auth Configuration</button>
+          <button class="chip" data-suggestion="/ask What decisions were made?">/ask Decisions</button>
+          <button class="chip" data-suggestion="Task: Remember to deploy database migrations tonight.">Example Note</button>
+        </div>
       </div>
-      <h2>Kote</h2>
-      <p>Type normal text to save it as a note, or start with <code>/ask</code> to search your Kote.</p>
-      <div class="suggestion-chips">
-        <button class="chip" data-suggestion="/ask How is authentication configured?">/ask Auth Configuration</button>
-        <button class="chip" data-suggestion="/ask What decisions were made?">/ask Decisions</button>
-        <button class="chip" data-suggestion="Task: Remember to deploy database migrations tonight.">Example Note</button>
+    </div>
+
+    <!-- Input (inside chat panel) -->
+    <div id="inputArea">
+      <div id="inputRow">
+        <textarea
+          id="questionInput"
+          rows="1"
+          placeholder="Type a note to save, or /ask to search… (Enter to send)"
+        ></textarea>
+        <button id="sendBtn">Send</button>
+      </div>
+      <div id="footerRow">
+        <select id="projectSelect" title="Active project">
+          <option value="">Loading…</option>
+        </select>
+        <span class="hint" id="chatHint">Normal text saves note, /ask searches</span>
       </div>
     </div>
   </div>
@@ -536,26 +555,6 @@
     </div>
   </div>
   <!-- /History panel -->
-
-  <!-- Input (inside chat panel) -->
-  <div id="inputArea">
-    <div id="inputRow">
-      <textarea
-        id="questionInput"
-        rows="1"
-        placeholder="Type a note to save, or /ask to search… (Enter to send)"
-      ></textarea>
-      <button id="sendBtn">Send</button>
-    </div>
-    <div id="footerRow">
-      <select id="projectSelect" title="Active project">
-        <option value="">Loading…</option>
-      </select>
-      <span class="hint" id="chatHint">Normal text saves note, /ask searches</span>
-    </div>
-  </div>
-  </div>
-  <!-- /Chat panel -->
 
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
