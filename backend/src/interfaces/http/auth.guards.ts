@@ -46,7 +46,7 @@ export class TrustedOriginGuard implements CanActivate {
 }
 
 @Injectable()
-export class InternalServiceTokenGuard implements CanActivate {
+export class InternalServiceTokenGuard implements CanActivate { 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
     const authorization = request.headers.authorization || '';
