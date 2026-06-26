@@ -1,16 +1,11 @@
-import { Readability } from '@mozilla/readability';
 import TurndownService from 'turndown';
 
-export interface ClipPayload {
-  url: string;
-  title: string;
-  excerpt?: string | null;
-  author?: string | null;
-  site?: string | null;
-  publishedAt?: string | null;
-  contentHtml?: string | null;
-  selectedHtml?: string | null;
-}
+// Re-export ClipPayload and extractPageMetadata from the Turndown-free extractor
+// module so that content-extractor.ts can import from extractor.ts directly
+// without bundling Turndown (and its broken shouldUseActiveX probe) into the
+// injected content script.
+export type { ClipPayload } from './extractor.js';
+export { extractPageMetadata } from './extractor.js';
 
 // Helper to initialize Turndown with options
 export function getTurndownService(): TurndownService {
@@ -47,72 +42,6 @@ export function getTurndownService(): TurndownService {
   return turndownService;
 }
 
-// Run Readability to extract clean article HTML and metadata
-export function extractPageMetadata(doc: Document, url: string, selectedHtml?: string | null): ClipPayload {
-  // Extract author from document metadata tags
-  let author = null;
-  const authorMeta = doc.querySelector('meta[name="author"]') || doc.querySelector('meta[property="article:author"]');
-  if (authorMeta) {
-    author = authorMeta.getAttribute('content');
-  }
-
-  // Extract site name from document metadata tags
-  let site = null;
-  const siteMeta = doc.querySelector('meta[property="og:site_name"]');
-  if (siteMeta) {
-    site = siteMeta.getAttribute('content');
-  } else {
-    try {
-      site = new URL(url).hostname;
-    } catch {}
-  }
-
-  // Extract published time from document metadata tags
-  let publishedAt = null;
-  const pubDateMeta = doc.querySelector('meta[property="article:published_time"]') || 
-                      doc.querySelector('meta[name="publish-date"]') || 
-                      doc.querySelector('meta[name="pubdate"]') ||
-                      doc.querySelector('meta[property="og:pubdate"]');
-  if (pubDateMeta) {
-    publishedAt = pubDateMeta.getAttribute('content');
-  }
-
-  // If there's an active selection, we skip full page Readability extraction
-  if (selectedHtml) {
-    return {
-      url,
-      title: doc.title || 'Selected Snippet',
-      author: author ? author.trim() : null,
-      site: site ? site.trim() : null,
-      publishedAt: publishedAt ? publishedAt.trim() : null,
-      selectedHtml,
-    };
-  }
-
-  // Clone document to avoid modifying active page DOM during Readability parse
-  const docClone = doc.implementation.createHTMLDocument(doc.title);
-  docClone.documentElement.innerHTML = doc.documentElement.innerHTML;
-  const reader = new Readability(docClone, {
-    charThreshold: 0,
-    keepClasses: false,
-  });
-
-  const article = reader.parse();
-  if (!article) {
-    throw new Error('Failed to parse article content from this page.');
-  }
-
-  return {
-    url,
-    title: article.title || doc.title || 'Untitled Page',
-    excerpt: article.excerpt,
-    author: (article.byline || author || '').trim() || null,
-    site: (article.siteName || site || '').trim() || null,
-    publishedAt: publishedAt ? publishedAt.trim() : null,
-    contentHtml: article.content, // Return clean article HTML only
-  };
-}
-
 // Convert HTML to Markdown (used in Background SW)
 export function convertHtmlToMarkdown(html: string): string {
   const turndown = getTurndownService();
@@ -120,7 +49,7 @@ export function convertHtmlToMarkdown(html: string): string {
 }
 
 // Format note content with Frontmatter metadata (used in Background SW)
-export function formatNoteWithFrontmatter(payload: ClipPayload, markdown: string, tags: string[] = []): string {
+export function formatNoteWithFrontmatter(payload: import('./extractor.js').ClipPayload, markdown: string, tags: string[] = []): string {
   const frontmatter = [
     '---',
     `title: "${payload.title.replace(/"/g, '\\"')}"`,
