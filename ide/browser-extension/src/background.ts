@@ -139,15 +139,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Helper function to save note via backend API
 async function saveClippedNote(clip: ClipPayload, tags: string[] = [], projectSlugOverride?: string): Promise<any> {
-  let { apiUrl, connectionToken, defaultProject } = await chrome.storage.local.get([
+  let { apiUrl, connectionToken, defaultProject, authMethod, accessToken: storedAccessToken } = await chrome.storage.local.get([
     'apiUrl',
     'connectionToken',
     'defaultProject',
+    'authMethod',
+    'accessToken',
   ]);
 
   const resolvedApiUrl = apiUrl || 'https://knowledgebase.sbs/kote';
 
-  if (!connectionToken) {
+  // Check if any auth method is configured
+  if (!connectionToken && !authMethod) {
     throw new Error('Connection Token not configured. Please open extension settings.');
   }
 
@@ -167,39 +170,49 @@ async function saveClippedNote(clip: ClipPayload, tags: string[] = [], projectSl
   // Prepend frontmatter markdown content
   const formattedBody = formatNoteWithFrontmatter(clip, markdown, tags);
 
-  // Exchange connection token to get cookies or credentials
-  let accessToken = connectionToken.trim();
+  // Handle authentication based on method
+  let accessToken: string;
   let refreshToken: string | undefined = undefined;
 
-  if (accessToken.startsWith('kbc_')) {
-    try {
-      const payload = Uint8Array.from(atob(accessToken.slice(4)), (c) => c.charCodeAt(0));
-      const parsed = JSON.parse(new TextDecoder().decode(payload));
-      if (parsed.accessToken) {
-        accessToken = parsed.accessToken;
-        refreshToken = parsed.refreshToken;
+  if (authMethod === 'email' && storedAccessToken) {
+    // Email/password auth: use stored access token
+    accessToken = storedAccessToken;
+  } else if (connectionToken) {
+    // Token auth: exchange connection token
+    accessToken = connectionToken.trim();
+
+    if (accessToken.startsWith('kbc_')) {
+      try {
+        const payload = Uint8Array.from(atob(accessToken.slice(4)), (c) => c.charCodeAt(0));
+        const parsed = JSON.parse(new TextDecoder().decode(payload));
+        if (parsed.accessToken) {
+          accessToken = parsed.accessToken;
+          refreshToken = parsed.refreshToken;
+        }
+      } catch {
+        // Exchange connection token via HTTP API
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (chrome.runtime.id) {
+          headers['Origin'] = `chrome-extension://${chrome.runtime.id}`;
+        }
+        
+        const exchangeRes = await fetch(`${cleanApiUrl}/api/auth/exchange-connection-token`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ connectionToken }),
+        });
+        if (!exchangeRes.ok) {
+          throw new Error('Failed to exchange connection token with server.');
+        }
+        const data = await exchangeRes.json();
+        accessToken = data.accessToken;
+        refreshToken = data.refreshToken;
+        // Cache the exchanged tokens for subsequent calls
+        await chrome.storage.local.set({ accessToken, refreshToken });
       }
-    } catch {
-      // Exchange connection token via HTTP API
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (chrome.runtime.id) {
-        headers['Origin'] = `chrome-extension://${chrome.runtime.id}`;
-      }
-      
-      const exchangeRes = await fetch(`${cleanApiUrl}/api/auth/exchange-connection-token`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ connectionToken }),
-      });
-      if (!exchangeRes.ok) {
-        throw new Error('Failed to exchange connection token with server.');
-      }
-      const data = await exchangeRes.json();
-      accessToken = data.accessToken;
-      refreshToken = data.refreshToken;
-      // Cache the exchanged tokens for subsequent calls
-      await chrome.storage.local.set({ accessToken, refreshToken });
     }
+  } else {
+    throw new Error('No valid authentication found. Please open extension settings.');
   }
 
   // POST note request
