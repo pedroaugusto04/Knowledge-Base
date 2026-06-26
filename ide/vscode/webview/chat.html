@@ -336,6 +336,159 @@
       background: var(--vscode-toolbar-hoverBackground, rgba(127,127,127,0.1));
       color: var(--vscode-textLink-activeForeground);
     }
+
+    /* ── Tabs ────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--vscode-widget-border, #333);
+      background: var(--vscode-sideBar-background);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 7px 0;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--vscode-descriptionForeground);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+    .tab-btn:hover { color: var(--vscode-foreground); }
+    .tab-btn.active {
+      color: var(--vscode-foreground);
+      border-bottom-color: var(--vscode-button-background);
+      font-weight: 600;
+    }
+
+    /* ── History panel ───────────────────────────────── */
+    #historyPanel {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      flex-direction: column;
+    }
+    #historyPanel.visible { display: flex; }
+    #chatPanel { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
+    #chatPanel.hidden { display: none; }
+
+    .history-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+      border-bottom: 1px solid var(--vscode-widget-border, #333);
+      flex-shrink: 0;
+    }
+    .history-clear-btn {
+      background: none;
+      border: 1px solid var(--vscode-inputValidation-errorBorder, #f88);
+      color: var(--vscode-errorForeground, #f88);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .1s;
+    }
+    .history-clear-btn:hover { background: rgba(248,136,136,0.12); }
+
+    .history-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--vscode-descriptionForeground);
+      text-align: center;
+      padding: 32px;
+      font-size: 12px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .history-entry {
+      border-bottom: 1px solid var(--vscode-widget-border, rgba(127,127,127,0.15));
+    }
+    .history-entry-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      cursor: pointer;
+      user-select: none;
+      gap: 8px;
+    }
+    .history-entry-header:hover { background: var(--vscode-list-hoverBackground); }
+    .history-q-preview {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--vscode-foreground);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .history-meta {
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .history-chevron {
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+      transition: transform .15s;
+      flex-shrink: 0;
+    }
+    .history-entry.open .history-chevron { transform: rotate(90deg); }
+    .history-body {
+      display: none;
+      padding: 0 14px 12px;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .history-entry.open .history-body { display: flex; }
+    .history-answer-text {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--vscode-foreground);
+      background: var(--vscode-input-background);
+      border: 1px solid var(--vscode-input-border, transparent);
+      border-radius: 6px;
+      padding: 8px 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .history-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .history-action-btn {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--vscode-button-secondaryBackground, #555);
+      background: none;
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .1s;
+    }
+    .history-action-btn:hover { background: var(--vscode-list-hoverBackground); }
   </style>
 </head>
 <body>
@@ -348,7 +501,14 @@
     <button class="logout-btn" id="logoutBtn" title="Logout">Logout</button>
   </div>
 
-  <!-- Messages -->
+  <!-- Tab bar -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" id="tabChat" data-tab="chat">Chat</button>
+    <button class="tab-btn" id="tabHistory" data-tab="history">History</button>
+  </div>
+
+  <!-- Chat panel -->
+  <div id="chatPanel">
   <div id="messages">
     <div class="empty-state" id="emptyState">
       <div class="empty-icon">
@@ -363,8 +523,21 @@
       </div>
     </div>
   </div>
+  <!-- /Chat panel -->
 
-  <!-- Input -->
+  <!-- History panel -->
+  <div id="historyPanel">
+    <div class="history-toolbar">
+      <span id="historyCount">No history yet</span>
+      <button class="history-clear-btn" id="clearHistoryBtn">Clear all</button>
+    </div>
+    <div id="historyContent">
+      <div class="history-empty">No questions asked yet.<br>Use Ctrl+Shift+K to ask Kote.</div>
+    </div>
+  </div>
+  <!-- /History panel -->
+
+  <!-- Input (inside chat panel) -->
   <div id="inputArea">
     <div id="inputRow">
       <textarea
@@ -381,12 +554,41 @@
       <span class="hint" id="chatHint">Normal text saves note, /ask searches</span>
     </div>
   </div>
+  </div>
+  <!-- /Chat panel -->
 
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
   let isThinking = false;
   let lastQuestion = '';
   let conversationHistory = vscode.getState()?.history ?? [];
+  let historyLoaded = false;
+
+  // ── Tab switching ─────────────────────────────────────────────────────────
+
+  function switchTab(tab) {
+    const isChat = tab === 'chat';
+    document.getElementById('chatPanel').classList.toggle('hidden', !isChat);
+    document.getElementById('historyPanel').classList.toggle('visible', !isChat);
+    document.getElementById('tabChat').classList.toggle('active', isChat);
+    document.getElementById('tabHistory').classList.toggle('active', !isChat);
+
+    if (!isChat && !historyLoaded) {
+      historyLoaded = true;
+      vscode.postMessage({ type: 'loadHistory' });
+    }
+  }
+
+  document.getElementById('tabBar').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (btn) switchTab(btn.getAttribute('data-tab'));
+  });
+
+  document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+    if (confirm('Clear all ask history?')) {
+      vscode.postMessage({ type: 'clearHistory' });
+    }
+  });
 
   // ── Markdown renderer ─────────────────────────────────────────────────────
 
@@ -662,6 +864,35 @@
         break;
       }
 
+      case 'injectQA': {
+        // Injected from the popup-ask flow — show without a network call
+        hideEmpty();
+        switchTab('chat');
+        addUserMessage(msg.question);
+        const idx = conversationHistory.length;
+        conversationHistory.push({ question: msg.question, answer: msg.answer });
+        vscode.setState({ history: conversationHistory });
+        const el = document.createElement('div');
+        el.className = 'msg kb';
+        el.innerHTML = `
+          <div class="msg-sender">Kote</div>
+          <div class="bubble">${renderMarkdown(msg.answer)}</div>
+          <div class="bubble-actions">
+            <button class="action-btn" data-action="save" data-idx="${idx}">Save as note</button>
+            <button class="action-btn" data-action="copy" data-idx="${idx}">Copy</button>
+          </div>
+        `;
+        document.getElementById('messages').appendChild(el);
+        scrollToBottom();
+        if (msg.projectSlug) document.getElementById('projectSelect').value = msg.projectSlug;
+        break;
+      }
+
+      case 'historyLoaded': {
+        renderHistory(msg.entries);
+        break;
+      }
+
       case 'projects':
         renderProjects(msg.projects, '');
         break;
@@ -773,6 +1004,92 @@
   document.getElementById('logoutBtn').addEventListener('click', () => {
     vscode.postMessage({ type: 'logout' });
   });
+
+  // \u2500\u2500 History rendering \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+  function formatRelativeTime(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
+
+  function renderHistory(entries) {
+    const container = document.getElementById('historyContent');
+    const countEl = document.getElementById('historyCount');
+
+    if (!entries || entries.length === 0) {
+      countEl.textContent = 'No history yet';
+      container.innerHTML = '<div class="history-empty">No questions asked yet.<br>Use Ctrl+Shift+K to ask Kote.</div>';
+      return;
+    }
+
+    countEl.textContent = `${entries.length} question${entries.length !== 1 ? 's' : ''}`;
+
+    const listEl = document.createElement('div');
+    listEl.className = 'history-list';
+
+    entries.forEach((entry, i) => {
+      const entryEl = document.createElement('div');
+      entryEl.className = 'history-entry';
+      entryEl.innerHTML = `
+        <div class="history-entry-header">
+          <span class="history-q-preview">${escHtml(entry.question)}</span>
+          <span class="history-meta">
+            ${entry.projectSlug ? `<span>${escHtml(entry.projectSlug)}</span>` : ''}
+            <span>${formatRelativeTime(entry.timestamp)}</span>
+          </span>
+          <span class="history-chevron">\u25BA</span>
+        </div>
+        <div class="history-body">
+          <div class="history-answer-text">${renderMarkdown(entry.answer)}</div>
+          <div class="history-actions">
+            <button class="history-action-btn" data-hist-action="ask-again" data-idx="${i}">Ask again</button>
+            <button class="history-action-btn" data-hist-action="save" data-idx="${i}">Save as note</button>
+          </div>
+        </div>
+      `;
+
+      // Toggle expand/collapse
+      entryEl.querySelector('.history-entry-header').addEventListener('click', () => {
+        entryEl.classList.toggle('open');
+      });
+
+      listEl.appendChild(entryEl);
+    });
+
+    container.innerHTML = '';
+    container.appendChild(listEl);
+
+    // Delegate history actions
+    listEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.history-action-btn');
+      if (!btn) return;
+      const action = btn.getAttribute('data-hist-action');
+      const idx = parseInt(btn.getAttribute('data-idx') || '0', 10);
+      const entry = entries[idx];
+      if (!entry) return;
+
+      if (action === 'ask-again') {
+        switchTab('chat');
+        const input = document.getElementById('questionInput');
+        input.value = `/ask ${entry.question}`;
+        autoResize(input);
+        input.focus();
+      } else if (action === 'save') {
+        vscode.postMessage({
+          type: 'saveNote',
+          title: `Ask: ${entry.question.slice(0, 60)}`,
+          content: `**Q:** ${entry.question}\n\n**A:** ${entry.answer}`,
+          projectSlug: entry.projectSlug || document.getElementById('projectSelect').value,
+        });
+      }
+    });
+  }
 
   // Init
   vscode.postMessage({ type: 'ready' });

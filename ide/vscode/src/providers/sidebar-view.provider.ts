@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { KbClient, isConfigured } from '../kb-client';
 import type { KbProject, ChatToWebview, ChatFromWebview } from '../types';
 import { toMessage, logInfo } from '../error-reporter';
+import { loadAskHistory, clearAskHistory } from '../utils/ask-history';
 
 // ---------------------------------------------------------------------------
 // Provider for Sidebar (Chat + Login Setup)
@@ -157,7 +158,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               rawText: msg.content,
               projectSlug: msg.projectSlug || this.activeProject || this._client.defaultProjectSlug,
               sourceChannel: 'ai-chat',
-              source: 'open-code',
+              source: 'kote',
             });
             this._post({
               type: 'noteSaved',
@@ -198,6 +199,18 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           }
           break;
 
+        case 'loadHistory': {
+          const entries = loadAskHistory();
+          this._post({ type: 'historyLoaded', entries });
+          break;
+        }
+
+        case 'clearHistory': {
+          clearAskHistory();
+          this._post({ type: 'historyLoaded', entries: [] });
+          break;
+        }
+
         case 'changeProject':
           logInfo('SidebarProvider', `Active project changed by user: ${msg.projectSlug}`);
           this.activeProject = msg.projectSlug || null;
@@ -228,6 +241,11 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
     if (isConfigured()) {
       await this._loadProjects();
     }
+  }
+
+  /** Inject a Q&A turn into the chat webview (called after kote.ask popup → "Open Chat") */
+  injectQA(question: string, answer: string, projectSlug: string) {
+    this._post({ type: 'injectQA', question, answer, projectSlug });
   }
 
   private _post(msg: any) {

@@ -39,6 +39,8 @@ export type SaveAskHistoryInput = {
 export type ListAskHistoryInput = {
   userId: string;
   projectSlug?: string;
+  startDate?: string;
+  endDate?: string;
   page: number;
   pageSize: number;
 };

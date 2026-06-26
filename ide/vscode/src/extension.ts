@@ -60,9 +60,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Commands
   // -------------------------------------------------------------------------
   context.subscriptions.push(
-    vscode.commands.registerCommand('kote.openChat', async () => {
+    vscode.commands.registerCommand('kote.openChat', async (args?: { question?: string; answer?: string; projectSlug?: string }) => {
       logInfo('Extension', 'kote.openChat command triggered');
       vscode.commands.executeCommand('kote.sidebarView.focus');
+      if (args?.question && args?.answer) {
+        // Give the webview a moment to get focus before injecting the Q&A
+        setTimeout(() => {
+          sidebarProvider.injectQA(args.question!, args.answer!, args.projectSlug ?? '');
+        }, 300);
+      }
     }),
 
     vscode.commands.registerCommand('kote.refresh', () => {

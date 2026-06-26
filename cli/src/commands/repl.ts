@@ -101,8 +101,8 @@ function readlineAutocompletePrompt(promptText: string, commands: string[]): Pro
         if (matches.length > 0) {
           const selectedMatch = matches[selectedIndex];
           
-          if (selectedMatch === '/save ' || selectedMatch === '/ask ') {
-            // Autofill command and let user continue typing note/question
+          if (selectedMatch === '/save ' || selectedMatch === '/ask ' || selectedMatch === '/sync ') {
+            // Autofill command and let user continue typing
             cleanupOverlay(matches);
             input = selectedMatch;
             cursor = input.length;

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { KbClient } from '../kb-client';
 import { reportError, toMessage } from '../error-reporter';
+import { addAskEntry } from '../utils/ask-history';
 
 /**
  * Quick ask via VS Code's input box (Ctrl+Shift+K).
@@ -33,6 +34,10 @@ export function registerAskCommand(
           try {
             const result = await client.ask(question.trim(), getProject());
             const answer = result.answer?.trim() ?? 'No answer found.';
+            const projectSlug = getProject();
+
+            // Persist to local history
+            addAskEntry({ question: question.trim(), answer, projectSlug });
 
             // For short answers, show inline. For long ones, open chat.
             if (answer.length < 400) {
@@ -44,14 +49,14 @@ export function registerAskCommand(
               );
 
               if (action === 'Open Chat') {
-                vscode.commands.executeCommand('kote.openChat');
+                vscode.commands.executeCommand('kote.openChat', { question: question.trim(), answer, projectSlug });
               } else if (action === 'Save as Note') {
                 try {
                   await client.createNote({
                     rawText: `**Q:** ${question}\n\n**A:** ${answer}`,
-                    projectSlug: getProject(),
+                    projectSlug,
                     sourceChannel: 'ai-chat',
-                    source: 'open-code',
+                    source: 'kote',
                   });
                   vscode.window.showInformationMessage('Note saved to Kote.');
                 } catch (err: unknown) {
@@ -60,7 +65,7 @@ export function registerAskCommand(
               }
             } else {
               // Open chat with context of this question pre-sent
-              vscode.commands.executeCommand('kote.openChat');
+              vscode.commands.executeCommand('kote.openChat', { question: question.trim(), answer, projectSlug });
               vscode.window.showInformationMessage(
                 'Answer is long — opened in Kote Chat.',
                 'OK',

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
-import { eq, and, desc, count } from 'drizzle-orm';
+import { eq, and, desc, count, gte, lte } from 'drizzle-orm';
 
 import { buildPaginationMeta } from '../../contracts/pagination.js';
 import { ConversationConfidence } from '../../contracts/enums.js';
@@ -63,12 +63,20 @@ export class PostgresAskHistoryRepository extends AskHistoryRepository {
   async list(input: ListAskHistoryInput) {
     const db = this.database.getDb();
     const conditions = [eq(askHistory.userId, input.userId)];
-    
+
     if (input.projectSlug) {
       conditions.push(eq(askHistory.projectSlug, input.projectSlug));
     }
 
-    const whereCondition = and(...conditions);
+    if (input.startDate) {
+      conditions.push(gte(askHistory.createdAt, new Date(input.startDate)));
+    }
+
+    if (input.endDate) {
+      conditions.push(lte(askHistory.createdAt, new Date(input.endDate)));
+    }
+
+    const whereCondition = conditions.length > 1 ? and(...conditions) : conditions[0];
     
     const countResult = await db
       .select({ total: count() })

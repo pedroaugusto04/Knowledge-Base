@@ -1,4 +1,16 @@
 // ---------------------------------------------------------------------------
+// Ask history
+// ---------------------------------------------------------------------------
+
+export interface AskHistoryEntry {
+  id: string;
+  question: string;
+  answer: string;
+  projectSlug: string;
+  timestamp: string; // ISO 8601
+}
+
+// ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
@@ -101,6 +113,8 @@ export type ChatToWebview =
   | { type: 'projects'; projects: KbProject[] }
   | { type: 'setProject'; projectSlug: string }
   | { type: 'noteSaved'; noteId: string }
+  | { type: 'injectQA'; question: string; answer: string; projectSlug: string }
+  | { type: 'historyLoaded'; entries: AskHistoryEntry[] }
   | { type: 'error'; message: string }
   | { type: 'thinking' };
 
@@ -108,4 +122,6 @@ export type ChatToWebview =
 export type ChatFromWebview =
   | { type: 'ready' }
   | { type: 'ask'; question: string; projectSlug: string }
-  | { type: 'saveNote'; content: string; projectSlug: string; title?: string };
+  | { type: 'saveNote'; content: string; projectSlug: string; title?: string }
+  | { type: 'loadHistory' }
+  | { type: 'clearHistory' };
