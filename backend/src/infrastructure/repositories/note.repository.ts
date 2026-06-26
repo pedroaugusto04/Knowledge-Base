@@ -414,6 +414,7 @@ export class PostgresNoteRepository {
         title: notes.title,
         projectId: notes.projectId,
         workspaceId: notes.workspaceId,
+        workspaceSlug: workspaces.workspaceSlug,
         projectSlug: projects.projectSlug,
         folderId: notes.folderId,
         status: notes.status,
@@ -449,10 +450,11 @@ export class PostgresNoteRepository {
       })
       .from(notes)
       .leftJoin(projects, eq(projects.id, notes.projectId))
+      .leftJoin(workspaces, eq(workspaces.id, notes.workspaceId))
       .leftJoin(noteCategories, eq(noteCategories.noteId, notes.id))
       .leftJoin(categories, eq(categories.id, noteCategories.categoryId))
       .where(and(eq(notes.userId, userId), inArray(notes.id, ids)))
-      .groupBy(notes.id, projects.projectSlug);
+      .groupBy(notes.id, projects.projectSlug, workspaces.workspaceSlug);
 
     const noteRecords = result.map(noteFromRow);
     return Promise.all(noteRecords.map((n) => this.hydrateMarkdown(n)));
