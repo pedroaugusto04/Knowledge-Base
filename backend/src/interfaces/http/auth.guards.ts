@@ -52,7 +52,7 @@ export class InternalServiceTokenGuard implements CanActivate {
     const authorization = request.headers.authorization || '';
     const token = String(authorization).startsWith('Bearer ') ? String(authorization).slice('Bearer '.length) : '';
     if (!readEnvironment().internalServiceToken || token !== readEnvironment().internalServiceToken) {
-      throw new UnauthorizedException('invalid_internal_token');
+      throw new UnauthorizedException('invalid_internal_token'); 
     }
     return true;
   }
