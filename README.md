@@ -103,10 +103,10 @@ Once running, access the local services:
 * **Web Application:** [http://localhost:4311](http://localhost:4311)
 * **API Server:** [http://localhost:4310](http://localhost:4310)
 
+</details>
+
 > [!TIP]
 > Point your VS Code Extension (`knowledgeVault.apiUrl`) or CLI (`apiUrl` in `~/.kb-config.json`) to your self-hosted API URL (`http://localhost:4310`) to connect your editor and terminal to your local instance.
-
-</details>
 
 ---
 
