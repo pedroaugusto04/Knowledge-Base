@@ -287,51 +287,51 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
   return (
     <>
       <div className="modal-backdrop" role="presentation" onClick={closeGuard.requestClose}>
-      <section aria-labelledby="github-repositories-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
-        <div className="modal-head">
-          <div>
-            <div className="card-kicker">github-app</div>
-            <h2 id="github-repositories-title">{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.TITLE}</h2>
+        <section aria-labelledby="github-repositories-title" aria-modal="true" className="modal-panel integration-modal" role="dialog" onClick={(event) => event.stopPropagation()}>
+          <div className="modal-head">
+            <div>
+              <div className="card-kicker">github-app</div>
+              <h2 id="github-repositories-title">{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.TITLE}</h2>
+            </div>
+            <button aria-label="Close details" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
           </div>
-          <button aria-label="Close details" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
-        </div>
 
-        {repositoriesQuery.isLoading ? <p className="meta">{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.LOADING}</p> : null}
-        {repositoriesQuery.isError ? <InlineMessage tone="error">{getErrorMessage(repositoriesQuery.error, INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.ERROR)}</InlineMessage> : null}
-        <form
-          className="auth-form"
-          ref={formRef}
-          noValidate
-          onSubmit={handleSubmit(
-            (values) => saveMutation.mutate(values),
-            (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
-          )}
-        >
-          <div className="repository-picker" data-field="repositories" aria-label="GitHub repository list">
-            {repositories.map((repository) => (
-              <label className="repository-option" key={repository.id}>
-                <input
-                  checked={selected.includes(repository.id)}
-                  disabled={saveMutation.isPending}
-                  name="repositories"
-                  type="checkbox"
-                  value={repository.id}
-                  onChange={() => toggle(repository)}
-                />
-                <span>
-                  <strong>{repository.fullName}</strong>
-                  <small>{repository.private ? 'Private' : 'Public'}</small>
-                </span>
-              </label>
-            ))}
-          </div>
-          {errors.repositories?.message ? <p className="form-error" role="alert">{errors.repositories.message}</p> : null}
-          <div className="integration-card-foot">
-            <span className="meta">{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.SELECTED.replace('{count}', String(selected.length))}</span>
-            <FormActions disabled={saveMutation.isPending} onCancel={closeGuard.requestClose} submitLabel={INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.SAVE} />
-          </div>
-        </form>
-      </section>
+          {repositoriesQuery.isLoading ? <p className="meta">{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.LOADING}</p> : null}
+          {repositoriesQuery.isError ? <InlineMessage tone="error">{getErrorMessage(repositoriesQuery.error, INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.ERROR)}</InlineMessage> : null}
+          <form
+            className="auth-form"
+            ref={formRef}
+            noValidate
+            onSubmit={handleSubmit(
+              (values) => saveMutation.mutate(values),
+              (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
+            )}
+          >
+            <div className="repository-picker" data-field="repositories" aria-label="GitHub repository list">
+              {repositories.map((repository) => (
+                <label className="repository-option" key={repository.id}>
+                  <input
+                    checked={selected.includes(repository.id)}
+                    disabled={saveMutation.isPending}
+                    name="repositories"
+                    type="checkbox"
+                    value={repository.id}
+                    onChange={() => toggle(repository)}
+                  />
+                  <span>
+                    <strong>{repository.fullName}</strong>
+                    <small>{repository.private ? 'Private' : 'Public'}</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {errors.repositories?.message ? <p className="form-error" role="alert">{errors.repositories.message}</p> : null}
+            <div className="integration-card-foot">
+              <span className="meta">{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.SELECTED.replace('{count}', String(selected.length))}</span>
+              <FormActions disabled={saveMutation.isPending} onCancel={closeGuard.requestClose} submitLabel={INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.SAVE} />
+            </div>
+          </form>
+        </section>
       </div>
       {closeGuard.isDiscardConfirmationOpen ? (
         <ConfirmationModal
@@ -489,6 +489,87 @@ export function IntegrationCallbackNotice({ status }: { status: 'connected' | 'e
   );
 }
 
+function GithubSuccessInfoModal({ onClose, onNext }: { onClose: () => void; onNext: () => void }) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <section
+        aria-labelledby="github-success-title"
+        aria-modal="true"
+        className="modal-panel integration-modal github-success-modal"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          maxWidth: '500px',
+          width: '90%',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '20px',
+        }}
+      >
+        <div className="modal-head" style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', border: 'none', padding: 0, margin: 0 }}>
+          <button aria-label="Close details" className="modal-close" type="button" onClick={onClose}>x</button>
+        </div>
+
+        <div style={{
+          width: '100%',
+          aspectRatio: '16/10',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          border: '1px solid var(--accent-border)',
+          background: 'var(--surface-hover)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <img
+            src={withFrontendBasePath('/github-push-success.png')}
+            alt="GitHub integration workflow"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        </div>
+
+        <div style={{ textAlign: 'center' }}>
+          <h2 id="github-success-title" style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 12px 0', background: 'linear-gradient(135deg, var(--cyan) 0%, var(--primary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            GitHub Connected!
+          </h2>
+          <p style={{ color: 'var(--text)', lineHeight: 1.6, fontSize: '15px', margin: 0 }}>
+            You're all set! Just push to any allowed repository, and Kote will automatically create a note containing the commit details along with an AI-generated review.
+          </p>
+        </div>
+
+        <div className="form-actions" style={{ width: '100%', justifyContent: 'center', marginTop: '8px', gap: '12px' }}>
+          <button className="filter-chip" type="button" onClick={onClose} style={{ minWidth: '100px', cursor: 'pointer' }}>
+            Done
+          </button>
+          <button className="icon-button" type="button" onClick={onNext} style={{ minWidth: '180px', cursor: 'pointer' }}>
+            Select Repositories
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function GuidedIntegrationsSection({
   workspaceSlug,
   returnToPath,
@@ -508,6 +589,7 @@ export function GuidedIntegrationsSection({
 }) {
   const [codeConnection, setCodeConnection] = useState<IntegrationConnectionResponse | null>(null);
   const [showGithubRepositories, setShowGithubRepositories] = useState(false);
+  const [showGithubSuccessModal, setShowGithubSuccessModal] = useState(false);
   const didAutoOpen = useRef(false);
   const queryClient = useQueryClient();
   const integrationsQuery = useQuery({ queryKey: ['integrations', workspaceSlug], queryFn: () => fetchIntegrations(workspaceSlug), enabled: Boolean(workspaceSlug) });
@@ -531,7 +613,7 @@ export function GuidedIntegrationsSection({
   useEffect(() => {
     if (didAutoOpen.current || !defaultOpenGithubRepositories) return;
     if (integrations.some((integration) => integration.provider === 'github-app' && integration.status === 'connected')) {
-      setShowGithubRepositories(true);
+      setShowGithubSuccessModal(true);
       didAutoOpen.current = true;
     }
   }, [defaultOpenGithubRepositories, integrations]);
@@ -558,6 +640,15 @@ export function GuidedIntegrationsSection({
         {children}
       </section>
       {codeConnection ? <CodeConnectionModal connection={codeConnection} onClose={() => setCodeConnection(null)} workspaceSlug={workspaceSlug} /> : null}
+      {showGithubSuccessModal ? (
+        <GithubSuccessInfoModal
+          onClose={() => setShowGithubSuccessModal(false)}
+          onNext={() => {
+            setShowGithubSuccessModal(false);
+            setShowGithubRepositories(true);
+          }}
+        />
+      ) : null}
       {showGithubRepositories ? <GithubRepositoriesModal workspaceSlug={workspaceSlug} onClose={() => setShowGithubRepositories(false)} onSaved={onGithubRepositoriesSaved} /> : null}
     </>
   );

@@ -15,8 +15,8 @@ export function IntegrationsPage({ workspaceSlug }: { workspaceSlug: string }) {
       />
       {callback.integration === 'github-app'
         && callback.workspaceSlug === workspaceSlug
-        && (callback.status === 'connected' || callback.status === 'error')
-        ? <IntegrationCallbackNotice status={callback.status} />
+        && callback.status === 'error'
+        ? <IntegrationCallbackNotice status="error" />
         : null}
       <GuidedIntegrationsSection
         workspaceSlug={workspaceSlug}
