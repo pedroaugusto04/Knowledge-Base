@@ -69,7 +69,7 @@ describe('GuidedIntegrationsSection', () => {
       />,
     );
 
-    expect(await screen.findByRole('dialog', { name: 'GitHub Conectado!' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'GitHub Connected!' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Select Repositories' }));
 
