@@ -91,6 +91,14 @@ export function updateNote(id: string, params: UpdateNoteParams) {
   });
 }
 
+export function bulkUpdateNoteStatuses(ids: string[], status: QuickNoteStatus) {
+  return request<{ ok: true; updatedCount: number }>(`/api/notes/bulk/status`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ids, status }),
+  });
+}
+
 export function deleteNote(id: string) {
   return request<{ ok: true; noteId: string }>(`/api/notes/${encodeURIComponent(id)}`, {
     method: 'DELETE',

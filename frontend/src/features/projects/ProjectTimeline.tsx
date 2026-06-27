@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { fetchNote, updateNote, pinNote } from '../../shared/api/client';
+import { fetchNote, updateNote, pinNote, bulkUpdateNoteStatuses } from '../../shared/api/client';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
 import { projectTimelineCategoryValues, type ProjectTimelineCategory, type ProjectTimelineItem } from '../../shared/api/models/project-timeline';
@@ -91,21 +91,8 @@ export function ProjectTimeline({
     if (!visibleItems.length) return;
     setIsBulkUpdating(true);
     try {
-      await Promise.all(
-        visibleItems.map(async (item) => {
-          const detail = await fetchNote(item.noteId);
-          return updateNote(item.noteId, {
-            folderId: detail.folderId || '',
-            title: detail.title,
-            rawText: detail.editor?.rawText || '',
-            tags: detail.tags,
-            status,
-            reminderDate: detail.editor?.reminderDate,
-            reminderTime: detail.editor?.reminderTime,
-            reminderAt: detail.editor?.reminderAt,
-          });
-        })
-      );
+      const ids = visibleItems.map((item) => item.noteId);
+      await bulkUpdateNoteStatuses(ids, status as any);
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PROJECTS.ALL });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.NOTES.ALL });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.DASHBOARD });

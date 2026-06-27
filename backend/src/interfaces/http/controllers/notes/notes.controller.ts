@@ -44,13 +44,13 @@ export class NotesController {
   constructor(
     private readonly createManualNote: CreateManualNoteUseCase,
     private readonly updateNote: UpdateNoteUseCase,
-    private readonly bulkUpdateNoteStatus: BulkUpdateNoteStatusUseCase,
     private readonly deleteNote: DeleteNoteUseCase,
     private readonly getAttachmentContent: GetNoteAttachmentContentUseCase,
     private readonly setNotePinnedUseCase: SetNotePinnedUseCase,
     private readonly findRelatedNotesUseCase: FindRelatedNotesUseCase,
     private readonly getAutoActionGlobalUseCase: GetAutoActionGlobalUseCase,
     private readonly setAutoActionGlobalUseCase: SetAutoActionGlobalUseCase,
+    private readonly bulkUpdateNoteStatus: BulkUpdateNoteStatusUseCase,
   ) {}
 
   @Post()

@@ -63,12 +63,12 @@ export class DashboardController {
     private readonly listRemindersUseCase: ListPaginatedRemindersUseCase,
     private readonly listReminderBoardUseCase: ListReminderBoardUseCase,
     private readonly updateReminderStatusUseCase: UpdateReminderStatusUseCase,
-    private readonly bulkUpdateReminderStatusUseCase: BulkUpdateReminderStatusUseCase,
     private readonly getNoteDetail: GetNoteDetailUseCase,
     private readonly getReviewDetail: GetReviewDetailUseCase,
     private readonly queryKnowledge: QueryKnowledgeUseCase,
     private readonly runAskAiUseCase: RunAskAiUseCase,
     private readonly listAskHistoryUseCase: ListAskHistoryUseCase,
+    private readonly bulkUpdateReminderStatusUseCase: BulkUpdateReminderStatusUseCase,
   ) {}
 
   @Get('dashboard')

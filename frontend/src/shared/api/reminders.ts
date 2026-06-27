@@ -38,3 +38,11 @@ export function updateReminderStatus(id: string, status: 'pending' | 'overdue' |
     body: JSON.stringify({ status }),
   });
 }
+
+export function bulkUpdateReminderStatuses(ids: string[], status: 'pending' | 'overdue' | 'resolved' | 'archived') {
+  return request<{ ok: true; updatedCount: number }>(`/api/reminders/bulk/status`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ids, status }),
+  });
+}

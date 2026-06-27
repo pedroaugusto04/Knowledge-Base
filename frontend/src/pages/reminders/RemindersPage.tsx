@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import type { PageContext } from '../../app/page-context';
 import { formatDisplayToken, formatUsDate, formatDateInUserTimeZone } from '../../shared/utils/format';
 import { sortRemindersForList } from '../../shared/utils/reminders';
-import { fetchReminders, updateReminderStatus } from '../../shared/api/client';
+import { fetchReminders, bulkUpdateReminderStatuses } from '../../shared/api/client';
 import { StatusFilter, NoteStatus } from '../../shared/api/models/note-status';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
 import type { Reminder } from '../../shared/api/models/reminder';
@@ -159,9 +159,8 @@ export function RemindersPage({
     const config = bulkActionConfig[action];
     setIsBulkUpdating(true);
     try {
-      await Promise.all(
-        visibleReminders.map((reminder) => updateReminderStatus(reminder.id, config.nextStatus))
-      );
+      const ids = visibleReminders.map((reminder) => reminder.id);
+      await bulkUpdateReminderStatuses(ids, config.nextStatus);
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     } catch (err) {

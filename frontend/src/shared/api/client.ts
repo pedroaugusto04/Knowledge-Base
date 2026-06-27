@@ -10,7 +10,7 @@ export {
   saveGithubRepositories,
   testIntegration,
 } from './integrations';
-export { createNote, deleteNote, fetchNote, fetchNotes, updateNote, pinNote, fetchRelatedNotes } from './notes';
+export { createNote, deleteNote, fetchNote, fetchNotes, updateNote, pinNote, fetchRelatedNotes, bulkUpdateNoteStatuses } from './notes';
 export {
   createProject,
   createProjectFolder,
@@ -28,7 +28,7 @@ export {
   updateProject,
   updateProjectFolder,
 } from './projects';
-export { fetchReminderBoard, fetchReminders, updateReminderStatus } from './reminders';
+export { fetchReminderBoard, fetchReminders, updateReminderStatus, bulkUpdateReminderStatuses } from './reminders';
 export { runQuery } from './query';
 export { fetchAskHistory, runAsk } from './ask';
 export { ApiClientError, type AuthUser } from './request';
