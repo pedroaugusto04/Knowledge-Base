@@ -738,7 +738,7 @@ export class AiHistoryManager {
     let completed = true;
     await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: 'Syncing AI sessions to Kote...',
+      title: 'Syncing AI sessions (Chronological order)...',
       cancellable: true
     }, async (progress, token) => {
       let stopped = false;
