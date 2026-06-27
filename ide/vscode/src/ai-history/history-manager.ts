@@ -10,6 +10,8 @@ const SESSION_MODE_PICKED_KEY = 'kote.aiSessionModePicked';
 
 const SESSION_PROMPT_TIMEOUT_MS = 2 * 60 * 1000;
 
+const MAX_UNSYNCED_SESSIONS_CHECK = 200; // Limit for scanned unsynced sessions
+
 export class AiHistoryManager {
   private providers = new Map<string, AiHistoryProvider>();
   private activeDisposables: vscode.Disposable[] = [];
@@ -330,9 +332,17 @@ export class AiHistoryManager {
 
     if (!picked) return;
 
-    await vscode.workspace
-      .getConfiguration('kote')
-      .update('aiSessionSaveMode', picked.mode, vscode.ConfigurationTarget.Global);
+    const config = vscode.workspace.getConfiguration('kote');
+    const inspection = config.inspect('aiSessionSaveMode');
+
+    let target = vscode.ConfigurationTarget.Global;
+    if (inspection?.workspaceValue !== undefined) {
+      target = vscode.ConfigurationTarget.Workspace;
+    } else if (inspection?.workspaceFolderValue !== undefined) {
+      target = vscode.ConfigurationTarget.WorkspaceFolder;
+    }
+
+    await config.update('aiSessionSaveMode', picked.mode, target);
 
     context.globalState.update(SESSION_MODE_PICKED_KEY, true);
 
@@ -400,19 +410,24 @@ export class AiHistoryManager {
       if (action === 'Auto-save') {
         this.markSessionAsSaved(provider.id, session.sessionId);
         const saved = await this.saveSessionToVault(client, session);
-        if (saved) this.rememberSessionHash(key, hash);
+        if (saved) {
+          this.rememberSessionHash(key, hash);
+        } else {
+          this.savedSessions.delete(key);
+          this.forgetSessionHash(key);
+        }
       } else if (action === 'Preview & Edit') {
         this.openPreview(session);
+        this.rememberSessionHash(key, hash);
       } else if (action === 'Ignore') {
         this.markSessionAsIgnored(provider.id, session.sessionId);
+        this.rememberSessionHash(key, hash);
+      } else if (action === undefined) {
+        // User closed/dismissed the popup. Don't spam them for the same content state.
         this.rememberSessionHash(key, hash);
       } else if (action === 'Timed out') {
         this.forgetSessionHash(key);
         return;
-      }
-
-      if (!this.savedSessions.has(key) && !this.ignoredSessions.has(key)) {
-        this.forgetSessionHash(key);
       }
     } finally {
       this.promptingSessions.delete(key);
@@ -617,7 +632,7 @@ export class AiHistoryManager {
     }
   }
 
-  private async saveSessionToVault(client: KbClient, session: AiSession): Promise<boolean> {
+  private async saveSessionToVault(client: KbClient, session: AiSession, silent: boolean = false): Promise<boolean> {
     try {
       const titleWithDate = this.getTitleWithDate(session);
       const rawText = this.getMarkdownText(session);
@@ -630,7 +645,9 @@ export class AiHistoryManager {
         sessionId: session.sessionId,
       });
 
-      vscode.window.showInformationMessage('Note saved to Kote successfully!');
+      if (!silent) {
+        vscode.window.showInformationMessage('Note saved to Kote successfully!');
+      }
       vscode.commands.executeCommand('kote.refresh');
       return true;
     } catch (err: unknown) {
@@ -682,10 +699,12 @@ export class AiHistoryManager {
       }
     }
     unsynced.sort((a, b) => b.timestamp - a.timestamp);
-    return unsynced;
+    return unsynced.slice(0, MAX_UNSYNCED_SESSIONS_CHECK);
   }
 
-  async syncSessions(client: KbClient, sessionsToSync: { providerId: string, sessionId: string }[]): Promise<void> {
+  async syncSessions(client: KbClient, sessionsToSync: { providerId: string, sessionId: string }[]): Promise<boolean> {
+    // Resolve sessions and their timestamps first
+    const resolvedSessions: { item: { providerId: string, sessionId: string }, session: AiSession }[] = [];
     for (const item of sessionsToSync) {
       const provider = this.providers.get(item.providerId);
       if (!provider) continue;
@@ -693,8 +712,42 @@ export class AiHistoryManager {
       const sessions = await provider.getRecentSessions(1000);
       const session = sessions.find(s => s.sessionId === item.sessionId);
       if (session) {
+        resolvedSessions.push({ item, session });
+      }
+    }
+
+    // Sort by timestamp ascending (oldest first) so that the oldest sessions
+    // are created first in the KB, leaving the newest sessions on top.
+    resolvedSessions.sort((a, b) => a.session.timestamp - b.session.timestamp);
+
+    let completed = true;
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Syncing AI sessions to Kote...',
+      cancellable: true
+    }, async (progress, token) => {
+      let stopped = false;
+      token.onCancellationRequested(() => {
+        stopped = true;
+        completed = false;
+      });
+
+      const total = resolvedSessions.length;
+      for (let i = 0; i < total; i++) {
+        if (stopped) {
+          vscode.window.showInformationMessage('Sync stopped by user.');
+          break;
+        }
+
+        const { item, session } = resolvedSessions[i];
+        const titleWithDate = this.getTitleWithDate(session);
+        progress.report({
+          message: `(${i + 1}/${total}) ${titleWithDate}`,
+          increment: (1 / total) * 100
+        });
+
         this.markSessionAsSaved(item.providerId, item.sessionId);
-        const saved = await this.saveSessionToVault(client, session);
+        const saved = await this.saveSessionToVault(client, session, true);
         if (saved) {
           const key = `${item.providerId}:${item.sessionId}`;
           const hash = this.computeSessionHash(session);
@@ -706,7 +759,8 @@ export class AiHistoryManager {
           this.saveState();
         }
       }
-    }
+    });
+    return completed;
   }
 
   async checkUnsyncedAndPrompt(client: KbClient) {
@@ -727,8 +781,10 @@ export class AiHistoryManager {
         );
         if (choice === 'Sync All') {
           const sessionsToSync = unsynced.map(s => ({ providerId: s.providerId, sessionId: s.sessionId }));
-          await this.syncSessions(client, sessionsToSync);
-          vscode.window.showInformationMessage(`Successfully synced ${unsynced.length} AI sessions to Kote.`);
+          const completed = await this.syncSessions(client, sessionsToSync);
+          if (completed) {
+            vscode.window.showInformationMessage(`Successfully synced ${unsynced.length} AI sessions to Kote.`);
+          }
           // Notify the webview if it is active so it can reload
           vscode.commands.executeCommand('kote.refresh');
         } else if (choice === 'Review Sessions') {
