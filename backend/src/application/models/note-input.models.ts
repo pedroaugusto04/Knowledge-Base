@@ -13,6 +13,7 @@ export type CreateManualNoteInput = {
   sourceChannel?: SourceChannel;
   source?: string;
   sessionId?: string;
+  occurredAt?: string;
 };
 
 export type UpdateNoteInput = {

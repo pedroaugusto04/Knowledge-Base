@@ -642,6 +642,7 @@ export class AiHistoryManager {
         sourceChannel: 'ai-chat',
         source: session.providerId,
         sessionId: session.sessionId,
+        occurredAt: new Date(session.timestamp).toISOString(),
       });
 
       if (!silent) {
@@ -666,6 +667,7 @@ export class AiHistoryManager {
         sourceChannel: 'ai-chat',
         source: session.providerId,
         sessionId: session.sessionId,
+        occurredAt: new Date(session.timestamp).toISOString(),
       });
 
       vscode.commands.executeCommand('kote.refresh');
@@ -727,9 +729,8 @@ export class AiHistoryManager {
       }
     }
 
-    // Sort by timestamp ascending (oldest first) so that the oldest sessions
-    // are created first in the KB, leaving the newest sessions on top.
-    resolvedSessions.sort((a, b) => a.session.timestamp - b.session.timestamp);
+    // Sort by timestamp descending (newest first) so that the most recent sessions are synced first.
+    resolvedSessions.sort((a, b) => b.session.timestamp - a.session.timestamp);
 
     let completed = true;
     await vscode.window.withProgress({

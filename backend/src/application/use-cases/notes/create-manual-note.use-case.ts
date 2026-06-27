@@ -56,7 +56,7 @@ export class CreateManualNoteUseCase {
       hadReminder: false,
       hasReminder: hasReminder({ reminderDate, reminderAt }),
     });
-    const occurredAt = new Date().toISOString();
+    const occurredAt = input.occurredAt || new Date().toISOString();
     const cleanedRawText = stripTitleHeader(input.rawText, input.title);
     const isAiChat = isAiSource(activeSource);
 

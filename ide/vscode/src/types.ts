@@ -79,6 +79,7 @@ export interface KbCreateNotePayload {
   sourceChannel?: string;
   source?: string;
   sessionId?: string;
+  occurredAt?: string;
 }
 
 export interface KbCreateNoteResult {

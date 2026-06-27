@@ -24,6 +24,7 @@ export const createNoteBodySchema = z
     sourceChannel: z.nativeEnum(SourceChannel).optional(),
     source: z.string().trim().optional(),
     sessionId: z.string().trim().optional(),
+    occurredAt: z.string().trim().optional(),
   })
   .strict()
   .transform((body) => ({
@@ -40,6 +41,7 @@ export const createNoteBodySchema = z
     sourceChannel: body.sourceChannel,
     source: body.source,
     sessionId: body.sessionId,
+    occurredAt: body.occurredAt,
   }))
   .superRefine((body, ctx) => {
     if (body.reminderTime && !body.reminderDate) {
