@@ -49,6 +49,11 @@ export const INTEGRATION_MESSAGES = {
     SAVE: 'Save',
     SUCCESS: 'Repositories saved successfully.',
     ERROR_SAVE: 'Could not save the selected repositories.',
+    VALIDATION_REQUIRED: 'Select a valid repository.',
+    VALIDATION_MAX: 'Select at most 100 repositories.',
+    REPOSITORIES_BUTTON: 'Repositories',
+    SUCCESS_INSTRUCTION: "You're all set! Just push to any allowed repository, and Kote will automatically create a note containing the commit details along with an AI-generated review.",
+    REPOSITORY_LIST_ARIA: 'GitHub repository list',
   },
   
   PUSH_NOTIFICATIONS: {
@@ -63,5 +68,11 @@ export const INTEGRATION_MESSAGES = {
     ACTIVATE_ERROR: 'Could not activate this integration.',
     REVOKE_ERROR: 'Could not revoke this integration.',
     UPDATED_SUCCESS: '{name} updated successfully.',
+    CREATE_WORKSPACE_REQUIRED: 'Create a workspace to continue.',
+    LOADING: 'Loading integrations...',
+    LOAD_ERROR: 'Could not load integration status.',
+    REVOKE: 'Revoke',
+    CONNECT: 'Connect',
+    ACCOUNT_LABEL: 'Account: {account}',
   },
 } as const;

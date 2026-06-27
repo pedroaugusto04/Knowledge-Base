@@ -294,7 +294,7 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
               <div className="card-kicker">{IntegrationProvider.GithubApp}</div>
               <h2 id="github-repositories-title">{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.TITLE}</h2>
             </div>
-            <button aria-label="Close details" className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
+            <button aria-label={UI_MESSAGES.CLOSE_DETAILS} className="modal-close" type="button" onClick={closeGuard.requestClose}>x</button>
           </div>
 
           {repositoriesQuery.isLoading ? <p className="meta">{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.LOADING}</p> : null}
@@ -308,7 +308,7 @@ function GithubRepositoriesModal({ workspaceSlug, onClose, onSaved }: { workspac
               (invalidErrors) => window.requestAnimationFrame(() => focusFirstFormError(formRef.current, fieldNamesFromErrors(invalidErrors))),
             )}
           >
-            <div className="repository-picker" data-field="repositories" aria-label="GitHub repository list">
+            <div className="repository-picker" data-field="repositories" aria-label={INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.REPOSITORY_LIST_ARIA}>
               {repositories.map((repository) => (
                 <label className="repository-option" key={repository.id}>
                   <input
@@ -442,7 +442,7 @@ function IntegrationCard({
     },
   });
   const connected = integration.status === StoredIntegrationStatus.Connected;
-  const actionLabel = connected ? integration.primaryAction?.label || 'Revoke' : integration.primaryAction?.label || 'Connect';
+  const actionLabel = connected ? integration.primaryAction?.label || INTEGRATION_MESSAGES.GENERAL.REVOKE : integration.primaryAction?.label || INTEGRATION_MESSAGES.GENERAL.CONNECT;
   const actionError = connectMutation.isError
     ? getErrorMessage(connectMutation.error, INTEGRATION_MESSAGES.GENERAL.ACTIVATE_ERROR)
     : revokeMutation.isError
@@ -460,14 +460,14 @@ function IntegrationCard({
       </div>
       <div className="integration-card-body">
         <IntegrationSteps integration={integration} />
-        {integration.connectedAccount ? <p className="meta">Account: {integration.connectedAccount}</p> : null}
+        {integration.connectedAccount ? <p className="meta">{INTEGRATION_MESSAGES.GENERAL.ACCOUNT_LABEL.replace('{account}', integration.connectedAccount)}</p> : null}
         {integration.lastError ? <InlineMessage tone="error">{integration.lastError}</InlineMessage> : null}
         {actionError ? <InlineMessage tone="error">{actionError}</InlineMessage> : null}
       </div>
       <div className="integration-card-foot">
         <Badge value={formatDisplayToken(integration.status)} tone={statusTone[integration.status] || 'medium'} />
         <div className="integration-actions">
-          {integration.provider === IntegrationProvider.GithubApp && connected ? <button className="filter-chip" type="button" onClick={onGithubRepositories}>Repositories</button> : null}
+          {integration.provider === IntegrationProvider.GithubApp && connected ? <button className="filter-chip" type="button" onClick={onGithubRepositories}>{INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.REPOSITORIES_BUTTON}</button> : null}
           <button
             className={connected ? 'filter-chip' : 'icon-button'}
             disabled={connectMutation.isPending || revokeMutation.isPending}
@@ -523,7 +523,7 @@ function GithubSuccessInfoModal({ onClose, onNext }: { onClose: () => void; onNe
         }}
       >
         <div className="modal-head" style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', border: 'none', padding: 0, margin: 0 }}>
-          <button aria-label="Close details" className="modal-close" type="button" onClick={onClose}>x</button>
+          <button aria-label={UI_MESSAGES.CLOSE_DETAILS} className="modal-close" type="button" onClick={onClose}>x</button>
         </div>
 
         <div style={{
@@ -554,7 +554,7 @@ function GithubSuccessInfoModal({ onClose, onNext }: { onClose: () => void; onNe
             {UI_MESSAGES.GITHUB_CONNECTED}
           </h2>
           <p style={{ color: 'var(--text)', lineHeight: 1.6, fontSize: '15px', margin: 0 }}>
-            You're all set! Just push to any allowed repository, and Kote will automatically create a note containing the commit details along with an AI-generated review.
+            {INTEGRATION_MESSAGES.GITHUB_REPOSITORIES.SUCCESS_INSTRUCTION}
           </p>
         </div>
 
@@ -619,9 +619,9 @@ export function GuidedIntegrationsSection({
     }
   }, [defaultOpenGithubRepositories, integrations]);
 
-  if (!workspaceSlug) return <EmptyState>Create a workspace to continue.</EmptyState>;
-  if (integrationsQuery.isLoading) return <EmptyState>Loading integrations...</EmptyState>;
-  if (!integrationsQuery.data) return <InlineMessage tone="error">{getErrorMessage(integrationsQuery.error, 'Could not load integration status.')}</InlineMessage>;
+  if (!workspaceSlug) return <EmptyState>{INTEGRATION_MESSAGES.GENERAL.CREATE_WORKSPACE_REQUIRED}</EmptyState>;
+  if (integrationsQuery.isLoading) return <EmptyState>{INTEGRATION_MESSAGES.GENERAL.LOADING}</EmptyState>;
+  if (!integrationsQuery.data) return <InlineMessage tone="error">{getErrorMessage(integrationsQuery.error, INTEGRATION_MESSAGES.GENERAL.LOAD_ERROR)}</InlineMessage>;
 
   const cards = integrations.map((integration) => (
     <IntegrationCard

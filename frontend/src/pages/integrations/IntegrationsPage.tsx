@@ -5,6 +5,7 @@ import { WebhookSubscriptionsCard } from '../../features/integrations/WebhookSub
 import { PageHead } from '../../shared/ui/primitives';
 import { IntegrationProvider } from '../../features/integrations/integrations.constants';
 import { StoredIntegrationStatus } from '../../shared/api/enums';
+import { UI_MESSAGES } from '../../shared/constants/ui.constants';
 
 export function IntegrationsPage({ workspaceSlug }: { workspaceSlug: string }) {
   const callback = useIntegrationCallback();
@@ -12,7 +13,7 @@ export function IntegrationsPage({ workspaceSlug }: { workspaceSlug: string }) {
   return (
     <>
       <PageHead
-        title="Integrations"
+        title={UI_MESSAGES.INTEGRATIONS}
         subtitle=""
       />
       {callback.integration === IntegrationProvider.GithubApp
