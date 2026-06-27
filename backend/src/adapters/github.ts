@@ -154,5 +154,16 @@ export async function postGithubPullRequestComment(
     },
     body: JSON.stringify({ body: bodyText }),
   });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('postGithubPullRequestComment failed', {
+      repoFullName,
+      prNumber,
+      status: response.status,
+      statusText: response.statusText,
+      errorBody: errorText,
+      bodyLength: bodyText.length,
+    });
+  }
   return response.ok;
 }
