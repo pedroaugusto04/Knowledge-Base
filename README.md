@@ -12,15 +12,11 @@
 </p>
 
 <p align="center">
-  <strong>
-    <a href="https://knowledgebase.sbs/kote">
-      AI knowledge base for developers
-    </a>
-  </strong>
+  <strong>Capture and reuse your development context automatically.</strong>
   <br><br>
-  Available as Cloud or self-hosted.
-  <br>
-  Automatically capture AI coding sessions, technical decisions, Git history, and codebase updates into a centralized, searchable index.
+  Built for AI-assisted development workflows.
+  <br><br>
+  Available as cloud or self-hosted.
 </p>
 
 <p align="center">
