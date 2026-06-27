@@ -11,7 +11,6 @@ import { OperationsModule } from './operations.module.js';
 import { WorkspacesModule } from './workspaces.module.js';
 import { EmailModule } from './email.module.js';
 import { QuotaModule } from './quota.module.js';
-import { AppLogger } from '../../observability/logger.js';
 
 import {
   IntegrationConnectionService,
@@ -66,7 +65,6 @@ import { NotifyHighSeverityFindingsService } from '../../application/use-cases/n
     GithubAppCallbackController,
   ],
   providers: [
-    AppLogger,
     IntegrationConnectionService,
     IntegrationCredentialService,
     HandleGithubPushUseCase,
