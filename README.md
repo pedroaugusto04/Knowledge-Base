@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  A developer memory layer that captures AI sessions, Git history, and engineering decisions, turning them into searchable context.
+  A developer memory layer that captures AI sessions, Git history, and development context, turning them into searchable context.
   <br><br>
   <a href="https://knowledgebase.sbs/kote">→ Open Kote Web App</a>
   <br><br>
@@ -113,16 +113,24 @@ Once running, access the local services:
 ## Features
 
 <details>
-<summary><strong>CLI Tool (kote)</strong></summary>
+<summary><strong>Web Application & Knowledge Map</strong></summary>
 
-Synchronize terminal session histories and import local directories or files.
+Interfaces to manage, search, and visualize captured knowledge.
 
 <p align="center">
-  <img src="docs/screenshots/cli-sync-ai-command.png" alt="Sync AI CLI Command" width="100%">
-  <br><em>Importing AI session history from the terminal.</em>
+  <img src="docs/screenshots/ask-ai-overview.png" alt="Web Chat Search Interface" width="100%">
+  <br><em>Semantic chat interface for querying indexed data.</em>
 </p>
 
-For installation steps and command options, see [cli/README.md](cli/README.md).
+<p align="center">
+  <img src="docs/screenshots/note-details-example.png" alt="Note Detail View" width="100%">
+  <br><em>Detailed view of a captured note with metadata and tags.</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/map-overview.png" alt="Knowledge Node Graph Map" width="100%">
+  <br><em>Visual node graph illustrating relations between projects and notes.</em>
+</p>
 
 </details>
 
@@ -145,6 +153,35 @@ For configuration details, see [ide/vscode/README.md](ide/vscode/README.md).
 ---
 
 <details>
+<summary><strong>GitHub Integration</strong></summary>
+
+Processes repository activity passively to record code changes and retrieve context.
+
+* **Diff Analysis:** Summarizes changes on every push.
+* **Alert System:** Notifies the team via WhatsApp or Telegram if potential configuration or environmental issues are detected in a diff.
+* **PR Context AI:** Analyzes changed files and title/description of newly opened Pull Requests to automatically retrieve historical technical decisions and context, posting it as a PR comment.
+
+</details>
+
+---
+
+<details>
+<summary><strong>CLI Tool (kote)</strong></summary>
+
+Synchronize terminal session histories and import local directories or files.
+
+<p align="center">
+  <img src="docs/screenshots/cli-sync-ai-command.png" alt="Sync AI CLI Command" width="100%">
+  <br><em>Importing AI session history from the terminal.</em>
+</p>
+
+For installation steps and command options, see [cli/README.md](cli/README.md).
+
+</details>
+
+---
+
+<details>
 <summary><strong>Browser Extension</strong></summary>
 
 Save documentation, issues, and articles directly from the web browser.
@@ -155,19 +192,6 @@ Save documentation, issues, and articles directly from the web browser.
 </p>
 
 For setup instructions, see [ide/browser-extension/README.md](ide/browser-extension/README.md).
-
-</details>
-
----
-
-<details>
-<summary><strong>GitHub Integration</strong></summary>
-
-Processes repository activity passively to record code changes and retrieve context.
-
-* **Diff Analysis:** Summarizes changes on every push.
-* **Alert System:** Notifies the team via WhatsApp or Telegram if potential configuration or environmental issues are detected in a diff.
-* **PR Context AI:** Analyzes changed files and title/description of newly opened Pull Requests to automatically retrieve historical technical decisions and context, posting it as a PR comment.
 
 </details>
 
@@ -186,30 +210,6 @@ Provides channels for logging quick notes and querying the database.
 * **Audio Notes:** Transcribes and structures voice recordings into Markdown notes.
 * **Image Capture:** Upload screenshots or whiteboard diagrams to attach to projects.
 * **Interactive Querying:** Search the knowledge base using the `/ask` command.
-
-</details>
-
----
-
-<details>
-<summary><strong>Web Application & Knowledge Map</strong></summary>
-
-Interfaces to manage, search, and visualize captured knowledge.
-
-<p align="center">
-  <img src="docs/screenshots/ask-ai-overview.png" alt="Web Chat Search Interface" width="100%">
-  <br><em>Semantic chat interface for querying indexed data.</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/note-details-example.png" alt="Note Detail View" width="100%">
-  <br><em>Detailed view of a captured note with metadata and tags.</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/map-overview.png" alt="Knowledge Node Graph Map" width="100%">
-  <br><em>Visual node graph illustrating relations between projects and notes.</em>
-</p>
 
 </details>
 
