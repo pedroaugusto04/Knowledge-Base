@@ -1,4 +1,4 @@
-const DEFAULT_FRONTEND_URL = 'http://localhost:5173';
+const DEFAULT_FRONTEND_URL = 'https://knowledgebase.sbs/kote';
 const DEFAULT_LOGO_ASSET_PATH = 'Kote-Brand.png';
 const DEFAULT_APP_NAME = 'Kote';
 

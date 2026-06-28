@@ -37,7 +37,7 @@ export class WelcomeEmailService {
       `3. Create your first Project and add notes\n` +
       `4. Try the AI Chat to search for knowledge\n` +
       `5. Install the CLI or VS Code Extension for quick capture\n\n` +
-      `Access your account at: ${env.publicBaseUrl || 'http://localhost:5173'}\n\n` +
+      `Access your account at: ${env.publicBaseUrl || 'https://knowledgebase.sbs/kote'}\n\n` +
       `Thank you for being part of our team!`;
 
     try {

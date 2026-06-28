@@ -349,7 +349,7 @@ export class StripePaymentGateway implements IPaymentGateway {
     }
 
     const centsValue = Math.round(input.value * 100);
-    const returnUrl = process.env.KB_PUBLIC_BASE_URL || process.env.APP_URL || 'http://localhost:5173';
+    const returnUrl = process.env.KB_PUBLIC_BASE_URL || process.env.APP_URL || 'https://knowledgebase.sbs/kote';
     const body: any = {
       amount: centsValue,
       currency: 'usd',
