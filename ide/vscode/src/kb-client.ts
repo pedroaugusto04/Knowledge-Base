@@ -450,4 +450,8 @@ export class KbClient {
     this.config.workspaceSlug = workspaceSlug;
     saveKbConfig({ workspaceSlug });
   }
+
+  async findNotesByFile(filePath: string): Promise<KbNote[]> {
+    return this.fetch<KbNote[]>(`/api/notes/by-file?filePath=${encodeURIComponent(filePath)}`);
+  }
 }

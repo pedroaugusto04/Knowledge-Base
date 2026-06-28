@@ -25,6 +25,7 @@ import {
   ListAskHistoryUseCase,
   SetNotePinnedUseCase,
   FindRelatedNotesUseCase,
+  FindNotesByFileUseCase,
   IngestEntryUseCase,
   QueryKnowledgeUseCase,
   GetAutoActionGlobalUseCase,
@@ -76,6 +77,7 @@ import { NotesController } from '../../interfaces/http/controllers/index.js';
     ListAskHistoryUseCase,
     SetNotePinnedUseCase,
     FindRelatedNotesUseCase,
+    FindNotesByFileUseCase,
     IngestEntryUseCase,
     QueryKnowledgeUseCase,
   ],
@@ -96,6 +98,7 @@ import { NotesController } from '../../interfaces/http/controllers/index.js';
     GetNoteDetailUseCase,
     ListAskHistoryUseCase,
     ReindexAllEmbeddingsUseCase,
+    FindNotesByFileUseCase,
   ],
 })
 export class NotesModule {}

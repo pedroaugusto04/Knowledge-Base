@@ -80,6 +80,11 @@ export interface KbCreateNotePayload {
   source?: string;
   sessionId?: string;
   occurredAt?: string;
+  path?: string;
+  metadata?: {
+    changedFiles?: string[];
+    [key: string]: any;
+  };
 }
 
 export interface KbCreateNoteResult {

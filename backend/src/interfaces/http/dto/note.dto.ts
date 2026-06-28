@@ -123,3 +123,9 @@ export const bulkUpdateNoteStatusBodySchema = z.object({
 });
 export type BulkUpdateNoteStatusBody = z.infer<typeof bulkUpdateNoteStatusBodySchema>;
 
+export const notesByFileQuerySchema = z.object({
+  filePath: z.string().trim().min(1, 'filePath is required'),
+});
+export type NotesByFileQuery = z.infer<typeof notesByFileQuerySchema>;
+
+

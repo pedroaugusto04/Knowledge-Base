@@ -11,6 +11,8 @@ import { ClaudeCodeHistoryProvider } from './ai-history/providers/claude-code.pr
 import { CodexHistoryProvider } from './ai-history/providers/codex.provider';
 import { AntigravityHistoryProvider } from './ai-history/providers/antigravity.provider';
 import { OpenCodeHistoryProvider } from './ai-history/providers/opencode.provider';
+import { KoteCodeLensProvider } from './providers/codelens.provider';
+import { KoteNoteContentProvider } from './providers/note-viewer.provider';
 
 let kbClient: KbClient;
 let sidebarProvider: SidebarViewProvider;
@@ -95,6 +97,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       } else {
         statusBarProvider.setNotConfigured();
       }
+      vscode.commands.executeCommand('kote.refreshCodeLenses');
     })
   );
 
@@ -120,6 +123,53 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     kbClient,
     () => sidebarProvider.activeProject ?? activeProject ?? kbClient.defaultProjectSlug,
     historyManager
+  );
+
+  // -------------------------------------------------------------------------
+  // CodeLens & Note Content Providers (Engineering Memory)
+  // -------------------------------------------------------------------------
+  const noteContentProvider = new KoteNoteContentProvider();
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider('kote-note', noteContentProvider)
+  );
+
+  const codeLensProvider = new KoteCodeLensProvider(kbClient);
+  context.subscriptions.push(
+    vscode.languages.registerCodeLensProvider({ scheme: 'file' }, codeLensProvider)
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('kote.showFileNotes', async (relativePath: string, notes: any[]) => {
+      const items = notes.map((note) => ({
+        label: note.title || `Nota sem título (${note.id.slice(0, 8)})`,
+        description: note.summary || 'Sem resumo',
+        detail: `Canal: ${note.sourceChannel || 'Desconhecido'} | Criado em: ${new Date(note.createdAt).toLocaleDateString()}`,
+        note,
+      }));
+
+      const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: `Kote: Selecione uma nota sobre ${relativePath}`,
+      });
+
+      if (!selected) return;
+
+      const note = selected.note;
+      const uri = vscode.Uri.parse(`kote-note://note/${note.id}.md`);
+      
+      const markdownContent = `\
+# 💡 Kote: ${note.title || 'Sem título'}
+
+> [!NOTE]
+> **Canal de Origem:** \`${note.sourceChannel || 'kote'}\` | **Projeto:** \`${note.projectSlug || 'Inbox'}\` | **Criado em:** \`${new Date(note.createdAt || Date.now()).toLocaleString()}\`
+
+---
+
+${note.markdown || note.rawText || note.summary || '_Sem conteúdo._'}
+`;
+      noteContentProvider.setNoteContent(note.id, markdownContent);
+      
+      await vscode.commands.executeCommand('markdown.showPreview', uri);
+    })
   );
 
   // -------------------------------------------------------------------------

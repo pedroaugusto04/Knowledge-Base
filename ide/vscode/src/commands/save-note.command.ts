@@ -53,10 +53,13 @@ export function registerSaveNoteCommand(
               projectSlug: getProject(),
               source: SOURCE_CHANNELS.IDE,
               sourceChannel: SOURCE_CHANNELS.IDE,
+              path: fileName || undefined,
+              metadata: fileName ? { changedFiles: [fileName] } : undefined,
             });
             vscode.window.showInformationMessage(`Note saved to Kote — project: ${getProject()}`);
             // Trigger sidebar refresh
             vscode.commands.executeCommand(EXTENSION_COMMANDS.REFRESH);
+            vscode.commands.executeCommand('kote.refreshCodeLenses');
           } catch (err: unknown) {
             reportError('save-note', err);
           }
@@ -105,6 +108,8 @@ export function registerSaveNoteCommand(
       let sourceChannel: string | undefined = providerIdParam ? SOURCE_CHANNELS.AI_CHAT : SOURCE_CHANNELS.IDE;
       let sessionId: string | undefined = sessionIdParam;
 
+      const relativePath = vscode.workspace.asRelativePath(editor.document.uri);
+
       await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: 'Saving note…', cancellable: false },
         async () => {
@@ -116,12 +121,15 @@ export function registerSaveNoteCommand(
               sourceChannel,
               source,
               sessionId,
+              path: relativePath || undefined,
+              metadata: relativePath ? { changedFiles: [relativePath] } : undefined,
             });
             vscode.window.showInformationMessage(`Note saved to Kote — project: ${getProject()}`);
             if (sessionId && providerIdParam) {
               historyManager?.markSessionAsSaved(providerIdParam, sessionId);
             }
             vscode.commands.executeCommand(EXTENSION_COMMANDS.REFRESH);
+            vscode.commands.executeCommand('kote.refreshCodeLenses');
           } catch (err: unknown) {
             reportError('save-active-file', err);
           }
