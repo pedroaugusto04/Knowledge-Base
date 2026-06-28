@@ -9,6 +9,7 @@ import { fetchAttachmentText } from '../../shared/api/notes';
 import { useMediaQuery } from '../../shared/ui/use-media-query';
 import { MarkdownView } from '../markdown/MarkdownView';
 import { SourceIcon } from '../../shared/ui/icons';
+import { CDNImage } from '../../shared/ui/CDNImage';
 
 type AttachmentPreviewKind = 'image' | 'audio' | 'pdf' | 'markdown' | 'text' | 'none';
 
@@ -166,7 +167,28 @@ export function NoteAttachments({ attachments }: { attachments?: NoteAttachment[
                 rel="noreferrer"
                 onClick={(e) => handleAttachmentClick(e, attachment)}
               >
-                <img src={attachment.url} alt={attachment.fileName} loading="lazy" />
+                <CDNImage
+                  src={attachment.url}
+                  alt={attachment.fileName}
+                  loading="lazy"
+                  fallback={
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      aspectRatio: '1',
+                      background: 'var(--surface-5)',
+                      color: 'var(--muted)',
+                      fontSize: '11px',
+                      fontFamily: 'var(--mono)',
+                      borderRadius: '4px',
+                      animation: 'brief-skeleton-fade 1.8s infinite ease-in-out',
+                    }}>
+                      Loading...
+                    </div>
+                  }
+                />
               </a>
             ))}
           </div>
@@ -233,7 +255,27 @@ export function NoteAttachments({ attachments }: { attachments?: NoteAttachment[
             </div>
             <div className="attachment-viewer-content">
               {activePreviewKind === 'image' ? (
-                <img src={activeAttachment.url} alt={activeAttachment.fileName} className="attachment-viewer-image" />
+                <CDNImage
+                  src={activeAttachment.url}
+                  alt={activeAttachment.fileName}
+                  className="attachment-viewer-image"
+                  fallback={
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '40px',
+                      color: 'var(--muted)',
+                      fontFamily: 'var(--mono)',
+                      fontSize: '13px',
+                      gap: '12px',
+                    }}>
+                      <div className="global-loading-spinner" style={{ width: '32px', height: '32px' }} />
+                      <span>Loading attachment image...</span>
+                    </div>
+                  }
+                />
               ) : activePreviewKind === 'audio' ? (
                 <div className="attachment-viewer-audio-container">
                   <div className="attachment-viewer-audio-icon">

@@ -30,6 +30,7 @@ import { Badge, EmptyState, InlineMessage, Panel } from '../../shared/ui/primiti
 import { useGlobalLoading } from '../../app/global-loading';
 import { withFrontendBasePath } from '../../app/base-path';
 import { StoredIntegrationStatus } from '../../shared/api/enums';
+import { CDNImage } from '../../shared/ui/CDNImage';
 
 const statusTone: Record<DisplayStatus | string, string> = {
   [StoredIntegrationStatus.Connected]: 'low',
@@ -113,7 +114,17 @@ function IntegrationLogo({ integration }: { integration: UserIntegration }) {
   const logoClassName = integration.provider === IntegrationProvider.GithubApp
     ? 'integration-logo integration-logo-github-app'
     : 'integration-logo';
-  return <img alt={`${logo.label} logo`} className={logoClassName} src={logo.src} />;
+
+  const fallback = <div className="integration-logo-fallback">{integration.name.slice(0, 2).toUpperCase()}</div>;
+
+  return (
+    <CDNImage
+      alt={`${logo.label} logo`}
+      className={logoClassName}
+      src={logo.src}
+      fallback={fallback}
+    />
+  );
 }
 
 function IntegrationSteps({ integration }: { integration: UserIntegration }) {
@@ -538,7 +549,7 @@ function GithubSuccessInfoModal({ onClose, onNext }: { onClose: () => void; onNe
           justifyContent: 'center',
           alignItems: 'center',
         }}>
-          <img
+          <CDNImage
             src={withFrontendBasePath('/github-push-success.png')}
             alt="GitHub integration workflow"
             style={{
@@ -546,6 +557,22 @@ function GithubSuccessInfoModal({ onClose, onNext }: { onClose: () => void; onNe
               height: '100%',
               objectFit: 'cover',
             }}
+            fallback={
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                height: '100%',
+                background: 'var(--surface-hover)',
+                color: 'var(--muted)',
+                fontFamily: 'var(--mono)',
+                fontSize: '12px',
+                animation: 'brief-skeleton-fade 1.8s infinite ease-in-out',
+              }}>
+                Loading GitHub workflow guide...
+              </div>
+            }
           />
         </div>
 
