@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithAppProviders } from '../../../src/app/test-utils';
 import { ProjectsPage } from '../../../src/pages/projects/ProjectsPage';
 import type { Dashboard } from '../../../src/shared/api/models/dashboard';
+import { NoteStatus } from '../../../src/shared/api/models/note-status';
 
 function githubIntegrationsResponse(status: 'connected' | 'missing' = 'connected') {
   return {
@@ -84,7 +85,7 @@ const dashboard: Dashboard = {
       categories: [],
       tags: ['deploy'],
       date: '2026-04-27',
-      status: 'active',
+      status: NoteStatus.Active,
       summary: 'Resumo',
       source: 'manual-api',
       attachmentCount: 0,
@@ -347,7 +348,7 @@ describe('ProjectsPage', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
-  it('creates a note with reminder fields and opens the created note', async () => {
+  it('creates a note with reminder fields', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input) === '/api/integrations?workspaceSlug=default') return Response.json(githubIntegrationsResponse());
       if (String(input) === '/api/integrations/github-app/repositories?workspaceSlug=default') return Response.json({ ok: true, workspaceSlug: 'default', repositories: [] });
@@ -363,7 +364,7 @@ describe('ProjectsPage', () => {
       return Response.json({ ok: true, project: 'platform', noteId: 'note-2', eventPath: 'path.md' });
     });
     vi.stubGlobal('fetch', fetchMock);
-    const { openNote } = renderProjects();
+    renderProjects();
 
     fireEvent.click(screen.getByRole('button', { name: 'New note' }));
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Revisar rollout' } });
@@ -377,7 +378,6 @@ describe('ProjectsPage', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/notes', expect.objectContaining({ method: 'POST' })));
     expect(notificationSpies.notifySuccess).toHaveBeenCalledWith('Note created successfully.');
-    expect(openNote).toHaveBeenCalledWith('note-2');
   });
 
   it('loads note editor data and prefills the edit modal without opening the note row', async () => {

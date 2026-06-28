@@ -475,9 +475,6 @@ export function ProjectsWorkspace({
             setNoteModal(null);
             notifySuccess(mode === 'create' ? UI_MESSAGES.NOTE_CREATED : UI_MESSAGES.NOTE_UPDATED);
             await refreshDashboard(queryClient);
-            if (mode === 'create' && noteId) {
-              openNote(noteId);
-            }
           }}
           projectSlug={noteModal.mode === 'edit' ? noteModal.note.project : noteModal.projectSlug}
           initialFolderId={noteModal.mode === 'edit' ? noteModal.note.folderId || undefined : noteModal.folderId}
