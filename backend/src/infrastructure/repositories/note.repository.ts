@@ -828,6 +828,8 @@ function projectTimelineCategory(record: Pick<NoteRecord, 'metadata' | 'source' 
   if (record.sourceChannel === 'github-push') return 'github-push';
   if (record.sourceChannel === 'whatsapp') return 'whatsapp';
   if (record.sourceChannel === 'ai-chat') return 'ai-chat';
+  if (record.sourceChannel === 'cli') return 'manual';
+  if (record.sourceChannel === 'ide') return 'manual';
   return 'manual';
 }
 

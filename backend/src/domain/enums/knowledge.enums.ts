@@ -1,10 +1,10 @@
 export enum SourceChannel {
   Whatsapp = 'whatsapp',
   GithubPush = 'github-push',
-  N8nWorkflow = 'n8n-workflow',
   External = 'external',
   AiChat = 'ai-chat',
   Ide = 'ide',
+  Cli = 'cli',
 }
 
 export enum EventType {
