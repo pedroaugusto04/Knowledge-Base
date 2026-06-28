@@ -102,6 +102,7 @@ export class CreateManualNoteUseCase {
       },
       metadata: {
         rawText: input.rawText,
+        ...(input.metadata || {}),
       },
     };
 
@@ -109,6 +110,7 @@ export class CreateManualNoteUseCase {
       folderId: input.folderId,
       existingNoteId,
       categoryIds: input.categoryIds,
+      existingNotePath: input.path,
     }).then((result) => {
       this.noteEventDispatcher.dispatch({
         event: WebhookTrigger.NoteCreated,

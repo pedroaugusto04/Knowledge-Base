@@ -14,6 +14,8 @@ export type CreateManualNoteInput = {
   source?: string;
   sessionId?: string;
   occurredAt?: string;
+  path?: string;
+  metadata?: Record<string, any>;
 };
 
 export type UpdateNoteInput = {

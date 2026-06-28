@@ -26,6 +26,8 @@ export const createNoteBodySchema = z
     source: z.string().trim().optional(),
     sessionId: z.string().trim().optional(),
     occurredAt: z.string().trim().optional(),
+    path: z.string().trim().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .strict()
   .transform((body) => ({
@@ -43,6 +45,8 @@ export const createNoteBodySchema = z
     source: body.source,
     sessionId: body.sessionId,
     occurredAt: body.occurredAt,
+    path: body.path,
+    metadata: body.metadata,
   }))
   .superRefine((body, ctx) => {
     if (body.reminderTime && !body.reminderDate) {

@@ -56,7 +56,7 @@ export class PostgresNoteContextRepository implements NoteContextRepository {
           eq(notes.userId, userId),
           or(
             eq(notes.path, filePath),
-            sql`${notes.metadata}->'changedFiles' @> jsonb_build_array(${filePath})`,
+            sql`${notes.metadata}->'changedFiles' @> jsonb_build_array(${filePath}::text)`,
             sql`${notes.title} ILIKE ${likePattern}`,
             sql`${notes.summary} ILIKE ${likePattern}`
           )
