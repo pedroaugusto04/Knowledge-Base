@@ -6,6 +6,7 @@ import { fetchIntegrations } from '../../shared/api/client';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { UserIntegration } from '../../shared/api/models/integration';
 import { routes } from '../../app/routing/routes';
+import { withFrontendBasePath } from '../../app/base-path';
 import { Panel } from '../../shared/ui/primitives';
 import { UI_MESSAGES } from '../../shared/constants/ui.constants';
 
@@ -67,7 +68,7 @@ const CHECKLIST_ITEMS: ChecklistItemDef[] = [
     description: 'Download the Kote extension to sync local files and AI history.',
     priority: true,
     route: routes.profile,
-    icon: <img src="/vscode-logo.svg" style={{ width: '16px', height: '16px', display: 'block' }} alt="VS Code" />,
+    icon: <img src={withFrontendBasePath('/vscode-logo.svg')} style={{ width: '16px', height: '16px', display: 'block' }} alt="VS Code" />,
   },
   {
     id: 'vscode-sync-chat',
