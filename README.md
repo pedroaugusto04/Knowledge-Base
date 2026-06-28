@@ -29,9 +29,22 @@
   <img src="docs/screenshots/home-overview.png" alt="Kote Home Overview" width="100%">
 </p>
 
+---
+
+## Demos
+
+### Kote Overview
+
 <p align="center">
   <img src="docs/gifs/Kote.gif" alt="Kote Demo" width="100%">
   <br><em>Kote: capturing development context and querying knowledge.</em>
+</p>
+
+### CodeLens Integration
+
+<p align="center">
+  <img src="docs/gifs/Kode-CodeLens.gif" alt="CodeLens Demo" width="100%">
+  <br><em>VS Code CodeLens showing related notes at the top of files.</em>
 </p>
 
 ---
