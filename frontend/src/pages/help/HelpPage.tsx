@@ -320,6 +320,17 @@ Body:
       { title: 'Saving code snippets', body: 'Select any code → Right-click → "Save to Kote". The snippet is stored as a note with file path and language metadata.' },
       { title: 'Quick AI questions', body: 'Use the sidebar chat or Command Palette to ask questions about your Kote without switching tabs.' },
       { title: 'Importing AI sessions', body: 'The extension detects AI assistant sessions in your workspace and lets you import them with one click from the sidebar.' },
+      {
+        title: 'CodeLens - View Related Notes',
+        body: 'When you open a file that has associated notes or decisions in your Kote, a CodeLens indicator appears at the top of the file showing the count of related notes. Click the indicator to view and open these notes directly in your editor.',
+        steps: [
+          'Look for the CodeLens indicator (💡 Kote: X notes/decisions about this file) at the top of your editor',
+          'Click the CodeLens to see a quick pick list of related notes',
+          'Select a note to view it in a Markdown preview with metadata',
+          'Use the link in the preview to open the note in the Kote web application',
+        ],
+        tip: 'This feature helps you quickly access relevant context and decisions without leaving your editor.',
+      },
       { title: 'Extension documentation', body: 'For detailed extension features, keyboard shortcuts, and configuration options, check the VS Code extension documentation on GitHub.', tip: 'View VS Code extension README at https://github.com/pedroaugusto04/Knowledge-Base/blob/main/ide/vscode/README.md' },
     ],
   },

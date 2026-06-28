@@ -6,6 +6,7 @@ Integrate your Kote directly into VS Code — search, ask AI, save notes without
 
 ## Features
 
+- **CodeLens Integration**: Automatically displays relevant notes and decisions at the top of files that have associated knowledge in your Kote. Click the CodeLens indicator to view and open related notes directly in your editor.
 - **Dedicated Sidebar**: Interactive AI chat and manual note saving
 - **Quick AI Questions**: Ask questions without leaving your editor (Ctrl+Shift+K)
 - **Save Code Selection**: Right-click any code selection to save as a note
@@ -78,6 +79,17 @@ After installation, you'll need to connect to your Kote instance:
 2. Click the history icon (clock) in the sidebar title
 3. Browse recent AI-assisted development sessions
 4. Click any session to view details
+
+#### CodeLens - View Related Notes
+
+When you open a file that has associated notes or decisions in your Kote, a CodeLens indicator appears at the top of the file:
+
+1. Look for the CodeLens indicator (💡 Kote: X notes/decisions about this file) at the top of your editor
+2. Click the CodeLens to see a quick pick list of related notes
+3. Select a note to view it in a Markdown preview
+4. The note preview includes metadata (source channel, project, creation date) and a link to open it in the Kote web application
+
+This feature helps you quickly access relevant context and decisions without leaving your editor.
 
 ## Commands
 

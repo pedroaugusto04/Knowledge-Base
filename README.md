@@ -60,7 +60,8 @@ Kote integrates with your existing tools to collect and index technical knowledg
 1. **Development & AI Sessions:** The VS Code extension automatically logs local AI conversations and saves highlighted code snippets to your knowledge base.
 2. **Git Workflow:** The GitHub integration analyzes commit diffs on push, generating technical summaries and flagging potential operational issues.
 3. **Quick Notes:** Send text or audio messages to Kote's messaging integrations to log quick notes or environment configurations.
-4. **Query & Retrieval:** Query the accumulated knowledge base using natural language directly from the Web Application, the VS Code sidebar, WhatsApp or via CLI to ask questions or locate solutions, documents, and files.
+4. **CodeLens Integration:** When opening files in VS Code, a CodeLens indicator appears at the top of files that have associated notes or decisions in your Kote, allowing you to quickly access relevant context without leaving your editor.
+5. **Query & Retrieval:** Query the accumulated knowledge base using natural language directly from the Web Application, the VS Code sidebar, WhatsApp or via CLI to ask questions or locate solutions, documents, and files.
 
 ---
 
@@ -77,6 +78,9 @@ To start using Kote:
      
 4. **Start Capturing Context Automatically:**
 Once set up, Kote runs in the background and continuously captures AI sessions (Antigravity, Codex, Claude Code, OpenCode, etc.), GitHub activity (pushes and pull requests), and development context. Everything you work on becomes searchable knowledge that you can query to understand what you've done, why decisions were made, and how your system evolved over time.
+
+5. **Access Related Notes in Your IDE:**
+When you open files in VS Code that have associated notes or decisions in your Kote, a CodeLens indicator appears at the top of the file showing the count of related notes. Click the indicator to view and open these notes directly in your editor, making it easy to access relevant context and decisions without leaving your development environment.
 
 ---
 
@@ -155,6 +159,13 @@ Integrates directly with your editor to capture context during development.
   <img src="docs/screenshots/vscode-extension.png" alt="VS Code Extension Sidebar" width="100%">
   <br><em>Integrated sidebar containing AI chat and quick-save options.</em>
 </p>
+
+**Key Features:**
+- **CodeLens Integration**: Automatically displays relevant notes and decisions at the top of files that have associated knowledge in your Kote. Click the CodeLens indicator to view and open related notes directly in your editor.
+- **AI Chat Sidebar**: Interactive AI chat interface for querying your knowledge base without leaving the editor.
+- **Quick Save Commands**: Save code selections or entire files as notes with right-click context menus.
+- **AI Session History**: View and search recent AI-assisted development sessions from various tools.
+- **Real-time Sync**: Monitor and sync local AI CLI sessions automatically in the background.
 
 For configuration details, see [ide/vscode/README.md](ide/vscode/README.md).
 
