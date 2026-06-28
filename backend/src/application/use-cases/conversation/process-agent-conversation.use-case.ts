@@ -6,7 +6,7 @@ import {
   type AgentConversationState,
 } from '../../../contracts/agent-conversation.js';
 import { type ConversationInput } from '../../../contracts/conversation.js';
-import { CredentialRecordStatus, IntegrationProvider, AgentConversationAction } from '../../../contracts/enums.js';
+import { CredentialRecordStatus, IntegrationProvider, AgentConversationAction, SourceChannel } from '../../../contracts/enums.js';
 import { ingestPayloadSchema } from '../../../contracts/ingest.js';
 import { slugify } from '../../../domain/strings.js';
 import { currentDateTimeInTimeZone, nowIso } from '../../../domain/time.js';
@@ -25,6 +25,7 @@ import { ConversationAgentPresenter } from './services/conversation-agent.presen
 import { ConversationFolderResolutionService } from './services/conversation-folder-resolution.service.js';
 import { QuotaService } from '../../services/quota.service.js';
 import { AiOperationType } from '../../../domain/enums/plans.enums.js';
+import { resolveSourceChannel } from '../../utils/source-channel.utils.js';
 import {
   buildAgentConversationPayload as buildAgentPayload,
   buildNextAgentConversationState,
@@ -74,6 +75,11 @@ export class ProcessAgentConversationUseCase {
     const normalizedWorkspaceSlug = slugify(workspaceSlug) || 'default';
     await this.assertAgentEnabled(userId, normalizedWorkspaceSlug);
 
+    const sourceChannel = resolveSourceChannel({
+      senderId: input.senderId,
+      chatId: input.chatId,
+    });
+
     const key = `agent:${input.chatId}:${input.senderId}`;
     let state = await this.loadState(userId, normalizedWorkspaceSlug, key);
     if (projectSlug) {
@@ -115,7 +121,7 @@ export class ProcessAgentConversationUseCase {
       return this.reply(AgentConversationAction.Cancel, this.presenter.captureCanceled(), null, EMPTY_AGENT_CONVERSATION_STATE);
     }
 
-    return this.processNewTurn(input, userId, normalizedWorkspaceSlug, key, state);
+    return this.processNewTurn(input, userId, normalizedWorkspaceSlug, key, state, sourceChannel);
   }
 
   private async processNewTurn(
@@ -124,6 +130,7 @@ export class ProcessAgentConversationUseCase {
     workspaceSlug: string,
     key: string,
     state: AgentConversationState,
+    sourceChannel: SourceChannel,
   ): Promise<AgentConversationResult> {
     const messageText = String(input.messageText || '').trim();
     const environment = this.environmentProvider.read();

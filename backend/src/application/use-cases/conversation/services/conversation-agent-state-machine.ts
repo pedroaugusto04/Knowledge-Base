@@ -4,12 +4,14 @@ import {
   type AgentConversationState,
 } from '../../../../contracts/agent-conversation.js';
 import type { ConversationInput } from '../../../../contracts/conversation.js';
+import { SourceChannel } from '../../../../contracts/enums.js';
 import { normalizeMultiline, slugify, trimText } from '../../../../domain/strings.js';
 import { normalizeDate, normalizeTime, nowIso } from '../../../../domain/time.js';
 import type { ProjectFolderRecord, ProjectRecord } from '../../../models/repository-records.models.js';
 import type { ConversationAgentFolderContext, ConversationAgentResponse } from '../../../ports/conversation/conversation-agent.gateway.js';
 import { buildConversationIngestPayload } from '../../../utils/conversation-payload.utils.js';
 import { buildProjectFolderTree, folderSlugFromDisplayName } from '../../../utils/project-folder.utils.js';
+import { getCorrelationPrefix, getSourceSystem, resolveSourceChannel } from '../../../utils/source-channel.utils.js';
 
 export const emptyAgentConversationState: AgentConversationState = agentConversationStateSchema.parse({});
 
@@ -94,9 +96,16 @@ export function resolveSelectedProjectSlug(value: string, current: AgentConversa
 }
 
 export function buildAgentConversationPayload(input: ConversationInput, state: AgentConversationState, reminderTimeZone: string) {
+  const sourceChannel = resolveSourceChannel({
+    senderId: input.senderId,
+    chatId: input.chatId,
+  });
+  
   return buildConversationIngestPayload({
     input,
-    correlationPrefix: 'wpp-agent',
+    correlationPrefix: getCorrelationPrefix(sourceChannel),
+    sourceChannel,
+    sourceSystem: getSourceSystem(sourceChannel),
     projectSlug: state.project.selectedProjectSlug || 'inbox',
     rawText: state.draft.rawText,
     title: state.draft.title || '',

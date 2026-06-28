@@ -1,0 +1,83 @@
+import { SourceChannel } from '../../contracts/enums.js';
+
+export type SourceChannelContext = {
+  senderId?: string;
+  chatId?: string;
+  isCli?: boolean;
+  isWhatsapp?: boolean;
+  isExternal?: boolean;
+};
+
+/**
+ * Centralized utility to determine the appropriate SourceChannel based on context.
+ * Defaults to SourceChannel.External when no specific channel is identified.
+ */
+export function resolveSourceChannel(context: SourceChannelContext): SourceChannel {
+  if (context.isCli) {
+    return SourceChannel.Cli;
+  }
+  if (context.isWhatsapp) {
+    return SourceChannel.Whatsapp;
+  }
+  if (context.isExternal) {
+    return SourceChannel.External;
+  }
+  
+  // Infer from sender/chat ID patterns
+  const senderId = String(context.senderId || '').trim();
+  const chatId = String(context.chatId || '').trim();
+  
+  if (senderId === 'cli-user' && chatId === 'cli-session') {
+    return SourceChannel.Cli;
+  }
+  
+  // WhatsApp typically uses phone numbers or JIDs (e.g., 5511999999999@s.whatsapp.net)
+  if (senderId.includes('@') || chatId.includes('@') || /^\d+$/.test(senderId)) {
+    return SourceChannel.Whatsapp;
+  }
+  
+  // Default to External for unknown sources
+  return SourceChannel.External;
+}
+
+/**
+ * Get the appropriate source system string based on SourceChannel.
+ */
+export function getSourceSystem(channel: SourceChannel): string {
+  switch (channel) {
+    case SourceChannel.Cli:
+      return 'kote-cli';
+    case SourceChannel.Whatsapp:
+      return 'evolution-api';
+    case SourceChannel.GithubPush:
+      return 'github';
+    case SourceChannel.AiChat:
+      return 'ai-chat';
+    case SourceChannel.Ide:
+      return 'ide';
+    case SourceChannel.External:
+    default:
+      return 'external';
+  }
+}
+
+/**
+ * Get the appropriate correlation prefix based on SourceChannel.
+ */
+export function getCorrelationPrefix(channel: SourceChannel): string {
+  switch (channel) {
+    case SourceChannel.Cli:
+      return 'cli-agent';
+    case SourceChannel.Whatsapp:
+      return 'wpp-agent';
+    case SourceChannel.GithubPush:
+      return 'github-agent';
+    case SourceChannel.AiChat:
+      return 'ai-chat-agent';
+    case SourceChannel.Ide:
+      return 'ide-agent';
+    case SourceChannel.External:
+    default:
+      return 'external-agent';
+  }
+}
