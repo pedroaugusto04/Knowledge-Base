@@ -20,7 +20,11 @@ export function unique<T>(items: T[]): T[] {
 }
 
 export function sanitizeFileStem(value: string, fallback = 'entry'): string {
-  return slugify(value) || fallback;
+  const slugified = slugify(value) || fallback;
+  // Limit to 100 chars to prevent index row size exceeding PostgreSQL btree limit
+  // Path format: 20 Inbox/project/folder/YYYY/MM/YYYYMMDD-HHMMSS-{title}.md
+  // Max safe path length ~2700 bytes, title should be ~100 chars to stay safe
+  return slugified.length > 100 ? slugified.slice(0, 100) : slugified;
 }
 
 export function trimText(value: string, fallback = ''): string {
