@@ -31,6 +31,7 @@
 
 <p align="center">
   <img src="docs/gifs/Kote.gif" alt="Kote Demo" width="100%">
+  <br><em>Kote: capturing development context and querying knowledge.</em>
 </p>
 
 ---
