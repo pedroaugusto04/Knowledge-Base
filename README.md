@@ -26,15 +26,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/home-overview.png" alt="Kote Home Overview" width="100%">
-</p>
-
-<p align="center">
-  <details>
-    <summary>🎥 <strong>Watch interactive demo (GIF)</strong></summary>
-    <br>
-    <img src="docs/gifs/Kote.gif" alt="Kote Demo" width="100%">
-  </details>
+  <img src="docs/gifs/Kote.gif" alt="Kote Overview" width="100%">
 </p>
 
 ---
@@ -127,6 +119,11 @@ Once running, access the local services:
 <summary><strong>Web Application & Knowledge Map</strong></summary>
 
 Interfaces to manage, search, and visualize captured knowledge.
+
+<p align="center">
+  <img src="docs/screenshots/home-overview.png" alt="Kote Home Overview" width="100%">
+  <br><em>Dashboard overview showing recent notes and integrations.</em>
+</p>
 
 <p align="center">
   <img src="docs/screenshots/ask-ai-overview.png" alt="Web Chat Search Interface" width="100%">
