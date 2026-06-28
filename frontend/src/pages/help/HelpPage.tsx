@@ -188,7 +188,7 @@ const sections: HelpSection[] = [
     label: 'AI Providers',
     icon: <IconBot />,
     title: 'AI Provider Integrations',
-    description: 'AI providers power the intelligent features in Kote — code reviews, conversations, and project briefs.',
+    description: 'AI providers power the intelligent features in Kote — code reviews, conversations, project briefs, and PR context.',
     items: [
       {
         title: 'Review AI',
@@ -201,6 +201,10 @@ const sections: HelpSection[] = [
       {
         title: 'Project Brief AI',
         body: 'Generates comprehensive project summaries that highlight recent activity, key decisions, and important context.'
+      },
+      {
+        title: 'PR Context AI',
+        body: 'Analyzes changed files and title/description of newly opened Pull Requests to automatically retrieve historical technical decisions and context, posting it as a PR comment.'
       },
     ],
   },
@@ -259,48 +263,6 @@ Body:
     ],
   },
   {
-    id: 'push-notifications',
-    label: 'Push Notifications',
-    icon: <IconBell />,
-    title: 'Push Notifications',
-    description: 'Get notified directly in your browser about reminders and important updates.',
-    items: [
-      {
-        title: 'Enabling Push Notifications',
-        body: 'Allow browser notifications when prompted and activate the Push Notifications integration in Settings.',
-        steps: [
-          'Go to Settings → Integrations → Push Notifications',
-          'Click "Connect" to enable push notifications',
-          'Allow browser notifications when prompted',
-        ],
-        tip: 'You can use push notifications alongside WhatsApp reminders, or choose one based on your preference.',
-      },
-      {
-        title: 'Reminder Notifications',
-        body: 'Receive browser notifications when your note reminders are due, so you never miss important follow-ups.'
-      },
-      {
-        title: 'System Updates',
-        body: 'Stay informed with important alerts and updates delivered directly to your browser.',
-        tip: 'Make sure to keep notifications enabled in your browser settings.',
-      },
-    ],
-  },
-  {
-    id: 'cli',
-    label: 'CLI Tool',
-    icon: <IconTerminal />,
-    title: 'CLI Tool',
-    description: 'The Kote CLI syncs local files, directories, and AI session histories directly to your Kote from the terminal.',
-    items: [
-      { title: 'Installation', body: 'Install the CLI globally via npm and initialize it with your API token.', code: 'npm install -g @pedroaugusto04/kote-cli\nkote init' },
-      { title: 'Syncing AI sessions', body: 'Sync AI assistant sessions (Claude Code, Codex, Antigravity, OpenCode) to your Kote.', code: 'kote sync-ai' },
-      { title: 'Syncing files and directories', body: 'Send individual files or entire directories to your Kote.', code: 'kote sync --file ./README.md\nkote sync --dir ./docs' },
-      { title: 'Finding your API token', body: 'Go to Profile → CLI & VS Code Connection in the app to generate a unified connection token. This token authenticates both the VS Code extension and CLI.' },
-      { title: 'CLI documentation', body: 'For complete CLI commands, usage examples, and advanced configuration, refer to the CLI documentation on GitHub.', tip: 'View CLI README at https://github.com/pedroaugusto04/Knowledge-Base/blob/main/cli/README.md' },
-    ],
-  },
-  {
     id: 'vscode',
     label: 'VS Code',
     icon: <IconCode />,
@@ -332,6 +294,48 @@ Body:
         tip: 'This feature helps you quickly access relevant context and decisions without leaving your editor.',
       },
       { title: 'Extension documentation', body: 'For detailed extension features, keyboard shortcuts, and configuration options, check the VS Code extension documentation on GitHub.', tip: 'View VS Code extension README at https://github.com/pedroaugusto04/Knowledge-Base/blob/main/ide/vscode/README.md' },
+    ],
+  },
+  {
+    id: 'cli',
+    label: 'CLI Tool',
+    icon: <IconTerminal />,
+    title: 'CLI Tool',
+    description: 'The Kote CLI syncs local files, directories, and AI session histories directly to your Kote from the terminal.',
+    items: [
+      { title: 'Installation', body: 'Install the CLI globally via npm and initialize it with your API token.', code: 'npm install -g @pedroaugusto04/kote-cli\nkote init' },
+      { title: 'Syncing AI sessions', body: 'Sync AI assistant sessions (Claude Code, Codex, Antigravity, OpenCode) to your Kote.', code: 'kote sync-ai' },
+      { title: 'Syncing files and directories', body: 'Send individual files or entire directories to your Kote.', code: 'kote sync --file ./README.md\nkote sync --dir ./docs' },
+      { title: 'Finding your API token', body: 'Go to Profile → CLI & VS Code Connection in the app to generate a unified connection token. This token authenticates both the VS Code extension and CLI.' },
+      { title: 'CLI documentation', body: 'For complete CLI commands, usage examples, and advanced configuration, refer to the CLI documentation on GitHub.', tip: 'View CLI README at https://github.com/pedroaugusto04/Knowledge-Base/blob/main/cli/README.md' },
+    ],
+  },
+  {
+    id: 'push-notifications',
+    label: 'Push Notifications',
+    icon: <IconBell />,
+    title: 'Push Notifications',
+    description: 'Get notified directly in your browser about reminders and important updates.',
+    items: [
+      {
+        title: 'Enabling Push Notifications',
+        body: 'Allow browser notifications when prompted and activate the Push Notifications integration in Settings.',
+        steps: [
+          'Go to Settings → Integrations → Push Notifications',
+          'Click "Connect" to enable push notifications',
+          'Allow browser notifications when prompted',
+        ],
+        tip: 'You can use push notifications alongside WhatsApp reminders, or choose one based on your preference.',
+      },
+      {
+        title: 'Reminder Notifications',
+        body: 'Receive browser notifications when your note reminders are due, so you never miss important follow-ups.'
+      },
+      {
+        title: 'System Updates',
+        body: 'Stay informed with important alerts and updates delivered directly to your browser.',
+        tip: 'Make sure to keep notifications enabled in your browser settings.',
+      },
     ],
   },
   {
