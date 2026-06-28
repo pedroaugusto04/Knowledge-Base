@@ -81,3 +81,28 @@ export function getCorrelationPrefix(channel: SourceChannel): string {
       return 'external-agent';
   }
 }
+
+/**
+ * Convert a string sourceChannel value to the SourceChannel enum.
+ * Defaults to SourceChannel.External for unknown or empty values.
+ */
+export function parseSourceChannelString(channelString?: string): SourceChannel {
+  if (!channelString) return SourceChannel.External;
+  
+  const normalized = channelString.toLowerCase().trim();
+  switch (normalized) {
+    case 'whatsapp':
+      return SourceChannel.Whatsapp;
+    case 'github-push':
+      return SourceChannel.GithubPush;
+    case 'ai-chat':
+      return SourceChannel.AiChat;
+    case 'ide':
+      return SourceChannel.Ide;
+    case 'cli':
+      return SourceChannel.Cli;
+    case 'external':
+    default:
+      return SourceChannel.External;
+  }
+}

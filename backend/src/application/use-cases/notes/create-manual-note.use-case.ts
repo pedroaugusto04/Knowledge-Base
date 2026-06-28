@@ -14,6 +14,7 @@ import { RuntimeEnvironmentProvider } from '../../ports/observability/runtime-en
 import { NoteEventDispatcher } from '../../services/note-event-dispatcher.js';
 import { IngestEntryUseCase } from '../ingest/ingest-entry.use-case.js';
 import { stripTitleHeader } from './note-editor.helpers.js';
+import { parseSourceChannelString } from '../../utils/source-channel.utils.js';
 
 @Injectable()
 export class CreateManualNoteUseCase {
@@ -62,7 +63,7 @@ export class CreateManualNoteUseCase {
 
     const payload: IngestPayload = {
       source: {
-        channel: input.sourceChannel || SourceChannel.External,
+        channel: parseSourceChannelString(input.sourceChannel),
         system: activeSource || 'manual-api',
         actor: '',
         conversationId: workspaceSlug,

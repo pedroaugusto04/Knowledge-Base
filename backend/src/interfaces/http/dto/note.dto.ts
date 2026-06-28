@@ -22,7 +22,7 @@ export const createNoteBodySchema = z
     reminderDate: z.string().trim().optional().default(''),
     reminderTime: z.string().trim().optional().default(''),
     reminderAt: z.string().trim().optional().default(''),
-    sourceChannel: z.nativeEnum(SourceChannel).optional(),
+    sourceChannel: z.string().trim().optional(),
     source: z.string().trim().optional(),
     sessionId: z.string().trim().optional(),
     occurredAt: z.string().trim().optional(),
