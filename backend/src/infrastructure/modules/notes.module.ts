@@ -82,6 +82,8 @@ import { NotesController } from '../../interfaces/http/controllers/index.js';
     FindNotesByFileUseCase,
     IngestEntryUseCase,
     QueryKnowledgeUseCase,
+    PostgresSettingsRepository,
+    { provide: SettingsRepository, useExisting: PostgresSettingsRepository },
   ],
   exports: [
     EmbeddingWorker,

@@ -168,3 +168,76 @@ export function rankKnowledgeMatches(notes: VaultNoteSummary[], query: Pick<Quer
       return left.path.localeCompare(right.path);
     });
 }
+
+export function rankHybridKnowledgeMatches(
+  notes: VaultNoteSummary[],
+  similarChunks: Array<{ noteId: string; similarity: number }>,
+  query: Pick<QueryInput, 'query' | 'projectSlug' | 'workspaceSlug' | 'status' | 'limit'>,
+) {
+  const intent = getSpecialQueryIntent(query.query);
+  const tokens = tokenizeQuery(query.query);
+
+  // Build a map of noteId -> max similarity score from chunks
+  const similarityMap = new Map<string, number>();
+  for (const chunk of similarChunks) {
+    const currentMax = similarityMap.get(chunk.noteId) || 0;
+    if (chunk.similarity > currentMax) {
+      similarityMap.set(chunk.noteId, chunk.similarity);
+    }
+  }
+
+  return notes
+    .filter((note) =>
+      (!query.projectSlug || note.project === query.projectSlug)
+      && (!query.workspaceSlug || note.workspace === query.workspaceSlug)
+      && (
+        !('status' in query) || !query.status || (
+          query.status === StatusFilter.Open
+            ? !terminalStatuses.includes(note.status.toLowerCase() as (typeof terminalStatuses)[number])
+            : note.status.toLowerCase() === query.status
+        )
+      ),
+    )
+    .map((note) => {
+      // Combine vector similarity (weight 0.7) with keyword score (weight 0.3)
+      const vectorScore = (similarityMap.get(note.id) || 0) * 100; // Scale to 0-100 range
+      const keywordScore = intent
+        ? (matchesIntent(note, intent) ? 100 : 0)
+        : scoreKnowledgeNote(note, tokens);
+
+      const hybridScore = (vectorScore * 0.7) + (keywordScore * 0.3);
+
+      return {
+        id: note.id,
+        path: note.path,
+        title: note.title,
+        type: note.type,
+        project: note.project,
+        workspace: note.workspace,
+        folderId: note.folderId,
+        categories: note.categories,
+        tags: note.tags,
+        date: note.date,
+        status: note.status,
+        summary: note.summary,
+        source: note.source,
+        projectSlug: note.project,
+        score: hybridScore,
+        snippet: note.summary || note.title,
+        attachmentCount: note.attachmentCount,
+        isPinned: note.isPinned,
+      };
+    })
+    .filter((match) => match.score > 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      const leftTime = new Date(left.date || 0).getTime();
+      const rightTime = new Date(right.date || 0).getTime();
+      if (leftTime !== rightTime) {
+        return rightTime - leftTime;
+      }
+      return left.path.localeCompare(right.path);
+    });
+}

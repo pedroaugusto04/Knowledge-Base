@@ -92,7 +92,21 @@ test('query returns ranked matches from the authenticated user repository scope'
     links: [],
   });
 
-  const result = await new QueryKnowledgeUseCase(queryRepository).execute(
+  // Mock embedding dependencies (no embeddings configured, should fall back to keyword search)
+  const mockEmbeddingGateway = {
+    generateEmbeddings: async () => [],
+  };
+  const mockNoteEmbeddingRepository = {
+    findSimilar: async () => [],
+  };
+
+  const result = await new QueryKnowledgeUseCase(
+    queryRepository,
+    repositories.contentRepository,
+    mockEmbeddingGateway,
+    mockNoteEmbeddingRepository,
+    repositories.runtimeEnvironmentProvider,
+  ).execute(
     { query: 'timeout webhook deploy', projectSlug: 'n8n-automations', limit: 3 },
     user.id,
   );
@@ -149,7 +163,20 @@ test('query filters textual matches by note status', async (t) => {
     links: [],
   });
 
-  const result = await new QueryKnowledgeUseCase(repositories.contentQueryRepository).execute(
+  const mockEmbeddingGateway = {
+    generateEmbeddings: async () => [],
+  };
+  const mockNoteEmbeddingRepository = {
+    findSimilar: async () => [],
+  };
+
+  const result = await new QueryKnowledgeUseCase(
+    repositories.contentQueryRepository,
+    repositories.contentRepository,
+    mockEmbeddingGateway,
+    mockNoteEmbeddingRepository,
+    repositories.runtimeEnvironmentProvider,
+  ).execute(
     { query: 'webhook timeout', workspaceSlug: 'default', status: 'resolved', limit: 10 },
     user.id,
   );
@@ -192,7 +219,20 @@ test('query handles special query: summarize my recent notes', async (t) => {
     markdown: '',
   });
 
-  const result = await new QueryKnowledgeUseCase(repositories.contentQueryRepository).execute(
+  const mockEmbeddingGateway = {
+    generateEmbeddings: async () => [],
+  };
+  const mockNoteEmbeddingRepository = {
+    findSimilar: async () => [],
+  };
+
+  const result = await new QueryKnowledgeUseCase(
+    repositories.contentQueryRepository,
+    repositories.contentRepository,
+    mockEmbeddingGateway,
+    mockNoteEmbeddingRepository,
+    repositories.runtimeEnvironmentProvider,
+  ).execute(
     { query: 'Summarize my recent notes', workspaceSlug: 'default', limit: 10 },
     user.id,
   );
@@ -238,7 +278,20 @@ test('query handles special query: what are my action items?', async (t) => {
     markdown: '',
   });
 
-  const result = await new QueryKnowledgeUseCase(repositories.contentQueryRepository).execute(
+  const mockEmbeddingGateway = {
+    generateEmbeddings: async () => [],
+  };
+  const mockNoteEmbeddingRepository = {
+    findSimilar: async () => [],
+  };
+
+  const result = await new QueryKnowledgeUseCase(
+    repositories.contentQueryRepository,
+    repositories.contentRepository,
+    mockEmbeddingGateway,
+    mockNoteEmbeddingRepository,
+    repositories.runtimeEnvironmentProvider,
+  ).execute(
     { query: 'What are my action items?', workspaceSlug: 'default', limit: 10 },
     user.id,
   );
@@ -294,7 +347,20 @@ test('query handles special query: review key decisions made', async (t) => {
     markdown: '',
   });
 
-  const result = await new QueryKnowledgeUseCase(repositories.contentQueryRepository).execute(
+  const mockEmbeddingGateway = {
+    generateEmbeddings: async () => [],
+  };
+  const mockNoteEmbeddingRepository = {
+    findSimilar: async () => [],
+  };
+
+  const result = await new QueryKnowledgeUseCase(
+    repositories.contentQueryRepository,
+    repositories.contentRepository,
+    mockEmbeddingGateway,
+    mockNoteEmbeddingRepository,
+    repositories.runtimeEnvironmentProvider,
+  ).execute(
     { query: 'Review key decisions made', workspaceSlug: 'default', limit: 10 },
     user.id,
   );
