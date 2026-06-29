@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
-import { formatDisplayToken, reminderInputDate, reminderInputTime } from '../../../shared/utils/format';
+import { formatDisplayToken, reminderInputDateTime } from '../../../shared/utils/format';
 import { UI_MESSAGES } from '../../../shared/constants/ui.constants';
 import { createNote, updateNote, fetchProjectFolders, fetchWorkspaceCategories } from '../../../shared/api/client';
 import type { NoteDetail } from '../../../shared/api/models/note';
@@ -84,7 +84,7 @@ export function ProjectNoteModal({
       title: note?.title || '',
       rawText: note?.editor?.rawText || '',
       tags: note?.tags || [],
-      reminderAt: note?.editor?.reminderAt || '',
+      reminderAt: reminderInputDateTime({ reminderAt: note?.editor?.reminderAt }),
     },
   });
   const closeGuard = useModalCloseGuard({ isDirty, onClose });

@@ -95,6 +95,12 @@ export function reminderInputTime(input: { reminderAt?: string }) {
   return input.reminderAt ? formatTimeInUserTimeZone(input.reminderAt) : '';
 }
 
+export function reminderInputDateTime(input: { reminderAt?: string }) {
+  const parts = dateTimePartsInUserTimeZone(input.reminderAt);
+  if (!parts) return '';
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
 function formatDateTimeInUserTimeZone(value: string | null | undefined) {
   const parts = dateTimePartsInUserTimeZone(value);
   if (!parts) return value || '';
