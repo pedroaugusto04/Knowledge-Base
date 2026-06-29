@@ -174,7 +174,7 @@ const sourceRules: SourceRule[] = [
   {
     label: 'Web Clipper',
     tagClass: 'web-clipper',
-    matches: (source) => source.startsWith('http://') || source.startsWith('https://'),
+    matches: (source) => source === 'web-clipper' || source.startsWith('http://') || source.startsWith('https://'),
   },
   {
     label: 'Open Code',
