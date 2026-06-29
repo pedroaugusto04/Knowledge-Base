@@ -217,7 +217,7 @@ async function saveIngestedNote(
         tags: payload.classification.tags,
         occurredAt: payload.event.occurredAt,
         sourceChannel: payload.source.channel,
-        summary: payload.content.sections.summary || payload.content.rawText,
+        summary: payload.content.sections.summary || '',
         markdown,
         metadata: {
           ...payload.metadata,

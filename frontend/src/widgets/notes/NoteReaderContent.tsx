@@ -75,7 +75,7 @@ export function NoteBody({ markdown, rawText, summary, title, source }: { markdo
   const extraMarkdown = readerExtraSections(markdown, title);
   const hasExtra = Boolean(extraMarkdown);
   const cleanedRawText = stripSourceHeader(rawText).replace(/^---\n[\s\S]*?\n---\n?/, '');
-  const cleanedSummary = stripSourceHeader(summary);
+  const cleanedSummary = stripSourceHeader(summary).replace(/^---\n[\s\S]*?\n---\n?/, '');
   const isGithubPush = source === SOURCE_VALUES.GITHUB_PUSH;
   const hasSummary = isGithubPush && Boolean(cleanedSummary) && normalizeReaderText(cleanedSummary) !== normalizeReaderText(cleanedRawText);
   const showLabel = hasExtra || hasSummary;
