@@ -170,6 +170,7 @@ test('project timeline dto accepts known categories and optional folder filters 
     pageSize: 10,
     category: 'all',
     status: 'open',
+    orderByPin: true,
   });
   assert.throws(() => projectTimelineQuerySchema.parse({ category: 'webhook' }));
 });
