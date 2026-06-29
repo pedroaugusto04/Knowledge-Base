@@ -851,10 +851,10 @@ function appendTimelineFolderClause(
 }
 
 function appendTimelineCategoryClause(clauses: string[], category: ListProjectTimelineInput['category']) {
-  const noReminder = "(n.reminder_date = '' and n.reminder_at = '')";
+  const noReminder = "(n.reminder_at IS NULL)";
   if (category === 'all') return;
   if (category === 'reminder') {
-    clauses.push("(n.reminder_date <> '' or n.reminder_at <> '')");
+    clauses.push("(n.reminder_at IS NOT NULL)");
     return;
   }
   clauses.push(noReminder);
