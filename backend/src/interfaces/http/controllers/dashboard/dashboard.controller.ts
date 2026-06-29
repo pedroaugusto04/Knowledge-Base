@@ -5,9 +5,7 @@ import type { AuthenticatedUser } from '../../../../application/auth.js';
 import {
   BuildDashboardUseCase,
   GetReviewDetailUseCase,
-  GetNoteDetailUseCase,
   ListReminderBoardUseCase,
-  ListPaginatedNotesUseCase,
   ListPaginatedProjectsUseCase,
   ListPaginatedRemindersUseCase,
   ListPaginatedReviewsUseCase,
@@ -17,17 +15,10 @@ import {
   BulkUpdateReminderStatusUseCase,
   RunAskAiUseCase,
   ListAskHistoryUseCase,
-  FindNotesByFileUseCase,
 } from '../../../../application/use-cases/index.js';
 import { CurrentUser } from '../../auth.decorators.js';
 import { AccessTokenAuthGuard, TrustedOriginGuard } from '../../auth.guards.js';
 import {
-  notesByFileQuerySchema,
-  type NotesByFileQuery,
-} from '../../dto/note.dto.js';
-import {
-  noteIdParamSchema,
-  notesListQuerySchema,
   projectsListQuerySchema,
   reminderBoardQuerySchema,
   reminderIdParamSchema,
@@ -38,8 +29,6 @@ import {
   bulkUpdateReminderStatusBodySchema,
   type ReminderBoardQuery,
   type ReminderIdParam,
-  type NoteIdParam,
-  type NotesListQuery,
   type ProjectsListQuery,
   type RemindersListQuery,
   type ReviewIdParam,
@@ -51,8 +40,6 @@ import { queryRequestSchema, type QueryRequest } from '../../dto/query.dto.js';
 import { askHistoryQuerySchema, askRequestSchema, type AskHistoryQuery, type AskRequest } from '../../dto/ask.dto.js';
 import { ZodValidationPipe } from '../../zod-validation.pipe.js';
 import { paginatedResponse } from '../../http-helpers.js';
-import { OptionalProjectResolutionGuard } from '../../project-resolution.guard.js';
-import { ProjectId } from '../../project.decorators.js';
 import { WorkspaceId } from '../../workspace.decorators.js';
 
 @ApiTags('Dashboard')
@@ -63,18 +50,15 @@ export class DashboardController {
     private readonly buildDashboard: BuildDashboardUseCase,
     private readonly listProjectsUseCase: ListPaginatedProjectsUseCase,
     private readonly listWorkspacesUseCase: ListWorkspacesUseCase,
-    private readonly listNotesUseCase: ListPaginatedNotesUseCase,
     private readonly listReviewsUseCase: ListPaginatedReviewsUseCase,
     private readonly listRemindersUseCase: ListPaginatedRemindersUseCase,
     private readonly listReminderBoardUseCase: ListReminderBoardUseCase,
     private readonly updateReminderStatusUseCase: UpdateReminderStatusUseCase,
-    private readonly getNoteDetail: GetNoteDetailUseCase,
     private readonly getReviewDetail: GetReviewDetailUseCase,
     private readonly queryKnowledge: QueryKnowledgeUseCase,
     private readonly runAskAiUseCase: RunAskAiUseCase,
     private readonly listAskHistoryUseCase: ListAskHistoryUseCase,
     private readonly bulkUpdateReminderStatusUseCase: BulkUpdateReminderStatusUseCase,
-    private readonly findNotesByFileUseCase: FindNotesByFileUseCase,
   ) {}
 
   @Get('dashboard')
@@ -102,47 +86,6 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Workspaces retrieved successfully' })
   async workspaces(@CurrentUser() user: AuthenticatedUser) {
     return { ok: true, workspaces: await this.listWorkspacesUseCase.execute(user.id) };
-  }
-
-  @Get('notes')
-  @UseGuards(OptionalProjectResolutionGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'List notes' })
-  @ApiResponse({ status: 200, description: 'Notes retrieved successfully' })
-  async notes(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query(new ZodValidationPipe(notesListQuerySchema, 'invalid_notes_query')) query: NotesListQuery,
-    @WorkspaceId() workspaceId?: string,
-    @ProjectId() projectId?: string,
-  ) {
-    return {
-      ok: true,
-      ...paginatedResponse('notes', await this.listNotesUseCase.execute(user.id, { ...query, workspaceId, projectId })),
-    };
-  }
-
-  @Get('notes/by-file')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Find notes by file path' })
-  @ApiQuery({ name: 'filePath', description: 'Relative file path to search notes for' })
-  @ApiResponse({ status: 200, description: 'Notes matching the file path retrieved successfully' })
-  async findByFile(
-    @Query(new ZodValidationPipe(notesByFileQuerySchema, 'invalid_notes_by_file_query')) query: NotesByFileQuery,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.findNotesByFileUseCase.execute(user.id, query.filePath);
-  }
-
-  @Get('notes/:id')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get note detail' })
-  @ApiParam({ name: 'id', description: 'Note ID' })
-  @ApiResponse({ status: 200, description: 'Note detail retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'Note not found' })
-  async note(@Param(new ZodValidationPipe(noteIdParamSchema, 'invalid_note_id')) params: NoteIdParam, @CurrentUser() user: AuthenticatedUser) {
-    const note = await this.getNoteDetail.execute(user.id, params.id);
-    if (!note) throw new NotFoundException('note_not_found');
-    return { ok: true, note };
   }
 
   @Get('reviews')

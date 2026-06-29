@@ -2,12 +2,8 @@ import { z } from 'zod';
 
 import { KnowledgeStatus } from '../../../contracts/enums.js';
 import { paginationInputSchema } from '../../../contracts/pagination.js';
-import { notesListStatusFilterValues, reminderListStatusFilterValues, StatusFilter } from '../../../contracts/status-filters.js';
+import { reminderListStatusFilterValues, StatusFilter } from '../../../contracts/status-filters.js';
 import { slugify } from '../../../domain/strings.js';
-
-export const noteIdParamSchema = z.object({
-  id: z.string().trim().min(1),
-});
 
 export const reviewIdParamSchema = z.object({
   id: z.string().trim().min(1),
@@ -18,21 +14,6 @@ export const projectsListQuerySchema = paginationInputSchema.extend({
 }).transform((input) => ({
   ...input,
   selectedSlug: slugify(input.selectedSlug),
-}));
-
-export const notesListQuerySchema = paginationInputSchema.extend({
-  workspaceSlug: z.string().default(''),
-  projectSlug: z.string().default(''),
-  folderId: z.string().default(''),
-  status: z.enum(notesListStatusFilterValues).default(StatusFilter.Open),
-  selectedId: z.string().default(''),
-}).transform((input) => ({
-  ...input,
-  workspaceSlug: slugify(input.workspaceSlug),
-  projectSlug: slugify(input.projectSlug),
-  folderId: input.folderId.trim(),
-  status: input.status.trim().toLowerCase(),
-  selectedId: input.selectedId.trim(),
 }));
 
 export const reviewsListQuerySchema = paginationInputSchema.extend({
@@ -84,12 +65,10 @@ export const bulkUpdateReminderStatusBodySchema = z.object({
   status: z.nativeEnum(KnowledgeStatus),
 });
 
-export type NoteIdParam = z.infer<typeof noteIdParamSchema>;
 export type ReminderBoardQuery = z.infer<typeof reminderBoardQuerySchema>;
 export type ReminderIdParam = z.infer<typeof reminderIdParamSchema>;
 export type ReviewIdParam = z.infer<typeof reviewIdParamSchema>;
 export type ProjectsListQuery = z.infer<typeof projectsListQuerySchema>;
-export type NotesListQuery = z.infer<typeof notesListQuerySchema>;
 export type ReviewsListQuery = z.infer<typeof reviewsListQuerySchema>;
 export type RemindersListQuery = z.infer<typeof remindersListQuerySchema>;
 export type UpdateReminderStatusBody = z.infer<typeof updateReminderStatusBodySchema>;

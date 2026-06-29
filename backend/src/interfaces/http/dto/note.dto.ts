@@ -6,6 +6,8 @@ import { slugify } from '../../../domain/strings.js';
 import { normalizeTime } from '../../../domain/time.js';
 import { AUTO_ACTION_NONE, AUTO_ACTION_RESOLVED, AUTO_ACTION_ARCHIVED } from '../../../domain/auto-action.constants.js';
 import { normalizedSlugList, optionalStringArraySchema } from './dto-normalizers.js';
+import { paginationInputSchema } from '../../../contracts/pagination.js';
+import { notesListStatusFilterValues, StatusFilter } from '../../../contracts/status-filters.js';
 
 const noteStatusSchema = z.enum(noteStatusValues).optional();
 const editableNoteStatusSchema = z.enum([KnowledgeStatus.Active, KnowledgeStatus.Resolved, KnowledgeStatus.Archived]).optional();
@@ -131,5 +133,21 @@ export const notesByFileQuerySchema = z.object({
   filePath: z.string().trim().min(1, 'filePath is required'),
 });
 export type NotesByFileQuery = z.infer<typeof notesByFileQuerySchema>;
+
+export const notesListQuerySchema = paginationInputSchema.extend({
+  workspaceSlug: z.string().default(''),
+  projectSlug: z.string().default(''),
+  folderId: z.string().default(''),
+  status: z.enum(notesListStatusFilterValues).default(StatusFilter.Open),
+  selectedId: z.string().default(''),
+}).transform((input) => ({
+  ...input,
+  workspaceSlug: slugify(input.workspaceSlug),
+  projectSlug: slugify(input.projectSlug),
+  folderId: input.folderId.trim(),
+  status: input.status.trim().toLowerCase(),
+  selectedId: input.selectedId.trim(),
+}));
+export type NotesListQuery = z.infer<typeof notesListQuerySchema>;
 
 

@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
 import type { Response } from 'express';
 
 import type { AuthenticatedUser } from '../../../../application/auth.js';
@@ -13,6 +13,9 @@ import {
   FindRelatedNotesUseCase,
   GetAutoActionGlobalUseCase,
   SetAutoActionGlobalUseCase,
+  GetNoteDetailUseCase,
+  ListPaginatedNotesUseCase,
+  FindNotesByFileUseCase,
 } from '../../../../application/use-cases/index.js';
 import { BrowserExtensionGuard } from '../../auth.guards.js';
 import { CurrentUser } from '../../auth.decorators.js';
@@ -25,17 +28,22 @@ import {
   autoActionGlobalSchema,
   pinNoteBodySchema,
   bulkUpdateNoteStatusBodySchema,
+  notesByFileQuerySchema,
+  notesListQuerySchema,
   type CreateNoteBody,
   type NoteAttachmentContentParam,
   type NoteIdParam,
   type UpdateNoteBody,
   type PinNoteBody,
   type BulkUpdateNoteStatusBody,
+  type NotesByFileQuery,
+  type NotesListQuery,
 } from '../../dto/note.dto.js';
 import { ZodValidationPipe } from '../../zod-validation.pipe.js';
-import { inlineContentDisposition } from '../../http-helpers.js';
-import { ProjectResolutionGuard } from '../../project-resolution.guard.js';
+import { inlineContentDisposition, paginatedResponse } from '../../http-helpers.js';
+import { ProjectResolutionGuard, OptionalProjectResolutionGuard } from '../../project-resolution.guard.js';
 import { ProjectId } from '../../project.decorators.js';
+import { WorkspaceId } from '../../workspace.decorators.js';
 
 @ApiTags('Notes')
 @Controller('api/notes')
@@ -51,6 +59,9 @@ export class NotesController {
     private readonly getAutoActionGlobalUseCase: GetAutoActionGlobalUseCase,
     private readonly setAutoActionGlobalUseCase: SetAutoActionGlobalUseCase,
     private readonly bulkUpdateNoteStatus: BulkUpdateNoteStatusUseCase,
+    private readonly getNoteDetail: GetNoteDetailUseCase,
+    private readonly listNotesUseCase: ListPaginatedNotesUseCase,
+    private readonly findNotesByFileUseCase: FindNotesByFileUseCase,
   ) {}
 
   @Post()
@@ -173,5 +184,49 @@ export class NotesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return await this.setAutoActionGlobalUseCase.execute(user.id, { enabled: body.enabled, action: body.action, afterHours: body.afterHours ?? null });
+  }
+
+  @Get()
+  @UseGuards(OptionalProjectResolutionGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List notes' })
+  @ApiResponse({ status: 200, description: 'Notes retrieved successfully' })
+  async list(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query(new ZodValidationPipe(notesListQuerySchema, 'invalid_notes_query')) query: NotesListQuery,
+    @WorkspaceId() workspaceId?: string,
+    @ProjectId() projectId?: string,
+  ) {
+    return {
+      ok: true,
+      ...paginatedResponse('notes', await this.listNotesUseCase.execute(user.id, { ...query, workspaceId, projectId })),
+    };
+  }
+
+  @Get('by-file')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Find notes by file path' })
+  @ApiQuery({ name: 'filePath', description: 'Relative file path to search notes for' })
+  @ApiResponse({ status: 200, description: 'Notes matching the file path retrieved successfully' })
+  async findByFile(
+    @Query(new ZodValidationPipe(notesByFileQuerySchema, 'invalid_notes_by_file_query')) query: NotesByFileQuery,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.findNotesByFileUseCase.execute(user.id, query.filePath);
+  }
+
+  @Get(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get note detail' })
+  @ApiParam({ name: 'id', description: 'Note ID' })
+  @ApiResponse({ status: 200, description: 'Note detail retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Note not found' })
+  async get(
+    @Param(new ZodValidationPipe(noteIdParamSchema, 'invalid_note_id')) params: NoteIdParam,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const note = await this.getNoteDetail.execute(user.id, params.id);
+    if (!note) throw new NotFoundException('note_not_found');
+    return { ok: true, note };
   }
 }
