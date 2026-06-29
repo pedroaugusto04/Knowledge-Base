@@ -152,80 +152,109 @@ export function formatFileSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+export const SOURCE_VALUES = {
+  KOTE: 'kote',
+  WHATSAPP: 'whatsapp',
+  GITHUB: 'github',
+  WEB_CLIPPER: 'web-clipper',
+  GITHUB_PUSH: 'github-push',
+  WHATSAPP_CHANNEL: 'whatsapp',
+  AI_CHAT: 'ai-chat',
+  CLI: 'cli',
+  MANUAL_API: 'manual-api',
+  MANUAL: 'manual',
+} as const;
+
+export type SourceValue = (typeof SOURCE_VALUES)[keyof typeof SOURCE_VALUES];
+
+export enum SourceTagClass {
+  Kote = 'kote',
+  WhatsApp = 'whatsapp',
+  GitHub = 'github',
+  WebClipper = 'web-clipper',
+  AiOpenCode = 'ai-opencode',
+  AiAntigravity = 'ai-antigravity',
+  AiCodex = 'ai-codex',
+  AiClaude = 'ai-claude',
+  Ai = 'ai',
+  Manual = 'manual',
+  Api = 'api',
+}
+
 type SourceConfig = { label: string; tagClass: string };
 type SourceRule = SourceConfig & { matches: (normalizedSource: string) => boolean };
 
 const sourceRules: SourceRule[] = [
   {
     label: 'Kote',
-    tagClass: 'kote',
-    matches: (source) => source === 'kote',
+    tagClass: SourceTagClass.Kote,
+    matches: (source) => source === SOURCE_VALUES.KOTE,
   },
   {
     label: 'WhatsApp',
-    tagClass: 'whatsapp',
+    tagClass: SourceTagClass.WhatsApp,
     matches: (source) => source.includes('whatsapp') || source.includes('evolution'),
   },
   {
     label: 'GitHub',
-    tagClass: 'github',
+    tagClass: SourceTagClass.GitHub,
     matches: (source) => source.includes('github'),
   },
   {
     label: 'Web Clipper',
-    tagClass: 'web-clipper',
-    matches: (source) => source === 'web-clipper' || source.startsWith('http://') || source.startsWith('https://'),
+    tagClass: SourceTagClass.WebClipper,
+    matches: (source) => source === SOURCE_VALUES.WEB_CLIPPER || source.startsWith('http://') || source.startsWith('https://'),
   },
   {
     label: 'Open Code',
-    tagClass: 'ai-opencode',
+    tagClass: SourceTagClass.AiOpenCode,
     matches: (source) => source.includes('open-code') || source.includes('opencode'),
   },
   {
     label: 'Antigravity',
-    tagClass: 'ai-antigravity',
+    tagClass: SourceTagClass.AiAntigravity,
     matches: (source) => source.includes('antigravity'),
   },
   {
     label: 'Codex',
-    tagClass: 'ai-codex',
+    tagClass: SourceTagClass.AiCodex,
     matches: (source) => source.includes('codex'),
   },
   {
     label: 'Claude Code',
-    tagClass: 'ai-claude',
+    tagClass: SourceTagClass.AiClaude,
     matches: (source) => source.includes('claude'),
   },
   {
     label: 'AI',
-    tagClass: 'ai',
-    matches: (source) => source === 'ai-chat',
+    tagClass: SourceTagClass.Ai,
+    matches: (source) => source === SOURCE_VALUES.AI_CHAT,
   },
   {
     label: 'Manual',
-    tagClass: 'manual',
-    matches: (source) => source === 'manual-api' || source === 'manual',
+    tagClass: SourceTagClass.Manual,
+    matches: (source) => source === SOURCE_VALUES.MANUAL_API || source === SOURCE_VALUES.MANUAL,
   },
   {
     label: 'n8n',
-    tagClass: 'api',
+    tagClass: SourceTagClass.Api,
     matches: (source) => source.includes('n8n'),
   },
   {
     label: 'API',
-    tagClass: 'api',
+    tagClass: SourceTagClass.Api,
     matches: (source) => source.includes('api'),
   },
 ];
 
 export function getSourceConfig(source: string | null | undefined): { label: string; tagClass: string } {
   if (!source) {
-    return { label: '', tagClass: 'manual' };
+    return { label: '', tagClass: SourceTagClass.Manual };
   }
   const normalized = source.toLowerCase().trim();
   const matchingRule = sourceRules.find((rule) => rule.matches(normalized));
   if (matchingRule) return { label: matchingRule.label, tagClass: matchingRule.tagClass };
-  return { label: formatDisplayToken(source), tagClass: 'manual' };
+  return { label: formatDisplayToken(source), tagClass: SourceTagClass.Manual };
 }
 
 export function formatSourceLabel(source: string | null | undefined): string {
@@ -243,9 +272,9 @@ export function formatDateIso(dateStr?: string): string {
 }
 
 export function getTimelineNodeColor(category: string, type?: string) {
-  if (category === 'github-push') return 'var(--cyan)';
-  if (category === 'whatsapp') return 'var(--green)';
+  if (category === SOURCE_VALUES.GITHUB_PUSH) return 'var(--cyan)';
+  if (category === SOURCE_VALUES.WHATSAPP_CHANNEL) return 'var(--green)';
   if (category === 'reminder') return 'var(--amber)';
-  if (category === 'ai-chat') return 'var(--purple)';
+  if (category === SOURCE_VALUES.AI_CHAT) return 'var(--purple)';
   return 'var(--muted)';
 }

@@ -3,7 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 
 import { normalizeComparableText, sameText, stripSourceHeader } from '../../shared/utils/text';
-import { formatFileSize, formatSourceLabel, getSourceTagClass } from '../../shared/utils/format';
+import { formatFileSize, formatSourceLabel, SOURCE_VALUES } from '../../shared/utils/format';
 import type { NoteAttachment } from '../../shared/api/models/note';
 import { fetchAttachmentText } from '../../shared/api/notes';
 import { useMediaQuery } from '../../shared/ui/use-media-query';
@@ -76,9 +76,8 @@ export function NoteBody({ markdown, rawText, summary, title, source }: { markdo
   const hasExtra = Boolean(extraMarkdown);
   const cleanedRawText = stripSourceHeader(rawText).replace(/^---\n[\s\S]*?\n---\n?/, '');
   const cleanedSummary = stripSourceHeader(summary);
-  const isAiNote = source ? getSourceTagClass(source) === 'ai' : false;
-  const isWebClip = source ? getSourceTagClass(source) === 'web-clipper' : false;
-  const hasSummary = !isAiNote && !isWebClip && Boolean(cleanedSummary) && normalizeReaderText(cleanedSummary) !== normalizeReaderText(cleanedRawText);
+  const isGithubPush = source === SOURCE_VALUES.GITHUB_PUSH;
+  const hasSummary = isGithubPush && Boolean(cleanedSummary) && normalizeReaderText(cleanedSummary) !== normalizeReaderText(cleanedRawText);
   const showLabel = hasExtra || hasSummary;
   const activeSource = source;
 

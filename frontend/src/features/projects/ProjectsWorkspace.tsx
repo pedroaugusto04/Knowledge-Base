@@ -13,6 +13,7 @@ import {
   pinNote,
   runQuery,
 } from '../../shared/api/client';
+import { SOURCE_VALUES } from '../../shared/utils/format';
 import { fetchGithubRepositories, fetchIntegrations } from '../../shared/api/integrations';
 import type { ProjectTimelineCategory, ProjectTimelineItem, ProjectTimelineItemCategory } from '../../shared/api/models/project-timeline';
 import { StatusFilter, type NoteStatus, type NoteStatusFilter } from '../../shared/api/models/note-status';
@@ -516,10 +517,10 @@ async function refreshDashboard(queryClient: ReturnType<typeof useQueryClient>) 
 }
 
 function deriveTimelineCategory(source: string | undefined): string {
-  if (!source) return 'manual';
+  if (!source) return SOURCE_VALUES.MANUAL;
   const s = source.toLowerCase();
-  if (s.includes('github')) return 'github-push';
-  if (s.includes('whatsapp') || s.includes('evolution')) return 'whatsapp';
-  if (s === 'ai-chat' || s.includes('antigravity') || s.includes('codex') || s.includes('claude') || s.includes('opencode') || s.includes('open-code')) return 'ai-chat';
-  return 'manual';
+  if (s.includes('github')) return SOURCE_VALUES.GITHUB_PUSH;
+  if (s.includes('whatsapp') || s.includes('evolution')) return SOURCE_VALUES.WHATSAPP_CHANNEL;
+  if (s === SOURCE_VALUES.AI_CHAT || s.includes('antigravity') || s.includes('codex') || s.includes('claude') || s.includes('opencode') || s.includes('open-code')) return SOURCE_VALUES.AI_CHAT;
+  return SOURCE_VALUES.MANUAL;
 }
