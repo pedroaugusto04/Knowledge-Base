@@ -1505,6 +1505,18 @@
   border-color: #bbf7d0
 }
 
+/* Web Clipper */
+.source-tag.web-clipper {
+  color: #f472b6;
+  background: rgba(244, 114, 182, 0.1);
+  border-color: rgba(244, 114, 182, 0.2);
+}
+:root[data-theme="light"] .source-tag.web-clipper {
+  color: #be185d;
+  background: #fdf2f8;
+  border-color: #fbcfe8;
+}
+
 /* Tag Input Component */
 .kb-tag-input {
   position: relative;
@@ -1692,6 +1704,54 @@
   color: #7e22ce;
   background: #faf5ff;
   border-color: #e9d5ff;
+}
+
+/* Antigravity - Purple (kept as requested) */
+.source-tag.ai-antigravity {
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.1);
+  border-color: rgba(192, 132, 252, 0.2);
+}
+:root[data-theme="light"] .source-tag.ai-antigravity {
+  color: #7e22ce;
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+
+/* Codex - Dark gray/black (GitHub/OpenAI style) */
+.source-tag.ai-codex {
+  color: #a1a1aa;
+  background: rgba(161, 161, 170, 0.1);
+  border-color: rgba(161, 161, 170, 0.2);
+}
+:root[data-theme="light"] .source-tag.ai-codex {
+  color: #27272a;
+  background: #f4f4f5;
+  border-color: #e4e4e7;
+}
+
+/* Claude Code - Orange/Terracotta (Anthropic brand) */
+.source-tag.ai-claude {
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.1);
+  border-color: rgba(251, 146, 60, 0.2);
+}
+:root[data-theme="light"] .source-tag.ai-claude {
+  color: #c2410c;
+  background: #fff7ed;
+  border-color: #ffedd5;
+}
+
+/* Open Code - Blue (VS Code style) */
+.source-tag.ai-opencode {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+:root[data-theme="light"] .source-tag.ai-opencode {
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #dbeafe;
 }
 
 /* API / Integrations */

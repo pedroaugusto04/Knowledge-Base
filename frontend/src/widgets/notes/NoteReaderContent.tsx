@@ -10,6 +10,7 @@ import { useMediaQuery } from '../../shared/ui/use-media-query';
 import { MarkdownView } from '../markdown/MarkdownView';
 import { SourceIcon } from '../../shared/ui/icons';
 import { CDNImage } from '../../shared/ui/CDNImage';
+import { SourceBadge } from './SourceBadge';
 
 type AttachmentPreviewKind = 'image' | 'audio' | 'pdf' | 'markdown' | 'text' | 'none';
 
@@ -84,10 +85,8 @@ export function NoteBody({ markdown, rawText, summary, title, source }: { markdo
   return (
     <div className="note-body">
       {activeSource && (
-        <div className="note-source-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px', fontSize: '13px', color: 'var(--muted)' }}>
-          <span>Source:</span>
-          <SourceIcon source={activeSource} style={{ width: '15px', height: '15px', color: 'var(--muted)' }} />
-          <strong>{formatSourceLabel(activeSource)}</strong>
+        <div style={{ marginBottom: '16px' }}>
+          <SourceBadge source={activeSource} />
         </div>
       )}
       {cleanedRawText ? (

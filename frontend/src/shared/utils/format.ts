@@ -178,22 +178,22 @@ const sourceRules: SourceRule[] = [
   },
   {
     label: 'Open Code',
-    tagClass: 'ai',
+    tagClass: 'ai-opencode',
     matches: (source) => source.includes('open-code') || source.includes('opencode'),
   },
   {
     label: 'Antigravity',
-    tagClass: 'ai',
+    tagClass: 'ai-antigravity',
     matches: (source) => source.includes('antigravity'),
   },
   {
     label: 'Codex',
-    tagClass: 'ai',
+    tagClass: 'ai-codex',
     matches: (source) => source.includes('codex'),
   },
   {
     label: 'Claude Code',
-    tagClass: 'ai',
+    tagClass: 'ai-claude',
     matches: (source) => source.includes('claude'),
   },
   {
