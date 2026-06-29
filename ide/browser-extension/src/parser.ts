@@ -36,7 +36,7 @@ export function formatNoteWithFrontmatter(
   const frontmatter = [
     '---',
     `title: "${payload.title.replace(/"/g, '\\"')}"`,
-    `source: "${payload.url}"`,
+    `source: "[${payload.url}](${payload.url})"`,
   ];
 
   if (payload.author) {

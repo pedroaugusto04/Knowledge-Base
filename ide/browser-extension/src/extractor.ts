@@ -48,9 +48,10 @@ export function extractPageMetadata(doc: Document, url: string, selectedHtml?: s
 
   // If there's an active selection, skip full page Readability extraction
   if (selectedHtml) {
+    const pageTitle = doc.title || 'Selected Snippet';
     return {
       url,
-      title: doc.title || 'Selected Snippet',
+      title: `${pageTitle} - ${url}`,
       author: author ? author.trim() : null,
       site: site ? site.trim() : null,
       publishedAt: publishedAt ? publishedAt.trim() : null,
@@ -71,9 +72,10 @@ export function extractPageMetadata(doc: Document, url: string, selectedHtml?: s
     throw new Error('Failed to parse article content from this page.');
   }
 
+  const pageTitle = article.title || doc.title || 'Untitled Page';
   return {
     url,
-    title: article.title || doc.title || 'Untitled Page',
+    title: `${pageTitle} - ${url}`,
     excerpt: article.excerpt,
     author: (article.byline || author || '').trim() || null,
     site: (article.siteName || site || '').trim() || null,
