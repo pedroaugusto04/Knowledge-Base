@@ -71,12 +71,12 @@ const TEXT_MIME_TYPES = new Set([
   'image/svg+xml',
 ]);
 
-export function NoteBody({ markdown, rawText, summary, title, source }: { markdown: string; rawText: string; summary: string; title: string; source?: string }) {
+export function NoteBody({ markdown, rawText, summary, title, source, sourceChannel }: { markdown: string; rawText: string; summary: string; title: string; source?: string; sourceChannel?: string }) {
   const extraMarkdown = readerExtraSections(markdown, title);
   const hasExtra = Boolean(extraMarkdown);
   const cleanedRawText = stripSourceHeader(rawText).replace(/^---\n[\s\S]*?\n---\n?/, '');
   const cleanedSummary = stripSourceHeader(summary).replace(/^---\n[\s\S]*?\n---\n?/, '');
-  const isGithubPush = source === SOURCE_VALUES.GITHUB_PUSH;
+  const isGithubPush = sourceChannel === SOURCE_VALUES.GITHUB_PUSH;
   const hasSummary = isGithubPush && Boolean(cleanedSummary) && normalizeReaderText(cleanedSummary) !== normalizeReaderText(cleanedRawText);
   const showLabel = hasExtra || hasSummary;
   const activeSource = source;

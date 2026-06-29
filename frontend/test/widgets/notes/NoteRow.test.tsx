@@ -219,7 +219,7 @@ describe('NoteRow', () => {
           date: '2026-04-27',
           status: NoteStatus.Active,
           summary: 'Resumo',
-          source: 'whatsapp',
+          source: 'whatsapp-webhook',
           attachmentCount: 0,
         }}
         onOpen={vi.fn()}

@@ -196,12 +196,12 @@ const sourceRules: SourceRule[] = [
   {
     label: 'WhatsApp',
     tagClass: SourceTagClass.WhatsApp,
-    matches: (source) => source === SOURCE_VALUES.WHATSAPP || source === SOURCE_VALUES.WHATSAPP_CHANNEL,
+    matches: (source) => source.includes('whatsapp') || source.includes('evolution'),
   },
   {
     label: 'GitHub',
     tagClass: SourceTagClass.GitHub,
-    matches: (source) => source === SOURCE_VALUES.GITHUB_PUSH || source === SOURCE_VALUES.GITHUB,
+    matches: (source) => source.includes('github'),
   },
   {
     label: 'Web Clipper',
@@ -211,12 +211,27 @@ const sourceRules: SourceRule[] = [
   {
     label: 'VS Code',
     tagClass: SourceTagClass.Ide,
-    matches: (source) => source === SOURCE_VALUES.IDE,
+    matches: (source) => source === SOURCE_VALUES.IDE || source.includes('ide') || source.includes('vscode'),
   },
   {
-    label: 'CLI',
-    tagClass: SourceTagClass.Manual,
-    matches: (source) => source === SOURCE_VALUES.CLI,
+    label: 'Open Code',
+    tagClass: SourceTagClass.AiOpenCode,
+    matches: (source) => source.includes('open-code') || source.includes('opencode'),
+  },
+  {
+    label: 'Antigravity',
+    tagClass: SourceTagClass.AiAntigravity,
+    matches: (source) => source.includes('antigravity'),
+  },
+  {
+    label: 'Codex',
+    tagClass: SourceTagClass.AiCodex,
+    matches: (source) => source.includes('codex'),
+  },
+  {
+    label: 'Claude Code',
+    tagClass: SourceTagClass.AiClaude,
+    matches: (source) => source.includes('claude'),
   },
   {
     label: 'AI',
@@ -224,9 +239,19 @@ const sourceRules: SourceRule[] = [
     matches: (source) => source === SOURCE_VALUES.AI_CHAT,
   },
   {
+    label: 'CLI',
+    tagClass: SourceTagClass.Manual,
+    matches: (source) => source === SOURCE_VALUES.CLI,
+  },
+  {
     label: 'Manual',
     tagClass: SourceTagClass.Manual,
     matches: (source) => source === SOURCE_VALUES.MANUAL_API || source === SOURCE_VALUES.MANUAL || source === SOURCE_VALUES.EXTERNAL,
+  },
+  {
+    label: 'n8n',
+    tagClass: SourceTagClass.Api,
+    matches: (source) => source.includes('n8n'),
   },
   {
     label: 'API',

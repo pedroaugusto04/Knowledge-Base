@@ -15,6 +15,7 @@ export type NoteSummary = {
   status: NoteStatus;
   summary: string;
   source: string;
+  sourceChannel: string;
   attachmentCount: number;
   isOverdue?: boolean;
   isPinned?: boolean;

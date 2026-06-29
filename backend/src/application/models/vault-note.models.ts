@@ -14,6 +14,7 @@ export type VaultNoteSummary = {
   status: string;
   summary: string;
   source: string;
+  sourceChannel: string;
   attachmentCount: number;
   isPinned?: boolean;
 };

@@ -211,6 +211,7 @@ export function VaultPage({
               summary={noteQuery.data.summary}
               title={noteQuery.data.title}
               source={noteQuery.data.source}
+              sourceChannel={noteQuery.data.sourceChannel}
             />
             <RelatedNotesSection noteId={noteQuery.data.id} openNote={openNote} />
           </>
