@@ -7,6 +7,7 @@ import { useTypewriterWord } from '../../layouts/use-typewriter-word';
 import { logApplicationAccess } from '../../shared/api/client';
 import { BrandMark } from '../../shared/ui/brand-mark';
 import { ThemeToggle } from '../../shared/ui/theme-toggle';
+import { DemoInteractive } from '../../features/demo/DemoInteractive';
 
 const typewriterWords = ['capture', 'organize', 'retrieve', 'connect'];
 
@@ -96,6 +97,21 @@ export function LandingPage() {
               </div>
               <img src={withFrontendBasePath('/dashboard-screenshot.png')} alt="Kote Dashboard" className="landing-real-screenshot" />
             </div>
+          </div>
+        </section>
+
+        {/* INTERACTIVE DEMO SECTION */}
+        <section className="landing-section" aria-labelledby="demo-title">
+          <div className="landing-container">
+            <header className="landing-section-header reveal-up">
+              <span className="landing-kicker">Try It Now</span>
+              <h2 id="demo-title">See Kote in Action — No Signup Required</h2>
+              <p>
+                Experience how Kote automatically captures development context and makes it searchable in 60 seconds.
+              </p>
+            </header>
+
+            <DemoInteractive />
           </div>
         </section>
 

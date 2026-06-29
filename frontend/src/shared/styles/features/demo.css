@@ -1,0 +1,362 @@
+.demo-interactive {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: var(--bg-soft);
+  border-radius: 12px;
+  border: 1px solid var(--line-soft);
+}
+
+.demo-step {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.demo-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.demo-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: var(--accent);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.demo-header h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.demo-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Problem Step */
+.demo-problem-visual {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.demo-git-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.demo-commit {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-soft);
+  border-radius: 6px;
+  border-left: 3px solid var(--warning);
+}
+
+.demo-commit-hash {
+  font-family: monospace;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+}
+
+.demo-commit-msg {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.demo-commit-question {
+  color: var(--danger);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.demo-problem-caption {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-soft);
+  border-radius: 6px;
+}
+
+.demo-problem-caption p {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Capture Step */
+.demo-capture-visual {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .demo-capture-visual {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.demo-ai-chat {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.demo-message {
+  padding: 1rem;
+  border-radius: 8px;
+  max-width: 85%;
+}
+
+.demo-message.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: white;
+}
+
+.demo-message.assistant {
+  align-self: flex-start;
+  background: var(--bg-soft);
+  color: var(--text-primary);
+}
+
+.demo-message-role {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+
+.demo-message-content {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.demo-capture-progress {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.demo-progress-bar {
+  height: 8px;
+  background: var(--bg-soft);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.demo-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.demo-progress-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  text-align: center;
+}
+
+/* Value Step */
+.demo-search-box {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.demo-search-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  font-size: 1rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.demo-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.demo-search-button {
+  padding: 0.75rem 1.5rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.demo-search-button:hover {
+  opacity: 0.9;
+}
+
+.demo-search-result {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--line-soft);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.demo-result-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.demo-result-source {
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.demo-result-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.demo-result-summary {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.demo-result-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.demo-result-path {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  font-family: monospace;
+}
+
+.demo-result-time {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+}
+
+.demo-value-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* CTA Step */
+.demo-cta-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.demo-cta-features {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.demo-feature {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.demo-feature-icon {
+  font-size: 1.25rem;
+}
+
+/* Buttons */
+.demo-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.demo-button.primary {
+  background: var(--accent);
+  color: white;
+}
+
+.demo-button.primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.demo-button.secondary {
+  background: var(--bg-soft);
+  color: var(--text-primary);
+  border: 1px solid var(--line-soft);
+}
+
+.demo-button.secondary:hover {
+  background: var(--bg-primary);
+}
+
+.demo-button.text {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+}
+
+.demo-button.text:hover {
+  color: var(--text-primary);
+}
+
+.demo-button.large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
