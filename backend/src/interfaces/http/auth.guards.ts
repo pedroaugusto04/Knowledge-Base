@@ -7,7 +7,7 @@ import type { AuthenticatedRequest } from './auth.decorators.js';
 import { accessTokenFromRequest, assertTrustedBrowserOrigin } from './http-security.js';
 import { requestIp } from './request-ip.js';
 
-type RateLimitBucket = {
+type RateLimitBucket = { 
   resetAt: number;
   count: number;
 };
