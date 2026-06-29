@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import type { PageContext } from '../../app/page-context';
 import { formatDisplayToken, formatUsDate, formatDateInUserTimeZone, formatTimeInUserTimeZone, noteTypeLabel, projectName, formatSourceLabel } from '../../shared/utils/format';
+import { makeTitleClickable } from '../../shared/utils/text';
 import { fetchNotes } from '../../shared/api/client';
 import type { NoteAttachment, NoteSummary } from '../../shared/api/models/note';
 import { DEFAULT_PAGE_SIZE } from '../../shared/api/models/pagination';
@@ -147,7 +148,15 @@ export function VaultPage({
         </div>
       )}
       <PageHead
-        title={noteQuery.data?.title || 'Note details'}
+        title={(() => {
+          const title = noteQuery.data?.title || 'Note details';
+          const { text: titleText, url: titleUrl } = makeTitleClickable(title);
+          return titleUrl ? (
+            <>
+              {titleText} - <a href={titleUrl} target="_blank" rel="noreferrer">{titleUrl}</a>
+            </>
+          ) : title;
+        })()}
         subtitle={selectedProjectDetails?.displayName || ''}
         onBack={() => navigate(-1)}
         action={

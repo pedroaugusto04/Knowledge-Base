@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 
 import { formatDisplayToken, formatDateInUserTimeZone, formatTimeInUserTimeZone } from '../../shared/utils/format';
+import { makeTitleClickable } from '../../shared/utils/text';
 import { KEYBOARD_KEYS } from '../../shared/constants/keyboard.constants';
 import type { Project } from '../../shared/api/models/project';
 import { noteDetailQueryOptions } from '../../shared/api/note-query';
@@ -50,7 +51,16 @@ export function SideNoteDrawer({ noteId, onClose, onOpenFullPage, dashboardProje
       <header className="knowledge-map-drawer-head">
         <div className="knowledge-map-drawer-title-row">
           {noteQuery.data ? (
-            <h2>{noteQuery.data.title}</h2>
+            <h2>
+              {(() => {
+                const { text: titleText, url: titleUrl } = makeTitleClickable(noteQuery.data.title);
+                return titleUrl ? (
+                  <>
+                    {titleText} - <a href={titleUrl} target="_blank" rel="noreferrer">{titleUrl}</a>
+                  </>
+                ) : noteQuery.data.title;
+              })()}
+            </h2>
           ) : (
             <h2>Loading note...</h2>
           )}

@@ -146,6 +146,16 @@ export function CliIcon({ className, style }: { className?: string; style?: Reac
   );
 }
 
+export function GlobeIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
+
 export function SourceIcon({ source, className, style }: { source?: string | null; className?: string; style?: React.CSSProperties }) {
   if (!source) return null;
   const normalized = source.toLowerCase().trim();
@@ -182,6 +192,14 @@ export function SourceIcon({ source, className, style }: { source?: string | nul
     normalized.includes('opencode')
   ) {
     return <SparklesIcon className={className} style={style} />;
+  }
+  if (
+    normalized.includes('clipper') ||
+    normalized.includes('browser') ||
+    normalized.includes('web') ||
+    normalized.startsWith('http')
+  ) {
+    return <GlobeIcon className={className} style={style} />;
   }
   return <UserIcon className={className} style={style} />;
 }
