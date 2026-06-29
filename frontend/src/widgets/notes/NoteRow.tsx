@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { NoteSummary } from '../../shared/api/models/note';
 import { formatDisplayToken, formatUsDate, projectName, typeIcon, getCleanSummary } from '../../shared/utils/format';
+import { makeTitleClickable } from '../../shared/utils/text';
 import { Badge, Tags } from '../../shared/ui/primitives';
 import { AttachmentIndicator } from './AttachmentIndicator';
 import { QuickNoteStatusActions } from './QuickNoteStatusActions';
@@ -12,6 +13,7 @@ import { notifySuccess } from '../../shared/ui/notifications';
 import { notifyGeneralFormError } from '../../shared/forms/errors';
 import { SourceBadge } from './SourceBadge';
 import { buildNoteDisplayTags } from '../../shared/utils/note-tags';
+import { MarkdownView } from '../markdown/MarkdownView';
 
 function PinIcon({ active }: { active?: boolean }) {
   return (
@@ -75,7 +77,7 @@ export function NoteRow({
           <AttachmentIndicator count={note.attachmentCount || 0} />
           <Badge value={formatDisplayToken(note.status)} tone={note.status} />
         </div>
-        <h3>{note.title}</h3>
+        <h3><MarkdownView markdown={makeTitleClickable(note.title)} /></h3>
         <SourceBadge source={activeSource} iconSize={16} />
         <p>{getCleanSummary(note.summary)}</p>
       </div>

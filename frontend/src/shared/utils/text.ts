@@ -53,4 +53,17 @@ export function stripSourceHeader(rawText: string): string {
   return rawText;
 }
 
+export function makeTitleClickable(title: string): string {
+  if (!title) return title;
+  // Match URLs at the end of the title (pattern: " - https://..." or " - http://...")
+  const urlPattern = / - (https?:\/\/[^\s]+)$/;
+  const match = title.match(urlPattern);
+  if (match) {
+    const url = match[1];
+    const titleWithoutUrl = title.substring(0, match.index);
+    return `${titleWithoutUrl} - [${url}](${url})`;
+  }
+  return title;
+}
+
 
