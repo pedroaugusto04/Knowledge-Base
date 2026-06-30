@@ -113,26 +113,24 @@ export class PostgresNoteEmbeddingRepository extends NoteEmbeddingRepository {
     options: FindSimilarOptions,
   ): Promise<SimilarChunk[]> {
     const minSimilarity = options.minSimilarity ?? 0.3;
-    const workspaceFilter = String(options.workspaceSlug || '').trim();
-    const projectFilter = String(options.projectSlug || '').trim();
-    const optionalClauses: string[] = [];
+    const workspaceId = String(options.workspaceId || '').trim();
+    const projectId = String(options.projectId || '').trim();
+
     const values: unknown[] = [
       userId,
       formatEmbeddingForPg(queryEmbedding),
       minSimilarity,
       options.limit,
     ];
-    
-    let joinSql = '';
-    if (workspaceFilter) {
-      joinSql += ' JOIN kb_workspaces w ON w.id = n.workspace_id';
-      values.push(workspaceFilter);
-      optionalClauses.push(`AND w.id = $${values.length}`);
+
+    const optionalClauses: string[] = [];
+    if (workspaceId) {
+      values.push(workspaceId);
+      optionalClauses.push(`AND n.workspace_id = $${values.length}`);
     }
-    if (projectFilter) {
-      joinSql += ' LEFT JOIN kb_projects p ON p.id = n.project_id';
-      values.push(projectFilter);
-      optionalClauses.push(`AND p.id = $${values.length}`);
+    if (projectId) {
+      values.push(projectId);
+      optionalClauses.push(`AND n.project_id = $${values.length}`);
     }
 
     const result = await this.database.getPool().query(
@@ -140,7 +138,6 @@ export class PostgresNoteEmbeddingRepository extends NoteEmbeddingRepository {
               1 - (e.embedding <=> $2::vector) AS similarity
        FROM kb_note_embeddings e
        JOIN kb_notes n ON n.id = e.note_id AND n.user_id = e.user_id
-       ${joinSql}
        WHERE e.user_id = $1
          AND 1 - (e.embedding <=> $2::vector) >= $3
          ${optionalClauses.join('\n         ')}
