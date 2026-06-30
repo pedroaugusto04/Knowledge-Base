@@ -5,7 +5,6 @@ import type { UpdateNoteInput } from '../../models/note-input.models.js';
 import { ContentRepository } from '../../ports/notes/content.repository.js';
 import { RuntimeEnvironmentProvider } from '../../ports/observability/runtime-environment.port.js';
 import { normalizeDate, normalizeTime } from '../../../domain/time.js';
-import { resolveContentScopeFromSlugs } from '../../utils/content-scope.utils.js';
 import { buildUpdatedNote } from './note-editor.helpers.js';
 import { NoteLifecycleService } from '../../services/note-lifecycle.service.js';
 
@@ -27,23 +26,21 @@ export class UpdateNoteUseCase {
       ? await this.contentRepository.listCategories(userId, note.workspaceId)
       : [];
     const canonicalType = resolveCanonicalTypeFromCategories(categories, categoryIds);
-    
+
     let projectSlug = note.projectSlug || '';
     let projectId = note.projectId;
     let workspaceSlug = note.workspaceSlug || '';
     let workspaceId = note.workspaceId;
-    
-    if (input.projectSlug && input.projectSlug !== note.projectSlug) {
-      const scope = await resolveContentScopeFromSlugs(this.contentRepository, userId, {
-        projectSlug: input.projectSlug,
-      });
-      if (!scope.project || !scope.project.enabled) throw new NotFoundException('project_not_found');
-      projectSlug = input.projectSlug;
-      projectId = scope.project.id;
-      workspaceSlug = scope.project.workspaceSlug || '';
-      workspaceId = scope.project.workspaceId;
+
+    if (input.projectId && input.projectId !== note.projectId) {
+      const project = await this.contentRepository.getProjectById(userId, input.projectId);
+      if (!project || !project.enabled) throw new NotFoundException('project_not_found');
+      projectSlug = project.projectSlug;
+      projectId = project.id;
+      workspaceSlug = project.workspaceSlug || '';
+      workspaceId = project.workspaceId;
     }
-    
+
     const updatedNoteInput = {
       ...buildUpdatedNote(note, previousFolder, nextFolder, { ...input, canonicalType }, reminderTimeZone, projectSlug, projectId, workspaceSlug, workspaceId),
       categoryIds: input.categoryIds,
