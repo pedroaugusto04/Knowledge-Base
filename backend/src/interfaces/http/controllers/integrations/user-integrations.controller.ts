@@ -72,7 +72,7 @@ export class UserIntegrationsController {
     @Query(new ZodValidationPipe(githubBackfillStatusQuerySchema, 'invalid_github_backfill_status_query')) query: GithubBackfillStatusQuery,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    const job = this.githubBackfill.getJob(query.jobId, currentUser.id);
+    const job = await this.githubBackfill.getJob(query.jobId, currentUser.id);
     if (!job || job.workspaceSlug !== query.workspaceSlug) {
       return { ok: false as const, status: 'not_found' as const };
     }

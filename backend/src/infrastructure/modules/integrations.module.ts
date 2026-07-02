@@ -33,6 +33,12 @@ import {
 import { WebhookDeliveryService } from '../../application/services/webhook-delivery.service.js';
 import { WebhookDeliveryWorker } from '../../application/services/webhook-delivery.worker.js';
 import { ProcessGithubPushService } from '../../application/services/process-github-push.service.js';
+import { GithubBackfillRunnerService } from '../../application/services/github-backfill-runner.service.js';
+import { GithubBackfillJobRepository } from '../../application/ports/integrations/github-backfill-job.repository.js';
+import { BackfillQueuePublisher } from '../../application/ports/integrations/backfill-queue.publisher.js';
+import { PostgresGithubBackfillJobRepository } from '../repositories/github-backfill-job.repository.js';
+import { RabbitMqBackfillQueuePublisher } from '../queue/rabbitmq-backfill-queue.publisher.js';
+import { RabbitMqBackfillQueueConsumer } from '../queue/rabbitmq-backfill-queue.consumer.js';
 
 import {
   UserIntegrationsController,
@@ -74,6 +80,11 @@ import { NotifyHighSeverityFindingsService } from '../../application/use-cases/n
     HandleWhatsappWebhookUseCase,
     HandleTelegramWebhookUseCase,
     GithubBackfillUseCase,
+    GithubBackfillRunnerService,
+    { provide: GithubBackfillJobRepository, useClass: PostgresGithubBackfillJobRepository },
+    { provide: BackfillQueuePublisher, useClass: RabbitMqBackfillQueuePublisher },
+    RabbitMqBackfillQueuePublisher,
+    RabbitMqBackfillQueueConsumer,
     NotifyHighSeverityFindingsService,
     WebhookDeliveryService,
     WebhookDeliveryWorker,

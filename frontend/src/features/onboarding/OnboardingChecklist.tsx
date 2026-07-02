@@ -280,6 +280,7 @@ export function OnboardingChecklist({
   workspaceSlug: string;
 }) {
   const [storage, setStorage] = useState(loadStorage);
+  const [showOptional, setShowOptional] = useState(false);
   const [vscodeConfirmed, setVscodeConfirmed] = useState(() => {
     try {
       return localStorage.getItem('kb-vscode-installed') === 'true';
@@ -332,6 +333,7 @@ export function OnboardingChecklist({
   );
 
   const coreItems = visibleItems.filter((item) => !item.optional);
+  const optionalItems = visibleItems.filter((item) => item.optional);
   const completedCount = coreItems.filter((item) => completed.has(item.id)).length;
   const allDone = completedCount === coreItems.length && coreItems.length > 0;
 
@@ -441,11 +443,11 @@ export function OnboardingChecklist({
       </div>
 
       <div className="onboarding-checklist-items">
-        {visibleItems.map((item) => {
+        {coreItems.map((item) => {
           const done = completed.has(item.id);
           return (
             <Link
-              className={`onboarding-item ${done ? 'done' : ''} ${item.priority ? 'priority' : ''} ${item.optional ? 'optional' : ''}`}
+              className={`onboarding-item ${done ? 'done' : ''} ${item.priority ? 'priority' : ''}`}
               key={item.id}
               to={item.route}
               id={`onboarding-item-${item.id}`}
@@ -473,33 +475,70 @@ export function OnboardingChecklist({
                     Confirm installation
                   </button>
                 )}
-                {item.id === 'reminder' && !done && (
-                  <button
-                    className="onboarding-reminder-test-btn"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const message = 'Remind me to check the onboarding checklist in 1 minute';
-                      const number = import.meta.env.VITE_WHATSAPP_NUMBER || '5531992504889';
-                      const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
-                      window.open(url, '_blank', 'noopener,noreferrer');
-                    }}
-                  >
-                    Send test reminder (1 min)
-                  </button>
-                )}
               </div>
               {item.priority && !done ? (
                 <span className="onboarding-item-badge">Priority</span>
-              ) : null}
-              {item.optional && !done ? (
-                <span className="onboarding-item-badge">Optional</span>
               ) : null}
               <span className="onboarding-item-arrow" aria-hidden="true">→</span>
             </Link>
           );
         })}
       </div>
+
+      {optionalItems.length > 0 && (
+        <div className="onboarding-optional-section">
+          <button
+            className="onboarding-optional-toggle"
+            type="button"
+            onClick={() => setShowOptional((v) => !v)}
+            aria-expanded={showOptional}
+          >
+            <span>Optional integrations</span>
+            <span className="onboarding-optional-toggle-count">{optionalItems.length}</span>
+            <span className={`onboarding-optional-toggle-arrow ${showOptional ? 'open' : ''}`} aria-hidden="true">›</span>
+          </button>
+          {showOptional && (
+            <div className="onboarding-checklist-items onboarding-optional-items">
+              {optionalItems.map((item) => {
+                const done = completed.has(item.id);
+                return (
+                  <Link
+                    className={`onboarding-item optional ${done ? 'done' : ''}`}
+                    key={item.id}
+                    to={item.route}
+                    id={`onboarding-item-${item.id}`}
+                  >
+                    <span className={`onboarding-item-check ${done ? 'checked' : ''} onboarding-item-check-${item.id}`} aria-hidden="true">
+                      {done ? '✓' : item.icon}
+                    </span>
+                    <div className="onboarding-item-copy">
+                      <strong>{item.label}</strong>
+                      <span>{item.description}</span>
+                      {item.id === 'reminder' && !done && (
+                        <button
+                          className="onboarding-reminder-test-btn"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const message = 'Remind me to check the onboarding checklist in 1 minute';
+                            const number = import.meta.env.VITE_WHATSAPP_NUMBER || '5531992504889';
+                            const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          Send test reminder (1 min)
+                        </button>
+                      )}
+                    </div>
+                    <span className="onboarding-item-badge optional-badge">Optional</span>
+                    <span className="onboarding-item-arrow" aria-hidden="true">→</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="onboarding-checklist-foot">
         <button className="onboarding-dismiss" type="button" onClick={handleShowLater}>

@@ -739,3 +739,24 @@ export const quotaAdjustmentsRelations = relations(quotaAdjustments, ({ one }) =
     references: [users.id],
   }),
 }));
+
+// GitHub Backfill Jobs
+export const githubBackfillJobs = pgTable('kb_github_backfill_jobs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  workspaceSlug: text('workspace_slug').notNull(),
+  repositories: jsonb('repositories').notNull().default([]),
+  status: text('status').notNull().default('queued'),
+  total: integer('total').notNull().default(0),
+  processed: integer('processed').notNull().default(0),
+  imported: integer('imported').notNull().default(0),
+  skipped: integer('skipped').notNull().default(0),
+  limit: integer('limit').notNull().default(5),
+  error: text('error'),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+}, (table) => ({
+  userIdIdx: index('kb_github_backfill_jobs_user_id_idx').on(table.userId, table.id),
+}));
+
