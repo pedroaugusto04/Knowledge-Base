@@ -103,6 +103,25 @@ export class AntigravityHistoryProvider implements AiHistoryProvider {
     });
   }
 
+  /**
+   * Cleans Antigravity overview.txt content by stripping system metadata tags and
+   * replacing truncation markers with a clean continuation indicator.
+   *
+   * overview.txt truncates individual records at ~1000 bytes. The full conversation
+   * is stored in encrypted .pb files that we cannot read, so we must gracefully
+   * handle the truncation by cleaning up the markers.
+   */
+  private cleanContent(raw: string): string {
+    return raw
+      // Strip system metadata XML blocks (opening and closing tags + content between)
+      .replace(/<ADDITIONAL_METADATA>[\s\S]*?(<\/ADDITIONAL_METADATA>|$)/gi, '')
+      .replace(/<USER_SETTINGS_CHANGE>[\s\S]*?(<\/USER_SETTINGS_CHANGE>|$)/gi, '')
+      .replace(/<EPHEMERAL_MESSAGE>[\s\S]*?(<\/EPHEMERAL_MESSAGE>|$)/gi, '')
+      // Replace Antigravity truncation marker with clean ellipsis
+      .replace(/<truncated \d+ bytes?>/gi, '\n…')
+      .trim();
+  }
+
   private parseFile(filePath: string, sessionId: string): AiSession | null {
     try {
       if (!fs.existsSync(filePath)) return null;
@@ -110,87 +129,40 @@ export class AntigravityHistoryProvider implements AiHistoryProvider {
       const lines = content.trim().split('\n');
       
       const turns: AiTurn[] = [];
-      const sessionDir = path.join(path.dirname(filePath), '..', '..');
-      const MAX_CONTENT_SIZE = 400000; // Stay under 500k limit with room for metadata
-
-      // Read markdown artifacts from the session directory (these are the complete AI outputs)
-      const artifacts: string[] = [];
-      let totalSize = 0;
-      
-      if (fs.existsSync(sessionDir)) {
-        const mdFiles = fs.readdirSync(sessionDir)
-          .filter(f => f.endsWith('.md') && !f.startsWith('.'))
-          .filter(f => !f.includes('.resolved') && !f.includes('.metadata'))
-          .sort();
-        
-        for (const mdFile of mdFiles) {
-          const mdPath = path.join(sessionDir, mdFile);
-          try {
-            const mdContent = fs.readFileSync(mdPath, 'utf-8');
-            if (totalSize + mdContent.length > MAX_CONTENT_SIZE) {
-              artifacts.push('\n\n[Some artifacts omitted due to size limit]');
-              break;
-            }
-            artifacts.push(`## ${mdFile}\n\n${mdContent}`);
-            totalSize += mdContent.length;
-          } catch {
-            // ignore read errors
-          }
-        }
-      }
-
-      // Also check for artifacts subdirectory (some sessions store artifacts there)
-      const artifactsDir = path.join(sessionDir, 'artifacts');
-      if (fs.existsSync(artifactsDir)) {
-        const mdFiles = fs.readdirSync(artifactsDir)
-          .filter(f => f.endsWith('.md') && !f.startsWith('.'))
-          .filter(f => !f.includes('.resolved') && !f.includes('.metadata'))
-          .sort();
-        
-        for (const mdFile of mdFiles) {
-          const mdPath = path.join(artifactsDir, mdFile);
-          try {
-            const mdContent = fs.readFileSync(mdPath, 'utf-8');
-            if (totalSize + mdContent.length > MAX_CONTENT_SIZE) {
-              artifacts.push('\n\n[Some artifacts omitted due to size limit]');
-              break;
-            }
-            artifacts.push(`## artifacts/${mdFile}\n\n${mdContent}`);
-            totalSize += mdContent.length;
-          } catch {
-            // ignore read errors
-          }
-        }
-      }
+      const userRequestRegex = /<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/;
 
       for (const line of lines) {
         if (!line.trim()) continue;
         try {
           const record = JSON.parse(line);
-          
+
           if (record.source === 'USER_EXPLICIT' && record.type === 'USER_INPUT') {
+            // Extract only the user's actual message, stripping system metadata tags.
+            // overview.txt may truncate long lines, so the closing tag may be absent.
             const rawContent = record.content || '';
-            const userRequestRegex = /<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/;
             const match = rawContent.match(userRequestRegex);
-            const text = match ? match[1].trim() : rawContent.trim();
+            let text: string;
+            if (match) {
+              text = match[1];
+            } else {
+              // Closing tag was truncated: strip the opening tag
+              text = rawContent.replace(/^<USER_REQUEST>\s*/i, '');
+            }
+            text = this.cleanContent(text);
             if (text) {
               turns.push({ role: 'user', content: text });
             }
           } else if (record.source === 'MODEL' && record.type === 'PLANNER_RESPONSE') {
-            const text = record.content || '';
             const hasToolCalls = Array.isArray(record.tool_calls) && record.tool_calls.length > 0;
-            
-            // If there are tool calls and we have artifacts, use the artifacts as the response
-            if (hasToolCalls && artifacts.length > 0) {
-              const fullContent = artifacts.join('\n\n---\n\n');
-              turns.push({ role: 'assistant', content: fullContent.trim() });
-              // Clear artifacts so we don't add them multiple times
-              artifacts.length = 0;
-            } else if (!hasToolCalls && text) {
-              // Only include direct responses without tool calls
-              turns.push({ role: 'assistant', content: text.trim() });
+
+            // Only capture final responses: turns with no tool_calls are the actual
+            // reply the user sees. Turns with tool_calls are intermediate reasoning steps.
+            if (!hasToolCalls) {
+              const text = this.cleanContent(record.content || '');
+              if (text) {
+                turns.push({ role: 'assistant', content: text });
+              }
             }
-            // Skip tool calls without artifacts or empty responses
           }
         } catch {
           // ignore malformed JSON lines

@@ -120,12 +120,27 @@ export class ClaudeCodeHistoryProvider implements AiHistoryProvider {
         try {
           const record = JSON.parse(line);
           const role = record.role || (record.type === 'prompt' ? 'user' : record.type === 'response' ? 'assistant' : null);
-          const text = record.content || record.text || '';
+          if (role !== 'user' && role !== 'assistant') continue;
 
-          if (role === 'user') {
-            turns.push({ role: 'user', content: text });
-          } else if (role === 'assistant') {
-            turns.push({ role: 'assistant', content: text });
+          // content can be a plain string or an array of content blocks (Anthropic Messages API)
+          let text = '';
+          const rawContent = record.content || record.text;
+          if (typeof rawContent === 'string') {
+            text = rawContent;
+          } else if (Array.isArray(rawContent)) {
+            // Extract text from content blocks, skip tool_use/tool_result
+            const textParts: string[] = [];
+            for (const block of rawContent) {
+              if (block.type === 'text' && block.text) {
+                textParts.push(block.text);
+              }
+            }
+            text = textParts.join('\n\n');
+          }
+
+          text = text.trim();
+          if (text) {
+            turns.push({ role, content: text });
           }
         } catch {
           // ignore malformed JSON lines
