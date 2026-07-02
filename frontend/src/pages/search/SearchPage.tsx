@@ -40,7 +40,10 @@ export function SearchPage({ dashboard, openNote }: PageContext) {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<'ask' | 'brief'>('ask');
+  const [activeTab, setActiveTab] = useState<'ask' | 'brief'>(() => {
+    const tabParam = searchParams.get('tab');
+    return tabParam === 'brief' ? 'brief' : 'ask';
+  });
   const [questionInput, setQuestionInput] = useState('');
   const [projectSlug, setProjectSlug] = useState('');
   const [askAnswer, setAskAnswer] = useState<AskAnswerCardItem | null>(null);

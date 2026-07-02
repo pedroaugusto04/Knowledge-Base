@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { fetchGithubBackfillStatus, fetchIntegrations } from '../../shared/api/client';
+import { fetchGithubBackfillStatus, fetchIntegrations, fetchGithubRepositories } from '../../shared/api/client';
 import type { Dashboard } from '../../shared/api/models/dashboard';
 import type { UserIntegration } from '../../shared/api/models/integration';
 import { routes } from '../../app/routing/routes';
@@ -10,6 +10,13 @@ import { withFrontendBasePath } from '../../app/base-path';
 import { Panel } from '../../shared/ui/primitives';
 import { UI_MESSAGES } from '../../shared/constants/ui.constants';
 import { CDNImage } from '../../shared/ui/CDNImage';
+import { GithubBackfillOptInModal } from '../integrations/GithubBackfillOptInModal';
+import {
+  isBackfillDeclined,
+  readBackfillJobId,
+  markBackfillDeclined,
+  storeBackfillJob,
+} from '../integrations/backfill-storage';
 
 /** localStorage key for onboarding state. */
 const STORAGE_KEY = 'kb-onboarding-checklist';
@@ -41,36 +48,13 @@ function saveStorage(state: OnboardingStorage) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function backfillDeclinedStorageKey(workspaceSlug: string) {
-  return `kb-github-backfill-declined-${workspaceSlug}`;
-}
-
-function backfillJobStorageKey(workspaceSlug: string) {
-  return `kb-github-backfill-job-${workspaceSlug}`;
-}
-
-function isBackfillDeclined(workspaceSlug: string): boolean {
-  try {
-    return Boolean(localStorage.getItem(backfillDeclinedStorageKey(workspaceSlug)));
-  } catch {
-    return false;
-  }
-}
-
-function readBackfillJobId(workspaceSlug: string): string | null {
-  try {
-    return localStorage.getItem(backfillJobStorageKey(workspaceSlug));
-  } catch {
-    return null;
-  }
-}
 
 type ChecklistItemDef = {
   id: string;
   label: string;
   description: string;
   priority: boolean;
-  route: string;
+  route?: string;
   provider?: string;
   icon: React.ReactNode;
   optional?: boolean;
@@ -91,17 +75,16 @@ const CHECKLIST_ITEMS: ChecklistItemDef[] = [
     label: 'Import recent commits',
     description: 'Optionally import your latest commits as searchable code review notes.',
     priority: true,
-    route: routes.integrations,
-    provider: 'github-app',
     icon: '⤴',
   },
   {
     id: 'github-push',
     label: 'Make first push',
     description: 'Push code to your linked repository to trigger your first live review.',
-    priority: true,
+    priority: false,
     route: routes.projects,
     icon: '↑',
+    optional: true,
   },
   {
     id: 'vscode-extension',
@@ -132,7 +115,7 @@ const CHECKLIST_ITEMS: ChecklistItemDef[] = [
     label: 'Test Project Brief',
     description: 'Generate a project brief to summarize project documentation.',
     priority: false,
-    route: routes.search,
+    route: `${routes.search}?tab=brief`,
     icon: '📄',
   },
   {
@@ -279,8 +262,11 @@ export function OnboardingChecklist({
   dashboard: Dashboard;
   workspaceSlug: string;
 }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [storage, setStorage] = useState(loadStorage);
   const [showOptional, setShowOptional] = useState(false);
+  const [showBackfillModal, setShowBackfillModal] = useState(false);
   const [vscodeConfirmed, setVscodeConfirmed] = useState(() => {
     try {
       return localStorage.getItem('kb-vscode-installed') === 'true';
@@ -293,6 +279,12 @@ export function OnboardingChecklist({
     queryKey: ['integrations', workspaceSlug],
     queryFn: () => fetchIntegrations(workspaceSlug),
     enabled: Boolean(workspaceSlug),
+  });
+
+  const githubRepositoriesQuery = useQuery({
+    queryKey: ['github-repositories', workspaceSlug],
+    queryFn: () => fetchGithubRepositories(workspaceSlug),
+    enabled: showBackfillModal,
   });
 
   const backfillJobId = readBackfillJobId(workspaceSlug);
@@ -308,6 +300,31 @@ export function OnboardingChecklist({
       return 2500;
     },
   });
+
+  const backfillLimit = integrationsQuery.data?.githubBackfillLimit ?? 5;
+
+  const repositories = githubRepositoriesQuery.data?.repositories || [];
+  const selectedRepositories = repositories.filter((repo) => repo.selected).map((repo) => repo.fullName);
+
+  const handleBackfillAction = () => {
+    if (selectedRepositories.length === 0) {
+      navigate(routes.integrations);
+      return;
+    }
+    setShowBackfillModal(true);
+  };
+
+  const handleBackfillStarted = (jobId: string) => {
+    storeBackfillJob(workspaceSlug, jobId);
+    setShowBackfillModal(false);
+    void queryClient.invalidateQueries({ queryKey: ['github-backfill-status'] });
+  };
+
+  const handleDeclineBackfill = () => {
+    markBackfillDeclined(workspaceSlug);
+    setShowBackfillModal(false);
+  };
+
 
   const integrations = integrationsQuery.data?.integrations ?? [];
   const backfillJob = backfillStatusQuery.data?.job;
@@ -445,13 +462,17 @@ export function OnboardingChecklist({
       <div className="onboarding-checklist-items">
         {coreItems.map((item) => {
           const done = completed.has(item.id);
-          return (
-            <Link
-              className={`onboarding-item ${done ? 'done' : ''} ${item.priority ? 'priority' : ''}`}
-              key={item.id}
-              to={item.route}
-              id={`onboarding-item-${item.id}`}
-            >
+          const itemAction = item.id === 'github-backfill' ? handleBackfillAction : undefined;
+          
+          if (item.route) {
+            return (
+              <Link
+                className={`onboarding-item ${done ? 'done' : ''} ${item.priority ? 'priority' : ''}`}
+                key={item.id}
+                to={item.route}
+                id={`onboarding-item-${item.id}`}
+                onClick={itemAction}
+              >
               <span className={`onboarding-item-check ${done ? 'checked' : ''} onboarding-item-check-${item.id}`} aria-hidden="true">
                 {done ? '✓' : item.icon}
               </span>
@@ -482,6 +503,29 @@ export function OnboardingChecklist({
               <span className="onboarding-item-arrow" aria-hidden="true">→</span>
             </Link>
           );
+          }
+          
+          return (
+            <button
+              className={`onboarding-item ${done ? 'done' : ''} ${item.priority ? 'priority' : ''}`}
+              key={item.id}
+              id={`onboarding-item-${item.id}`}
+              type="button"
+              onClick={itemAction}
+            >
+              <span className={`onboarding-item-check ${done ? 'checked' : ''} onboarding-item-check-${item.id}`} aria-hidden="true">
+                {done ? '✓' : item.icon}
+              </span>
+              <div className="onboarding-item-copy">
+                <strong>{item.label}</strong>
+                <span>{item.description}</span>
+              </div>
+              {item.priority && !done ? (
+                <span className="onboarding-item-badge">Priority</span>
+              ) : null}
+              <span className="onboarding-item-arrow" aria-hidden="true">→</span>
+            </button>
+          );
         })}
       </div>
 
@@ -501,13 +545,15 @@ export function OnboardingChecklist({
             <div className="onboarding-checklist-items onboarding-optional-items">
               {optionalItems.map((item) => {
                 const done = completed.has(item.id);
-                return (
-                  <Link
-                    className={`onboarding-item optional ${done ? 'done' : ''}`}
-                    key={item.id}
-                    to={item.route}
-                    id={`onboarding-item-${item.id}`}
-                  >
+                
+                if (item.route) {
+                  return (
+                    <Link
+                      className={`onboarding-item optional ${done ? 'done' : ''}`}
+                      key={item.id}
+                      to={item.route}
+                      id={`onboarding-item-${item.id}`}
+                    >
                     <span className={`onboarding-item-check ${done ? 'checked' : ''} onboarding-item-check-${item.id}`} aria-hidden="true">
                       {done ? '✓' : item.icon}
                     </span>
@@ -534,6 +580,26 @@ export function OnboardingChecklist({
                     <span className="onboarding-item-arrow" aria-hidden="true">→</span>
                   </Link>
                 );
+                }
+                
+                return (
+                  <button
+                    className={`onboarding-item optional ${done ? 'done' : ''}`}
+                    key={item.id}
+                    id={`onboarding-item-${item.id}`}
+                    type="button"
+                  >
+                    <span className={`onboarding-item-check ${done ? 'checked' : ''} onboarding-item-check-${item.id}`} aria-hidden="true">
+                      {done ? '✓' : item.icon}
+                    </span>
+                    <div className="onboarding-item-copy">
+                      <strong>{item.label}</strong>
+                      <span>{item.description}</span>
+                    </div>
+                    <span className="onboarding-item-badge optional-badge">Optional</span>
+                    <span className="onboarding-item-arrow" aria-hidden="true">→</span>
+                  </button>
+                );
               })}
             </div>
           )}
@@ -548,6 +614,17 @@ export function OnboardingChecklist({
           Dismiss
         </button>
       </div>
+
+      {showBackfillModal ? (
+        <GithubBackfillOptInModal
+          workspaceSlug={workspaceSlug}
+          repositories={selectedRepositories}
+          backfillLimit={backfillLimit}
+          onClose={() => setShowBackfillModal(false)}
+          onDeclined={handleDeclineBackfill}
+          onStarted={handleBackfillStarted}
+        />
+      ) : null}
     </Panel>
   );
 }

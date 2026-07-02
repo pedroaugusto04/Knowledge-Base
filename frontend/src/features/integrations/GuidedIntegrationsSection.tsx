@@ -33,6 +33,11 @@ import { useGlobalLoading } from '../../app/global-loading';
 import { withFrontendBasePath } from '../../app/base-path';
 import { StoredIntegrationStatus } from '../../shared/api/enums';
 import { CDNImage } from '../../shared/ui/CDNImage';
+import { GithubBackfillOptInModal } from './GithubBackfillOptInModal';
+import {
+  markBackfillDeclined,
+  storeBackfillJob,
+} from './backfill-storage';
 
 const statusTone: Record<DisplayStatus | string, string> = {
   [StoredIntegrationStatus.Connected]: 'low',
@@ -235,70 +240,6 @@ function CodeConnectionModal({ connection, onClose, workspaceSlug }: { connectio
         )}
         {currentSession?.connectedAccount ? <p className="meta">{INTEGRATION_MESSAGES.CONNECTION.CONNECTED_AS.replace('{account}', currentSession.connectedAccount)}</p> : null}
         {currentSession?.lastError ? <InlineMessage tone="error">{currentSession.lastError}</InlineMessage> : null}
-      </section>
-    </div>
-  );
-}
-
-function GithubBackfillOptInModal({
-  workspaceSlug,
-  repositories,
-  backfillLimit,
-  onClose,
-  onDeclined,
-  onStarted,
-}: {
-  workspaceSlug: string;
-  repositories: string[];
-  backfillLimit: number;
-  onClose: () => void;
-  onDeclined: () => void;
-  onStarted: (jobId: string) => void;
-}) {
-  const globalLoading = useGlobalLoading();
-  const startMutation = useMutation({
-    mutationFn: () => globalLoading.trackPromise(startGithubBackfill(workspaceSlug, repositories)),
-    onSuccess: (result) => {
-      notifySuccess(INTEGRATION_MESSAGES.GITHUB_BACKFILL.STARTED);
-      onStarted(result.jobId);
-      onClose();
-    },
-    onError: (error) => notifyGeneralFormError(error, INTEGRATION_MESSAGES.GITHUB_BACKFILL.ERROR),
-  });
-
-  return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <section
-        aria-labelledby="github-backfill-title"
-        aria-modal="true"
-        className="modal-panel integration-modal"
-        role="dialog"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-head">
-          <div>
-            <div className="card-kicker">{IntegrationProvider.GithubApp}</div>
-            <h2 id="github-backfill-title">{INTEGRATION_MESSAGES.GITHUB_BACKFILL.TITLE}</h2>
-          </div>
-          <button aria-label={UI_MESSAGES.CLOSE_DETAILS} className="modal-close" type="button" onClick={onClose}>x</button>
-        </div>
-        <p className="meta" style={{ marginBottom: '16px' }}>
-          {INTEGRATION_MESSAGES.GITHUB_BACKFILL.DESCRIPTION.replace('{limit}', String(backfillLimit))}
-        </p>
-        <p className="meta">{repositories.join(', ')}</p>
-        <div className="form-actions" style={{ marginTop: '20px' }}>
-          <button className="filter-chip" type="button" onClick={() => { onDeclined(); onClose(); }}>
-            {INTEGRATION_MESSAGES.GITHUB_BACKFILL.SKIP}
-          </button>
-          <button
-            className="icon-button"
-            disabled={startMutation.isPending}
-            type="button"
-            onClick={() => startMutation.mutate()}
-          >
-            {INTEGRATION_MESSAGES.GITHUB_BACKFILL.IMPORT.replace('{limit}', String(backfillLimit))}
-          </button>
-        </div>
       </section>
     </div>
   );
@@ -718,30 +659,6 @@ export function GuidedIntegrationsSection({
 
   const backfillLimit = integrationsQuery.data?.githubBackfillLimit ?? 5;
 
-  function backfillDeclinedStorageKey() {
-    return `kb-github-backfill-declined-${workspaceSlug}`;
-  }
-
-  function backfillJobStorageKey() {
-    return `kb-github-backfill-job-${workspaceSlug}`;
-  }
-
-  function markBackfillDeclined() {
-    try {
-      localStorage.setItem(backfillDeclinedStorageKey(), new Date().toISOString());
-    } catch {
-      // ignore
-    }
-  }
-
-  function storeBackfillJob(jobId: string) {
-    try {
-      localStorage.setItem(backfillJobStorageKey(), jobId);
-    } catch {
-      // ignore
-    }
-  }
-
   if (!workspaceSlug) return <EmptyState>{INTEGRATION_MESSAGES.GENERAL.CREATE_WORKSPACE_REQUIRED}</EmptyState>;
   if (integrationsQuery.isLoading) return <EmptyState>{INTEGRATION_MESSAGES.GENERAL.LOADING}</EmptyState>;
   if (!integrationsQuery.data) return <InlineMessage tone="error">{getErrorMessage(integrationsQuery.error, INTEGRATION_MESSAGES.GENERAL.LOAD_ERROR)}</InlineMessage>;
@@ -791,9 +708,9 @@ export function GuidedIntegrationsSection({
           repositories={pendingBackfillRepositories}
           backfillLimit={backfillLimit}
           onClose={() => setPendingBackfillRepositories(null)}
-          onDeclined={markBackfillDeclined}
+          onDeclined={() => markBackfillDeclined(workspaceSlug)}
           onStarted={(jobId) => {
-            storeBackfillJob(jobId);
+            storeBackfillJob(workspaceSlug, jobId);
             setPendingBackfillRepositories(null);
           }}
         />
